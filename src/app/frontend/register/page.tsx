@@ -3,9 +3,9 @@ import Header from '../components/Header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
-import { FcGoogle } from 'react-icons/fc'
+import { Checkbox } from '@/components/ui/checkbox'
 
-function Login() {
+function Register() {
   return (
     <div>
         <header className='bg-white shadow-sm border-b'>
@@ -13,9 +13,9 @@ function Login() {
         </header>
 
         <main className='flex flex-row  w-full'>
-            <div className='flex flex-col  items-start mx-40 w-1/2 px-10 py-20 justify-center gap-2'>
-                <h1 className='text-4xl font-bold font-serif'>Sign In</h1>
-                <p className='text-gray-600 mb-4'>Welcome back to LegalynX</p>
+            <div className='flex flex-col  items-start mx-40 w-1/2 px-10 py-20 justify-center my-0 gap-2'>
+                <h1 className='text-4xl font-bold font-serif'>Sign Up</h1>
+                <p className='text-gray-600 mb-4'>Create your account</p>
 
                 <div className='flex flex-col items-start justify-center gap-4 w-2/3'>
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
@@ -27,26 +27,25 @@ function Login() {
                         <Input type='password' placeholder='Enter your password' />
                     </span>
 
-
-                    <span className='text-sm text-gray-600'>
-                        Forgot Password?
+                    <span className='flex flex-col items-start gap-2 justify-start w-full'>
+                        <p className='text-sm text-gray-600'>Confirm Password</p>
+                        <Input type='password' placeholder='Confirm your password' />
                     </span>
-                    <Button className='w-full cursor-pointer bg-blue-600 text-white'>Sign In</Button>
-
-                    <span className='flex flex-row items-center justify-center gap-2 w-full'>
-                        <div className='w-full h-px bg-gray-200 my-4'></div>
-                        <p className='text-sm text-gray-600'>or</p>
-                        <div className='w-full h-px bg-gray-200 my-4'></div>
-                    </span>
-
-                    <Button className='w-full cursor-pointer' variant='outline'>
-                        <FcGoogle />
-                        Sign In with Google</Button>
            
 
+                    <span className='text-sm text-gray-600 flex flex-row justify-start gap-1'>
+                        <Checkbox className='w-4 h-4 mr-2' defaultChecked={true}/>
+                        <p className='text-xs text-gray-600'>
+                            By creating your account, you agree to the processing of your personal data by LegalynX as described in the <Link href="/frontend/privacy-policy" className='cursor-pointer underline hover:text-blue-600'>Privacy Policy</Link>.
+                        </p>
+                        
+                    </span>
+                    <Button className='w-full cursor-pointer bg-blue-600 text-white'>Sign Up</Button>
+
+
                     <span className='text-sm text-gray-600'>
-                        <Link href="/frontend/register" className='cursor-pointer hover:text-blue-600'>
-                            I don't have an account yet
+                        <Link href="/frontend/login" className='cursor-pointer hover:text-blue-600'>
+                            I already have an account
                         </Link>
                     </span>
                 </div>  
@@ -61,4 +60,4 @@ function Login() {
   )
 }
 
-export default Login
+export default Register
