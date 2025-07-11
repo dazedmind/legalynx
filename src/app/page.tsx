@@ -2,11 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FileText, Brain, Zap } from 'lucide-react';
-import UploadComponent from './frontend/components/UploadComponent';
-import QueryComponent from './frontend/components/QueryComponent';
-import StatusComponent from './frontend/components/StatusComponent';
 import { apiService, handleApiError, SystemStatus, UploadResponse } from './frontend/lib/api';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import Header from './frontend/components/Header';
 
