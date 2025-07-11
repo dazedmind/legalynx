@@ -79,7 +79,7 @@ export default function UploadComponent({ onUploadSuccess }: UploadComponentProp
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div className="bg-white rounded-lg shadow-md p-6 ">
       <h2 className="text-2xl font-bold text-gray-800 mb-4">Upload PDF Document</h2>
       
       {/* File Upload Area */}
@@ -93,9 +93,12 @@ export default function UploadComponent({ onUploadSuccess }: UploadComponentProp
         onDrop={handleDrop}
       >
         {file ? (
-          <div className="space-y-2">
-            <FileText className="mx-auto w-12 h-12 text-green-600" />
+          <div className="flex items-center gap-2">
+            <FileText className="w-12 h-6 text-green-600" />
             <p className="text-lg font-medium text-green-800">{file.name}</p>
+            <div>
+              
+            </div>
             <p className="text-sm text-green-600">
               Size: {(file.size / 1024 / 1024).toFixed(2)} MB
             </p>
@@ -107,8 +110,8 @@ export default function UploadComponent({ onUploadSuccess }: UploadComponentProp
             </button>
           </div>
         ) : (
-          <div className="space-y-2">
-            <Upload className="mx-auto w-12 h-12 text-gray-400" />
+          <div className="flex items-center gap-2">
+            <Upload className="w-12 h-6 text-gray-400" />
             <p className="text-lg text-gray-600">
               Drag and drop your PDF here, or{' '}
               <button

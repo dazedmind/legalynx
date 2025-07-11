@@ -6,6 +6,9 @@ import UploadComponent from './frontend/components/UploadComponent';
 import QueryComponent from './frontend/components/QueryComponent';
 import StatusComponent from './frontend/components/StatusComponent';
 import { apiService, handleApiError, SystemStatus, UploadResponse } from './frontend/lib/api';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import Header from './frontend/components/Header';
 
 export default function Home() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
@@ -78,70 +81,26 @@ export default function Home() {
   const isSystemReady = systemStatus?.pdf_loaded && systemStatus?.index_ready;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-secondary">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <Brain className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">RAG Pipeline</h1>
-                <p className="text-sm text-gray-600">Document Analysis & Question Answering</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="hidden md:flex items-center space-x-6 text-sm text-gray-600">
-                <div className="flex items-center">
-                  <FileText className="w-4 h-4 mr-1" />
-                  PDF Processing
-                </div>
-                <div className="flex items-center">
-                  <Zap className="w-4 h-4 mr-1" />
-                  AI-Powered Q&A
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <Header />
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Notification */}
-        {notification && (
-          <div
-            className={`mb-6 p-4 rounded-md border ${
-              notification.type === 'success'
-                ? 'bg-green-50 border-green-200 text-green-800'
-                : 'bg-red-50 border-red-200 text-red-800'
-            }`}
-          >
-            {notification.message}
-          </div>
-        )}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className='flex flex-col my-60 items-start justify-center gap-2'>
+          <h1 className='text-6xl font-bold'>LegalynX</h1>
+          <p className='text-2xl text-gray-600'>Linking you to legal clarity</p>
+          <Button className='cursor-pointer'>Get Started</Button>
+        </div>
 
-        {/* Status Component */}
-        <StatusComponent
-          status={systemStatus}
-          isLoading={isLoadingStatus}
-          onRefresh={loadSystemStatus}
-          onReset={handleSystemReset}
-        />
-
-        {/* Upload Component */}
-        <UploadComponent onUploadSuccess={handleUploadSuccess} />
-
-        {/* Query Component */}
-        <QueryComponent isSystemReady={!!isSystemReady} />
 
         {/* Features Info */}
-        <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Features</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
+        <div className="mt-8">
+          <h3 className="text-4xl font-bold text-gray-800 mb-6 text-center">Features</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 ">
+            <div className="text-center border-2 border-gray-200 rounded-lg p-6 bg-white">
               <div className="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                 <FileText className="w-6 h-6 text-blue-600" />
               </div>
@@ -150,7 +109,7 @@ export default function Home() {
                 Automatically detects document type and applies OCR for scanned PDFs or direct text extraction for structured documents.
               </p>
             </div>
-            <div className="text-center">
+            <div className="text-center border-2 border-gray-200 rounded-lg p-6 bg-white">
               <div className="bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Brain className="w-6 h-6 text-green-600" />
               </div>
@@ -159,7 +118,7 @@ export default function Home() {
                 Combines vector search, keyword matching (BM25), and semantic chunking for optimal information retrieval.
               </p>
             </div>
-            <div className="text-center">
+            <div className="text-center border-2 border-gray-200 rounded-lg p-6 bg-white">
               <div className="bg-purple-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Zap className="w-6 h-6 text-purple-600" />
               </div>

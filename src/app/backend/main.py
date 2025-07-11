@@ -215,12 +215,10 @@ async def get_preset_queries():
     Get a list of preset queries for testing.
     """
     preset_queries = {
-        "Who is the mortgagor?": "Who is the mortgagor in the document?",
-        "Borrower's owes": "How much does the borrower owe the lender?",
-        "Uniform Covenants": "What are the Uniform Covenants in detail?",
-        "Parcel Identifier number": "What is the parcel identifier number?",
-        "Document number": "What is the document number?",
-        "What are escrow items?": "What are escrow items?"
+        "What is the purpose of this document?": "What is the purpose of this document?",
+        "What is the name of the contract?": "What is the name of the contract?",
+        "What is the amount of the contract?": "What is the amount of the contract?",
+        "What is the term of the contract?": "What is the term of the contract?",
     }
     
     return {"preset_queries": preset_queries}

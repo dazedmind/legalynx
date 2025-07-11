@@ -210,7 +210,6 @@ def create_index_from_documents(documents, pdf_path: str) -> tuple:
     
     print(f"🔄 Creating index from documents...")
     api_key = os.getenv('GROQ_API_KEY')
-    print(f"🔑 API key provided: {api_key[:20] if api_key else 'None (will use env var)'}...")
     
     # Initialize embedding manager
     embedding_manager = EmbeddingManager()

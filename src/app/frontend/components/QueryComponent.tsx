@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, MessageSquare, BarChart3, Shuffle, AlertCircle, Clock } from 'lucide-react';
-import { apiService, handleApiError, QueryResponse, AnalysisResponse, PresetQueries, RerankDemo } from '../lib/api';
+import { Search, MessageSquare, BarChart3, Shuffle, AlertCircle } from 'lucide-react';
+import { apiService, handleApiError, QueryResponse, AnalysisResponse, RerankDemo } from '../lib/api';
 
 interface QueryComponentProps {
   isSystemReady: boolean;
@@ -56,25 +56,6 @@ export default function QueryComponent({ isSystemReady }: QueryComponentProps) {
     }
   };
 
-  const handleAnalyze = async () => {
-    if (!query.trim()) {
-      setError('Please enter a query to analyze');
-      return;
-    }
-
-    setIsQuerying(true);
-    setError('');
-
-    try {
-      const result = await apiService.analyzeQuery(query, true);
-      setAnalysis(result);
-      setActiveTab('analysis');
-    } catch (error) {
-      setError(handleApiError(error));
-    } finally {
-      setIsQuerying(false);
-    }
-  };
 
   const handleRerank = async () => {
     if (!query.trim()) {
@@ -106,7 +87,7 @@ export default function QueryComponent({ isSystemReady }: QueryComponentProps) {
 
   if (!isSystemReady) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-8">
         <div className="text-center text-gray-500">
           <AlertCircle className="mx-auto w-12 h-12 mb-4" />
           <p className="text-lg font-medium">System Not Ready</p>
@@ -118,20 +99,17 @@ export default function QueryComponent({ isSystemReady }: QueryComponentProps) {
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">Query Documents</h2>
 
       {/* Preset Queries */}
       {Object.keys(presetQueries).length > 0 && (
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Quick Start - Select a preset query:
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+    
+          <div className="flex gap-2">
             {Object.entries(presetQueries).map(([key, value]) => (
               <button
                 key={key}
                 onClick={() => selectPresetQuery(value)}
-                className="text-left p-2 text-sm bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors"
+                className="text-left p-2 px-3 text-sm bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-full cursor-pointer transition-colors"
               >
                 {key}
               </button>
@@ -139,56 +117,46 @@ export default function QueryComponent({ isSystemReady }: QueryComponentProps) {
           </div>
         </div>
       )}
+      <div className='flex gap-4 '>
+        {/* Query Input */}
+        <div className="w-full">
+          <div className="flex space-x-2">
+            <textarea
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Ask a question about the uploaded document..."
+              rows={3}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            />
+          </div>
+        </div>
 
-      {/* Query Input */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Enter your question:
-        </label>
-        <div className="flex space-x-2">
-          <textarea
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ask a question about the uploaded document..."
-            rows={3}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-          />
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleQuery}
+            disabled={isQuerying || !query.trim()}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {isQuerying ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            ) : (
+              <Search className="w-4 h-4 mr-2" />
+            )}
+            Ask
+          </button>
+
+          {/* <button
+            onClick={handleRerank}
+            disabled={isQuerying || !query.trim()}
+            className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            <Shuffle className="w-4 h-4 mr-2" />
+            Rerank Demo
+          </button> */}
         </div>
       </div>
-
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <button
-          onClick={handleQuery}
-          disabled={isQuerying || !query.trim()}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          {isQuerying ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-          ) : (
-            <Search className="w-4 h-4 mr-2" />
-          )}
-          Query
-        </button>
-
-        <button
-          onClick={handleAnalyze}
-          disabled={isQuerying || !query.trim()}
-          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          <BarChart3 className="w-4 h-4 mr-2" />
-          Analyze
-        </button>
-
-        <button
-          onClick={handleRerank}
-          disabled={isQuerying || !query.trim()}
-          className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          <Shuffle className="w-4 h-4 mr-2" />
-          Rerank Demo
-        </button>
-      </div>
+     
 
       {/* Error Message */}
       {error && (
