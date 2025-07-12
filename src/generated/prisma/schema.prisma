@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+  // output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER MANAGEMENT & AUTHENTICATION
+// ============================================
+
+model User {
+  id               String     @id @default(uuid())
+  name             String?
+  email            String     @unique
+  password         String
+  jobTitle         String?
+  profilePicture   String?
+  isPaidUser       Boolean    @default(false)
+  twoFactorEnabled Boolean    @default(false)
+  twoFactorSecret  String?
+  aiPersonality    String?    @db.Text
+  status           UserStatus @default(ACTIVE)
+  emailVerified    Boolean    @default(false)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  lastLoginAt      DateTime?
+
+  documents          Document[]
+  chatSessions       ChatSession[]
+  securityLogs       SecurityLog[]
+  verificationTokens VerificationToken[]
+
+  @@map("users")
+}
+
+// ============================================
+// DOCUMENT MANAGEMENT
+// ============================================
+
+model Document {
+  id               String         @id @default(uuid())
+  fileName         String
+  originalFileName String
+  filePath         String
+  fileSize         Int
+  mimeType         String
+  status           DocumentStatus @default(UPLOADED)
+  isScanned        Boolean?
+  pageCount        Int?
+  ownerId          String
+  owner            User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  uploadedAt       DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  chatSessions     ChatSession[]
+
+  @@map("documents")
+}
+
+// ============================================
+// CHAT SYSTEM
+// ============================================
+
+model ChatSession {
+  id         String   @id @default(uuid())
+  title      String?
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  isSaved    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  messages ChatMessage[]
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id          String      @id @default(uuid())
+  sessionId   String
+  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role        MessageRole // USER or ASSISTANT
+  content     String      @db.Text
+  sourceNodes Json? // Retrieved sources info
+  tokensUsed  Int?
+  createdAt   DateTime    @default(now())
+
+  @@map("chat_messages")
+}
+
+// ============================================
+// SECURITY & AUDIT
+// ============================================
+
+model SecurityLog {
+  id        String         @id @default(uuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    SecurityAction
+  details   String?
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("security_logs")
+}
+
+model VerificationToken {
+  id        String    @id @default(uuid())
+  email     String
+  key       String
+  token     String    @unique
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      TokenType @default(EMAIL_VERIFICATION)
+  expiresAt DateTime
+  used      Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  @@map("verification_tokens")
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PROCESSING
+  INDEXED
+  FAILED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+enum SecurityAction {
+  LOGIN
+  LOGOUT
+  PASSWORD_CHANGE
+  EMAIL_CHANGE
+  PROFILE_UPDATE
+  TWO_FACTOR_ENABLED
+  TWO_FACTOR_DISABLED
+  TWO_FACTOR_LOGIN
+  DOCUMENT_UPLOAD
+  DOCUMENT_DELETE
+  CHAT_SAVE
+  CHAT_DELETE
+}

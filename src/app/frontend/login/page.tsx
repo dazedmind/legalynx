@@ -1,11 +1,50 @@
-import React from 'react'
+"use client"
+import React, { useState } from 'react'
 import Header from '../components/Header'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/lib/context/AuthContext';
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import { FcGoogle } from 'react-icons/fc'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 function Login() {
+    const { login } = useAuth();
+
+    const router = useRouter()
+    const [formData, setFormData] = useState({
+        email: '',
+        password: ''
+    })
+    
+    const handleLogin = async () => {
+        const response = await fetch('/backend/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        
+        const data = await response.json();
+
+        if (response.ok) {
+            // Use auth context to set authentication
+            login(data.token, data.user);
+            toast.success('Login successful!');
+            router.push('/frontend/home');
+          } else {
+            toast.error(data.message || 'Login failed');
+          }
+        // } else {
+        //     toast.error('Login failed')
+        // }
+    }
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value })
+    }
   return (
     <div>
         <header className='bg-white shadow-sm border-b'>
@@ -20,18 +59,18 @@ function Login() {
                 <div className='flex flex-col items-start justify-center gap-4 w-2/3'>
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
                         <p className='text-sm text-gray-600'>Email address</p>
-                        <Input type='email' placeholder='Enter your email' />
+                        <Input name='email' type='email' placeholder='Enter your email' value={formData.email} onChange={handleChange} />
                     </span>
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
                         <p className='text-sm text-gray-600'>Password</p>
-                        <Input type='password' placeholder='Enter your password' />
+                        <Input name='password' type='password' placeholder='Enter your password' value={formData.password} onChange={handleChange} />
                     </span>
 
 
                     <span className='text-sm text-gray-600'>
                         Forgot Password?
                     </span>
-                    <Button className='w-full cursor-pointer bg-blue-600 text-white'>Sign In</Button>
+                    <Button onClick={handleLogin} className='w-full cursor-pointer bg-blue-600 text-white'>Sign In</Button>
 
                     <span className='flex flex-row items-center justify-center gap-2 w-full'>
                         <div className='w-full h-px bg-gray-200 my-4'></div>

@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button'
 import avatar from '../img/user.png'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useAuth } from '@/lib/context/AuthContext'
 
 export default function NavBar() {
+    const { logout } = useAuth();
   return (
     <div className="px-16 py-4">
         <div className="flex items-center justify-between">
@@ -42,7 +44,7 @@ export default function NavBar() {
                         </DropdownMenuItem>
                     </Link>
                     <DropdownMenuSeparator />
-                    <Link href="/">
+                    <Link href="/" onClick={logout}>
                         <DropdownMenuItem className='cursor-pointer'>
                             <LogOut className='w-4 h-4 ' />
                             Logout

@@ -7,6 +7,8 @@ import ChatHistory from '../components/ChatHistory';
 import { apiService, handleApiError, SystemStatus, UploadResponse } from '../lib/api';
 import { GoComment, GoFile, GoHistory } from "react-icons/go";
 import NavBar from '../components/NavBar';
+import ProtectedRoute from '../components/ProtectedRoute';
+import { useAuth } from '@/lib/context/AuthContext';
 
 type ActiveTab = 'chat' | 'documents' | 'chat_history';
 
@@ -15,6 +17,8 @@ export default function Home() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null);
+  const { user, logout, isPaidUser } = useAuth();
+  
   const [notification, setNotification] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -136,6 +140,7 @@ export default function Home() {
   const isSystemReady = systemStatus?.pdf_loaded && systemStatus?.index_ready;
 
   return (
+    <ProtectedRoute>
     <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="bg-white shadow-sm border-b flex-shrink-0">
@@ -234,5 +239,6 @@ export default function Home() {
         </section>
       </main>
     </div>
+    </ProtectedRoute>
   );
 }

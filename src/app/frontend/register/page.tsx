@@ -1,11 +1,93 @@
-import React from 'react'
+"use client"
+import React, { useState } from 'react'
 import Header from '../components/Header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import { Checkbox } from '@/components/ui/checkbox'
+import { toast , Toaster } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 function Register() {
+    const router = useRouter()
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+        confirmPassword: '',
+        acceptTerms: false
+        })
+    
+    const validateEmail = (email: string) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        return emailRegex.test(email)
+    }
+
+    const validateForm = () => {
+        if (formData.email === '' || formData.password === '') {
+            toast.error('Please fill in all fields')
+            return false
+        }
+        if (!validateEmail(formData.email)) {
+            toast.error('Please enter a valid email address')
+            return false
+        }
+        if (formData.password !== formData.confirmPassword) {
+            toast.error('Passwords do not match')
+            return false
+        }
+        if (!formData.acceptTerms) {
+            toast.error('You must accept the terms and conditions')
+            return false
+        }
+        
+        return true
+    }
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value })
+    }
+
+    const handleCheckboxChange = (checked: boolean) => {
+        setFormData({ ...formData, acceptTerms: checked })
+    }
+
+
+    const handleSubmit = async () => {
+        if (!validateForm()) {
+            return
+        }
+    
+        try {
+            // Store form data in sessionStorage for later use
+            sessionStorage.setItem('registrationData', JSON.stringify({
+                email: formData.email,
+                password: formData.password
+            }));
+    
+            const response = await fetch('/backend/api/send-verification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: formData.email,
+                    password: formData.password,
+                    confirmPassword: formData.confirmPassword
+                })
+            });
+    
+            const data = await response.json();
+    
+            if (response.ok) {
+                router.push('/frontend/register/verification');
+            } else {
+                toast.error(data.error || 'Failed to send verification email');
+            }
+        } catch (error) {
+            toast.error('Something went wrong. Please try again.');
+            console.error('Registration error:', error);
+        }
+    };
+
   return (
     <div>
         <header className='bg-white shadow-sm border-b'>
@@ -20,27 +102,29 @@ function Register() {
                 <div className='flex flex-col items-start justify-center gap-4 w-2/3'>
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
                         <p className='text-sm text-gray-600'>Email address</p>
-                        <Input type='email' placeholder='Enter your email' />
+                        <Input type='email' name='email' placeholder='Enter your email' value={formData.email} onChange={handleChange} />
                     </span>
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
                         <p className='text-sm text-gray-600'>Password</p>
-                        <Input type='password' placeholder='Enter your password' />
+                        <Input type='password' name='password' placeholder='Enter your password' value={formData.password} onChange={handleChange} />
                     </span>
 
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
                         <p className='text-sm text-gray-600'>Confirm Password</p>
-                        <Input type='password' placeholder='Confirm your password' />
+                        <Input type='password' name='confirmPassword' placeholder='Confirm your password' value={formData.confirmPassword} onChange={handleChange}/>
                     </span>
            
 
                     <span className='text-sm text-gray-600 flex flex-row justify-start gap-1'>
-                        <Checkbox className='w-4 h-4 mr-2' defaultChecked={true}/>
+                        <Checkbox className='w-4 h-4 mr-2' checked={formData.acceptTerms} onCheckedChange={handleCheckboxChange}/>
                         <p className='text-xs text-gray-600'>
                             By creating your account, you agree to the processing of your personal data by LegalynX as described in the <Link href="/frontend/privacy-policy" className='cursor-pointer underline hover:text-blue-600'>Privacy Policy</Link>.
                         </p>
                         
                     </span>
-                    <Button className='w-full cursor-pointer bg-blue-600 text-white'>Sign Up</Button>
+                    <Button className='w-full cursor-pointer bg-blue-600 text-white' onClick={handleSubmit}>
+                        Sign Up
+                    </Button>
 
 
                     <span className='text-sm text-gray-600'>
@@ -55,7 +139,7 @@ function Register() {
                 <img src="/images/login.png" alt="Login" className='w-1/2' />
             </div>
         </main>
-
+        <Toaster />
     </div>
   )
 }
