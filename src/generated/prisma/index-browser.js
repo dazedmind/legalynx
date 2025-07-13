@@ -229,6 +229,7 @@ exports.UserStatus = exports.$Enums.UserStatus = {
 exports.DocumentStatus = exports.$Enums.DocumentStatus = {
   UPLOADED: 'UPLOADED',
   PROCESSING: 'PROCESSING',
+  TEMPORARY: 'TEMPORARY',
   INDEXED: 'INDEXED',
   FAILED: 'FAILED'
 };

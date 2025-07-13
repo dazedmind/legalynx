@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/context/AuthContext'
 export default function NavBar() {
     const { logout } = useAuth();
   return (
-    <div className="px-16 py-4">
+    <div className="px-8 py-4">
         <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
             <div className="bg-blue-600 p-2 rounded-lg">

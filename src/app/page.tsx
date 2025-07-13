@@ -5,6 +5,7 @@ import { FileText, Brain, Zap } from 'lucide-react';
 import { apiService, handleApiError, SystemStatus, UploadResponse } from './frontend/lib/api';
 import { Button } from '@/components/ui/button';
 import Header from './frontend/components/Header';
+import BlurText from './frontend/components/reactbits/BlurText';
 
 export default function Home() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
@@ -86,7 +87,7 @@ export default function Home() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className='flex flex-col my-60 items-start justify-center gap-2'>
-          <h1 className='text-6xl font-bold'>LegalynX</h1>
+          <BlurText text="LegalynX" className='text-6xl font-bold font-serif' />
           <p className='text-2xl text-gray-600'>Linking you to legal clarity</p>
           <Button className='cursor-pointer'>Get Started</Button>
         </div>

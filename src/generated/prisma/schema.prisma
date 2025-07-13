@@ -146,6 +146,7 @@ enum UserStatus {
 enum DocumentStatus {
   UPLOADED
   PROCESSING
+  TEMPORARY
   INDEXED
   FAILED
 }

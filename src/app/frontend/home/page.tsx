@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import CombinedUploadQueryComponent from '../components/UploadQueryComponent';
+import ChatViewer from '../components/ChatViewer';
 import FileManager from '../components/FileManager';
 import ChatHistory from '../components/ChatHistory';
 import { apiService, handleApiError, SystemStatus, UploadResponse } from '../lib/api';
@@ -9,8 +9,10 @@ import { GoComment, GoFile, GoHistory } from "react-icons/go";
 import NavBar from '../components/NavBar';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '@/lib/context/AuthContext';
+import { Plus } from 'lucide-react';
+import UploadPage from '../components/UploadPage';
 
-type ActiveTab = 'chat' | 'documents' | 'chat_history';
+type ActiveTab = 'chat' | 'documents' | 'chat_history' | 'upload';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
@@ -18,7 +20,7 @@ export default function Home() {
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null);
   const { user, logout, isPaidUser } = useAuth();
-  
+
   const [notification, setNotification] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -28,21 +30,19 @@ export default function Home() {
   useEffect(() => {
     const clearUploadedFiles = async () => {
       try {
-        // Clear localStorage
-        localStorage.removeItem('uploaded_documents');
-        localStorage.removeItem('rag_chat_history');
+        // Don't clear localStorage on page load anymore
+        // Users want to keep their saved documents
         
-        // Reset backend system
-        await apiService.resetSystem();
+        // Just load system status
+        await loadSystemStatus();
         
-        console.log('✅ Cleared uploaded files and reset system');
+        console.log('✅ Page loaded, checking system status');
       } catch (error) {
-        console.error('Failed to reset system on page load:', error);
+        console.error('Failed to load system status:', error);
       }
     };
 
     clearUploadedFiles();
-    loadSystemStatus();
   }, []);
 
   const loadSystemStatus = async () => {
@@ -78,6 +78,10 @@ export default function Home() {
     setActiveTab('chat');
   };
 
+  const handleNewChat = () => {
+    setActiveTab('upload');
+  };
+
   const handleTabClick = (tab: ActiveTab) => {
     setActiveTab(tab);
   };
@@ -92,16 +96,6 @@ export default function Home() {
       const selectedDoc = docs.find((doc: any) => doc.id === docId);
       
       if (selectedDoc) {
-        setNotification({
-          type: 'success',
-          message: `Selected document: ${selectedDoc.originalName}`
-        });
-
-        // Clear notification after 3 seconds
-        setTimeout(() => {
-          setNotification(null);
-        }, 3000);
-
         // Switch to chat tab
         setActiveTab('chat');
       }
@@ -109,14 +103,12 @@ export default function Home() {
   };
 
   const handleSystemReset = async () => {
-    if (!confirm('Are you sure you want to reset the system? This will clear all uploaded documents and indices.')) {
+    if (!confirm('Are you sure you want to reset the system? This will clear the current session but keep your saved documents.')) {
       return;
     }
 
     try {
       await apiService.resetSystem();
-      localStorage.removeItem('uploaded_documents');
-      localStorage.removeItem('rag_chat_history');
       setCurrentDocumentId(null);
       
       setNotification({
@@ -150,50 +142,63 @@ export default function Home() {
       {/* Main Content */}
       <main className="flex bg-white flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-1/5 bg-neutral-100 p-8 gap-2 flex flex-col border-r border-gray-200 flex-shrink-0">
-          <button
-            onClick={() => handleTabClick('chat')}
-            className={`flex items-center gap-2 text-lg cursor-pointer p-3 rounded-lg transition-colors ${
-              activeTab === 'chat'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'text-gray-700 hover:bg-gray-200'
-            }`}
+        <aside className="w-1/5 bg-neutral-100 p-6 flex flex-col border-r border-gray-200 flex-shrink-0">
+          {/* Navigation Buttons */}
+          <button 
+            onClick={handleNewChat}
+            className="w-full cursor-pointer flex items-center gap-1 text-left mb-2 p-3 rounded-lg transition-colors bg-gradient-to-br from-blue-600 to-blue-400 text-white hover:from-blue-400 hover:to-blue-500"
           >
-            <GoComment className="w-6 h-6" />
-            Chat
+            <Plus className="w-5 h-5" />
+            New Chat
           </button>
+   
+          <div className="space-y-2 mb-8">
+            <button
+              onClick={() => handleTabClick('chat')}
+              className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                activeTab === 'chat'
+                  ? 'bg-blue-100 text-blue-700 font-semibold'
+                  : 'text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <GoComment className="w-5 h-5" />
+              Chat with Lynx AI
+              {isSystemReady && (
+                <span className="ml-auto w-2 h-2 bg-green-500 rounded-full"></span>
+              )}
+            </button>
 
-          <button
-            onClick={() => handleTabClick('chat_history')}
-            className={`flex items-center gap-2 text-lg cursor-pointer p-3 rounded-lg transition-colors ${
-              activeTab === 'chat_history'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <GoHistory className="w-6 h-6" />
-            Chat History
-          </button>
+            <button
+              onClick={() => handleTabClick('documents')}
+              className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                activeTab === 'documents'
+                  ? 'bg-blue-100 text-blue-700 font-semibold'
+                  : 'text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <GoFile className="w-5 h-5" />
+              My Documents
+            </button>
 
-          <button
-            onClick={() => handleTabClick('documents')}
-            className={`flex items-center gap-2 text-lg cursor-pointer p-3 rounded-lg transition-colors ${
-              activeTab === 'documents'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <GoFile className="w-6 h-6" />
-            My Documents
-          </button>
+            <button
+              onClick={() => handleTabClick('chat_history')}
+              className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                activeTab === 'chat_history'
+                  ? 'bg-blue-100 text-blue-700 font-semibold'
+                  : 'text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <GoHistory className="w-5 h-5" />
+              Chat History
+            </button>
+          </div>
 
-          {/* Reset System Button */}
-          <div className="mt-auto">
+          <div className="mt-auto space-y-3">
             <button
               onClick={handleSystemReset}
-              className="w-full flex items-center gap-2 text-sm p-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+              className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg text-orange-600 hover:bg-orange-50 border border-orange-200 transition-colors"
             >
-              Reset System
+              Reset Session
             </button>
           </div>
         </aside>
@@ -202,7 +207,7 @@ export default function Home() {
         <section className="flex-1 flex flex-col overflow-hidden">
           {/* Notification Bar */}
           {notification && (
-            <div className="mb-4">
+            <div className="flex-shrink-0 p-4">
               <div
                 className={`p-4 rounded-md border ${
                   notification.type === 'success'
@@ -217,23 +222,29 @@ export default function Home() {
 
           {/* Tab Content */}
           <div className="flex-1 overflow-hidden">
-            {activeTab === 'chat' ? (
-              <CombinedUploadQueryComponent 
+            {activeTab === 'upload' && (
+              <UploadPage onUploadSuccess={handleUploadSuccess} />
+            )}
+
+            {activeTab === 'chat' && (
+              <ChatViewer 
                 isSystemReady={!!isSystemReady} 
                 onUploadSuccess={handleUploadSuccess}
               />
-            ) : (
-              activeTab === 'chat_history' ? (
-                <ChatHistory 
-                  onDocumentSelect={handleDocumentSelect}
-                  currentDocumentId={currentDocumentId || ''}
-                />
-              ) : (
-                <FileManager 
-                  onDocumentSelect={handleDocumentSelect}
-                  currentDocumentId={currentDocumentId || ''}
-                />
-              )
+            )}
+
+            {activeTab === 'documents' && (
+              <FileManager 
+                onDocumentSelect={handleDocumentSelect}
+                currentDocumentId={currentDocumentId || ''}
+              />
+            )}
+
+            {activeTab === 'chat_history' && (
+              <ChatHistory 
+                onDocumentSelect={handleDocumentSelect}
+                currentDocumentId={currentDocumentId || ''}
+              />
             )}
           </div>
         </section>

@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle2, Search, MessageSquare, BarChart3, Shuffle, User, Bot, Trash2, Download } from 'lucide-react';
-import { apiService, handleApiError, QueryResponse, AnalysisResponse, PresetQueries, RerankDemo, UploadResponse } from '../lib/api';
+import { Upload, FileText, AlertCircle, CheckCircle2, Search, MessageSquare, User, Bot, Trash2, Save } from 'lucide-react';
+import { apiService, handleApiError, AnalysisResponse, RerankDemo, UploadResponse } from '../lib/api';
+import { toast, Toaster } from 'sonner';
+import { useAuth } from '@/lib/context/AuthContext';
 
 interface ChatMessage {
   id: string;
@@ -15,12 +17,25 @@ interface ChatMessage {
   rerankData?: RerankDemo;
 }
 
+interface ChatSession {
+  id: string;
+  title?: string;
+  userId: string;
+  documentId: string;
+  isSaved: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  messages: ChatMessage[];
+}
+
 interface CombinedComponentProps {
   isSystemReady: boolean;
   onUploadSuccess: (response: UploadResponse) => void;
 }
 
-export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSuccess }: CombinedComponentProps) {
+export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedComponentProps) {
+  const { isAuthenticated, user } = useAuth();
+  
   // Upload states
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -33,39 +48,80 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
   const [query, setQuery] = useState('');
   const [isQuerying, setIsQuerying] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [presetQueries, setPresetQueries] = useState<Record<string, string>>({});
   const [error, setError] = useState<string>('');
   const [showPresets, setShowPresets] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load preset queries and chat history on component mount
+  // Load preset queries and chat session on component mount
   useEffect(() => {
     if (isSystemReady) {
       loadPresetQueries();
-      loadChatHistory();
       loadCurrentDocument();
     }
-  }, [isSystemReady]);
+  }, [isSystemReady, user]);
+
+  // Load or create session when document changes
+  useEffect(() => {
+    if (currentDocument && user) {
+      loadOrCreateSession();
+    }
+  }, [currentDocument, user]);
 
   // Scroll to bottom when new messages are added
   useEffect(() => {
     scrollToBottom();
   }, [chatHistory]);
 
-  // Save chat history to localStorage whenever it changes
+  // Auto-save session when messages change
   useEffect(() => {
-    if (chatHistory.length > 0) {
-      saveChatHistory();
+    if (chatHistory.length > 0 && currentSessionId && user) {
+      // Debounce the save to avoid too many API calls
+      const timeoutId = setTimeout(() => {
+        saveSessionToDatabase();
+      }, 1000);
+
+      return () => clearTimeout(timeoutId);
     }
-  }, [chatHistory]);
+  }, [chatHistory, currentSessionId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const loadCurrentDocument = () => {
+  const loadCurrentDocument = async () => {
     try {
-      const savedDocs = localStorage.getItem('uploaded_documents');
+      if (isAuthenticated && user) {
+        // For authenticated users, try to load from database first
+        const response = await fetch(`/backend/api/documents?userId=${user.id}`, {
+          headers: getAuthHeaders()
+        });
+        
+        if (response.ok) {
+          const documents = await response.json();
+          if (documents.length > 0) {
+            // Get the most recent document
+            const mostRecent = documents[0];
+            const documentInfo = {
+              id: mostRecent.id,
+              filename: mostRecent.filename,
+              originalName: mostRecent.originalName,
+              size: mostRecent.size,
+              uploadedAt: mostRecent.createdAt,
+              pages: mostRecent.pages,
+              status: 'ready' as const,
+              databaseId: mostRecent.id
+            };
+            setCurrentDocument(documentInfo);
+            return;
+          }
+        }
+      }
+      
+      // Fallback to localStorage for non-authenticated users or if database fails
+      const storageKey = isAuthenticated && user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+      const savedDocs = localStorage.getItem(storageKey);
       if (savedDocs) {
         const docs = JSON.parse(savedDocs);
         if (docs.length > 0) {
@@ -76,6 +132,126 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
       }
     } catch (error) {
       console.error('Failed to load current document:', error);
+    }
+  };
+
+  // Helper function to get auth headers
+  const getAuthHeaders = (): HeadersInit => {
+    const token = localStorage.getItem('legalynx_token');
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return headers;
+  };
+
+  const loadOrCreateSession = async () => {
+    if (!user || !currentDocument) return;
+
+    try {
+      // Try to find existing session for this user and document
+      const response = await fetch(
+        `/backend/api/chat-sessions/find?userId=${user.id}&documentId=${currentDocument.id}`,
+        { headers: getAuthHeaders() }
+      );
+      
+      if (response.ok) {
+        const session = await response.json();
+        setCurrentSessionId(session.id);
+        
+        // Load messages for this session
+        const messagesResponse = await fetch(
+          `/backend/api/chat-messages?sessionId=${session.id}`,
+          { headers: getAuthHeaders() }
+        );
+        if (messagesResponse.ok) {
+          const messages = await messagesResponse.json();
+          const formattedMessages = messages.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }));
+          setChatHistory(formattedMessages);
+        }
+      } else {
+        // Create new session
+        await createNewSession();
+      }
+    } catch (error) {
+      console.error('Failed to load or create session:', error);
+      // Fallback to creating new session
+      await createNewSession();
+    }
+  };
+
+  const createNewSession = async () => {
+    if (!user || !currentDocument) return;
+
+    try {
+      const response = await fetch('/backend/api/chat-sessions', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          userId: user.id,
+          documentId: currentDocument.id,
+          title: `Chat with ${currentDocument.originalName}`,
+          isSaved: false
+        })
+      });
+
+      if (response.ok) {
+        const session = await response.json();
+        setCurrentSessionId(session.id);
+        setChatHistory([]);
+        toast.success('New chat session created');
+      }
+    } catch (error) {
+      console.error('Failed to create session:', error);
+      toast.error('Failed to create chat session');
+    }
+  };
+
+  const saveSessionToDatabase = async () => {
+    if (!currentSessionId || !user || chatHistory.length === 0) return;
+
+    try {
+      // Generate title from first user message if not set
+      const firstUserMessage = chatHistory.find(m => m.type === 'user');
+      const title = firstUserMessage 
+        ? `${firstUserMessage.content.substring(0, 50)}${firstUserMessage.content.length > 50 ? '...' : ''}`
+        : `Chat with ${currentDocument?.originalName || 'Document'}`;
+
+      // Update session
+      await fetch(`/backend/api/chat-sessions/${currentSessionId}`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          title,
+          updatedAt: new Date().toISOString()
+        })
+      });
+
+      // Save messages - we'll send all messages to ensure consistency
+      await fetch('/backend/api/chat-messages/bulk', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          sessionId: currentSessionId,
+          messages: chatHistory.map(msg => ({
+            id: msg.id,
+            type: msg.type,
+            content: msg.content,
+            timestamp: msg.timestamp.toISOString(),
+            query: msg.query,
+            sourceCount: msg.sourceCount
+          }))
+        })
+      });
+    } catch (error) {
+      console.error('Failed to save session to database:', error);
     }
   };
 
@@ -124,7 +300,7 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
     try {
       const response = await apiService.uploadPdf(file);
       
-      // Save document info to localStorage
+      // Save document info to user-specific localStorage
       const documentInfo = {
         id: Date.now().toString(),
         filename: response.filename,
@@ -135,9 +311,10 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
         status: 'ready' as const
       };
       
-      const existingDocs = JSON.parse(localStorage.getItem('uploaded_documents') || '[]');
+      const storageKey = isAuthenticated && user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+      const existingDocs = JSON.parse(localStorage.getItem(storageKey) || '[]');
       existingDocs.push(documentInfo);
-      localStorage.setItem('uploaded_documents', JSON.stringify(existingDocs));
+      localStorage.setItem(storageKey, JSON.stringify(existingDocs));
       
       setCurrentDocument(documentInfo);
       setUploadStatus('success');
@@ -148,6 +325,26 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
       setStatusMessage(handleApiError(error));
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleSaveSession = async () => {
+    if (!currentSessionId) {
+      toast.error('No active session to save');
+      return;
+    }
+
+    try {
+      await fetch(`/backend/api/chat-sessions/${currentSessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isSaved: true })
+      });
+
+      toast.success('Chat session saved successfully!');
+    } catch (error) {
+      console.error('Failed to save session:', error);
+      toast.error('Failed to save session');
     }
   };
 
@@ -170,33 +367,25 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
     }
   };
 
-  const loadChatHistory = () => {
-    try {
-      const saved = localStorage.getItem('rag_chat_history');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const messagesWithDates = parsed.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }));
-        setChatHistory(messagesWithDates);
-      }
-    } catch (error) {
-      console.error('Failed to load chat history:', error);
-    }
-  };
+  const clearChatHistory = async () => {
+    if (!currentSessionId) return;
 
-  const saveChatHistory = () => {
-    try {
-      localStorage.setItem('rag_chat_history', JSON.stringify(chatHistory));
-    } catch (error) {
-      console.error('Failed to save chat history:', error);
+    if (!confirm('Are you sure you want to clear this chat session?')) {
+      return;
     }
-  };
 
-  const clearChatHistory = () => {
-    setChatHistory([]);
-    localStorage.removeItem('rag_chat_history');
+    try {
+      // Delete all messages for this session
+      await fetch(`/backend/api/chat-messages/session/${currentSessionId}`, {
+        method: 'DELETE'
+      });
+
+      setChatHistory([]);
+      toast.success('Chat history cleared');
+    } catch (error) {
+      console.error('Failed to clear chat history:', error);
+      toast.error('Failed to clear chat history');
+    }
   };
 
   const exportChatHistory = () => {
@@ -210,20 +399,44 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `rag_chat_history_${new Date().toISOString().split('T')[0]}.txt`;
+    a.download = `chat_session_${currentSessionId}_${new Date().toISOString().split('T')[0]}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  const addMessage = (message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
+  const addMessage = async (message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
     const newMessage: ChatMessage = {
       ...message,
-      id: Date.now().toString(),
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date()
     };
+
+    // Add to local state immediately for UI responsiveness
     setChatHistory(prev => [...prev, newMessage]);
+
+    // Save to database
+    if (currentSessionId) {
+      try {
+        await fetch('/backend/api/chat-messages', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            id: newMessage.id,
+            sessionId: currentSessionId,
+            type: newMessage.type,
+            content: newMessage.content,
+            timestamp: newMessage.timestamp.toISOString(),
+            query: newMessage.query,
+            sourceCount: newMessage.sourceCount
+          })
+        });
+      } catch (error) {
+        console.error('Failed to save message to database:', error);
+        // Message is still in local state, so chat continues to work
+      }
+    }
   };
 
   const handleQuery = async (queryText?: string) => {
@@ -234,8 +447,13 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
       return;
     }
 
+    // Create session if we don't have one yet
+    if (!currentSessionId && user && currentDocument) {
+      await createNewSession();
+    }
+
     // Add user message
-    addMessage({
+    await addMessage({
       type: 'user',
       content: currentQuery,
       query: currentQuery
@@ -250,7 +468,7 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
       const result = await apiService.queryDocuments(currentQuery);
       
       // Add assistant response
-      addMessage({
+      await addMessage({
         type: 'assistant',
         content: result.response,
         query: currentQuery,
@@ -261,34 +479,11 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
       setError(errorMessage);
       
       // Add error message to chat
-      addMessage({
+      await addMessage({
         type: 'assistant',
         content: `Sorry, I encountered an error: ${errorMessage}`,
         query: currentQuery
       });
-    } finally {
-      setIsQuerying(false);
-    }
-  };
-
-  const handleRerank = async (queryText: string) => {
-    setIsQuerying(true);
-    setError('');
-
-    try {
-      const result = await apiService.rerankDemo(queryText);
-      
-      // Add rerank data to the last assistant message if it exists and matches the query
-      setChatHistory(prev => {
-        const updated = [...prev];
-        const lastMessage = updated[updated.length - 1];
-        if (lastMessage && lastMessage.type === 'assistant' && lastMessage.query === queryText) {
-          lastMessage.rerankData = result;
-        }
-        return updated;
-      });
-    } catch (error) {
-      setError(handleApiError(error));
     } finally {
       setIsQuerying(false);
     }
@@ -327,33 +522,44 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
                 <p className="text-sm text-gray-600">
                   {currentDocument.pages} pages • {formatFileSize(currentDocument.size)} • 
                   Uploaded {new Date(currentDocument.uploadedAt).toLocaleDateString()}
+                  {currentSessionId && (
+                    <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full font-medium">
+                      Session Active
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full font-medium">
-                Ready
-              </span>
-              {chatHistory.length > 0 && (
-                <div className="flex space-x-1">
-                  <button
-                    onClick={exportChatHistory}
-                    className="flex items-center px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    <Download className="w-3 h-3 mr-1" />
-                    Export
-                  </button>
-                  <button
-                    onClick={clearChatHistory}
-                    className="flex items-center px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
-                  >
-                    <Trash2 className="w-3 h-3 mr-1" />
-                    Clear
-                  </button>
-                </div>
-              )}
+              <div className="flex space-x-1">
+                {chatHistory.length > 0 && (
+                  <>
+                    <button 
+                      onClick={exportChatHistory}
+                      className="flex items-center cursor-pointer p-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
+                    >
+                      <Save className="w-3 h-3 mr-1" />
+                      Export
+                    </button>
+                    <button 
+                      onClick={handleSaveSession}
+                      className="flex items-center cursor-pointer p-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      <Save className="w-3 h-3 mr-1" />
+                      Save Session
+                    </button>
+                    <button
+                      onClick={clearChatHistory}
+                      className="flex items-center cursor-pointer p-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      Clear
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          </div>  
         ) : (
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Upload Document</h3>
@@ -461,8 +667,6 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
         ) : (
           /* Chat Section */
           <>
-  
-
             {/* Chat Messages Container - Scrollable */}
             <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
               <div className="max-w-6xl mx-auto space-y-4">
@@ -499,53 +703,6 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
                             Sources used: {message.sourceCount}
                           </div>
                         )}
-
-                        {/* Action buttons for assistant messages */}
-                        {message.type === 'assistant' && message.query && (
-                          <div className="mt-3 flex space-x-2">
-                            <button
-                              onClick={() => handleRerank(message.query!)}
-                              disabled={isQuerying}
-                              className="flex items-center px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-400"
-                            >
-                              <Shuffle className="w-3 h-3 mr-1" />
-                              Rerank
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Rerank Results */}
-                        {message.rerankData && (
-                          <div className="mt-3 p-3 bg-purple-50 rounded border border-purple-200">
-                            <h4 className="font-medium text-purple-900 mb-2">Reranking Demo:</h4>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 text-xs max-h-40 overflow-y-auto">
-                              <div>
-                                <h5 className="font-medium text-red-800 mb-1">Original:</h5>
-                                {message.rerankData.results
-                                  .filter(r => r.Stage === 'Original Retrieval')
-                                  .slice(0, 2)
-                                  .map((result, index) => (
-                                    <div key={index} className="bg-red-50 p-2 rounded mb-1 border">
-                                      <div className="font-medium">#{result.Rank} (Score: {result.Score.toFixed(3)})</div>
-                                      <div className="text-gray-600">{result.Content.substring(0, 80)}...</div>
-                                    </div>
-                                  ))}
-                              </div>
-                              <div>
-                                <h5 className="font-medium text-green-800 mb-1">Reranked:</h5>
-                                {message.rerankData.results
-                                  .filter(r => r.Stage === 'After Reranking')
-                                  .slice(0, 2)
-                                  .map((result, index) => (
-                                    <div key={index} className="bg-green-50 p-2 rounded mb-1 border">
-                                      <div className="font-medium">#{result.Rank} (Score: {result.Score.toFixed(3)})</div>
-                                      <div className="text-gray-600">{result.Content.substring(0, 80)}...</div>
-                                    </div>
-                                  ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
                   ))
@@ -570,7 +727,6 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
 
             {/* Fixed Input Area */}
             <div className="flex-shrink-0 bg-white border-t border-gray-200 p-6">
-
               {/* Preset Queries - Fixed */}
               {showPresets && Object.keys(presetQueries).length > 0 && chatHistory.length === 0 && (
                 <div className="flex-shrink-0 pb-6">
@@ -631,6 +787,7 @@ export default function CombinedUploadQueryComponent({ isSystemReady, onUploadSu
           </>
         )}
       </div>
+      <Toaster />
     </div>
   );
 }

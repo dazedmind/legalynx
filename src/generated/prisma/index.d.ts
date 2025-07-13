@@ -68,6 +68,7 @@ export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus]
 export const DocumentStatus: {
   UPLOADED: 'UPLOADED',
   PROCESSING: 'PROCESSING',
+  TEMPORARY: 'TEMPORARY',
   INDEXED: 'INDEXED',
   FAILED: 'FAILED'
 };
