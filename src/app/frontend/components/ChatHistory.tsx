@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Trash2, Calendar, MessageSquare, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
+import { authUtils } from '@/lib/auth';
 import { toast } from 'sonner';
 
 interface ChatMessage {
@@ -43,50 +44,68 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    if (user) {
+    if (user && isAuthenticated) {
       loadChatSessions();
     }
-  }, [user]);
+  }, [user, isAuthenticated]);
+
+  // Helper function to get auth headers
+  const getAuthHeaders = (): HeadersInit => {
+    const token = authUtils.getToken(); // Use authUtils consistently
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return headers;
+  };
 
   const loadChatSessions = async () => {
-    if (!user) return;
+    if (!user || !isAuthenticated) return;
 
     setIsLoading(true);
+    setError('');
+    
     try {
-      // Get the auth token from localStorage/cookies
-      const token = localStorage.getItem('legalynx_token'); // or wherever you store it
-      
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json'
-      };
-      
-      // Add authorization header if token exists
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`/backend/api/chat-sessions?userId=${user.id}`, {
-        headers
+      const response = await fetch('/backend/api/chat', {
+        method: 'GET',
+        headers: getAuthHeaders()
       });
       
       if (response.ok) {
-        const sessions = await response.json();
+        const data = await response.json();
+        const sessions = data.sessions || [];
+        
         const formattedSessions = sessions.map((session: any) => ({
           ...session,
           createdAt: new Date(session.createdAt),
           updatedAt: new Date(session.updatedAt),
-          messages: session.messages.map((msg: any) => ({
+          messages: (session.messages || []).map((msg: any) => ({
             ...msg,
-            timestamp: new Date(msg.timestamp)
-          }))
+            type: msg.role || msg.type, // Handle both 'role' and 'type' fields
+            timestamp: new Date(msg.createdAt || msg.timestamp)
+          })),
+          document: {
+            id: session.documentId,
+            filename: session.documentName || 'Unknown',
+            originalName: session.documentName || 'Unknown Document'
+          }
         }));
+        
         setChatSessions(formattedSessions);
+      } else if (response.status === 401) {
+        setError('Authentication failed. Please sign in again.');
+        // Optionally trigger logout
       } else {
-        throw new Error('Failed to load chat sessions');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to load chat sessions');
       }
     } catch (error) {
       console.error('Failed to load chat sessions:', error);
-      setError('Failed to load chat history');
+      setError(error instanceof Error ? error.message : 'Failed to load chat history');
       setChatSessions([]);
     } finally {
       setIsLoading(false);
@@ -97,22 +116,18 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
     setSelectedSession(sessionId);
     
     try {
-      // Get the session with messages
+      // Find the session data
       const session = chatSessions.find(s => s.id === sessionId);
       if (session) {
-        // Save current session messages to a temporary storage for the ChatViewer to pick up
-        // This is a bridge until we fully integrate session switching in ChatViewer
-        const chatHistoryKey = `rag_chat_history_${user?.id}`;
-        localStorage.setItem(chatHistoryKey, JSON.stringify(session.messages));
-        
-        // Select the document
+        // Simply notify that a session was selected
+        // The ChatViewer will handle loading the session data from database
         onDocumentSelect?.(documentId);
         
-        toast.success(`Loaded chat session: ${session.title || 'Untitled'}`);
+        toast.success(`Selected chat session: ${session.title || 'Untitled'}`);
       }
     } catch (error) {
-      console.error('Failed to restore session:', error);
-      toast.error('Failed to load session');
+      console.error('Failed to select session:', error);
+      toast.error('Failed to select session');
     }
   };
 
@@ -124,20 +139,9 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
     }
 
     try {
-      // Get the auth token
-      const token = localStorage.getItem('legalynx_token');
-      
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       const response = await fetch(`/backend/api/chat-sessions/${sessionId}`, {
         method: 'DELETE',
-        headers
+        headers: getAuthHeaders()
       });
 
       if (response.ok) {
@@ -149,12 +153,26 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
         }
         
         toast.success('Chat session deleted successfully');
+      } else if (response.status === 404) {
+        // Session already deleted or doesn't exist
+        setChatSessions(prev => prev.filter(session => session.id !== sessionId));
+        toast.info('Session was already deleted');
+      } else if (response.status === 401) {
+        setError('Authentication failed. Please sign in again.');
+        toast.error('Authentication failed');
       } else {
-        throw new Error('Failed to delete session');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to delete session');
       }
     } catch (error) {
       console.error('Failed to delete session:', error);
-      toast.error('Failed to delete chat session');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete chat session');
+    }
+  };
+
+  const handleRefresh = () => {
+    if (user && isAuthenticated) {
+      loadChatSessions();
     }
   };
 
@@ -174,15 +192,17 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
   };
 
   const getLastMessage = (session: ChatSession): string => {
+    if (!session.messages || session.messages.length === 0) {
+      return 'No messages yet';
+    }
+
     const lastAssistantMessage = [...session.messages]
       .reverse()
       .find(m => m.type === 'assistant');
     
     return lastAssistantMessage 
       ? lastAssistantMessage.content 
-      : session.messages.length > 0 
-        ? session.messages[session.messages.length - 1].content
-        : 'No messages yet';
+      : session.messages[session.messages.length - 1].content;
   };
 
   if (isLoading) {
@@ -200,9 +220,19 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
     <div className="bg-white shadow-md p-6 h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Chat History</h2>
-        <div className="flex items-center text-sm text-gray-600">
-          <MessageSquare className="w-4 h-4 mr-1" />
-          {chatSessions.length} session{chatSessions.length !== 1 ? 's' : ''}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center text-sm text-gray-600">
+            <MessageSquare className="w-4 h-4 mr-1" />
+            {chatSessions.length} session{chatSessions.length !== 1 ? 's' : ''}
+          </div>
+          {user && isAuthenticated && (
+            <button
+              onClick={handleRefresh}
+              className="text-sm text-blue-600 hover:text-blue-800 underline"
+            >
+              Refresh
+            </button>
+          )}
         </div>
       </div>
 
@@ -210,10 +240,18 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
           <AlertCircle className="w-5 h-5 inline mr-2" />
           {error}
+          {user && isAuthenticated && (
+            <button 
+              onClick={handleRefresh}
+              className="ml-2 text-sm underline hover:no-underline"
+            >
+              Try again
+            </button>
+          )}
         </div>
       )}
 
-      {!user ? (
+      {!user || !isAuthenticated ? (
         <div className="flex-1 flex items-center justify-center text-gray-500">
           <div className="text-center">
             <MessageSquare className="mx-auto w-16 h-16 mb-4 opacity-50" />
@@ -261,7 +299,7 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-gray-500">
-                        {session.messages.length} messages
+                        {(session.messages || []).length} messages
                       </span>
                       {session.isSaved && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">

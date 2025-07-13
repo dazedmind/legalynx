@@ -67,7 +67,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
 
   useEffect(() => {
     loadDocuments();
-  }, [user]);
+  }, [isAuthenticated, user?.id]);
 
   useEffect(() => {
     filterAndSortDocuments();

@@ -1,8 +1,10 @@
+// src/app/frontend/components/UploadPage.tsx
 import { Upload, FileText, AlertCircle, CheckCircle2 } from 'lucide-react'
 import React, { useRef, useState } from 'react'
 import { apiService, handleApiError, UploadResponse } from '../lib/api';
 import { useAuth } from '@/lib/context/AuthContext';
 import { toast } from 'sonner';
+import { authUtils } from '@/lib/auth'; // Import authUtils
 
 interface UploadPageProps {
   onUploadSuccess: (response: UploadResponse) => void;
@@ -16,10 +18,12 @@ function UploadPage({ onUploadSuccess }: UploadPageProps) {
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const [uploadStatus, setUploadStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
 
-    // Helper function to get auth headers
+    // Fixed: Use authUtils to get token from cookies consistently
     const getAuthHeaders = (): HeadersInit => {
-        const token = localStorage.getItem('legalynx_token');
-        const headers: HeadersInit = {};
+        const token = authUtils.getToken(); // Get from cookies, not localStorage
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json'
+        };
         
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
@@ -52,27 +56,19 @@ function UploadPage({ onUploadSuccess }: UploadPageProps) {
         }
 
         try {
-            // Save to database for authenticated users
-            const response = await fetch('/backend/api/documents', {
+            // Fixed: Use the /backend/api/documents/upload endpoint with FormData
+            const formData = new FormData();
+            if (file) {
+                formData.append('file', file);
+            }
+
+            const response = await fetch('/backend/api/documents/upload', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    ...getAuthHeaders()
+                    // Don't set Content-Type for FormData, let browser set it
+                    'Authorization': authUtils.getToken() ? `Bearer ${authUtils.getToken()}` : ''
                 },
-                body: JSON.stringify({
-                    userId: user.id,
-                    filename: documentInfo.filename,
-                    originalName: documentInfo.originalName,
-                    size: documentInfo.size,
-                    pages: documentInfo.pages,
-                    fileType: 'PDF',
-                    status: 'PROCESSED',
-                    metadata: {
-                        uploadedAt: documentInfo.uploadedAt,
-                        processingTime: 0, // You can add this if needed
-                        ragIndexed: true
-                    }
-                })
+                body: formData
             });
 
             if (response.ok) {
@@ -82,20 +78,26 @@ function UploadPage({ onUploadSuccess }: UploadPageProps) {
                 const storageKey = `uploaded_documents_${user.id}`;
                 const existingDocs = JSON.parse(localStorage.getItem(storageKey) || '[]');
                 const localDocInfo = {
-                    ...documentInfo,
-                    id: savedDocument.id, // Use database ID
-                    databaseId: savedDocument.id
+                    id: savedDocument.documentId || savedDocument.id,
+                    filename: savedDocument.filename,
+                    originalName: savedDocument.originalName,
+                    size: savedDocument.size,
+                    uploadedAt: savedDocument.uploadedAt,
+                    pages: savedDocument.pages_processed || 1,
+                    status: 'ready' as const,
+                    databaseId: savedDocument.documentId || savedDocument.id
                 };
                 existingDocs.push(localDocInfo);
                 localStorage.setItem(storageKey, JSON.stringify(existingDocs));
                 
                 return localDocInfo;
             } else {
-                throw new Error('Failed to save document to database');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to save document to database');
             }
         } catch (error) {
             console.error('Failed to save to database:', error);
-            toast.error('Document uploaded but failed to save to database');
+            toast.error(`Document uploaded but failed to save to database: ${error instanceof Error ? error.message : 'Unknown error'}`);
             
             // Fallback to localStorage
             const storageKey = isAuthenticated && user?.id 
@@ -121,53 +123,77 @@ function UploadPage({ onUploadSuccess }: UploadPageProps) {
         setStatusMessage('Processing document...');
     
         try {
-            // First, upload to RAG system
-            const response = await apiService.uploadPdf(file);
-            
-            // Create document info
-            const documentInfo = {
-                id: Date.now().toString(), // Temporary ID, will be replaced if saved to DB
-                filename: response.filename,
-                originalName: file.name,
-                size: file.size,
-                uploadedAt: new Date().toISOString(),
-                pages: response.pages_processed,
-                status: 'ready' as const
-            };
+            // For authenticated users, upload directly to database
+            if (isAuthenticated && user) {
+                const savedDocumentInfo = await saveDocumentToDatabase(null);
+                
+                setUploadStatus('success');
+                setStatusMessage(
+                    `Successfully processed document and saved to your account`
+                );
+                
+                toast.success('Document uploaded and saved to your account!');
+                
+                // Call success callback
+                if (onUploadSuccess) {
+                    onUploadSuccess({
+                        documentId: savedDocumentInfo.id,
+                        filename: savedDocumentInfo.filename,
+                        originalName: savedDocumentInfo.originalName,
+                        size: savedDocumentInfo.size,
+                        uploadedAt: savedDocumentInfo.uploadedAt,
+                        pages_processed: savedDocumentInfo.pages
+                    });
+                }
+            } else {
+                // For non-authenticated users, use RAG system
+                const response = await apiService.uploadPdf(file);
+                
+                // Create document info
+                const documentInfo = {
+                    id: Date.now().toString(),
+                    filename: response.filename,
+                    originalName: file.name,
+                    size: file.size,
+                    uploadedAt: new Date().toISOString(),
+                    pages: response.pages_processed,
+                    status: 'ready' as const
+                };
 
-            // Save to database (and localStorage)
-            const savedDocumentInfo = await saveDocumentToDatabase(documentInfo);
+                // Save to localStorage
+                await saveDocumentToDatabase(documentInfo);
+                
+                setUploadStatus('success');
+                setStatusMessage(
+                    `Successfully processed ${response.pages_processed} pages from ${file.name}`
+                );
+                
+                toast.success('Document uploaded successfully!');
+                
+                // Call success callback
+                if (onUploadSuccess) {
+                    onUploadSuccess({
+                        documentId: documentInfo.id,
+                        filename: response.filename,
+                        originalName: file.name,
+                        size: file.size,
+                        uploadedAt: documentInfo.uploadedAt,
+                        pages_processed: response.pages_processed
+                    });
+                }
+            }
             
-            // Create standardized response for the callback
-            const standardizedResponse: UploadResponse = {
-                documentId: savedDocumentInfo.id,
-                filename: response.filename,
-                originalName: file.name,
-                size: file.size,
-                uploadedAt: savedDocumentInfo.uploadedAt,
-                pages_processed: response.pages_processed
-            };
-            
-            setUploadStatus('success');
-            setStatusMessage(
-                `Successfully processed ${response.pages_processed} pages from ${file.name}${
-                    isAuthenticated ? ' and saved to your account' : ''
-                }`
-            );
-            
-            toast.success(
-                isAuthenticated 
-                    ? 'Document uploaded and saved to your account!' 
-                    : 'Document uploaded successfully!'
-            );
-            
-            // Call the callback to transition to chat
-            onUploadSuccess(standardizedResponse);
+            // Reset form
+            setFile(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
             
         } catch (error) {
+            console.error('Upload failed:', error);
             setUploadStatus('error');
             setStatusMessage(handleApiError(error));
-            toast.error('Upload failed');
+            toast.error('Upload failed: ' + handleApiError(error));
         } finally {
             setIsUploading(false);
         }
@@ -190,92 +216,65 @@ function UploadPage({ onUploadSuccess }: UploadPageProps) {
         }
     };
 
-    const resetUpload = () => {
-        setFile(null);
-        setStatusMessage(null);
-        setUploadStatus('idle');
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+    const handleClick = () => {
+        fileInputRef.current?.click();
     };
 
     return (
-        <div className="flex-1 flex flex-col justify-center p-8 max-w-2xl mx-auto w-full">
-            {/* Upload Instructions */}
-            <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">Upload Document</h2>
-                <p className="text-gray-600">
-                    {isAuthenticated 
-                        ? "Upload a PDF document to save it to your account and start chatting"
-                        : "Upload a PDF document to start chatting (session only)"
-                    }
-                </p>
-            </div>
-
-            {/* File Upload Area */}
+        <div className="space-y-6">
+            {/* Upload Area */}
             <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors mb-4 ${
-                    file
-                    ? 'border-green-400 bg-green-50'
-                    : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
+                    uploadStatus === 'error'
+                        ? 'border-red-300 bg-red-50'
+                        : uploadStatus === 'success'
+                        ? 'border-green-300 bg-green-50'
+                        : 'border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100'
                 }`}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
+                onClick={handleClick}
             >
-                {file ? (
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-green-600" />
-                            <span className="font-medium text-green-800">{file.name}</span>
-                            <span className="text-sm text-green-600">
-                                ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                            </span>
-                        </div>
-                        <button
-                            onClick={resetUpload}
-                            className="text-sm text-red-600 hover:text-red-800 underline"
-                            disabled={isUploading}
-                        >
-                            Remove
-                        </button>
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center gap-3">
-                        <Upload className="w-8 h-8 text-gray-400" />
-                        <div>
-                            <span className="text-gray-600">
-                                Drop PDF here or{' '}
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="text-blue-600 hover:text-blue-800 underline"
-                                    disabled={isUploading}
-                                >
-                                    browse files
-                                </button>
-                            </span>
-                            <p className="text-sm text-gray-500 mt-1">Supports PDF files up to 50MB</p>
-                        </div>
-                    </div>
-                )}
-            </div>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                />
 
-            {/* Hidden File Input */}
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleFileSelect}
-                className="hidden"
-            />
+                <div className="flex flex-col items-center">
+                    {file ? (
+                        <FileText className="w-12 h-12 text-blue-600 mb-3" />
+                    ) : (
+                        <Upload className="w-12 h-12 text-gray-400 mb-3" />
+                    )}
+                    
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        {file ? file.name : 'Upload PDF Document'}
+                    </h3>
+                    
+                    <p className="text-sm text-gray-500 mb-4">
+                        {file 
+                            ? `${(file.size / 1024 / 1024).toFixed(2)} MB • Ready to upload`
+                            : 'Drag and drop your PDF here, or click to browse'
+                        }
+                    </p>
+                    
+                    <p className="text-xs text-gray-400">
+                        Maximum file size: 50MB
+                    </p>
+                </div>
+            </div>
 
             {/* Upload Button */}
             <button
                 onClick={handleUpload}
                 disabled={!file || isUploading}
-                className={`w-full py-3 px-4 rounded-md font-medium transition-colors mb-4 ${
+                className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
                     !file || isUploading
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
             >
                 {isUploading ? (

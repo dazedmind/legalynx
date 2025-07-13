@@ -144,13 +144,13 @@ export default function Home() {
         {/* Sidebar */}
         <aside className="w-1/5 bg-neutral-100 p-6 flex flex-col border-r border-gray-200 flex-shrink-0">
           {/* Navigation Buttons */}
-          <button 
+          {/* <button 
             onClick={handleNewChat}
             className="w-full cursor-pointer flex items-center gap-1 text-left mb-2 p-3 rounded-lg transition-colors bg-gradient-to-br from-blue-600 to-blue-400 text-white hover:from-blue-400 hover:to-blue-500"
           >
             <Plus className="w-5 h-5" />
             New Chat
-          </button>
+          </button> */}
    
           <div className="space-y-2 mb-8">
             <button
@@ -222,9 +222,9 @@ export default function Home() {
 
           {/* Tab Content */}
           <div className="flex-1 overflow-hidden">
-            {activeTab === 'upload' && (
+            {/* {activeTab === 'upload' && (
               <UploadPage onUploadSuccess={handleUploadSuccess} />
-            )}
+            )} */}
 
             {activeTab === 'chat' && (
               <ChatViewer 

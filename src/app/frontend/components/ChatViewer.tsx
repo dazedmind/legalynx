@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle2, Search, MessageSquare, User, Bot, Trash2, Save } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle2, Search, MessageSquare, Bot, Save, Plus } from 'lucide-react';
 import { apiService, handleApiError, AnalysisResponse, RerankDemo, UploadResponse } from '../lib/api';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
+import { authUtils } from '@/lib/auth';
+import { GoCopy, GoSync, GoThumbsdown, GoThumbsup } from 'react-icons/go';
 
 interface ChatMessage {
   id: string;
-  type: 'user' | 'assistant';
+  type: 'USER' | 'ASSISTANT';
   content: string;
   timestamp: Date;
   query?: string;
@@ -64,10 +66,65 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
 
   // Load or create session when document changes
   useEffect(() => {
-    if (currentDocument && user) {
+    if (currentDocument && user && isAuthenticated) {
       loadOrCreateSession();
     }
-  }, [currentDocument, user]);
+  }, [currentDocument, user, isAuthenticated]);
+
+  // Load chat history from database when component mounts or user changes
+  useEffect(() => {
+    if (user && isAuthenticated && currentDocument) {
+      loadChatHistoryFromDatabase();
+    }
+  }, [user, isAuthenticated, currentDocument]);
+
+  const loadChatHistoryFromDatabase = async () => {
+    if (!user || !isAuthenticated || !currentDocument) return;
+
+    try {
+      // Get all sessions for this user and document
+      const response = await fetch('/backend/api/chat', {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const sessions = data.sessions || [];
+        
+        // Find the most recent session for this document
+        const documentSessions = sessions.filter((session: any) => session.documentId === currentDocument.id);
+        
+        if (documentSessions.length > 0) {
+          const mostRecentSession = documentSessions[0]; // Already sorted by updatedAt desc
+          setCurrentSessionId(mostRecentSession.id);
+          
+          // Load messages for this session
+          const messagesResponse = await fetch(
+            `/backend/api/chat-messages?sessionId=${mostRecentSession.id}`,
+            { headers: getAuthHeaders() }
+          );
+          
+          if (messagesResponse.ok) {
+            const messages = await messagesResponse.json();
+            const formattedMessages = messages.map((msg: any) => ({
+              id: msg.id,
+              type: msg.role, // Map 'role' to 'type'
+              content: msg.content,
+              timestamp: new Date(msg.createdAt || msg.timestamp)
+            }));
+            setChatHistory(formattedMessages);
+          }
+        } else {
+          // No existing session for this document - DON'T CREATE ONE YET
+          setCurrentSessionId(null);
+          setChatHistory([]);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load chat history from database:', error);
+    }
+  };
 
   // Scroll to bottom when new messages are added
   useEffect(() => {
@@ -94,23 +151,23 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
     try {
       if (isAuthenticated && user) {
         // For authenticated users, try to load from database first
-        const response = await fetch(`/backend/api/documents?userId=${user.id}`, {
+        const response = await fetch('/backend/api/documents', {
           headers: getAuthHeaders()
         });
         
         if (response.ok) {
-          const documents = await response.json();
-          if (documents.length > 0) {
+          const data = await response.json();
+          if (data.documents && data.documents.length > 0) {
             // Get the most recent document
-            const mostRecent = documents[0];
+            const mostRecent = data.documents[0];
             const documentInfo = {
               id: mostRecent.id,
               filename: mostRecent.filename,
               originalName: mostRecent.originalName,
               size: mostRecent.size,
-              uploadedAt: mostRecent.createdAt,
-              pages: mostRecent.pages,
-              status: 'ready' as const,
+              uploadedAt: mostRecent.uploadedAt,
+              pages: mostRecent.pageCount,
+              status: mostRecent.status, // Use actual database status
               databaseId: mostRecent.id
             };
             setCurrentDocument(documentInfo);
@@ -137,7 +194,7 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
 
   // Helper function to get auth headers
   const getAuthHeaders = (): HeadersInit => {
-    const token = localStorage.getItem('legalynx_token');
+    const token = authUtils.getToken(); // Use authUtils instead of localStorage
     const headers: HeadersInit = {
       'Content-Type': 'application/json'
     };
@@ -150,45 +207,13 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
   };
 
   const loadOrCreateSession = async () => {
-    if (!user || !currentDocument) return;
-
-    try {
-      // Try to find existing session for this user and document
-      const response = await fetch(
-        `/backend/api/chat-sessions/find?userId=${user.id}&documentId=${currentDocument.id}`,
-        { headers: getAuthHeaders() }
-      );
-      
-      if (response.ok) {
-        const session = await response.json();
-        setCurrentSessionId(session.id);
-        
-        // Load messages for this session
-        const messagesResponse = await fetch(
-          `/backend/api/chat-messages?sessionId=${session.id}`,
-          { headers: getAuthHeaders() }
-        );
-        if (messagesResponse.ok) {
-          const messages = await messagesResponse.json();
-          const formattedMessages = messages.map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-          }));
-          setChatHistory(formattedMessages);
-        }
-      } else {
-        // Create new session
-        await createNewSession();
-      }
-    } catch (error) {
-      console.error('Failed to load or create session:', error);
-      // Fallback to creating new session
-      await createNewSession();
-    }
+    // This is now handled by loadChatHistoryFromDatabase
+    // Keeping this function for backwards compatibility but it doesn't do much
+    return;
   };
 
   const createNewSession = async () => {
-    if (!user || !currentDocument) return;
+    if (!user || !currentDocument) return null;
 
     try {
       const response = await fetch('/backend/api/chat-sessions', {
@@ -198,20 +223,26 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
           userId: user.id,
           documentId: currentDocument.id,
           title: `Chat with ${currentDocument.originalName}`,
-          isSaved: false
+          isSaved: true
         })
       });
 
       if (response.ok) {
         const session = await response.json();
-        setCurrentSessionId(session.id);
-        setChatHistory([]);
-        toast.success('New chat session created');
+        const sessionId = session.id || session.sessionId;
+        setCurrentSessionId(sessionId);
+        console.log('Created new session:', sessionId);
+        return sessionId;
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to create session:', errorData);
+        toast.error('Failed to create chat session');
       }
     } catch (error) {
       console.error('Failed to create session:', error);
       toast.error('Failed to create chat session');
     }
+    return null;
   };
 
   const saveSessionToDatabase = async () => {
@@ -219,39 +250,91 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
 
     try {
       // Generate title from first user message if not set
-      const firstUserMessage = chatHistory.find(m => m.type === 'user');
+      const firstUserMessage = chatHistory.find(m => m.type === 'USER');
       const title = firstUserMessage 
         ? `${firstUserMessage.content.substring(0, 50)}${firstUserMessage.content.length > 50 ? '...' : ''}`
         : `Chat with ${currentDocument?.originalName || 'Document'}`;
 
-      // Update session
+      // Update session title
       await fetch(`/backend/api/chat-sessions/${currentSessionId}`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({
           title,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          isSaved: true
         })
       });
 
-      // Save messages - we'll send all messages to ensure consistency
-      await fetch('/backend/api/chat-messages/bulk', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          sessionId: currentSessionId,
-          messages: chatHistory.map(msg => ({
-            id: msg.id,
-            type: msg.type,
-            content: msg.content,
-            timestamp: msg.timestamp.toISOString(),
-            query: msg.query,
-            sourceCount: msg.sourceCount
-          }))
-        })
-      });
+      console.log('Session updated with title:', title);
     } catch (error) {
       console.error('Failed to save session to database:', error);
+    }
+  };
+
+  // Database save function for documents
+  const saveDocumentToDatabase = async (documentInfo: any) => {
+    if (!isAuthenticated || !user || !file) {
+      // For non-authenticated users, just save to localStorage
+      const storageKey = 'uploaded_documents';
+      const existingDocs = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      existingDocs.push(documentInfo);
+      localStorage.setItem(storageKey, JSON.stringify(existingDocs));
+      return documentInfo;
+    }
+
+    try {
+      // Use the /backend/api/documents/upload endpoint with FormData
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/backend/api/documents/upload', {
+        method: 'POST',
+        headers: {
+          // Don't set Content-Type for FormData, let browser set it
+          'Authorization': authUtils.getToken() ? `Bearer ${authUtils.getToken()}` : ''
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const savedDocument = await response.json();
+        
+        // Also save to localStorage for immediate access
+        const storageKey = `uploaded_documents_${user.id}`;
+        const existingDocs = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        const localDocInfo = {
+          id: savedDocument.documentId || savedDocument.id,
+          filename: savedDocument.filename,
+          originalName: savedDocument.originalName,
+          size: savedDocument.size,
+          uploadedAt: savedDocument.uploadedAt,
+          pages: savedDocument.pages_processed || 1,
+          status: 'ready' as const,
+          databaseId: savedDocument.documentId || savedDocument.id
+        };
+        existingDocs.push(localDocInfo);
+        localStorage.setItem(storageKey, JSON.stringify(existingDocs));
+        
+        toast.success('Document uploaded and saved to your account!');
+        return localDocInfo;
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save document to database');
+      }
+    } catch (error) {
+      console.error('Failed to save to database:', error);
+      toast.error(`Upload succeeded but failed to save to database: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Fallback to localStorage
+      const storageKey = isAuthenticated && user?.id 
+        ? `uploaded_documents_${user.id}` 
+        : 'uploaded_documents';
+      const existingDocs = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      existingDocs.push(documentInfo);
+      localStorage.setItem(storageKey, JSON.stringify(existingDocs));
+      
+      return documentInfo;
     }
   };
 
@@ -298,55 +381,145 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
     setStatusMessage('');
 
     try {
-      const response = await apiService.uploadPdf(file);
+      // For authenticated users, upload directly to database
+      if (isAuthenticated && user) {
+        const savedDocumentInfo = await saveDocumentToDatabase(null);
+        
+        // Also upload to RAG system for processing
+        const ragResponse = await apiService.uploadPdf(file);
+        
+        setCurrentDocument(savedDocumentInfo);
+        setUploadStatus('success');
+        setStatusMessage('Successfully processed document and saved to your account');
+        
+        onUploadSuccess({
+          documentId: savedDocumentInfo.id,
+          filename: savedDocumentInfo.filename,
+          originalName: savedDocumentInfo.originalName,
+          size: savedDocumentInfo.size,
+          uploadedAt: savedDocumentInfo.uploadedAt,
+          pages_processed: ragResponse.pages_processed
+        });
+      } else {
+        // For non-authenticated users, use RAG system only
+        const response = await apiService.uploadPdf(file);
+        
+        const documentInfo = {
+          id: Date.now().toString(),
+          filename: response.filename,
+          originalName: file.name,
+          size: file.size,
+          uploadedAt: new Date().toISOString(),
+          pages: response.pages_processed,
+          status: 'ready' as const
+        };
+
+        await saveDocumentToDatabase(documentInfo);
+        
+        setCurrentDocument(documentInfo);
+        setUploadStatus('success');
+        setStatusMessage(`Successfully processed ${response.pages_processed} pages from ${file.name}`);
+        
+        onUploadSuccess({
+          documentId: documentInfo.id,
+          filename: response.filename,
+          originalName: file.name,
+          size: file.size,
+          uploadedAt: documentInfo.uploadedAt,
+          pages_processed: response.pages_processed
+        });
+      }
       
-      // Save document info to user-specific localStorage
-      const documentInfo = {
-        id: Date.now().toString(),
-        filename: response.filename,
-        originalName: file.name,
-        size: file.size,
-        uploadedAt: new Date().toISOString(),
-        pages: response.pages_processed,
-        status: 'ready' as const
-      };
+      // Reset form
+      setFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       
-      const storageKey = isAuthenticated && user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
-      const existingDocs = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      existingDocs.push(documentInfo);
-      localStorage.setItem(storageKey, JSON.stringify(existingDocs));
-      
-      setCurrentDocument(documentInfo);
-      setUploadStatus('success');
-      setStatusMessage(`Successfully processed ${response.pages_processed} pages from ${response.filename}`);
-      onUploadSuccess(response);
     } catch (error) {
+      console.error('Upload failed:', error);
       setUploadStatus('error');
       setStatusMessage(handleApiError(error));
+      toast.error('Upload failed: ' + handleApiError(error));
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleSaveSession = async () => {
-    if (!currentSessionId) {
-      toast.error('No active session to save');
+  // New Chat function - complete reset back to upload state
+  const handleNewChat = async () => {
+    if (chatHistory.length > 0 && !confirm('Are you sure you want to start a new chat? This will clear everything and return to upload.')) {
       return;
     }
 
     try {
-      await fetch(`/backend/api/chat-sessions/${currentSessionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isSaved: true })
+      // Clear ALL state - complete reset
+      setCurrentSessionId(null);
+      setChatHistory([]);
+      setCurrentDocument(null);
+      setFile(null);
+      setUploadStatus('idle');
+      setStatusMessage('');
+      setQuery('');
+      setError('');
+      setShowPresets(true);
+      setIsUploading(false);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      // Trigger the parent component to reset system ready state
+      // This will show the upload interface again
+      onUploadSuccess({
+        documentId: '',
+        filename: '',
+        originalName: '',
+        size: 0,
+        uploadedAt: '',
+        pages_processed: 0
       });
-
-      toast.success('Chat session saved successfully!');
+      
+      toast.success('Reset to upload - ready for new document');
     } catch (error) {
-      console.error('Failed to save session:', error);
-      toast.error('Failed to save session');
+      console.error('Failed to reset:', error);
+      toast.error('Failed to reset');
     }
   };
+  const handleSaveFile = async () => {
+    if (!currentDocument || !isAuthenticated || !user) {
+      toast.error('No document to save or user not authenticated');
+      return;
+    }
+  
+    try {
+      const response = await fetch('/backend/api/documents/save-document', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authUtils.getToken()}`,
+        },
+        body: JSON.stringify({
+          documentId: currentDocument.id,
+          title: currentDocument.title || 'Untitled',
+        }),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save document');
+      }
+  
+      const savedDocumentInfo = await response.json();
+      setCurrentDocument(savedDocumentInfo);
+      toast.success('Document saved to your account!');
+    } catch (error: any) {
+      console.error('Failed to save file:', error);
+      toast.error(error.message || 'Failed to save file to account');
+    }
+  };
+  
 
   const resetUpload = () => {
     setFile(null);
@@ -367,45 +540,6 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
     }
   };
 
-  const clearChatHistory = async () => {
-    if (!currentSessionId) return;
-
-    if (!confirm('Are you sure you want to clear this chat session?')) {
-      return;
-    }
-
-    try {
-      // Delete all messages for this session
-      await fetch(`/backend/api/chat-messages/session/${currentSessionId}`, {
-        method: 'DELETE'
-      });
-
-      setChatHistory([]);
-      toast.success('Chat history cleared');
-    } catch (error) {
-      console.error('Failed to clear chat history:', error);
-      toast.error('Failed to clear chat history');
-    }
-  };
-
-  const exportChatHistory = () => {
-    const chatText = chatHistory.map(msg => {
-      const timestamp = msg.timestamp.toLocaleString();
-      const sender = msg.type === 'user' ? 'You' : 'Assistant';
-      return `[${timestamp}] ${sender}: ${msg.content}`;
-    }).join('\n\n');
-
-    const blob = new Blob([chatText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `chat_session_${currentSessionId}_${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const addMessage = async (message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
     const newMessage: ChatMessage = {
       ...message,
@@ -416,22 +550,41 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
     // Add to local state immediately for UI responsiveness
     setChatHistory(prev => [...prev, newMessage]);
 
-    // Save to database
-    if (currentSessionId) {
+    // Create session ONLY if this is the VERY FIRST message and we don't have one
+    let sessionId = currentSessionId;
+    if (!sessionId && user && currentDocument && chatHistory.length === 0) {
+      console.log('Creating new session for first message');
+      sessionId = await createNewSession();
+      if (!sessionId) {
+        console.error('Failed to create session, message will not be saved to database');
+        return;
+      }
+    }
+
+    // Save individual message to database
+    if (sessionId) {
       try {
-        await fetch('/backend/api/chat-messages', {
+        console.log('Saving message to database:', newMessage.content.substring(0, 50));
+        const response = await fetch('/backend/api/chat-messages', {
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify({
             id: newMessage.id,
-            sessionId: currentSessionId,
-            type: newMessage.type,
+            sessionId: sessionId,
+            role: newMessage.type.toUpperCase(), // USER or ASSISTANT
             content: newMessage.content,
-            timestamp: newMessage.timestamp.toISOString(),
-            query: newMessage.query,
-            sourceCount: newMessage.sourceCount
+            createdAt: newMessage.timestamp.toISOString(),
+            tokensUsed: 0
           })
         });
+
+        if (response.ok) {
+          const savedMessage = await response.json();
+          console.log('Message saved successfully:', savedMessage.messageId || savedMessage.id);
+        } else {
+          const errorData = await response.json();
+          console.error('Failed to save message:', errorData);
+        }
       } catch (error) {
         console.error('Failed to save message to database:', error);
         // Message is still in local state, so chat continues to work
@@ -447,14 +600,9 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
       return;
     }
 
-    // Create session if we don't have one yet
-    if (!currentSessionId && user && currentDocument) {
-      await createNewSession();
-    }
-
     // Add user message
     await addMessage({
-      type: 'user',
+      type: 'USER',
       content: currentQuery,
       query: currentQuery
     });
@@ -469,7 +617,7 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
       
       // Add assistant response
       await addMessage({
-        type: 'assistant',
+        type: 'ASSISTANT',
         content: result.response,
         query: currentQuery,
         sourceCount: result.source_count
@@ -480,7 +628,7 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
       
       // Add error message to chat
       await addMessage({
-        type: 'assistant',
+        type: 'ASSISTANT',
         content: `Sorry, I encountered an error: ${errorMessage}`,
         query: currentQuery
       });
@@ -513,7 +661,7 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
     <div className="h-full flex flex-col">
       {/* Fixed Document Header - Always visible */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
-        {isSystemReady && currentDocument ? (
+        {currentDocument ? (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <FileText className="w-6 h-6 text-blue-600" />
@@ -531,32 +679,21 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex space-x-1">
-                {chatHistory.length > 0 && (
-                  <>
-                    <button 
-                      onClick={exportChatHistory}
-                      className="flex items-center cursor-pointer p-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
-                    >
-                      <Save className="w-3 h-3 mr-1" />
-                      Export
-                    </button>
-                    <button 
-                      onClick={handleSaveSession}
-                      className="flex items-center cursor-pointer p-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                    >
-                      <Save className="w-3 h-3 mr-1" />
-                      Save Session
-                    </button>
-                    <button
-                      onClick={clearChatHistory}
-                      className="flex items-center cursor-pointer p-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700"
-                    >
-                      <Trash2 className="w-3 h-3 mr-1" />
-                      Clear
-                    </button>
-                  </>
-                )}
+              <div className="flex space-x-2">
+                {/* New Chat button - always visible when document is loaded */}
+                <button 
+                  onClick={handleNewChat}
+                  className="flex items-center cursor-pointer p-2 px-3 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-all duration-300"
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  New Chat
+                </button>
+                  <button 
+                    onClick={handleSaveFile}
+                    className="flex items-center cursor-pointer p-2 px-3 text-sm bg-[#e4c858] text-white rounded-lg hover:brightness-105 transition-all duration-300"
+                  >
+                    Save File
+                  </button>
               </div>
             </div>
           </div>  
@@ -569,7 +706,7 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {!isSystemReady ? (
+        {!currentDocument ? (
           /* Upload Section */
           <div className="flex-1 flex flex-col justify-center p-8 max-w-2xl mx-auto w-full">
             {/* Compact File Upload Area */}
@@ -663,6 +800,14 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
                 <span>{statusMessage}</span>
               </div>
             )}
+
+            {/* Authentication Notice */}
+            {!isAuthenticated && (
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
+                <p className="font-medium">Session Only Mode</p>
+                <p>Your document will be processed for this session only. <a href="/frontend/login" className="underline hover:text-yellow-900">Sign in</a> to save documents permanently.</p>
+              </div>
+            )}
           </div>
         ) : (
           /* Chat Section */
@@ -678,32 +823,23 @@ export default function ChatViewer({ isSystemReady, onUploadSuccess }: CombinedC
                   </div>
                 ) : (
                   chatHistory.map((message) => (
-                    <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] rounded-lg p-4 ${
-                        message.type === 'user' 
+                    <div key={message.id} className={`flex ${message.type === 'USER' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] rounded-xl p-4 ${
+                        message.type === 'USER' 
                           ? 'bg-blue-600 text-white' 
                           : 'bg-white text-gray-800 border border-gray-200'
                       }`}>
-                        <div className="flex items-center mb-2">
-                          {message.type === 'user' ? (
-                            <User className="w-4 h-4 mr-2" />
-                          ) : (
-                            <Bot className="w-4 h-4 mr-2" />
-                          )}
-                          <span className="text-sm opacity-75">
-                            {message.timestamp.toLocaleTimeString()}
-                          </span>
-                        </div>
-                        
                         <div className="whitespace-pre-wrap">{message.content}</div>
-                        
-                        {/* Source count for assistant messages */}
-                        {message.type === 'assistant' && message.sourceCount !== undefined && (
-                          <div className="mt-2 text-xs opacity-75 border-t pt-2">
-                            Sources used: {message.sourceCount}
+                        {message.type === 'ASSISTANT' && (
+                          <div className="flex gap-3 text-xs opacity-50 mt-2">
+                            <GoCopy className="w-4 h-4 cursor-pointer hover:text-blue-600" />
+                            <GoThumbsup className="w-4 h-4 cursor-pointer hover:text-green-600" />
+                            <GoThumbsdown className="w-4 h-4 cursor-pointer hover:text-red-600" />
+                            <GoSync className="w-4 h-4 cursor-pointer hover:text-gray-900" />
                           </div>
                         )}
                       </div>
+                 
                     </div>
                   ))
                 )}

@@ -1,108 +1,192 @@
-// /backend/api/documents/[id]/route.ts
-import { NextResponse } from 'next/server';
+// src/app/backend/api/chat-sessions/[id]/route.ts
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
 
-// GET /backend/api/documents/[id]
+// Helper function to get user from token
+async function getUserFromToken(request: NextRequest) {
+  const token = request.headers.get('authorization')?.replace('Bearer ', '');
+  if (!token) {
+    throw new Error('No token provided');
+  }
+
+  const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+  const user = await prisma.user.findUnique({
+    where: { id: decoded.userId }
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return user;
+}
+
+// GET /backend/api/chat-sessions/[id]
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const documentId = params.id;
+    const user = await getUserFromToken(request);
+    const sessionId = params.id;
 
-    const document = await prisma.document.findUnique({
-      where: { id: documentId },
+    const chatSession = await prisma.chatSession.findFirst({
+      where: {
+        id: sessionId,
+        userId: user.id // Ensure user owns this session
+      },
       include: {
-        _count: {
-          select: {
-            chatSessions: true
-          }
-        },
-        chatSessions: {
-          orderBy: { updatedAt: 'desc' },
-          take: 5, // Get recent sessions
+        document: {
           select: {
             id: true,
-            title: true,
-            updatedAt: true,
-            isSaved: true
+            fileName: true,
+            originalFileName: true,
+            fileSize: true,
+            pageCount: true
           }
+        },
+        messages: {
+          orderBy: { createdAt: 'asc' }
         }
       }
     });
 
-    if (!document) {
+    if (!chatSession) {
       return NextResponse.json(
-        { error: 'Document not found' },
+        { error: 'Chat session not found' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(document);
+    return NextResponse.json(chatSession);
   } catch (error) {
-    console.error('Error fetching document:', error);
+    console.error('Error fetching chat session:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch document' },
+      { error: 'Failed to fetch chat session' },
       { status: 500 }
     );
   }
 }
 
-// PATCH /backend/api/documents/[id]
+// PATCH /backend/api/chat-sessions/[id]
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const documentId = params.id;
+    const user = await getUserFromToken(request);
+    const sessionId = params.id;
     const body = await request.json();
 
-    const { status, metadata, pages, size, ...updateData } = body;
-
-    const updatePayload: any = { ...updateData };
-    if (status !== undefined) updatePayload.status = status;
-    if (metadata !== undefined) updatePayload.metadata = metadata;
-    if (pages !== undefined) updatePayload.pages = pages;
-    if (size !== undefined) updatePayload.size = size;
-
-    const document = await prisma.document.update({
-      where: { id: documentId },
-      data: updatePayload
+    // Verify session belongs to user
+    const existingSession = await prisma.chatSession.findFirst({
+      where: {
+        id: sessionId,
+        userId: user.id
+      }
     });
 
-    return NextResponse.json(document);
+    if (!existingSession) {
+      return NextResponse.json(
+        { error: 'Chat session not found' },
+        { status: 404 }
+      );
+    }
+
+    // Update the session
+    const updatedSession = await prisma.chatSession.update({
+      where: { id: sessionId },
+      data: {
+        title: body.title,
+        isSaved: body.isSaved,
+        updatedAt: body.updatedAt ? new Date(body.updatedAt) : new Date()
+      }
+    });
+
+    return NextResponse.json(updatedSession);
   } catch (error) {
-    console.error('Error updating document:', error);
+    console.error('Error updating chat session:', error);
     return NextResponse.json(
-      { error: 'Failed to update document' },
+      { error: 'Failed to update chat session' },
       { status: 500 }
     );
   }
 }
 
-// DELETE /backend/api/documents/[id]
+// DELETE /backend/api/chat-sessions/[id]
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const documentId = params.id;
+    const user = await getUserFromToken(request);
+    const sessionId = params.id;
 
-    // Delete associated chat sessions and messages (cascade should handle this)
-    await prisma.chatSession.deleteMany({
-      where: { documentId }
+    // Verify session belongs to user
+    const chatSession = await prisma.chatSession.findFirst({
+      where: {
+        id: sessionId,
+        userId: user.id
+      }
     });
 
-    // Delete the document
-    await prisma.document.delete({
-      where: { id: documentId }
+    if (!chatSession) {
+      return NextResponse.json(
+        { error: 'Chat session not found' },
+        { status: 404 }
+      );
+    }
+
+    // Use a transaction to delete messages first, then the session
+    await prisma.$transaction(async (tx) => {
+      // Delete all messages associated with this session
+      await tx.chatMessage.deleteMany({
+        where: { sessionId }
+      });
+
+      // Delete the chat session
+      await tx.chatSession.delete({
+        where: { id: sessionId }
+      });
     });
 
-    return NextResponse.json({ message: 'Document deleted successfully' });
+    // Log security event (optional)
+    try {
+      await prisma.securityLog.create({
+        data: {
+          userId: user.id,
+          action: 'CHAT_DELETE',
+          details: `Deleted chat session: ${chatSession.title || sessionId}`,
+          ipAddress: request.headers.get('x-forwarded-for') || 
+                    request.headers.get('x-real-ip') || 
+                    'unknown',
+          userAgent: request.headers.get('user-agent') || 'unknown'
+        }
+      });
+    } catch (logError) {
+      // Don't fail the deletion if logging fails
+      console.warn('Failed to log security event:', logError);
+    }
+
+    return NextResponse.json({ 
+      message: 'Chat session deleted successfully',
+      sessionId 
+    });
+
   } catch (error) {
-    console.error('Error deleting document:', error);
+    console.error('Error deleting chat session:', error);
+    
+    // Handle specific Prisma errors
+    if (error instanceof Error && error.message.includes('P2025')) {
+      return NextResponse.json(
+        { error: 'Chat session not found or already deleted' },
+        { status: 404 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Failed to delete document' },
+      { error: 'Failed to delete chat session' },
       { status: 500 }
     );
   }
