@@ -11,8 +11,10 @@ async function getUserFromToken(request: NextRequest) {
   }
 
   const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+  
+  // ✅ FIX: Use 'userId' from JWT payload, not 'user_id'
   const user = await prisma.user.findUnique({
-    where: { id: decoded.userId }
+    where: { id: decoded.userId } // Changed from decoded.user_id to decoded.userId
   });
 
   if (!user) {
@@ -28,30 +30,30 @@ export async function GET(request: NextRequest) {
     const user = await getUserFromToken(request);
     
     const documents = await prisma.document.findMany({
-      where: { ownerId: user.id },
+      where: { owner_id: user.id },
       include: {
-        chatSessions: {
+        chat_sessions: {
           select: {
             id: true,
-            createdAt: true
+            created_at: true
           }
         }
       },
-      orderBy: { uploadedAt: 'desc' }
+      orderBy: { uploaded_at: 'desc' }
     });
 
     const formattedDocuments = documents.map(doc => ({
       id: doc.id,
-      filename: doc.fileName,
-      originalName: doc.originalFileName,
-      size: doc.fileSize,
-      mimeType: doc.mimeType,
+      filename: doc.file_name,
+      originalName: doc.original_file_name,
+      size: doc.file_size,
+      mimeType: doc.mime_type,
       status: doc.status.toLowerCase(),
-      pageCount: doc.pageCount,
-      uploadedAt: doc.uploadedAt.toISOString(),
-      chatSessionsCount: doc.chatSessions.length,
-      lastChatAt: doc.chatSessions.length > 0 
-        ? Math.max(...doc.chatSessions.map(s => s.createdAt.getTime()))
+      pageCount: doc.page_count,
+      uploadedAt: doc.uploaded_at.toISOString(),
+      chatSessionsCount: doc.chat_sessions.length,
+      lastChatAt: doc.chat_sessions.length > 0 
+        ? Math.max(...doc.chat_sessions.map(s => s.created_at.getTime()))
         : null
     }));
 
@@ -81,7 +83,7 @@ export async function DELETE(request: NextRequest) {
     const document = await prisma.document.findFirst({
       where: {
         id: documentId,
-        ownerId: user.id
+        owner_id: user.id
       }
     });
 
@@ -97,13 +99,13 @@ export async function DELETE(request: NextRequest) {
     // Log security event
     await prisma.securityLog.create({
       data: {
-        userId: user.id,
+        user_id: user.id,
         action: 'DOCUMENT_DELETE',
-        details: `Deleted document: ${document.originalFileName}`,
-        ipAddress: request.headers.get('x-forwarded-for') || 
+        details: `Deleted document: ${document.original_file_name}`,
+        ip_address: request.headers.get('x-forwarded-for') || 
                   request.headers.get('x-real-ip') || 
                   'unknown',
-        userAgent: request.headers.get('user-agent') || 'unknown'
+        user_agent: request.headers.get('user-agent') || 'unknown'
       }
     });
 

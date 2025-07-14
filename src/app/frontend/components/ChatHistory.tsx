@@ -1,3 +1,4 @@
+// Updated ChatHistory.tsx - Pass session ID to parent
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -33,10 +34,11 @@ interface ChatSession {
 
 interface ChatHistoryProps {
   onDocumentSelect?: (docId: string) => void;
+  onSessionSelect?: (sessionId: string, documentId: string) => void; // Add this prop
   currentDocumentId?: string;
 }
 
-export default function ChatHistory({ onDocumentSelect, currentDocumentId }: ChatHistoryProps) {
+export default function ChatHistory({ onDocumentSelect, onSessionSelect, currentDocumentId }: ChatHistoryProps) {
   const { isAuthenticated, user } = useAuth();
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -51,7 +53,7 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
 
   // Helper function to get auth headers
   const getAuthHeaders = (): HeadersInit => {
-    const token = authUtils.getToken(); // Use authUtils consistently
+    const token = authUtils.getToken();
     const headers: HeadersInit = {
       'Content-Type': 'application/json'
     };
@@ -85,7 +87,7 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
           updatedAt: new Date(session.updatedAt),
           messages: (session.messages || []).map((msg: any) => ({
             ...msg,
-            type: msg.role || msg.type, // Handle both 'role' and 'type' fields
+            type: msg.role || msg.type,
             timestamp: new Date(msg.createdAt || msg.timestamp)
           })),
           document: {
@@ -98,7 +100,6 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
         setChatSessions(formattedSessions);
       } else if (response.status === 401) {
         setError('Authentication failed. Please sign in again.');
-        // Optionally trigger logout
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to load chat sessions');
@@ -116,14 +117,14 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
     setSelectedSession(sessionId);
     
     try {
-      // Find the session data
       const session = chatSessions.find(s => s.id === sessionId);
       if (session) {
-        // Simply notify that a session was selected
-        // The ChatViewer will handle loading the session data from database
+        // Call the new session select callback with session ID
+        onSessionSelect?.(sessionId, documentId);
+        
+        // Also call document select for backward compatibility
         onDocumentSelect?.(documentId);
         
-        toast.success(`Selected chat session: ${session.title || 'Untitled'}`);
       }
     } catch (error) {
       console.error('Failed to select session:', error);
@@ -145,7 +146,6 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
       });
 
       if (response.ok) {
-        // Remove from local state
         setChatSessions(prev => prev.filter(session => session.id !== sessionId));
         
         if (selectedSession === sessionId) {
@@ -154,7 +154,6 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
         
         toast.success('Chat session deleted successfully');
       } else if (response.status === 404) {
-        // Session already deleted or doesn't exist
         setChatSessions(prev => prev.filter(session => session.id !== sessionId));
         toast.info('Session was already deleted');
       } else if (response.status === 401) {
@@ -205,6 +204,7 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
       : session.messages[session.messages.length - 1].content;
   };
 
+  // Rest of your component remains the same...
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6 h-full flex items-center justify-center">
@@ -272,10 +272,8 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
           {/* Header */}
           <div className="grid grid-cols-12 gap-4 p-3 bg-gray-50 rounded-lg text-sm font-medium text-gray-600 mb-4">
             <div className="col-span-4">Session Title</div>
-            <div className="col-span-2">Document</div>
-            <div className="col-span-3">Last Message</div>
+            <div className="col-span-4">Document</div>
             <div className="col-span-2">Date</div>
-            <div className="col-span-1">Actions</div>
           </div>
 
           {/* Chat Sessions List */}
@@ -311,18 +309,14 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
                 </div>
 
                 {/* Document Name */}
-                <div className="col-span-2 flex items-center">
+                <div className="col-span-4 flex items-center">
                   <FileText className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
                   <p className="text-sm text-gray-600 truncate">{session.document.originalName}</p>
                 </div>
 
-                {/* Last Message */}
-                <div className="col-span-3 flex items-center text-sm text-gray-600">
-                  <p className="truncate">{truncateText(getLastMessage(session), 60)}</p>
-                </div>
 
                 {/* Date */}
-                <div className="col-span-2 flex items-center text-sm text-gray-600">
+                <div className="col-span-3 flex items-center text-sm text-gray-600">
                   <Calendar className="w-4 h-4 mr-1" />
                   <div className="min-w-0">
                     <p className="truncate">{formatDate(session.updatedAt)}</p>
@@ -333,7 +327,7 @@ export default function ChatHistory({ onDocumentSelect, currentDocumentId }: Cha
                 <div className="col-span-1 flex items-center justify-end">
                   <button 
                     onClick={(e) => handleDeleteSession(session.id, e)}
-                    className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                    className="cursor-pointer p-2 rounded-full text-red-600 hover:text-red-800 hover:bg-red-100 transition-colors"
                     title="Delete session"
                   >
                     <Trash2 className="w-4 h-4" />

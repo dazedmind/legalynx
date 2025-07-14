@@ -66,26 +66,26 @@ export async function POST(request: NextRequest) {
     // Create document record in database
     const document = await prisma.document.create({
       data: {
-        fileName,
-        originalFileName: file.name,
-        filePath,
-        fileSize: file.size,
-        mimeType: file.type,
+        file_name: fileName,
+        original_file_name: file.name,
+        file_path: filePath,
+        file_size: file.size,
+        mime_type: file.type,
         status: 'UPLOADED',
-        ownerId: user.id
+        owner_id: user.id
       }
     });
 
     // Log security event
     await prisma.securityLog.create({
       data: {
-        userId: user.id,
+        user_id: user.id,
         action: 'DOCUMENT_UPLOAD',
         details: `Uploaded document: ${file.name}`,
-        ipAddress: request.headers.get('x-forwarded-for') || 
+        ip_address: request.headers.get('x-forwarded-for') || 
                   request.headers.get('x-real-ip') || 
                   'unknown',
-        userAgent: request.headers.get('user-agent') || 'unknown'
+        user_agent: request.headers.get('user-agent') || 'unknown'
       }
     });
 
@@ -95,17 +95,17 @@ export async function POST(request: NextRequest) {
       where: { id: document.id },
       data: { 
         status: 'TEMPORARY',
-        pageCount: 1 // You'll get this from your RAG processing
+        page_count: 1 // You'll get this from your RAG processing
       }
     });
 
     return NextResponse.json({
       documentId: document.id,
-      filename: document.fileName,
-      originalName: document.originalFileName,
-      size: document.fileSize,
-      uploadedAt: document.uploadedAt.toISOString(),
-      pages_processed: document.pageCount || 1
+      file_name: document.file_name,
+      original_name: document.original_file_name,
+      size: document.file_size,
+      uploaded_at: document.uploaded_at.toISOString(),
+      pages_processed: document.page_count || 1
     });
 
   } catch (error) {

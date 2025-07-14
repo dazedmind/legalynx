@@ -22,17 +22,17 @@ export async function GET(request: Request) {
       where: whereClause,
       include: {
         messages: {
-          orderBy: { createdAt: 'asc' }
+          orderBy: { created_at: 'asc' }
         },
         document: {
           select: {
             id: true,
-            fileName: true,
-            originalFileName: true
+            file_name: true,
+            original_file_name: true
           }
         }
       },
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { updated_at: 'desc' }
     });
 
     return NextResponse.json(sessions);
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST /backend/api/chat-sessions
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -58,19 +58,42 @@ export async function POST(request: Request) {
       );
     }
 
-    const session = await prisma.chatSession.create({
-      data: {
-        userId,
-        documentId,
-        title,
-        isSaved
+    // Check if a session already exists for this user and document
+    const existingSession = await prisma.chatSession.findFirst({
+      where: {
+        user_id: userId,
+        document_id: documentId
       },
       include: {
         document: {
           select: {
             id: true,
-            fileName: true,
-            originalFileName: true
+            file_name: true,
+            original_file_name: true
+          }
+        }
+      }
+    });
+
+    if (existingSession) {
+      // Return the existing session instead of creating a new one
+      return NextResponse.json(existingSession);
+    }
+
+    // Create new session only if none exists
+    const session = await prisma.chatSession.create({
+      data: {
+        user_id: userId,
+        document_id: documentId,
+        title,
+        is_saved: isSaved
+      },
+      include: {
+        document: {
+          select: {
+            id: true,
+            file_name: true,
+            original_file_name: true
           }
         }
       }
@@ -84,4 +107,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}   
+}

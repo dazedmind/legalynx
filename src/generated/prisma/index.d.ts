@@ -1404,16 +1404,16 @@ export namespace Prisma {
 
   export type UserCountOutputType = {
     documents: number
-    chatSessions: number
-    securityLogs: number
-    verificationTokens: number
+    chat_sessions: number
+    security_logs: number
+    verification_tokens: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     documents?: boolean | UserCountOutputTypeCountDocumentsArgs
-    chatSessions?: boolean | UserCountOutputTypeCountChatSessionsArgs
-    securityLogs?: boolean | UserCountOutputTypeCountSecurityLogsArgs
-    verificationTokens?: boolean | UserCountOutputTypeCountVerificationTokensArgs
+    chat_sessions?: boolean | UserCountOutputTypeCountChat_sessionsArgs
+    security_logs?: boolean | UserCountOutputTypeCountSecurity_logsArgs
+    verification_tokens?: boolean | UserCountOutputTypeCountVerification_tokensArgs
   }
 
   // Custom InputTypes
@@ -1437,21 +1437,21 @@ export namespace Prisma {
   /**
    * UserCountOutputType without action
    */
-  export type UserCountOutputTypeCountChatSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type UserCountOutputTypeCountChat_sessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ChatSessionWhereInput
   }
 
   /**
    * UserCountOutputType without action
    */
-  export type UserCountOutputTypeCountSecurityLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type UserCountOutputTypeCountSecurity_logsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SecurityLogWhereInput
   }
 
   /**
    * UserCountOutputType without action
    */
-  export type UserCountOutputTypeCountVerificationTokensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type UserCountOutputTypeCountVerification_tokensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: VerificationTokenWhereInput
   }
 
@@ -1461,11 +1461,11 @@ export namespace Prisma {
    */
 
   export type DocumentCountOutputType = {
-    chatSessions: number
+    chat_sessions: number
   }
 
   export type DocumentCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    chatSessions?: boolean | DocumentCountOutputTypeCountChatSessionsArgs
+    chat_sessions?: boolean | DocumentCountOutputTypeCountChat_sessionsArgs
   }
 
   // Custom InputTypes
@@ -1482,7 +1482,7 @@ export namespace Prisma {
   /**
    * DocumentCountOutputType without action
    */
-  export type DocumentCountOutputTypeCountChatSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DocumentCountOutputTypeCountChat_sessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ChatSessionWhereInput
   }
 
@@ -1537,17 +1537,17 @@ export namespace Prisma {
     name: string | null
     email: string | null
     password: string | null
-    jobTitle: string | null
-    profilePicture: string | null
-    isPaidUser: boolean | null
-    twoFactorEnabled: boolean | null
-    twoFactorSecret: string | null
-    aiPersonality: string | null
+    job_title: string | null
+    profile_picture: string | null
+    is_paid_user: boolean | null
+    two_factor_enabled: boolean | null
+    two_factor_secret: string | null
+    ai_personality: string | null
     status: $Enums.UserStatus | null
-    emailVerified: boolean | null
-    createdAt: Date | null
-    updatedAt: Date | null
-    lastLoginAt: Date | null
+    email_verified: boolean | null
+    created_at: Date | null
+    updated_at: Date | null
+    last_login_at: Date | null
   }
 
   export type UserMaxAggregateOutputType = {
@@ -1555,17 +1555,17 @@ export namespace Prisma {
     name: string | null
     email: string | null
     password: string | null
-    jobTitle: string | null
-    profilePicture: string | null
-    isPaidUser: boolean | null
-    twoFactorEnabled: boolean | null
-    twoFactorSecret: string | null
-    aiPersonality: string | null
+    job_title: string | null
+    profile_picture: string | null
+    is_paid_user: boolean | null
+    two_factor_enabled: boolean | null
+    two_factor_secret: string | null
+    ai_personality: string | null
     status: $Enums.UserStatus | null
-    emailVerified: boolean | null
-    createdAt: Date | null
-    updatedAt: Date | null
-    lastLoginAt: Date | null
+    email_verified: boolean | null
+    created_at: Date | null
+    updated_at: Date | null
+    last_login_at: Date | null
   }
 
   export type UserCountAggregateOutputType = {
@@ -1573,17 +1573,17 @@ export namespace Prisma {
     name: number
     email: number
     password: number
-    jobTitle: number
-    profilePicture: number
-    isPaidUser: number
-    twoFactorEnabled: number
-    twoFactorSecret: number
-    aiPersonality: number
+    job_title: number
+    profile_picture: number
+    is_paid_user: number
+    two_factor_enabled: number
+    two_factor_secret: number
+    ai_personality: number
     status: number
-    emailVerified: number
-    createdAt: number
-    updatedAt: number
-    lastLoginAt: number
+    email_verified: number
+    created_at: number
+    updated_at: number
+    last_login_at: number
     _all: number
   }
 
@@ -1593,17 +1593,17 @@ export namespace Prisma {
     name?: true
     email?: true
     password?: true
-    jobTitle?: true
-    profilePicture?: true
-    isPaidUser?: true
-    twoFactorEnabled?: true
-    twoFactorSecret?: true
-    aiPersonality?: true
+    job_title?: true
+    profile_picture?: true
+    is_paid_user?: true
+    two_factor_enabled?: true
+    two_factor_secret?: true
+    ai_personality?: true
     status?: true
-    emailVerified?: true
-    createdAt?: true
-    updatedAt?: true
-    lastLoginAt?: true
+    email_verified?: true
+    created_at?: true
+    updated_at?: true
+    last_login_at?: true
   }
 
   export type UserMaxAggregateInputType = {
@@ -1611,17 +1611,17 @@ export namespace Prisma {
     name?: true
     email?: true
     password?: true
-    jobTitle?: true
-    profilePicture?: true
-    isPaidUser?: true
-    twoFactorEnabled?: true
-    twoFactorSecret?: true
-    aiPersonality?: true
+    job_title?: true
+    profile_picture?: true
+    is_paid_user?: true
+    two_factor_enabled?: true
+    two_factor_secret?: true
+    ai_personality?: true
     status?: true
-    emailVerified?: true
-    createdAt?: true
-    updatedAt?: true
-    lastLoginAt?: true
+    email_verified?: true
+    created_at?: true
+    updated_at?: true
+    last_login_at?: true
   }
 
   export type UserCountAggregateInputType = {
@@ -1629,17 +1629,17 @@ export namespace Prisma {
     name?: true
     email?: true
     password?: true
-    jobTitle?: true
-    profilePicture?: true
-    isPaidUser?: true
-    twoFactorEnabled?: true
-    twoFactorSecret?: true
-    aiPersonality?: true
+    job_title?: true
+    profile_picture?: true
+    is_paid_user?: true
+    two_factor_enabled?: true
+    two_factor_secret?: true
+    ai_personality?: true
     status?: true
-    emailVerified?: true
-    createdAt?: true
-    updatedAt?: true
-    lastLoginAt?: true
+    email_verified?: true
+    created_at?: true
+    updated_at?: true
+    last_login_at?: true
     _all?: true
   }
 
@@ -1720,17 +1720,17 @@ export namespace Prisma {
     name: string | null
     email: string
     password: string
-    jobTitle: string | null
-    profilePicture: string | null
-    isPaidUser: boolean
-    twoFactorEnabled: boolean
-    twoFactorSecret: string | null
-    aiPersonality: string | null
+    job_title: string | null
+    profile_picture: string | null
+    is_paid_user: boolean
+    two_factor_enabled: boolean
+    two_factor_secret: string | null
+    ai_personality: string | null
     status: $Enums.UserStatus
-    emailVerified: boolean
-    createdAt: Date
-    updatedAt: Date
-    lastLoginAt: Date | null
+    email_verified: boolean
+    created_at: Date
+    updated_at: Date
+    last_login_at: Date | null
     _count: UserCountAggregateOutputType | null
     _min: UserMinAggregateOutputType | null
     _max: UserMaxAggregateOutputType | null
@@ -1755,21 +1755,21 @@ export namespace Prisma {
     name?: boolean
     email?: boolean
     password?: boolean
-    jobTitle?: boolean
-    profilePicture?: boolean
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: boolean
-    aiPersonality?: boolean
+    job_title?: boolean
+    profile_picture?: boolean
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: boolean
+    ai_personality?: boolean
     status?: boolean
-    emailVerified?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    lastLoginAt?: boolean
+    email_verified?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    last_login_at?: boolean
     documents?: boolean | User$documentsArgs<ExtArgs>
-    chatSessions?: boolean | User$chatSessionsArgs<ExtArgs>
-    securityLogs?: boolean | User$securityLogsArgs<ExtArgs>
-    verificationTokens?: boolean | User$verificationTokensArgs<ExtArgs>
+    chat_sessions?: boolean | User$chat_sessionsArgs<ExtArgs>
+    security_logs?: boolean | User$security_logsArgs<ExtArgs>
+    verification_tokens?: boolean | User$verification_tokensArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -1778,17 +1778,17 @@ export namespace Prisma {
     name?: boolean
     email?: boolean
     password?: boolean
-    jobTitle?: boolean
-    profilePicture?: boolean
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: boolean
-    aiPersonality?: boolean
+    job_title?: boolean
+    profile_picture?: boolean
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: boolean
+    ai_personality?: boolean
     status?: boolean
-    emailVerified?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    lastLoginAt?: boolean
+    email_verified?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    last_login_at?: boolean
   }, ExtArgs["result"]["user"]>
 
   export type UserSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -1796,17 +1796,17 @@ export namespace Prisma {
     name?: boolean
     email?: boolean
     password?: boolean
-    jobTitle?: boolean
-    profilePicture?: boolean
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: boolean
-    aiPersonality?: boolean
+    job_title?: boolean
+    profile_picture?: boolean
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: boolean
+    ai_personality?: boolean
     status?: boolean
-    emailVerified?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    lastLoginAt?: boolean
+    email_verified?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    last_login_at?: boolean
   }, ExtArgs["result"]["user"]>
 
   export type UserSelectScalar = {
@@ -1814,25 +1814,25 @@ export namespace Prisma {
     name?: boolean
     email?: boolean
     password?: boolean
-    jobTitle?: boolean
-    profilePicture?: boolean
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: boolean
-    aiPersonality?: boolean
+    job_title?: boolean
+    profile_picture?: boolean
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: boolean
+    ai_personality?: boolean
     status?: boolean
-    emailVerified?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    lastLoginAt?: boolean
+    email_verified?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    last_login_at?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "password" | "jobTitle" | "profilePicture" | "isPaidUser" | "twoFactorEnabled" | "twoFactorSecret" | "aiPersonality" | "status" | "emailVerified" | "createdAt" | "updatedAt" | "lastLoginAt", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "password" | "job_title" | "profile_picture" | "is_paid_user" | "two_factor_enabled" | "two_factor_secret" | "ai_personality" | "status" | "email_verified" | "created_at" | "updated_at" | "last_login_at", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     documents?: boolean | User$documentsArgs<ExtArgs>
-    chatSessions?: boolean | User$chatSessionsArgs<ExtArgs>
-    securityLogs?: boolean | User$securityLogsArgs<ExtArgs>
-    verificationTokens?: boolean | User$verificationTokensArgs<ExtArgs>
+    chat_sessions?: boolean | User$chat_sessionsArgs<ExtArgs>
+    security_logs?: boolean | User$security_logsArgs<ExtArgs>
+    verification_tokens?: boolean | User$verification_tokensArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -1842,26 +1842,26 @@ export namespace Prisma {
     name: "User"
     objects: {
       documents: Prisma.$DocumentPayload<ExtArgs>[]
-      chatSessions: Prisma.$ChatSessionPayload<ExtArgs>[]
-      securityLogs: Prisma.$SecurityLogPayload<ExtArgs>[]
-      verificationTokens: Prisma.$VerificationTokenPayload<ExtArgs>[]
+      chat_sessions: Prisma.$ChatSessionPayload<ExtArgs>[]
+      security_logs: Prisma.$SecurityLogPayload<ExtArgs>[]
+      verification_tokens: Prisma.$VerificationTokenPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       name: string | null
       email: string
       password: string
-      jobTitle: string | null
-      profilePicture: string | null
-      isPaidUser: boolean
-      twoFactorEnabled: boolean
-      twoFactorSecret: string | null
-      aiPersonality: string | null
+      job_title: string | null
+      profile_picture: string | null
+      is_paid_user: boolean
+      two_factor_enabled: boolean
+      two_factor_secret: string | null
+      ai_personality: string | null
       status: $Enums.UserStatus
-      emailVerified: boolean
-      createdAt: Date
-      updatedAt: Date
-      lastLoginAt: Date | null
+      email_verified: boolean
+      created_at: Date
+      updated_at: Date
+      last_login_at: Date | null
     }, ExtArgs["result"]["user"]>
     composites: {}
   }
@@ -2257,9 +2257,9 @@ export namespace Prisma {
   export interface Prisma__UserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     documents<T extends User$documentsArgs<ExtArgs> = {}>(args?: Subset<T, User$documentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DocumentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    chatSessions<T extends User$chatSessionsArgs<ExtArgs> = {}>(args?: Subset<T, User$chatSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChatSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    securityLogs<T extends User$securityLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$securityLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SecurityLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    verificationTokens<T extends User$verificationTokensArgs<ExtArgs> = {}>(args?: Subset<T, User$verificationTokensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    chat_sessions<T extends User$chat_sessionsArgs<ExtArgs> = {}>(args?: Subset<T, User$chat_sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChatSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    security_logs<T extends User$security_logsArgs<ExtArgs> = {}>(args?: Subset<T, User$security_logsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SecurityLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    verification_tokens<T extends User$verification_tokensArgs<ExtArgs> = {}>(args?: Subset<T, User$verification_tokensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2293,17 +2293,17 @@ export namespace Prisma {
     readonly name: FieldRef<"User", 'String'>
     readonly email: FieldRef<"User", 'String'>
     readonly password: FieldRef<"User", 'String'>
-    readonly jobTitle: FieldRef<"User", 'String'>
-    readonly profilePicture: FieldRef<"User", 'String'>
-    readonly isPaidUser: FieldRef<"User", 'Boolean'>
-    readonly twoFactorEnabled: FieldRef<"User", 'Boolean'>
-    readonly twoFactorSecret: FieldRef<"User", 'String'>
-    readonly aiPersonality: FieldRef<"User", 'String'>
+    readonly job_title: FieldRef<"User", 'String'>
+    readonly profile_picture: FieldRef<"User", 'String'>
+    readonly is_paid_user: FieldRef<"User", 'Boolean'>
+    readonly two_factor_enabled: FieldRef<"User", 'Boolean'>
+    readonly two_factor_secret: FieldRef<"User", 'String'>
+    readonly ai_personality: FieldRef<"User", 'String'>
     readonly status: FieldRef<"User", 'UserStatus'>
-    readonly emailVerified: FieldRef<"User", 'Boolean'>
-    readonly createdAt: FieldRef<"User", 'DateTime'>
-    readonly updatedAt: FieldRef<"User", 'DateTime'>
-    readonly lastLoginAt: FieldRef<"User", 'DateTime'>
+    readonly email_verified: FieldRef<"User", 'Boolean'>
+    readonly created_at: FieldRef<"User", 'DateTime'>
+    readonly updated_at: FieldRef<"User", 'DateTime'>
+    readonly last_login_at: FieldRef<"User", 'DateTime'>
   }
     
 
@@ -2716,9 +2716,9 @@ export namespace Prisma {
   }
 
   /**
-   * User.chatSessions
+   * User.chat_sessions
    */
-  export type User$chatSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type User$chat_sessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the ChatSession
      */
@@ -2740,9 +2740,9 @@ export namespace Prisma {
   }
 
   /**
-   * User.securityLogs
+   * User.security_logs
    */
-  export type User$securityLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type User$security_logsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the SecurityLog
      */
@@ -2764,9 +2764,9 @@ export namespace Prisma {
   }
 
   /**
-   * User.verificationTokens
+   * User.verification_tokens
    */
-  export type User$verificationTokensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type User$verification_tokensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the VerificationToken
      */
@@ -2819,115 +2819,115 @@ export namespace Prisma {
   }
 
   export type DocumentAvgAggregateOutputType = {
-    fileSize: number | null
-    pageCount: number | null
+    file_size: number | null
+    page_count: number | null
   }
 
   export type DocumentSumAggregateOutputType = {
-    fileSize: number | null
-    pageCount: number | null
+    file_size: number | null
+    page_count: number | null
   }
 
   export type DocumentMinAggregateOutputType = {
     id: string | null
-    fileName: string | null
-    originalFileName: string | null
-    filePath: string | null
-    fileSize: number | null
-    mimeType: string | null
+    file_name: string | null
+    original_file_name: string | null
+    file_path: string | null
+    file_size: number | null
+    mime_type: string | null
     status: $Enums.DocumentStatus | null
-    isScanned: boolean | null
-    pageCount: number | null
-    ownerId: string | null
-    uploadedAt: Date | null
-    updatedAt: Date | null
+    is_scanned: boolean | null
+    page_count: number | null
+    owner_id: string | null
+    uploaded_at: Date | null
+    updated_at: Date | null
   }
 
   export type DocumentMaxAggregateOutputType = {
     id: string | null
-    fileName: string | null
-    originalFileName: string | null
-    filePath: string | null
-    fileSize: number | null
-    mimeType: string | null
+    file_name: string | null
+    original_file_name: string | null
+    file_path: string | null
+    file_size: number | null
+    mime_type: string | null
     status: $Enums.DocumentStatus | null
-    isScanned: boolean | null
-    pageCount: number | null
-    ownerId: string | null
-    uploadedAt: Date | null
-    updatedAt: Date | null
+    is_scanned: boolean | null
+    page_count: number | null
+    owner_id: string | null
+    uploaded_at: Date | null
+    updated_at: Date | null
   }
 
   export type DocumentCountAggregateOutputType = {
     id: number
-    fileName: number
-    originalFileName: number
-    filePath: number
-    fileSize: number
-    mimeType: number
+    file_name: number
+    original_file_name: number
+    file_path: number
+    file_size: number
+    mime_type: number
     status: number
-    isScanned: number
-    pageCount: number
-    ownerId: number
-    uploadedAt: number
-    updatedAt: number
+    is_scanned: number
+    page_count: number
+    owner_id: number
+    uploaded_at: number
+    updated_at: number
     _all: number
   }
 
 
   export type DocumentAvgAggregateInputType = {
-    fileSize?: true
-    pageCount?: true
+    file_size?: true
+    page_count?: true
   }
 
   export type DocumentSumAggregateInputType = {
-    fileSize?: true
-    pageCount?: true
+    file_size?: true
+    page_count?: true
   }
 
   export type DocumentMinAggregateInputType = {
     id?: true
-    fileName?: true
-    originalFileName?: true
-    filePath?: true
-    fileSize?: true
-    mimeType?: true
+    file_name?: true
+    original_file_name?: true
+    file_path?: true
+    file_size?: true
+    mime_type?: true
     status?: true
-    isScanned?: true
-    pageCount?: true
-    ownerId?: true
-    uploadedAt?: true
-    updatedAt?: true
+    is_scanned?: true
+    page_count?: true
+    owner_id?: true
+    uploaded_at?: true
+    updated_at?: true
   }
 
   export type DocumentMaxAggregateInputType = {
     id?: true
-    fileName?: true
-    originalFileName?: true
-    filePath?: true
-    fileSize?: true
-    mimeType?: true
+    file_name?: true
+    original_file_name?: true
+    file_path?: true
+    file_size?: true
+    mime_type?: true
     status?: true
-    isScanned?: true
-    pageCount?: true
-    ownerId?: true
-    uploadedAt?: true
-    updatedAt?: true
+    is_scanned?: true
+    page_count?: true
+    owner_id?: true
+    uploaded_at?: true
+    updated_at?: true
   }
 
   export type DocumentCountAggregateInputType = {
     id?: true
-    fileName?: true
-    originalFileName?: true
-    filePath?: true
-    fileSize?: true
-    mimeType?: true
+    file_name?: true
+    original_file_name?: true
+    file_path?: true
+    file_size?: true
+    mime_type?: true
     status?: true
-    isScanned?: true
-    pageCount?: true
-    ownerId?: true
-    uploadedAt?: true
-    updatedAt?: true
+    is_scanned?: true
+    page_count?: true
+    owner_id?: true
+    uploaded_at?: true
+    updated_at?: true
     _all?: true
   }
 
@@ -3019,17 +3019,17 @@ export namespace Prisma {
 
   export type DocumentGroupByOutputType = {
     id: string
-    fileName: string
-    originalFileName: string
-    filePath: string
-    fileSize: number
-    mimeType: string
+    file_name: string
+    original_file_name: string
+    file_path: string
+    file_size: number
+    mime_type: string
     status: $Enums.DocumentStatus
-    isScanned: boolean | null
-    pageCount: number | null
-    ownerId: string
-    uploadedAt: Date
-    updatedAt: Date
+    is_scanned: boolean | null
+    page_count: number | null
+    owner_id: string
+    uploaded_at: Date
+    updated_at: Date
     _count: DocumentCountAggregateOutputType | null
     _avg: DocumentAvgAggregateOutputType | null
     _sum: DocumentSumAggregateOutputType | null
@@ -3053,73 +3053,73 @@ export namespace Prisma {
 
   export type DocumentSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    fileName?: boolean
-    originalFileName?: boolean
-    filePath?: boolean
-    fileSize?: boolean
-    mimeType?: boolean
+    file_name?: boolean
+    original_file_name?: boolean
+    file_path?: boolean
+    file_size?: boolean
+    mime_type?: boolean
     status?: boolean
-    isScanned?: boolean
-    pageCount?: boolean
-    ownerId?: boolean
-    uploadedAt?: boolean
-    updatedAt?: boolean
+    is_scanned?: boolean
+    page_count?: boolean
+    owner_id?: boolean
+    uploaded_at?: boolean
+    updated_at?: boolean
     owner?: boolean | UserDefaultArgs<ExtArgs>
-    chatSessions?: boolean | Document$chatSessionsArgs<ExtArgs>
+    chat_sessions?: boolean | Document$chat_sessionsArgs<ExtArgs>
     _count?: boolean | DocumentCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["document"]>
 
   export type DocumentSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    fileName?: boolean
-    originalFileName?: boolean
-    filePath?: boolean
-    fileSize?: boolean
-    mimeType?: boolean
+    file_name?: boolean
+    original_file_name?: boolean
+    file_path?: boolean
+    file_size?: boolean
+    mime_type?: boolean
     status?: boolean
-    isScanned?: boolean
-    pageCount?: boolean
-    ownerId?: boolean
-    uploadedAt?: boolean
-    updatedAt?: boolean
+    is_scanned?: boolean
+    page_count?: boolean
+    owner_id?: boolean
+    uploaded_at?: boolean
+    updated_at?: boolean
     owner?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["document"]>
 
   export type DocumentSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    fileName?: boolean
-    originalFileName?: boolean
-    filePath?: boolean
-    fileSize?: boolean
-    mimeType?: boolean
+    file_name?: boolean
+    original_file_name?: boolean
+    file_path?: boolean
+    file_size?: boolean
+    mime_type?: boolean
     status?: boolean
-    isScanned?: boolean
-    pageCount?: boolean
-    ownerId?: boolean
-    uploadedAt?: boolean
-    updatedAt?: boolean
+    is_scanned?: boolean
+    page_count?: boolean
+    owner_id?: boolean
+    uploaded_at?: boolean
+    updated_at?: boolean
     owner?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["document"]>
 
   export type DocumentSelectScalar = {
     id?: boolean
-    fileName?: boolean
-    originalFileName?: boolean
-    filePath?: boolean
-    fileSize?: boolean
-    mimeType?: boolean
+    file_name?: boolean
+    original_file_name?: boolean
+    file_path?: boolean
+    file_size?: boolean
+    mime_type?: boolean
     status?: boolean
-    isScanned?: boolean
-    pageCount?: boolean
-    ownerId?: boolean
-    uploadedAt?: boolean
-    updatedAt?: boolean
+    is_scanned?: boolean
+    page_count?: boolean
+    owner_id?: boolean
+    uploaded_at?: boolean
+    updated_at?: boolean
   }
 
-  export type DocumentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "fileName" | "originalFileName" | "filePath" | "fileSize" | "mimeType" | "status" | "isScanned" | "pageCount" | "ownerId" | "uploadedAt" | "updatedAt", ExtArgs["result"]["document"]>
+  export type DocumentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "file_name" | "original_file_name" | "file_path" | "file_size" | "mime_type" | "status" | "is_scanned" | "page_count" | "owner_id" | "uploaded_at" | "updated_at", ExtArgs["result"]["document"]>
   export type DocumentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     owner?: boolean | UserDefaultArgs<ExtArgs>
-    chatSessions?: boolean | Document$chatSessionsArgs<ExtArgs>
+    chat_sessions?: boolean | Document$chat_sessionsArgs<ExtArgs>
     _count?: boolean | DocumentCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type DocumentIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3133,21 +3133,21 @@ export namespace Prisma {
     name: "Document"
     objects: {
       owner: Prisma.$UserPayload<ExtArgs>
-      chatSessions: Prisma.$ChatSessionPayload<ExtArgs>[]
+      chat_sessions: Prisma.$ChatSessionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
-      fileName: string
-      originalFileName: string
-      filePath: string
-      fileSize: number
-      mimeType: string
+      file_name: string
+      original_file_name: string
+      file_path: string
+      file_size: number
+      mime_type: string
       status: $Enums.DocumentStatus
-      isScanned: boolean | null
-      pageCount: number | null
-      ownerId: string
-      uploadedAt: Date
-      updatedAt: Date
+      is_scanned: boolean | null
+      page_count: number | null
+      owner_id: string
+      uploaded_at: Date
+      updated_at: Date
     }, ExtArgs["result"]["document"]>
     composites: {}
   }
@@ -3543,7 +3543,7 @@ export namespace Prisma {
   export interface Prisma__DocumentClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     owner<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    chatSessions<T extends Document$chatSessionsArgs<ExtArgs> = {}>(args?: Subset<T, Document$chatSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChatSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    chat_sessions<T extends Document$chat_sessionsArgs<ExtArgs> = {}>(args?: Subset<T, Document$chat_sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChatSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3574,17 +3574,17 @@ export namespace Prisma {
    */
   interface DocumentFieldRefs {
     readonly id: FieldRef<"Document", 'String'>
-    readonly fileName: FieldRef<"Document", 'String'>
-    readonly originalFileName: FieldRef<"Document", 'String'>
-    readonly filePath: FieldRef<"Document", 'String'>
-    readonly fileSize: FieldRef<"Document", 'Int'>
-    readonly mimeType: FieldRef<"Document", 'String'>
+    readonly file_name: FieldRef<"Document", 'String'>
+    readonly original_file_name: FieldRef<"Document", 'String'>
+    readonly file_path: FieldRef<"Document", 'String'>
+    readonly file_size: FieldRef<"Document", 'Int'>
+    readonly mime_type: FieldRef<"Document", 'String'>
     readonly status: FieldRef<"Document", 'DocumentStatus'>
-    readonly isScanned: FieldRef<"Document", 'Boolean'>
-    readonly pageCount: FieldRef<"Document", 'Int'>
-    readonly ownerId: FieldRef<"Document", 'String'>
-    readonly uploadedAt: FieldRef<"Document", 'DateTime'>
-    readonly updatedAt: FieldRef<"Document", 'DateTime'>
+    readonly is_scanned: FieldRef<"Document", 'Boolean'>
+    readonly page_count: FieldRef<"Document", 'Int'>
+    readonly owner_id: FieldRef<"Document", 'String'>
+    readonly uploaded_at: FieldRef<"Document", 'DateTime'>
+    readonly updated_at: FieldRef<"Document", 'DateTime'>
   }
     
 
@@ -3981,9 +3981,9 @@ export namespace Prisma {
   }
 
   /**
-   * Document.chatSessions
+   * Document.chat_sessions
    */
-  export type Document$chatSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Document$chat_sessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the ChatSession
      */
@@ -4036,31 +4036,31 @@ export namespace Prisma {
   export type ChatSessionMinAggregateOutputType = {
     id: string | null
     title: string | null
-    userId: string | null
-    documentId: string | null
-    isSaved: boolean | null
-    createdAt: Date | null
-    updatedAt: Date | null
+    user_id: string | null
+    document_id: string | null
+    is_saved: boolean | null
+    created_at: Date | null
+    updated_at: Date | null
   }
 
   export type ChatSessionMaxAggregateOutputType = {
     id: string | null
     title: string | null
-    userId: string | null
-    documentId: string | null
-    isSaved: boolean | null
-    createdAt: Date | null
-    updatedAt: Date | null
+    user_id: string | null
+    document_id: string | null
+    is_saved: boolean | null
+    created_at: Date | null
+    updated_at: Date | null
   }
 
   export type ChatSessionCountAggregateOutputType = {
     id: number
     title: number
-    userId: number
-    documentId: number
-    isSaved: number
-    createdAt: number
-    updatedAt: number
+    user_id: number
+    document_id: number
+    is_saved: number
+    created_at: number
+    updated_at: number
     _all: number
   }
 
@@ -4068,31 +4068,31 @@ export namespace Prisma {
   export type ChatSessionMinAggregateInputType = {
     id?: true
     title?: true
-    userId?: true
-    documentId?: true
-    isSaved?: true
-    createdAt?: true
-    updatedAt?: true
+    user_id?: true
+    document_id?: true
+    is_saved?: true
+    created_at?: true
+    updated_at?: true
   }
 
   export type ChatSessionMaxAggregateInputType = {
     id?: true
     title?: true
-    userId?: true
-    documentId?: true
-    isSaved?: true
-    createdAt?: true
-    updatedAt?: true
+    user_id?: true
+    document_id?: true
+    is_saved?: true
+    created_at?: true
+    updated_at?: true
   }
 
   export type ChatSessionCountAggregateInputType = {
     id?: true
     title?: true
-    userId?: true
-    documentId?: true
-    isSaved?: true
-    createdAt?: true
-    updatedAt?: true
+    user_id?: true
+    document_id?: true
+    is_saved?: true
+    created_at?: true
+    updated_at?: true
     _all?: true
   }
 
@@ -4171,11 +4171,11 @@ export namespace Prisma {
   export type ChatSessionGroupByOutputType = {
     id: string
     title: string | null
-    userId: string
-    documentId: string
-    isSaved: boolean
-    createdAt: Date
-    updatedAt: Date
+    user_id: string
+    document_id: string
+    is_saved: boolean
+    created_at: Date
+    updated_at: Date
     _count: ChatSessionCountAggregateOutputType | null
     _min: ChatSessionMinAggregateOutputType | null
     _max: ChatSessionMaxAggregateOutputType | null
@@ -4198,11 +4198,11 @@ export namespace Prisma {
   export type ChatSessionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     title?: boolean
-    userId?: boolean
-    documentId?: boolean
-    isSaved?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
+    user_id?: boolean
+    document_id?: boolean
+    is_saved?: boolean
+    created_at?: boolean
+    updated_at?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     document?: boolean | DocumentDefaultArgs<ExtArgs>
     messages?: boolean | ChatSession$messagesArgs<ExtArgs>
@@ -4212,11 +4212,11 @@ export namespace Prisma {
   export type ChatSessionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     title?: boolean
-    userId?: boolean
-    documentId?: boolean
-    isSaved?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
+    user_id?: boolean
+    document_id?: boolean
+    is_saved?: boolean
+    created_at?: boolean
+    updated_at?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     document?: boolean | DocumentDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["chatSession"]>
@@ -4224,11 +4224,11 @@ export namespace Prisma {
   export type ChatSessionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     title?: boolean
-    userId?: boolean
-    documentId?: boolean
-    isSaved?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
+    user_id?: boolean
+    document_id?: boolean
+    is_saved?: boolean
+    created_at?: boolean
+    updated_at?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     document?: boolean | DocumentDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["chatSession"]>
@@ -4236,14 +4236,14 @@ export namespace Prisma {
   export type ChatSessionSelectScalar = {
     id?: boolean
     title?: boolean
-    userId?: boolean
-    documentId?: boolean
-    isSaved?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
+    user_id?: boolean
+    document_id?: boolean
+    is_saved?: boolean
+    created_at?: boolean
+    updated_at?: boolean
   }
 
-  export type ChatSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "userId" | "documentId" | "isSaved" | "createdAt" | "updatedAt", ExtArgs["result"]["chatSession"]>
+  export type ChatSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "user_id" | "document_id" | "is_saved" | "created_at" | "updated_at", ExtArgs["result"]["chatSession"]>
   export type ChatSessionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     document?: boolean | DocumentDefaultArgs<ExtArgs>
@@ -4269,11 +4269,11 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       title: string | null
-      userId: string
-      documentId: string
-      isSaved: boolean
-      createdAt: Date
-      updatedAt: Date
+      user_id: string
+      document_id: string
+      is_saved: boolean
+      created_at: Date
+      updated_at: Date
     }, ExtArgs["result"]["chatSession"]>
     composites: {}
   }
@@ -4702,11 +4702,11 @@ export namespace Prisma {
   interface ChatSessionFieldRefs {
     readonly id: FieldRef<"ChatSession", 'String'>
     readonly title: FieldRef<"ChatSession", 'String'>
-    readonly userId: FieldRef<"ChatSession", 'String'>
-    readonly documentId: FieldRef<"ChatSession", 'String'>
-    readonly isSaved: FieldRef<"ChatSession", 'Boolean'>
-    readonly createdAt: FieldRef<"ChatSession", 'DateTime'>
-    readonly updatedAt: FieldRef<"ChatSession", 'DateTime'>
+    readonly user_id: FieldRef<"ChatSession", 'String'>
+    readonly document_id: FieldRef<"ChatSession", 'String'>
+    readonly is_saved: FieldRef<"ChatSession", 'Boolean'>
+    readonly created_at: FieldRef<"ChatSession", 'DateTime'>
+    readonly updated_at: FieldRef<"ChatSession", 'DateTime'>
   }
     
 
@@ -5158,77 +5158,77 @@ export namespace Prisma {
   }
 
   export type ChatMessageAvgAggregateOutputType = {
-    tokensUsed: number | null
+    tokens_used: number | null
   }
 
   export type ChatMessageSumAggregateOutputType = {
-    tokensUsed: number | null
+    tokens_used: number | null
   }
 
   export type ChatMessageMinAggregateOutputType = {
     id: string | null
-    sessionId: string | null
+    session_id: string | null
     role: $Enums.MessageRole | null
     content: string | null
-    tokensUsed: number | null
-    createdAt: Date | null
+    tokens_used: number | null
+    created_at: Date | null
   }
 
   export type ChatMessageMaxAggregateOutputType = {
     id: string | null
-    sessionId: string | null
+    session_id: string | null
     role: $Enums.MessageRole | null
     content: string | null
-    tokensUsed: number | null
-    createdAt: Date | null
+    tokens_used: number | null
+    created_at: Date | null
   }
 
   export type ChatMessageCountAggregateOutputType = {
     id: number
-    sessionId: number
+    session_id: number
     role: number
     content: number
-    sourceNodes: number
-    tokensUsed: number
-    createdAt: number
+    source_nodes: number
+    tokens_used: number
+    created_at: number
     _all: number
   }
 
 
   export type ChatMessageAvgAggregateInputType = {
-    tokensUsed?: true
+    tokens_used?: true
   }
 
   export type ChatMessageSumAggregateInputType = {
-    tokensUsed?: true
+    tokens_used?: true
   }
 
   export type ChatMessageMinAggregateInputType = {
     id?: true
-    sessionId?: true
+    session_id?: true
     role?: true
     content?: true
-    tokensUsed?: true
-    createdAt?: true
+    tokens_used?: true
+    created_at?: true
   }
 
   export type ChatMessageMaxAggregateInputType = {
     id?: true
-    sessionId?: true
+    session_id?: true
     role?: true
     content?: true
-    tokensUsed?: true
-    createdAt?: true
+    tokens_used?: true
+    created_at?: true
   }
 
   export type ChatMessageCountAggregateInputType = {
     id?: true
-    sessionId?: true
+    session_id?: true
     role?: true
     content?: true
-    sourceNodes?: true
-    tokensUsed?: true
-    createdAt?: true
+    source_nodes?: true
+    tokens_used?: true
+    created_at?: true
     _all?: true
   }
 
@@ -5320,12 +5320,12 @@ export namespace Prisma {
 
   export type ChatMessageGroupByOutputType = {
     id: string
-    sessionId: string
+    session_id: string
     role: $Enums.MessageRole
     content: string
-    sourceNodes: JsonValue | null
-    tokensUsed: number | null
-    createdAt: Date
+    source_nodes: JsonValue | null
+    tokens_used: number | null
+    created_at: Date
     _count: ChatMessageCountAggregateOutputType | null
     _avg: ChatMessageAvgAggregateOutputType | null
     _sum: ChatMessageSumAggregateOutputType | null
@@ -5349,48 +5349,48 @@ export namespace Prisma {
 
   export type ChatMessageSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    sessionId?: boolean
+    session_id?: boolean
     role?: boolean
     content?: boolean
-    sourceNodes?: boolean
-    tokensUsed?: boolean
-    createdAt?: boolean
+    source_nodes?: boolean
+    tokens_used?: boolean
+    created_at?: boolean
     session?: boolean | ChatSessionDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["chatMessage"]>
 
   export type ChatMessageSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    sessionId?: boolean
+    session_id?: boolean
     role?: boolean
     content?: boolean
-    sourceNodes?: boolean
-    tokensUsed?: boolean
-    createdAt?: boolean
+    source_nodes?: boolean
+    tokens_used?: boolean
+    created_at?: boolean
     session?: boolean | ChatSessionDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["chatMessage"]>
 
   export type ChatMessageSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    sessionId?: boolean
+    session_id?: boolean
     role?: boolean
     content?: boolean
-    sourceNodes?: boolean
-    tokensUsed?: boolean
-    createdAt?: boolean
+    source_nodes?: boolean
+    tokens_used?: boolean
+    created_at?: boolean
     session?: boolean | ChatSessionDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["chatMessage"]>
 
   export type ChatMessageSelectScalar = {
     id?: boolean
-    sessionId?: boolean
+    session_id?: boolean
     role?: boolean
     content?: boolean
-    sourceNodes?: boolean
-    tokensUsed?: boolean
-    createdAt?: boolean
+    source_nodes?: boolean
+    tokens_used?: boolean
+    created_at?: boolean
   }
 
-  export type ChatMessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "sessionId" | "role" | "content" | "sourceNodes" | "tokensUsed" | "createdAt", ExtArgs["result"]["chatMessage"]>
+  export type ChatMessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "session_id" | "role" | "content" | "source_nodes" | "tokens_used" | "created_at", ExtArgs["result"]["chatMessage"]>
   export type ChatMessageInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     session?: boolean | ChatSessionDefaultArgs<ExtArgs>
   }
@@ -5408,12 +5408,12 @@ export namespace Prisma {
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
-      sessionId: string
+      session_id: string
       role: $Enums.MessageRole
       content: string
-      sourceNodes: Prisma.JsonValue | null
-      tokensUsed: number | null
-      createdAt: Date
+      source_nodes: Prisma.JsonValue | null
+      tokens_used: number | null
+      created_at: Date
     }, ExtArgs["result"]["chatMessage"]>
     composites: {}
   }
@@ -5839,12 +5839,12 @@ export namespace Prisma {
    */
   interface ChatMessageFieldRefs {
     readonly id: FieldRef<"ChatMessage", 'String'>
-    readonly sessionId: FieldRef<"ChatMessage", 'String'>
+    readonly session_id: FieldRef<"ChatMessage", 'String'>
     readonly role: FieldRef<"ChatMessage", 'MessageRole'>
     readonly content: FieldRef<"ChatMessage", 'String'>
-    readonly sourceNodes: FieldRef<"ChatMessage", 'Json'>
-    readonly tokensUsed: FieldRef<"ChatMessage", 'Int'>
-    readonly createdAt: FieldRef<"ChatMessage", 'DateTime'>
+    readonly source_nodes: FieldRef<"ChatMessage", 'Json'>
+    readonly tokens_used: FieldRef<"ChatMessage", 'Int'>
+    readonly created_at: FieldRef<"ChatMessage", 'DateTime'>
   }
     
 
@@ -6271,64 +6271,64 @@ export namespace Prisma {
 
   export type SecurityLogMinAggregateOutputType = {
     id: string | null
-    userId: string | null
+    user_id: string | null
     action: $Enums.SecurityAction | null
     details: string | null
-    ipAddress: string | null
-    userAgent: string | null
-    createdAt: Date | null
+    ip_address: string | null
+    user_agent: string | null
+    created_at: Date | null
   }
 
   export type SecurityLogMaxAggregateOutputType = {
     id: string | null
-    userId: string | null
+    user_id: string | null
     action: $Enums.SecurityAction | null
     details: string | null
-    ipAddress: string | null
-    userAgent: string | null
-    createdAt: Date | null
+    ip_address: string | null
+    user_agent: string | null
+    created_at: Date | null
   }
 
   export type SecurityLogCountAggregateOutputType = {
     id: number
-    userId: number
+    user_id: number
     action: number
     details: number
-    ipAddress: number
-    userAgent: number
-    createdAt: number
+    ip_address: number
+    user_agent: number
+    created_at: number
     _all: number
   }
 
 
   export type SecurityLogMinAggregateInputType = {
     id?: true
-    userId?: true
+    user_id?: true
     action?: true
     details?: true
-    ipAddress?: true
-    userAgent?: true
-    createdAt?: true
+    ip_address?: true
+    user_agent?: true
+    created_at?: true
   }
 
   export type SecurityLogMaxAggregateInputType = {
     id?: true
-    userId?: true
+    user_id?: true
     action?: true
     details?: true
-    ipAddress?: true
-    userAgent?: true
-    createdAt?: true
+    ip_address?: true
+    user_agent?: true
+    created_at?: true
   }
 
   export type SecurityLogCountAggregateInputType = {
     id?: true
-    userId?: true
+    user_id?: true
     action?: true
     details?: true
-    ipAddress?: true
-    userAgent?: true
-    createdAt?: true
+    ip_address?: true
+    user_agent?: true
+    created_at?: true
     _all?: true
   }
 
@@ -6406,12 +6406,12 @@ export namespace Prisma {
 
   export type SecurityLogGroupByOutputType = {
     id: string
-    userId: string
+    user_id: string
     action: $Enums.SecurityAction
     details: string | null
-    ipAddress: string | null
-    userAgent: string | null
-    createdAt: Date
+    ip_address: string | null
+    user_agent: string | null
+    created_at: Date
     _count: SecurityLogCountAggregateOutputType | null
     _min: SecurityLogMinAggregateOutputType | null
     _max: SecurityLogMaxAggregateOutputType | null
@@ -6433,48 +6433,48 @@ export namespace Prisma {
 
   export type SecurityLogSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    userId?: boolean
+    user_id?: boolean
     action?: boolean
     details?: boolean
-    ipAddress?: boolean
-    userAgent?: boolean
-    createdAt?: boolean
+    ip_address?: boolean
+    user_agent?: boolean
+    created_at?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["securityLog"]>
 
   export type SecurityLogSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    userId?: boolean
+    user_id?: boolean
     action?: boolean
     details?: boolean
-    ipAddress?: boolean
-    userAgent?: boolean
-    createdAt?: boolean
+    ip_address?: boolean
+    user_agent?: boolean
+    created_at?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["securityLog"]>
 
   export type SecurityLogSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    userId?: boolean
+    user_id?: boolean
     action?: boolean
     details?: boolean
-    ipAddress?: boolean
-    userAgent?: boolean
-    createdAt?: boolean
+    ip_address?: boolean
+    user_agent?: boolean
+    created_at?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["securityLog"]>
 
   export type SecurityLogSelectScalar = {
     id?: boolean
-    userId?: boolean
+    user_id?: boolean
     action?: boolean
     details?: boolean
-    ipAddress?: boolean
-    userAgent?: boolean
-    createdAt?: boolean
+    ip_address?: boolean
+    user_agent?: boolean
+    created_at?: boolean
   }
 
-  export type SecurityLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "action" | "details" | "ipAddress" | "userAgent" | "createdAt", ExtArgs["result"]["securityLog"]>
+  export type SecurityLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "user_id" | "action" | "details" | "ip_address" | "user_agent" | "created_at", ExtArgs["result"]["securityLog"]>
   export type SecurityLogInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -6492,12 +6492,12 @@ export namespace Prisma {
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
-      userId: string
+      user_id: string
       action: $Enums.SecurityAction
       details: string | null
-      ipAddress: string | null
-      userAgent: string | null
-      createdAt: Date
+      ip_address: string | null
+      user_agent: string | null
+      created_at: Date
     }, ExtArgs["result"]["securityLog"]>
     composites: {}
   }
@@ -6923,12 +6923,12 @@ export namespace Prisma {
    */
   interface SecurityLogFieldRefs {
     readonly id: FieldRef<"SecurityLog", 'String'>
-    readonly userId: FieldRef<"SecurityLog", 'String'>
+    readonly user_id: FieldRef<"SecurityLog", 'String'>
     readonly action: FieldRef<"SecurityLog", 'SecurityAction'>
     readonly details: FieldRef<"SecurityLog", 'String'>
-    readonly ipAddress: FieldRef<"SecurityLog", 'String'>
-    readonly userAgent: FieldRef<"SecurityLog", 'String'>
-    readonly createdAt: FieldRef<"SecurityLog", 'DateTime'>
+    readonly ip_address: FieldRef<"SecurityLog", 'String'>
+    readonly user_agent: FieldRef<"SecurityLog", 'String'>
+    readonly created_at: FieldRef<"SecurityLog", 'DateTime'>
   }
     
 
@@ -7358,11 +7358,11 @@ export namespace Prisma {
     email: string | null
     key: string | null
     token: string | null
-    userId: string | null
+    user_id: string | null
     type: $Enums.TokenType | null
-    expiresAt: Date | null
+    expires_at: Date | null
     used: boolean | null
-    createdAt: Date | null
+    created_at: Date | null
   }
 
   export type VerificationTokenMaxAggregateOutputType = {
@@ -7370,11 +7370,11 @@ export namespace Prisma {
     email: string | null
     key: string | null
     token: string | null
-    userId: string | null
+    user_id: string | null
     type: $Enums.TokenType | null
-    expiresAt: Date | null
+    expires_at: Date | null
     used: boolean | null
-    createdAt: Date | null
+    created_at: Date | null
   }
 
   export type VerificationTokenCountAggregateOutputType = {
@@ -7382,11 +7382,11 @@ export namespace Prisma {
     email: number
     key: number
     token: number
-    userId: number
+    user_id: number
     type: number
-    expiresAt: number
+    expires_at: number
     used: number
-    createdAt: number
+    created_at: number
     _all: number
   }
 
@@ -7396,11 +7396,11 @@ export namespace Prisma {
     email?: true
     key?: true
     token?: true
-    userId?: true
+    user_id?: true
     type?: true
-    expiresAt?: true
+    expires_at?: true
     used?: true
-    createdAt?: true
+    created_at?: true
   }
 
   export type VerificationTokenMaxAggregateInputType = {
@@ -7408,11 +7408,11 @@ export namespace Prisma {
     email?: true
     key?: true
     token?: true
-    userId?: true
+    user_id?: true
     type?: true
-    expiresAt?: true
+    expires_at?: true
     used?: true
-    createdAt?: true
+    created_at?: true
   }
 
   export type VerificationTokenCountAggregateInputType = {
@@ -7420,11 +7420,11 @@ export namespace Prisma {
     email?: true
     key?: true
     token?: true
-    userId?: true
+    user_id?: true
     type?: true
-    expiresAt?: true
+    expires_at?: true
     used?: true
-    createdAt?: true
+    created_at?: true
     _all?: true
   }
 
@@ -7505,11 +7505,11 @@ export namespace Prisma {
     email: string
     key: string
     token: string
-    userId: string | null
+    user_id: string | null
     type: $Enums.TokenType
-    expiresAt: Date
+    expires_at: Date
     used: boolean
-    createdAt: Date
+    created_at: Date
     _count: VerificationTokenCountAggregateOutputType | null
     _min: VerificationTokenMinAggregateOutputType | null
     _max: VerificationTokenMaxAggregateOutputType | null
@@ -7534,11 +7534,11 @@ export namespace Prisma {
     email?: boolean
     key?: boolean
     token?: boolean
-    userId?: boolean
+    user_id?: boolean
     type?: boolean
-    expiresAt?: boolean
+    expires_at?: boolean
     used?: boolean
-    createdAt?: boolean
+    created_at?: boolean
     user?: boolean | VerificationToken$userArgs<ExtArgs>
   }, ExtArgs["result"]["verificationToken"]>
 
@@ -7547,11 +7547,11 @@ export namespace Prisma {
     email?: boolean
     key?: boolean
     token?: boolean
-    userId?: boolean
+    user_id?: boolean
     type?: boolean
-    expiresAt?: boolean
+    expires_at?: boolean
     used?: boolean
-    createdAt?: boolean
+    created_at?: boolean
     user?: boolean | VerificationToken$userArgs<ExtArgs>
   }, ExtArgs["result"]["verificationToken"]>
 
@@ -7560,11 +7560,11 @@ export namespace Prisma {
     email?: boolean
     key?: boolean
     token?: boolean
-    userId?: boolean
+    user_id?: boolean
     type?: boolean
-    expiresAt?: boolean
+    expires_at?: boolean
     used?: boolean
-    createdAt?: boolean
+    created_at?: boolean
     user?: boolean | VerificationToken$userArgs<ExtArgs>
   }, ExtArgs["result"]["verificationToken"]>
 
@@ -7573,14 +7573,14 @@ export namespace Prisma {
     email?: boolean
     key?: boolean
     token?: boolean
-    userId?: boolean
+    user_id?: boolean
     type?: boolean
-    expiresAt?: boolean
+    expires_at?: boolean
     used?: boolean
-    createdAt?: boolean
+    created_at?: boolean
   }
 
-  export type VerificationTokenOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "key" | "token" | "userId" | "type" | "expiresAt" | "used" | "createdAt", ExtArgs["result"]["verificationToken"]>
+  export type VerificationTokenOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "key" | "token" | "user_id" | "type" | "expires_at" | "used" | "created_at", ExtArgs["result"]["verificationToken"]>
   export type VerificationTokenInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | VerificationToken$userArgs<ExtArgs>
   }
@@ -7601,11 +7601,11 @@ export namespace Prisma {
       email: string
       key: string
       token: string
-      userId: string | null
+      user_id: string | null
       type: $Enums.TokenType
-      expiresAt: Date
+      expires_at: Date
       used: boolean
-      createdAt: Date
+      created_at: Date
     }, ExtArgs["result"]["verificationToken"]>
     composites: {}
   }
@@ -8034,11 +8034,11 @@ export namespace Prisma {
     readonly email: FieldRef<"VerificationToken", 'String'>
     readonly key: FieldRef<"VerificationToken", 'String'>
     readonly token: FieldRef<"VerificationToken", 'String'>
-    readonly userId: FieldRef<"VerificationToken", 'String'>
+    readonly user_id: FieldRef<"VerificationToken", 'String'>
     readonly type: FieldRef<"VerificationToken", 'TokenType'>
-    readonly expiresAt: FieldRef<"VerificationToken", 'DateTime'>
+    readonly expires_at: FieldRef<"VerificationToken", 'DateTime'>
     readonly used: FieldRef<"VerificationToken", 'Boolean'>
-    readonly createdAt: FieldRef<"VerificationToken", 'DateTime'>
+    readonly created_at: FieldRef<"VerificationToken", 'DateTime'>
   }
     
 
@@ -8491,17 +8491,17 @@ export namespace Prisma {
     name: 'name',
     email: 'email',
     password: 'password',
-    jobTitle: 'jobTitle',
-    profilePicture: 'profilePicture',
-    isPaidUser: 'isPaidUser',
-    twoFactorEnabled: 'twoFactorEnabled',
-    twoFactorSecret: 'twoFactorSecret',
-    aiPersonality: 'aiPersonality',
+    job_title: 'job_title',
+    profile_picture: 'profile_picture',
+    is_paid_user: 'is_paid_user',
+    two_factor_enabled: 'two_factor_enabled',
+    two_factor_secret: 'two_factor_secret',
+    ai_personality: 'ai_personality',
     status: 'status',
-    emailVerified: 'emailVerified',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt',
-    lastLoginAt: 'lastLoginAt'
+    email_verified: 'email_verified',
+    created_at: 'created_at',
+    updated_at: 'updated_at',
+    last_login_at: 'last_login_at'
   };
 
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -8509,17 +8509,17 @@ export namespace Prisma {
 
   export const DocumentScalarFieldEnum: {
     id: 'id',
-    fileName: 'fileName',
-    originalFileName: 'originalFileName',
-    filePath: 'filePath',
-    fileSize: 'fileSize',
-    mimeType: 'mimeType',
+    file_name: 'file_name',
+    original_file_name: 'original_file_name',
+    file_path: 'file_path',
+    file_size: 'file_size',
+    mime_type: 'mime_type',
     status: 'status',
-    isScanned: 'isScanned',
-    pageCount: 'pageCount',
-    ownerId: 'ownerId',
-    uploadedAt: 'uploadedAt',
-    updatedAt: 'updatedAt'
+    is_scanned: 'is_scanned',
+    page_count: 'page_count',
+    owner_id: 'owner_id',
+    uploaded_at: 'uploaded_at',
+    updated_at: 'updated_at'
   };
 
   export type DocumentScalarFieldEnum = (typeof DocumentScalarFieldEnum)[keyof typeof DocumentScalarFieldEnum]
@@ -8528,11 +8528,11 @@ export namespace Prisma {
   export const ChatSessionScalarFieldEnum: {
     id: 'id',
     title: 'title',
-    userId: 'userId',
-    documentId: 'documentId',
-    isSaved: 'isSaved',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
+    user_id: 'user_id',
+    document_id: 'document_id',
+    is_saved: 'is_saved',
+    created_at: 'created_at',
+    updated_at: 'updated_at'
   };
 
   export type ChatSessionScalarFieldEnum = (typeof ChatSessionScalarFieldEnum)[keyof typeof ChatSessionScalarFieldEnum]
@@ -8540,12 +8540,12 @@ export namespace Prisma {
 
   export const ChatMessageScalarFieldEnum: {
     id: 'id',
-    sessionId: 'sessionId',
+    session_id: 'session_id',
     role: 'role',
     content: 'content',
-    sourceNodes: 'sourceNodes',
-    tokensUsed: 'tokensUsed',
-    createdAt: 'createdAt'
+    source_nodes: 'source_nodes',
+    tokens_used: 'tokens_used',
+    created_at: 'created_at'
   };
 
   export type ChatMessageScalarFieldEnum = (typeof ChatMessageScalarFieldEnum)[keyof typeof ChatMessageScalarFieldEnum]
@@ -8553,12 +8553,12 @@ export namespace Prisma {
 
   export const SecurityLogScalarFieldEnum: {
     id: 'id',
-    userId: 'userId',
+    user_id: 'user_id',
     action: 'action',
     details: 'details',
-    ipAddress: 'ipAddress',
-    userAgent: 'userAgent',
-    createdAt: 'createdAt'
+    ip_address: 'ip_address',
+    user_agent: 'user_agent',
+    created_at: 'created_at'
   };
 
   export type SecurityLogScalarFieldEnum = (typeof SecurityLogScalarFieldEnum)[keyof typeof SecurityLogScalarFieldEnum]
@@ -8569,11 +8569,11 @@ export namespace Prisma {
     email: 'email',
     key: 'key',
     token: 'token',
-    userId: 'userId',
+    user_id: 'user_id',
     type: 'type',
-    expiresAt: 'expiresAt',
+    expires_at: 'expires_at',
     used: 'used',
-    createdAt: 'createdAt'
+    created_at: 'created_at'
   };
 
   export type VerificationTokenScalarFieldEnum = (typeof VerificationTokenScalarFieldEnum)[keyof typeof VerificationTokenScalarFieldEnum]
@@ -8783,21 +8783,21 @@ export namespace Prisma {
     name?: StringNullableFilter<"User"> | string | null
     email?: StringFilter<"User"> | string
     password?: StringFilter<"User"> | string
-    jobTitle?: StringNullableFilter<"User"> | string | null
-    profilePicture?: StringNullableFilter<"User"> | string | null
-    isPaidUser?: BoolFilter<"User"> | boolean
-    twoFactorEnabled?: BoolFilter<"User"> | boolean
-    twoFactorSecret?: StringNullableFilter<"User"> | string | null
-    aiPersonality?: StringNullableFilter<"User"> | string | null
+    job_title?: StringNullableFilter<"User"> | string | null
+    profile_picture?: StringNullableFilter<"User"> | string | null
+    is_paid_user?: BoolFilter<"User"> | boolean
+    two_factor_enabled?: BoolFilter<"User"> | boolean
+    two_factor_secret?: StringNullableFilter<"User"> | string | null
+    ai_personality?: StringNullableFilter<"User"> | string | null
     status?: EnumUserStatusFilter<"User"> | $Enums.UserStatus
-    emailVerified?: BoolFilter<"User"> | boolean
-    createdAt?: DateTimeFilter<"User"> | Date | string
-    updatedAt?: DateTimeFilter<"User"> | Date | string
-    lastLoginAt?: DateTimeNullableFilter<"User"> | Date | string | null
+    email_verified?: BoolFilter<"User"> | boolean
+    created_at?: DateTimeFilter<"User"> | Date | string
+    updated_at?: DateTimeFilter<"User"> | Date | string
+    last_login_at?: DateTimeNullableFilter<"User"> | Date | string | null
     documents?: DocumentListRelationFilter
-    chatSessions?: ChatSessionListRelationFilter
-    securityLogs?: SecurityLogListRelationFilter
-    verificationTokens?: VerificationTokenListRelationFilter
+    chat_sessions?: ChatSessionListRelationFilter
+    security_logs?: SecurityLogListRelationFilter
+    verification_tokens?: VerificationTokenListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -8805,21 +8805,21 @@ export namespace Prisma {
     name?: SortOrderInput | SortOrder
     email?: SortOrder
     password?: SortOrder
-    jobTitle?: SortOrderInput | SortOrder
-    profilePicture?: SortOrderInput | SortOrder
-    isPaidUser?: SortOrder
-    twoFactorEnabled?: SortOrder
-    twoFactorSecret?: SortOrderInput | SortOrder
-    aiPersonality?: SortOrderInput | SortOrder
+    job_title?: SortOrderInput | SortOrder
+    profile_picture?: SortOrderInput | SortOrder
+    is_paid_user?: SortOrder
+    two_factor_enabled?: SortOrder
+    two_factor_secret?: SortOrderInput | SortOrder
+    ai_personality?: SortOrderInput | SortOrder
     status?: SortOrder
-    emailVerified?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    lastLoginAt?: SortOrderInput | SortOrder
+    email_verified?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    last_login_at?: SortOrderInput | SortOrder
     documents?: DocumentOrderByRelationAggregateInput
-    chatSessions?: ChatSessionOrderByRelationAggregateInput
-    securityLogs?: SecurityLogOrderByRelationAggregateInput
-    verificationTokens?: VerificationTokenOrderByRelationAggregateInput
+    chat_sessions?: ChatSessionOrderByRelationAggregateInput
+    security_logs?: SecurityLogOrderByRelationAggregateInput
+    verification_tokens?: VerificationTokenOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -8830,21 +8830,21 @@ export namespace Prisma {
     NOT?: UserWhereInput | UserWhereInput[]
     name?: StringNullableFilter<"User"> | string | null
     password?: StringFilter<"User"> | string
-    jobTitle?: StringNullableFilter<"User"> | string | null
-    profilePicture?: StringNullableFilter<"User"> | string | null
-    isPaidUser?: BoolFilter<"User"> | boolean
-    twoFactorEnabled?: BoolFilter<"User"> | boolean
-    twoFactorSecret?: StringNullableFilter<"User"> | string | null
-    aiPersonality?: StringNullableFilter<"User"> | string | null
+    job_title?: StringNullableFilter<"User"> | string | null
+    profile_picture?: StringNullableFilter<"User"> | string | null
+    is_paid_user?: BoolFilter<"User"> | boolean
+    two_factor_enabled?: BoolFilter<"User"> | boolean
+    two_factor_secret?: StringNullableFilter<"User"> | string | null
+    ai_personality?: StringNullableFilter<"User"> | string | null
     status?: EnumUserStatusFilter<"User"> | $Enums.UserStatus
-    emailVerified?: BoolFilter<"User"> | boolean
-    createdAt?: DateTimeFilter<"User"> | Date | string
-    updatedAt?: DateTimeFilter<"User"> | Date | string
-    lastLoginAt?: DateTimeNullableFilter<"User"> | Date | string | null
+    email_verified?: BoolFilter<"User"> | boolean
+    created_at?: DateTimeFilter<"User"> | Date | string
+    updated_at?: DateTimeFilter<"User"> | Date | string
+    last_login_at?: DateTimeNullableFilter<"User"> | Date | string | null
     documents?: DocumentListRelationFilter
-    chatSessions?: ChatSessionListRelationFilter
-    securityLogs?: SecurityLogListRelationFilter
-    verificationTokens?: VerificationTokenListRelationFilter
+    chat_sessions?: ChatSessionListRelationFilter
+    security_logs?: SecurityLogListRelationFilter
+    verification_tokens?: VerificationTokenListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -8852,17 +8852,17 @@ export namespace Prisma {
     name?: SortOrderInput | SortOrder
     email?: SortOrder
     password?: SortOrder
-    jobTitle?: SortOrderInput | SortOrder
-    profilePicture?: SortOrderInput | SortOrder
-    isPaidUser?: SortOrder
-    twoFactorEnabled?: SortOrder
-    twoFactorSecret?: SortOrderInput | SortOrder
-    aiPersonality?: SortOrderInput | SortOrder
+    job_title?: SortOrderInput | SortOrder
+    profile_picture?: SortOrderInput | SortOrder
+    is_paid_user?: SortOrder
+    two_factor_enabled?: SortOrder
+    two_factor_secret?: SortOrderInput | SortOrder
+    ai_personality?: SortOrderInput | SortOrder
     status?: SortOrder
-    emailVerified?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    lastLoginAt?: SortOrderInput | SortOrder
+    email_verified?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    last_login_at?: SortOrderInput | SortOrder
     _count?: UserCountOrderByAggregateInput
     _max?: UserMaxOrderByAggregateInput
     _min?: UserMinOrderByAggregateInput
@@ -8876,17 +8876,17 @@ export namespace Prisma {
     name?: StringNullableWithAggregatesFilter<"User"> | string | null
     email?: StringWithAggregatesFilter<"User"> | string
     password?: StringWithAggregatesFilter<"User"> | string
-    jobTitle?: StringNullableWithAggregatesFilter<"User"> | string | null
-    profilePicture?: StringNullableWithAggregatesFilter<"User"> | string | null
-    isPaidUser?: BoolWithAggregatesFilter<"User"> | boolean
-    twoFactorEnabled?: BoolWithAggregatesFilter<"User"> | boolean
-    twoFactorSecret?: StringNullableWithAggregatesFilter<"User"> | string | null
-    aiPersonality?: StringNullableWithAggregatesFilter<"User"> | string | null
+    job_title?: StringNullableWithAggregatesFilter<"User"> | string | null
+    profile_picture?: StringNullableWithAggregatesFilter<"User"> | string | null
+    is_paid_user?: BoolWithAggregatesFilter<"User"> | boolean
+    two_factor_enabled?: BoolWithAggregatesFilter<"User"> | boolean
+    two_factor_secret?: StringNullableWithAggregatesFilter<"User"> | string | null
+    ai_personality?: StringNullableWithAggregatesFilter<"User"> | string | null
     status?: EnumUserStatusWithAggregatesFilter<"User"> | $Enums.UserStatus
-    emailVerified?: BoolWithAggregatesFilter<"User"> | boolean
-    createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
-    lastLoginAt?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
+    email_verified?: BoolWithAggregatesFilter<"User"> | boolean
+    created_at?: DateTimeWithAggregatesFilter<"User"> | Date | string
+    updated_at?: DateTimeWithAggregatesFilter<"User"> | Date | string
+    last_login_at?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   }
 
   export type DocumentWhereInput = {
@@ -8894,36 +8894,36 @@ export namespace Prisma {
     OR?: DocumentWhereInput[]
     NOT?: DocumentWhereInput | DocumentWhereInput[]
     id?: StringFilter<"Document"> | string
-    fileName?: StringFilter<"Document"> | string
-    originalFileName?: StringFilter<"Document"> | string
-    filePath?: StringFilter<"Document"> | string
-    fileSize?: IntFilter<"Document"> | number
-    mimeType?: StringFilter<"Document"> | string
+    file_name?: StringFilter<"Document"> | string
+    original_file_name?: StringFilter<"Document"> | string
+    file_path?: StringFilter<"Document"> | string
+    file_size?: IntFilter<"Document"> | number
+    mime_type?: StringFilter<"Document"> | string
     status?: EnumDocumentStatusFilter<"Document"> | $Enums.DocumentStatus
-    isScanned?: BoolNullableFilter<"Document"> | boolean | null
-    pageCount?: IntNullableFilter<"Document"> | number | null
-    ownerId?: StringFilter<"Document"> | string
-    uploadedAt?: DateTimeFilter<"Document"> | Date | string
-    updatedAt?: DateTimeFilter<"Document"> | Date | string
+    is_scanned?: BoolNullableFilter<"Document"> | boolean | null
+    page_count?: IntNullableFilter<"Document"> | number | null
+    owner_id?: StringFilter<"Document"> | string
+    uploaded_at?: DateTimeFilter<"Document"> | Date | string
+    updated_at?: DateTimeFilter<"Document"> | Date | string
     owner?: XOR<UserScalarRelationFilter, UserWhereInput>
-    chatSessions?: ChatSessionListRelationFilter
+    chat_sessions?: ChatSessionListRelationFilter
   }
 
   export type DocumentOrderByWithRelationInput = {
     id?: SortOrder
-    fileName?: SortOrder
-    originalFileName?: SortOrder
-    filePath?: SortOrder
-    fileSize?: SortOrder
-    mimeType?: SortOrder
+    file_name?: SortOrder
+    original_file_name?: SortOrder
+    file_path?: SortOrder
+    file_size?: SortOrder
+    mime_type?: SortOrder
     status?: SortOrder
-    isScanned?: SortOrderInput | SortOrder
-    pageCount?: SortOrderInput | SortOrder
-    ownerId?: SortOrder
-    uploadedAt?: SortOrder
-    updatedAt?: SortOrder
+    is_scanned?: SortOrderInput | SortOrder
+    page_count?: SortOrderInput | SortOrder
+    owner_id?: SortOrder
+    uploaded_at?: SortOrder
+    updated_at?: SortOrder
     owner?: UserOrderByWithRelationInput
-    chatSessions?: ChatSessionOrderByRelationAggregateInput
+    chat_sessions?: ChatSessionOrderByRelationAggregateInput
   }
 
   export type DocumentWhereUniqueInput = Prisma.AtLeast<{
@@ -8931,34 +8931,34 @@ export namespace Prisma {
     AND?: DocumentWhereInput | DocumentWhereInput[]
     OR?: DocumentWhereInput[]
     NOT?: DocumentWhereInput | DocumentWhereInput[]
-    fileName?: StringFilter<"Document"> | string
-    originalFileName?: StringFilter<"Document"> | string
-    filePath?: StringFilter<"Document"> | string
-    fileSize?: IntFilter<"Document"> | number
-    mimeType?: StringFilter<"Document"> | string
+    file_name?: StringFilter<"Document"> | string
+    original_file_name?: StringFilter<"Document"> | string
+    file_path?: StringFilter<"Document"> | string
+    file_size?: IntFilter<"Document"> | number
+    mime_type?: StringFilter<"Document"> | string
     status?: EnumDocumentStatusFilter<"Document"> | $Enums.DocumentStatus
-    isScanned?: BoolNullableFilter<"Document"> | boolean | null
-    pageCount?: IntNullableFilter<"Document"> | number | null
-    ownerId?: StringFilter<"Document"> | string
-    uploadedAt?: DateTimeFilter<"Document"> | Date | string
-    updatedAt?: DateTimeFilter<"Document"> | Date | string
+    is_scanned?: BoolNullableFilter<"Document"> | boolean | null
+    page_count?: IntNullableFilter<"Document"> | number | null
+    owner_id?: StringFilter<"Document"> | string
+    uploaded_at?: DateTimeFilter<"Document"> | Date | string
+    updated_at?: DateTimeFilter<"Document"> | Date | string
     owner?: XOR<UserScalarRelationFilter, UserWhereInput>
-    chatSessions?: ChatSessionListRelationFilter
+    chat_sessions?: ChatSessionListRelationFilter
   }, "id">
 
   export type DocumentOrderByWithAggregationInput = {
     id?: SortOrder
-    fileName?: SortOrder
-    originalFileName?: SortOrder
-    filePath?: SortOrder
-    fileSize?: SortOrder
-    mimeType?: SortOrder
+    file_name?: SortOrder
+    original_file_name?: SortOrder
+    file_path?: SortOrder
+    file_size?: SortOrder
+    mime_type?: SortOrder
     status?: SortOrder
-    isScanned?: SortOrderInput | SortOrder
-    pageCount?: SortOrderInput | SortOrder
-    ownerId?: SortOrder
-    uploadedAt?: SortOrder
-    updatedAt?: SortOrder
+    is_scanned?: SortOrderInput | SortOrder
+    page_count?: SortOrderInput | SortOrder
+    owner_id?: SortOrder
+    uploaded_at?: SortOrder
+    updated_at?: SortOrder
     _count?: DocumentCountOrderByAggregateInput
     _avg?: DocumentAvgOrderByAggregateInput
     _max?: DocumentMaxOrderByAggregateInput
@@ -8971,17 +8971,17 @@ export namespace Prisma {
     OR?: DocumentScalarWhereWithAggregatesInput[]
     NOT?: DocumentScalarWhereWithAggregatesInput | DocumentScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Document"> | string
-    fileName?: StringWithAggregatesFilter<"Document"> | string
-    originalFileName?: StringWithAggregatesFilter<"Document"> | string
-    filePath?: StringWithAggregatesFilter<"Document"> | string
-    fileSize?: IntWithAggregatesFilter<"Document"> | number
-    mimeType?: StringWithAggregatesFilter<"Document"> | string
+    file_name?: StringWithAggregatesFilter<"Document"> | string
+    original_file_name?: StringWithAggregatesFilter<"Document"> | string
+    file_path?: StringWithAggregatesFilter<"Document"> | string
+    file_size?: IntWithAggregatesFilter<"Document"> | number
+    mime_type?: StringWithAggregatesFilter<"Document"> | string
     status?: EnumDocumentStatusWithAggregatesFilter<"Document"> | $Enums.DocumentStatus
-    isScanned?: BoolNullableWithAggregatesFilter<"Document"> | boolean | null
-    pageCount?: IntNullableWithAggregatesFilter<"Document"> | number | null
-    ownerId?: StringWithAggregatesFilter<"Document"> | string
-    uploadedAt?: DateTimeWithAggregatesFilter<"Document"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"Document"> | Date | string
+    is_scanned?: BoolNullableWithAggregatesFilter<"Document"> | boolean | null
+    page_count?: IntNullableWithAggregatesFilter<"Document"> | number | null
+    owner_id?: StringWithAggregatesFilter<"Document"> | string
+    uploaded_at?: DateTimeWithAggregatesFilter<"Document"> | Date | string
+    updated_at?: DateTimeWithAggregatesFilter<"Document"> | Date | string
   }
 
   export type ChatSessionWhereInput = {
@@ -8990,11 +8990,11 @@ export namespace Prisma {
     NOT?: ChatSessionWhereInput | ChatSessionWhereInput[]
     id?: StringFilter<"ChatSession"> | string
     title?: StringNullableFilter<"ChatSession"> | string | null
-    userId?: StringFilter<"ChatSession"> | string
-    documentId?: StringFilter<"ChatSession"> | string
-    isSaved?: BoolFilter<"ChatSession"> | boolean
-    createdAt?: DateTimeFilter<"ChatSession"> | Date | string
-    updatedAt?: DateTimeFilter<"ChatSession"> | Date | string
+    user_id?: StringFilter<"ChatSession"> | string
+    document_id?: StringFilter<"ChatSession"> | string
+    is_saved?: BoolFilter<"ChatSession"> | boolean
+    created_at?: DateTimeFilter<"ChatSession"> | Date | string
+    updated_at?: DateTimeFilter<"ChatSession"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     document?: XOR<DocumentScalarRelationFilter, DocumentWhereInput>
     messages?: ChatMessageListRelationFilter
@@ -9003,11 +9003,11 @@ export namespace Prisma {
   export type ChatSessionOrderByWithRelationInput = {
     id?: SortOrder
     title?: SortOrderInput | SortOrder
-    userId?: SortOrder
-    documentId?: SortOrder
-    isSaved?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
+    user_id?: SortOrder
+    document_id?: SortOrder
+    is_saved?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
     user?: UserOrderByWithRelationInput
     document?: DocumentOrderByWithRelationInput
     messages?: ChatMessageOrderByRelationAggregateInput
@@ -9019,11 +9019,11 @@ export namespace Prisma {
     OR?: ChatSessionWhereInput[]
     NOT?: ChatSessionWhereInput | ChatSessionWhereInput[]
     title?: StringNullableFilter<"ChatSession"> | string | null
-    userId?: StringFilter<"ChatSession"> | string
-    documentId?: StringFilter<"ChatSession"> | string
-    isSaved?: BoolFilter<"ChatSession"> | boolean
-    createdAt?: DateTimeFilter<"ChatSession"> | Date | string
-    updatedAt?: DateTimeFilter<"ChatSession"> | Date | string
+    user_id?: StringFilter<"ChatSession"> | string
+    document_id?: StringFilter<"ChatSession"> | string
+    is_saved?: BoolFilter<"ChatSession"> | boolean
+    created_at?: DateTimeFilter<"ChatSession"> | Date | string
+    updated_at?: DateTimeFilter<"ChatSession"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     document?: XOR<DocumentScalarRelationFilter, DocumentWhereInput>
     messages?: ChatMessageListRelationFilter
@@ -9032,11 +9032,11 @@ export namespace Prisma {
   export type ChatSessionOrderByWithAggregationInput = {
     id?: SortOrder
     title?: SortOrderInput | SortOrder
-    userId?: SortOrder
-    documentId?: SortOrder
-    isSaved?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
+    user_id?: SortOrder
+    document_id?: SortOrder
+    is_saved?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
     _count?: ChatSessionCountOrderByAggregateInput
     _max?: ChatSessionMaxOrderByAggregateInput
     _min?: ChatSessionMinOrderByAggregateInput
@@ -9048,11 +9048,11 @@ export namespace Prisma {
     NOT?: ChatSessionScalarWhereWithAggregatesInput | ChatSessionScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"ChatSession"> | string
     title?: StringNullableWithAggregatesFilter<"ChatSession"> | string | null
-    userId?: StringWithAggregatesFilter<"ChatSession"> | string
-    documentId?: StringWithAggregatesFilter<"ChatSession"> | string
-    isSaved?: BoolWithAggregatesFilter<"ChatSession"> | boolean
-    createdAt?: DateTimeWithAggregatesFilter<"ChatSession"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"ChatSession"> | Date | string
+    user_id?: StringWithAggregatesFilter<"ChatSession"> | string
+    document_id?: StringWithAggregatesFilter<"ChatSession"> | string
+    is_saved?: BoolWithAggregatesFilter<"ChatSession"> | boolean
+    created_at?: DateTimeWithAggregatesFilter<"ChatSession"> | Date | string
+    updated_at?: DateTimeWithAggregatesFilter<"ChatSession"> | Date | string
   }
 
   export type ChatMessageWhereInput = {
@@ -9060,23 +9060,23 @@ export namespace Prisma {
     OR?: ChatMessageWhereInput[]
     NOT?: ChatMessageWhereInput | ChatMessageWhereInput[]
     id?: StringFilter<"ChatMessage"> | string
-    sessionId?: StringFilter<"ChatMessage"> | string
+    session_id?: StringFilter<"ChatMessage"> | string
     role?: EnumMessageRoleFilter<"ChatMessage"> | $Enums.MessageRole
     content?: StringFilter<"ChatMessage"> | string
-    sourceNodes?: JsonNullableFilter<"ChatMessage">
-    tokensUsed?: IntNullableFilter<"ChatMessage"> | number | null
-    createdAt?: DateTimeFilter<"ChatMessage"> | Date | string
+    source_nodes?: JsonNullableFilter<"ChatMessage">
+    tokens_used?: IntNullableFilter<"ChatMessage"> | number | null
+    created_at?: DateTimeFilter<"ChatMessage"> | Date | string
     session?: XOR<ChatSessionScalarRelationFilter, ChatSessionWhereInput>
   }
 
   export type ChatMessageOrderByWithRelationInput = {
     id?: SortOrder
-    sessionId?: SortOrder
+    session_id?: SortOrder
     role?: SortOrder
     content?: SortOrder
-    sourceNodes?: SortOrderInput | SortOrder
-    tokensUsed?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
+    source_nodes?: SortOrderInput | SortOrder
+    tokens_used?: SortOrderInput | SortOrder
+    created_at?: SortOrder
     session?: ChatSessionOrderByWithRelationInput
   }
 
@@ -9085,23 +9085,23 @@ export namespace Prisma {
     AND?: ChatMessageWhereInput | ChatMessageWhereInput[]
     OR?: ChatMessageWhereInput[]
     NOT?: ChatMessageWhereInput | ChatMessageWhereInput[]
-    sessionId?: StringFilter<"ChatMessage"> | string
+    session_id?: StringFilter<"ChatMessage"> | string
     role?: EnumMessageRoleFilter<"ChatMessage"> | $Enums.MessageRole
     content?: StringFilter<"ChatMessage"> | string
-    sourceNodes?: JsonNullableFilter<"ChatMessage">
-    tokensUsed?: IntNullableFilter<"ChatMessage"> | number | null
-    createdAt?: DateTimeFilter<"ChatMessage"> | Date | string
+    source_nodes?: JsonNullableFilter<"ChatMessage">
+    tokens_used?: IntNullableFilter<"ChatMessage"> | number | null
+    created_at?: DateTimeFilter<"ChatMessage"> | Date | string
     session?: XOR<ChatSessionScalarRelationFilter, ChatSessionWhereInput>
   }, "id">
 
   export type ChatMessageOrderByWithAggregationInput = {
     id?: SortOrder
-    sessionId?: SortOrder
+    session_id?: SortOrder
     role?: SortOrder
     content?: SortOrder
-    sourceNodes?: SortOrderInput | SortOrder
-    tokensUsed?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
+    source_nodes?: SortOrderInput | SortOrder
+    tokens_used?: SortOrderInput | SortOrder
+    created_at?: SortOrder
     _count?: ChatMessageCountOrderByAggregateInput
     _avg?: ChatMessageAvgOrderByAggregateInput
     _max?: ChatMessageMaxOrderByAggregateInput
@@ -9114,12 +9114,12 @@ export namespace Prisma {
     OR?: ChatMessageScalarWhereWithAggregatesInput[]
     NOT?: ChatMessageScalarWhereWithAggregatesInput | ChatMessageScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"ChatMessage"> | string
-    sessionId?: StringWithAggregatesFilter<"ChatMessage"> | string
+    session_id?: StringWithAggregatesFilter<"ChatMessage"> | string
     role?: EnumMessageRoleWithAggregatesFilter<"ChatMessage"> | $Enums.MessageRole
     content?: StringWithAggregatesFilter<"ChatMessage"> | string
-    sourceNodes?: JsonNullableWithAggregatesFilter<"ChatMessage">
-    tokensUsed?: IntNullableWithAggregatesFilter<"ChatMessage"> | number | null
-    createdAt?: DateTimeWithAggregatesFilter<"ChatMessage"> | Date | string
+    source_nodes?: JsonNullableWithAggregatesFilter<"ChatMessage">
+    tokens_used?: IntNullableWithAggregatesFilter<"ChatMessage"> | number | null
+    created_at?: DateTimeWithAggregatesFilter<"ChatMessage"> | Date | string
   }
 
   export type SecurityLogWhereInput = {
@@ -9127,23 +9127,23 @@ export namespace Prisma {
     OR?: SecurityLogWhereInput[]
     NOT?: SecurityLogWhereInput | SecurityLogWhereInput[]
     id?: StringFilter<"SecurityLog"> | string
-    userId?: StringFilter<"SecurityLog"> | string
+    user_id?: StringFilter<"SecurityLog"> | string
     action?: EnumSecurityActionFilter<"SecurityLog"> | $Enums.SecurityAction
     details?: StringNullableFilter<"SecurityLog"> | string | null
-    ipAddress?: StringNullableFilter<"SecurityLog"> | string | null
-    userAgent?: StringNullableFilter<"SecurityLog"> | string | null
-    createdAt?: DateTimeFilter<"SecurityLog"> | Date | string
+    ip_address?: StringNullableFilter<"SecurityLog"> | string | null
+    user_agent?: StringNullableFilter<"SecurityLog"> | string | null
+    created_at?: DateTimeFilter<"SecurityLog"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }
 
   export type SecurityLogOrderByWithRelationInput = {
     id?: SortOrder
-    userId?: SortOrder
+    user_id?: SortOrder
     action?: SortOrder
     details?: SortOrderInput | SortOrder
-    ipAddress?: SortOrderInput | SortOrder
-    userAgent?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
+    ip_address?: SortOrderInput | SortOrder
+    user_agent?: SortOrderInput | SortOrder
+    created_at?: SortOrder
     user?: UserOrderByWithRelationInput
   }
 
@@ -9152,23 +9152,23 @@ export namespace Prisma {
     AND?: SecurityLogWhereInput | SecurityLogWhereInput[]
     OR?: SecurityLogWhereInput[]
     NOT?: SecurityLogWhereInput | SecurityLogWhereInput[]
-    userId?: StringFilter<"SecurityLog"> | string
+    user_id?: StringFilter<"SecurityLog"> | string
     action?: EnumSecurityActionFilter<"SecurityLog"> | $Enums.SecurityAction
     details?: StringNullableFilter<"SecurityLog"> | string | null
-    ipAddress?: StringNullableFilter<"SecurityLog"> | string | null
-    userAgent?: StringNullableFilter<"SecurityLog"> | string | null
-    createdAt?: DateTimeFilter<"SecurityLog"> | Date | string
+    ip_address?: StringNullableFilter<"SecurityLog"> | string | null
+    user_agent?: StringNullableFilter<"SecurityLog"> | string | null
+    created_at?: DateTimeFilter<"SecurityLog"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }, "id">
 
   export type SecurityLogOrderByWithAggregationInput = {
     id?: SortOrder
-    userId?: SortOrder
+    user_id?: SortOrder
     action?: SortOrder
     details?: SortOrderInput | SortOrder
-    ipAddress?: SortOrderInput | SortOrder
-    userAgent?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
+    ip_address?: SortOrderInput | SortOrder
+    user_agent?: SortOrderInput | SortOrder
+    created_at?: SortOrder
     _count?: SecurityLogCountOrderByAggregateInput
     _max?: SecurityLogMaxOrderByAggregateInput
     _min?: SecurityLogMinOrderByAggregateInput
@@ -9179,12 +9179,12 @@ export namespace Prisma {
     OR?: SecurityLogScalarWhereWithAggregatesInput[]
     NOT?: SecurityLogScalarWhereWithAggregatesInput | SecurityLogScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"SecurityLog"> | string
-    userId?: StringWithAggregatesFilter<"SecurityLog"> | string
+    user_id?: StringWithAggregatesFilter<"SecurityLog"> | string
     action?: EnumSecurityActionWithAggregatesFilter<"SecurityLog"> | $Enums.SecurityAction
     details?: StringNullableWithAggregatesFilter<"SecurityLog"> | string | null
-    ipAddress?: StringNullableWithAggregatesFilter<"SecurityLog"> | string | null
-    userAgent?: StringNullableWithAggregatesFilter<"SecurityLog"> | string | null
-    createdAt?: DateTimeWithAggregatesFilter<"SecurityLog"> | Date | string
+    ip_address?: StringNullableWithAggregatesFilter<"SecurityLog"> | string | null
+    user_agent?: StringNullableWithAggregatesFilter<"SecurityLog"> | string | null
+    created_at?: DateTimeWithAggregatesFilter<"SecurityLog"> | Date | string
   }
 
   export type VerificationTokenWhereInput = {
@@ -9195,11 +9195,11 @@ export namespace Prisma {
     email?: StringFilter<"VerificationToken"> | string
     key?: StringFilter<"VerificationToken"> | string
     token?: StringFilter<"VerificationToken"> | string
-    userId?: StringNullableFilter<"VerificationToken"> | string | null
+    user_id?: StringNullableFilter<"VerificationToken"> | string | null
     type?: EnumTokenTypeFilter<"VerificationToken"> | $Enums.TokenType
-    expiresAt?: DateTimeFilter<"VerificationToken"> | Date | string
+    expires_at?: DateTimeFilter<"VerificationToken"> | Date | string
     used?: BoolFilter<"VerificationToken"> | boolean
-    createdAt?: DateTimeFilter<"VerificationToken"> | Date | string
+    created_at?: DateTimeFilter<"VerificationToken"> | Date | string
     user?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
   }
 
@@ -9208,11 +9208,11 @@ export namespace Prisma {
     email?: SortOrder
     key?: SortOrder
     token?: SortOrder
-    userId?: SortOrderInput | SortOrder
+    user_id?: SortOrderInput | SortOrder
     type?: SortOrder
-    expiresAt?: SortOrder
+    expires_at?: SortOrder
     used?: SortOrder
-    createdAt?: SortOrder
+    created_at?: SortOrder
     user?: UserOrderByWithRelationInput
   }
 
@@ -9224,11 +9224,11 @@ export namespace Prisma {
     NOT?: VerificationTokenWhereInput | VerificationTokenWhereInput[]
     email?: StringFilter<"VerificationToken"> | string
     key?: StringFilter<"VerificationToken"> | string
-    userId?: StringNullableFilter<"VerificationToken"> | string | null
+    user_id?: StringNullableFilter<"VerificationToken"> | string | null
     type?: EnumTokenTypeFilter<"VerificationToken"> | $Enums.TokenType
-    expiresAt?: DateTimeFilter<"VerificationToken"> | Date | string
+    expires_at?: DateTimeFilter<"VerificationToken"> | Date | string
     used?: BoolFilter<"VerificationToken"> | boolean
-    createdAt?: DateTimeFilter<"VerificationToken"> | Date | string
+    created_at?: DateTimeFilter<"VerificationToken"> | Date | string
     user?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
   }, "id" | "token">
 
@@ -9237,11 +9237,11 @@ export namespace Prisma {
     email?: SortOrder
     key?: SortOrder
     token?: SortOrder
-    userId?: SortOrderInput | SortOrder
+    user_id?: SortOrderInput | SortOrder
     type?: SortOrder
-    expiresAt?: SortOrder
+    expires_at?: SortOrder
     used?: SortOrder
-    createdAt?: SortOrder
+    created_at?: SortOrder
     _count?: VerificationTokenCountOrderByAggregateInput
     _max?: VerificationTokenMaxOrderByAggregateInput
     _min?: VerificationTokenMinOrderByAggregateInput
@@ -9255,11 +9255,11 @@ export namespace Prisma {
     email?: StringWithAggregatesFilter<"VerificationToken"> | string
     key?: StringWithAggregatesFilter<"VerificationToken"> | string
     token?: StringWithAggregatesFilter<"VerificationToken"> | string
-    userId?: StringNullableWithAggregatesFilter<"VerificationToken"> | string | null
+    user_id?: StringNullableWithAggregatesFilter<"VerificationToken"> | string | null
     type?: EnumTokenTypeWithAggregatesFilter<"VerificationToken"> | $Enums.TokenType
-    expiresAt?: DateTimeWithAggregatesFilter<"VerificationToken"> | Date | string
+    expires_at?: DateTimeWithAggregatesFilter<"VerificationToken"> | Date | string
     used?: BoolWithAggregatesFilter<"VerificationToken"> | boolean
-    createdAt?: DateTimeWithAggregatesFilter<"VerificationToken"> | Date | string
+    created_at?: DateTimeWithAggregatesFilter<"VerificationToken"> | Date | string
   }
 
   export type UserCreateInput = {
@@ -9267,21 +9267,21 @@ export namespace Prisma {
     name?: string | null
     email: string
     password: string
-    jobTitle?: string | null
-    profilePicture?: string | null
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: string | null
-    aiPersonality?: string | null
+    job_title?: string | null
+    profile_picture?: string | null
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    ai_personality?: string | null
     status?: $Enums.UserStatus
-    emailVerified?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    lastLoginAt?: Date | string | null
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
     documents?: DocumentCreateNestedManyWithoutOwnerInput
-    chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
-    securityLogs?: SecurityLogCreateNestedManyWithoutUserInput
-    verificationTokens?: VerificationTokenCreateNestedManyWithoutUserInput
+    chat_sessions?: ChatSessionCreateNestedManyWithoutUserInput
+    security_logs?: SecurityLogCreateNestedManyWithoutUserInput
+    verification_tokens?: VerificationTokenCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -9289,21 +9289,21 @@ export namespace Prisma {
     name?: string | null
     email: string
     password: string
-    jobTitle?: string | null
-    profilePicture?: string | null
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: string | null
-    aiPersonality?: string | null
+    job_title?: string | null
+    profile_picture?: string | null
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    ai_personality?: string | null
     status?: $Enums.UserStatus
-    emailVerified?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    lastLoginAt?: Date | string | null
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
     documents?: DocumentUncheckedCreateNestedManyWithoutOwnerInput
-    chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
-    securityLogs?: SecurityLogUncheckedCreateNestedManyWithoutUserInput
-    verificationTokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    chat_sessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    security_logs?: SecurityLogUncheckedCreateNestedManyWithoutUserInput
+    verification_tokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -9311,21 +9311,21 @@ export namespace Prisma {
     name?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    profilePicture?: NullableStringFieldUpdateOperationsInput | string | null
-    isPaidUser?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorEnabled?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
-    aiPersonality?: NullableStringFieldUpdateOperationsInput | string | null
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    is_paid_user?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    emailVerified?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     documents?: DocumentUpdateManyWithoutOwnerNestedInput
-    chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
-    securityLogs?: SecurityLogUpdateManyWithoutUserNestedInput
-    verificationTokens?: VerificationTokenUpdateManyWithoutUserNestedInput
+    chat_sessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    security_logs?: SecurityLogUpdateManyWithoutUserNestedInput
+    verification_tokens?: VerificationTokenUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -9333,21 +9333,21 @@ export namespace Prisma {
     name?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    profilePicture?: NullableStringFieldUpdateOperationsInput | string | null
-    isPaidUser?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorEnabled?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
-    aiPersonality?: NullableStringFieldUpdateOperationsInput | string | null
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    is_paid_user?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    emailVerified?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     documents?: DocumentUncheckedUpdateManyWithoutOwnerNestedInput
-    chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
-    securityLogs?: SecurityLogUncheckedUpdateManyWithoutUserNestedInput
-    verificationTokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    chat_sessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    security_logs?: SecurityLogUncheckedUpdateManyWithoutUserNestedInput
+    verification_tokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -9355,17 +9355,17 @@ export namespace Prisma {
     name?: string | null
     email: string
     password: string
-    jobTitle?: string | null
-    profilePicture?: string | null
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: string | null
-    aiPersonality?: string | null
+    job_title?: string | null
+    profile_picture?: string | null
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    ai_personality?: string | null
     status?: $Enums.UserStatus
-    emailVerified?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    lastLoginAt?: Date | string | null
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
   }
 
   export type UserUpdateManyMutationInput = {
@@ -9373,17 +9373,17 @@ export namespace Prisma {
     name?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    profilePicture?: NullableStringFieldUpdateOperationsInput | string | null
-    isPaidUser?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorEnabled?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
-    aiPersonality?: NullableStringFieldUpdateOperationsInput | string | null
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    is_paid_user?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    emailVerified?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type UserUncheckedUpdateManyInput = {
@@ -9391,335 +9391,335 @@ export namespace Prisma {
     name?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    profilePicture?: NullableStringFieldUpdateOperationsInput | string | null
-    isPaidUser?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorEnabled?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
-    aiPersonality?: NullableStringFieldUpdateOperationsInput | string | null
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    is_paid_user?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    emailVerified?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type DocumentCreateInput = {
     id?: string
-    fileName: string
-    originalFileName: string
-    filePath: string
-    fileSize: number
-    mimeType: string
+    file_name: string
+    original_file_name: string
+    file_path: string
+    file_size: number
+    mime_type: string
     status?: $Enums.DocumentStatus
-    isScanned?: boolean | null
-    pageCount?: number | null
-    uploadedAt?: Date | string
-    updatedAt?: Date | string
+    is_scanned?: boolean | null
+    page_count?: number | null
+    uploaded_at?: Date | string
+    updated_at?: Date | string
     owner: UserCreateNestedOneWithoutDocumentsInput
-    chatSessions?: ChatSessionCreateNestedManyWithoutDocumentInput
+    chat_sessions?: ChatSessionCreateNestedManyWithoutDocumentInput
   }
 
   export type DocumentUncheckedCreateInput = {
     id?: string
-    fileName: string
-    originalFileName: string
-    filePath: string
-    fileSize: number
-    mimeType: string
+    file_name: string
+    original_file_name: string
+    file_path: string
+    file_size: number
+    mime_type: string
     status?: $Enums.DocumentStatus
-    isScanned?: boolean | null
-    pageCount?: number | null
-    ownerId: string
-    uploadedAt?: Date | string
-    updatedAt?: Date | string
-    chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutDocumentInput
+    is_scanned?: boolean | null
+    page_count?: number | null
+    owner_id: string
+    uploaded_at?: Date | string
+    updated_at?: Date | string
+    chat_sessions?: ChatSessionUncheckedCreateNestedManyWithoutDocumentInput
   }
 
   export type DocumentUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    fileName?: StringFieldUpdateOperationsInput | string
-    originalFileName?: StringFieldUpdateOperationsInput | string
-    filePath?: StringFieldUpdateOperationsInput | string
-    fileSize?: IntFieldUpdateOperationsInput | number
-    mimeType?: StringFieldUpdateOperationsInput | string
+    file_name?: StringFieldUpdateOperationsInput | string
+    original_file_name?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    file_size?: IntFieldUpdateOperationsInput | number
+    mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    isScanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    pageCount?: NullableIntFieldUpdateOperationsInput | number | null
-    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     owner?: UserUpdateOneRequiredWithoutDocumentsNestedInput
-    chatSessions?: ChatSessionUpdateManyWithoutDocumentNestedInput
+    chat_sessions?: ChatSessionUpdateManyWithoutDocumentNestedInput
   }
 
   export type DocumentUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    fileName?: StringFieldUpdateOperationsInput | string
-    originalFileName?: StringFieldUpdateOperationsInput | string
-    filePath?: StringFieldUpdateOperationsInput | string
-    fileSize?: IntFieldUpdateOperationsInput | number
-    mimeType?: StringFieldUpdateOperationsInput | string
+    file_name?: StringFieldUpdateOperationsInput | string
+    original_file_name?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    file_size?: IntFieldUpdateOperationsInput | number
+    mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    isScanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    pageCount?: NullableIntFieldUpdateOperationsInput | number | null
-    ownerId?: StringFieldUpdateOperationsInput | string
-    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    chatSessions?: ChatSessionUncheckedUpdateManyWithoutDocumentNestedInput
+    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    owner_id?: StringFieldUpdateOperationsInput | string
+    uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    chat_sessions?: ChatSessionUncheckedUpdateManyWithoutDocumentNestedInput
   }
 
   export type DocumentCreateManyInput = {
     id?: string
-    fileName: string
-    originalFileName: string
-    filePath: string
-    fileSize: number
-    mimeType: string
+    file_name: string
+    original_file_name: string
+    file_path: string
+    file_size: number
+    mime_type: string
     status?: $Enums.DocumentStatus
-    isScanned?: boolean | null
-    pageCount?: number | null
-    ownerId: string
-    uploadedAt?: Date | string
-    updatedAt?: Date | string
+    is_scanned?: boolean | null
+    page_count?: number | null
+    owner_id: string
+    uploaded_at?: Date | string
+    updated_at?: Date | string
   }
 
   export type DocumentUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    fileName?: StringFieldUpdateOperationsInput | string
-    originalFileName?: StringFieldUpdateOperationsInput | string
-    filePath?: StringFieldUpdateOperationsInput | string
-    fileSize?: IntFieldUpdateOperationsInput | number
-    mimeType?: StringFieldUpdateOperationsInput | string
+    file_name?: StringFieldUpdateOperationsInput | string
+    original_file_name?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    file_size?: IntFieldUpdateOperationsInput | number
+    mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    isScanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    pageCount?: NullableIntFieldUpdateOperationsInput | number | null
-    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DocumentUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
-    fileName?: StringFieldUpdateOperationsInput | string
-    originalFileName?: StringFieldUpdateOperationsInput | string
-    filePath?: StringFieldUpdateOperationsInput | string
-    fileSize?: IntFieldUpdateOperationsInput | number
-    mimeType?: StringFieldUpdateOperationsInput | string
+    file_name?: StringFieldUpdateOperationsInput | string
+    original_file_name?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    file_size?: IntFieldUpdateOperationsInput | number
+    mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    isScanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    pageCount?: NullableIntFieldUpdateOperationsInput | number | null
-    ownerId?: StringFieldUpdateOperationsInput | string
-    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    owner_id?: StringFieldUpdateOperationsInput | string
+    uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ChatSessionCreateInput = {
     id?: string
     title?: string | null
-    isSaved?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    user: UserCreateNestedOneWithoutChatSessionsInput
-    document: DocumentCreateNestedOneWithoutChatSessionsInput
+    is_saved?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    user: UserCreateNestedOneWithoutChat_sessionsInput
+    document: DocumentCreateNestedOneWithoutChat_sessionsInput
     messages?: ChatMessageCreateNestedManyWithoutSessionInput
   }
 
   export type ChatSessionUncheckedCreateInput = {
     id?: string
     title?: string | null
-    userId: string
-    documentId: string
-    isSaved?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
+    user_id: string
+    document_id: string
+    is_saved?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
     messages?: ChatMessageUncheckedCreateNestedManyWithoutSessionInput
   }
 
   export type ChatSessionUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: NullableStringFieldUpdateOperationsInput | string | null
-    isSaved?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    user?: UserUpdateOneRequiredWithoutChatSessionsNestedInput
-    document?: DocumentUpdateOneRequiredWithoutChatSessionsNestedInput
+    is_saved?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutChat_sessionsNestedInput
+    document?: DocumentUpdateOneRequiredWithoutChat_sessionsNestedInput
     messages?: ChatMessageUpdateManyWithoutSessionNestedInput
   }
 
   export type ChatSessionUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: NullableStringFieldUpdateOperationsInput | string | null
-    userId?: StringFieldUpdateOperationsInput | string
-    documentId?: StringFieldUpdateOperationsInput | string
-    isSaved?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user_id?: StringFieldUpdateOperationsInput | string
+    document_id?: StringFieldUpdateOperationsInput | string
+    is_saved?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     messages?: ChatMessageUncheckedUpdateManyWithoutSessionNestedInput
   }
 
   export type ChatSessionCreateManyInput = {
     id?: string
     title?: string | null
-    userId: string
-    documentId: string
-    isSaved?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
+    user_id: string
+    document_id: string
+    is_saved?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
   }
 
   export type ChatSessionUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: NullableStringFieldUpdateOperationsInput | string | null
-    isSaved?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    is_saved?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ChatSessionUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: NullableStringFieldUpdateOperationsInput | string | null
-    userId?: StringFieldUpdateOperationsInput | string
-    documentId?: StringFieldUpdateOperationsInput | string
-    isSaved?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user_id?: StringFieldUpdateOperationsInput | string
+    document_id?: StringFieldUpdateOperationsInput | string
+    is_saved?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ChatMessageCreateInput = {
     id?: string
     role: $Enums.MessageRole
     content: string
-    sourceNodes?: NullableJsonNullValueInput | InputJsonValue
-    tokensUsed?: number | null
-    createdAt?: Date | string
+    source_nodes?: NullableJsonNullValueInput | InputJsonValue
+    tokens_used?: number | null
+    created_at?: Date | string
     session: ChatSessionCreateNestedOneWithoutMessagesInput
   }
 
   export type ChatMessageUncheckedCreateInput = {
     id?: string
-    sessionId: string
+    session_id: string
     role: $Enums.MessageRole
     content: string
-    sourceNodes?: NullableJsonNullValueInput | InputJsonValue
-    tokensUsed?: number | null
-    createdAt?: Date | string
+    source_nodes?: NullableJsonNullValueInput | InputJsonValue
+    tokens_used?: number | null
+    created_at?: Date | string
   }
 
   export type ChatMessageUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     role?: EnumMessageRoleFieldUpdateOperationsInput | $Enums.MessageRole
     content?: StringFieldUpdateOperationsInput | string
-    sourceNodes?: NullableJsonNullValueInput | InputJsonValue
-    tokensUsed?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    source_nodes?: NullableJsonNullValueInput | InputJsonValue
+    tokens_used?: NullableIntFieldUpdateOperationsInput | number | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     session?: ChatSessionUpdateOneRequiredWithoutMessagesNestedInput
   }
 
   export type ChatMessageUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    sessionId?: StringFieldUpdateOperationsInput | string
+    session_id?: StringFieldUpdateOperationsInput | string
     role?: EnumMessageRoleFieldUpdateOperationsInput | $Enums.MessageRole
     content?: StringFieldUpdateOperationsInput | string
-    sourceNodes?: NullableJsonNullValueInput | InputJsonValue
-    tokensUsed?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    source_nodes?: NullableJsonNullValueInput | InputJsonValue
+    tokens_used?: NullableIntFieldUpdateOperationsInput | number | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ChatMessageCreateManyInput = {
     id?: string
-    sessionId: string
+    session_id: string
     role: $Enums.MessageRole
     content: string
-    sourceNodes?: NullableJsonNullValueInput | InputJsonValue
-    tokensUsed?: number | null
-    createdAt?: Date | string
+    source_nodes?: NullableJsonNullValueInput | InputJsonValue
+    tokens_used?: number | null
+    created_at?: Date | string
   }
 
   export type ChatMessageUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     role?: EnumMessageRoleFieldUpdateOperationsInput | $Enums.MessageRole
     content?: StringFieldUpdateOperationsInput | string
-    sourceNodes?: NullableJsonNullValueInput | InputJsonValue
-    tokensUsed?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    source_nodes?: NullableJsonNullValueInput | InputJsonValue
+    tokens_used?: NullableIntFieldUpdateOperationsInput | number | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ChatMessageUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
-    sessionId?: StringFieldUpdateOperationsInput | string
+    session_id?: StringFieldUpdateOperationsInput | string
     role?: EnumMessageRoleFieldUpdateOperationsInput | $Enums.MessageRole
     content?: StringFieldUpdateOperationsInput | string
-    sourceNodes?: NullableJsonNullValueInput | InputJsonValue
-    tokensUsed?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    source_nodes?: NullableJsonNullValueInput | InputJsonValue
+    tokens_used?: NullableIntFieldUpdateOperationsInput | number | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SecurityLogCreateInput = {
     id?: string
     action: $Enums.SecurityAction
     details?: string | null
-    ipAddress?: string | null
-    userAgent?: string | null
-    createdAt?: Date | string
-    user: UserCreateNestedOneWithoutSecurityLogsInput
+    ip_address?: string | null
+    user_agent?: string | null
+    created_at?: Date | string
+    user: UserCreateNestedOneWithoutSecurity_logsInput
   }
 
   export type SecurityLogUncheckedCreateInput = {
     id?: string
-    userId: string
+    user_id: string
     action: $Enums.SecurityAction
     details?: string | null
-    ipAddress?: string | null
-    userAgent?: string | null
-    createdAt?: Date | string
+    ip_address?: string | null
+    user_agent?: string | null
+    created_at?: Date | string
   }
 
   export type SecurityLogUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     action?: EnumSecurityActionFieldUpdateOperationsInput | $Enums.SecurityAction
     details?: NullableStringFieldUpdateOperationsInput | string | null
-    ipAddress?: NullableStringFieldUpdateOperationsInput | string | null
-    userAgent?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    user?: UserUpdateOneRequiredWithoutSecurityLogsNestedInput
+    ip_address?: NullableStringFieldUpdateOperationsInput | string | null
+    user_agent?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutSecurity_logsNestedInput
   }
 
   export type SecurityLogUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
+    user_id?: StringFieldUpdateOperationsInput | string
     action?: EnumSecurityActionFieldUpdateOperationsInput | $Enums.SecurityAction
     details?: NullableStringFieldUpdateOperationsInput | string | null
-    ipAddress?: NullableStringFieldUpdateOperationsInput | string | null
-    userAgent?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    ip_address?: NullableStringFieldUpdateOperationsInput | string | null
+    user_agent?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SecurityLogCreateManyInput = {
     id?: string
-    userId: string
+    user_id: string
     action: $Enums.SecurityAction
     details?: string | null
-    ipAddress?: string | null
-    userAgent?: string | null
-    createdAt?: Date | string
+    ip_address?: string | null
+    user_agent?: string | null
+    created_at?: Date | string
   }
 
   export type SecurityLogUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     action?: EnumSecurityActionFieldUpdateOperationsInput | $Enums.SecurityAction
     details?: NullableStringFieldUpdateOperationsInput | string | null
-    ipAddress?: NullableStringFieldUpdateOperationsInput | string | null
-    userAgent?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    ip_address?: NullableStringFieldUpdateOperationsInput | string | null
+    user_agent?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SecurityLogUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
+    user_id?: StringFieldUpdateOperationsInput | string
     action?: EnumSecurityActionFieldUpdateOperationsInput | $Enums.SecurityAction
     details?: NullableStringFieldUpdateOperationsInput | string | null
-    ipAddress?: NullableStringFieldUpdateOperationsInput | string | null
-    userAgent?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    ip_address?: NullableStringFieldUpdateOperationsInput | string | null
+    user_agent?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type VerificationTokenCreateInput = {
@@ -9728,10 +9728,10 @@ export namespace Prisma {
     key: string
     token: string
     type?: $Enums.TokenType
-    expiresAt: Date | string
+    expires_at: Date | string
     used?: boolean
-    createdAt?: Date | string
-    user?: UserCreateNestedOneWithoutVerificationTokensInput
+    created_at?: Date | string
+    user?: UserCreateNestedOneWithoutVerification_tokensInput
   }
 
   export type VerificationTokenUncheckedCreateInput = {
@@ -9739,11 +9739,11 @@ export namespace Prisma {
     email: string
     key: string
     token: string
-    userId?: string | null
+    user_id?: string | null
     type?: $Enums.TokenType
-    expiresAt: Date | string
+    expires_at: Date | string
     used?: boolean
-    createdAt?: Date | string
+    created_at?: Date | string
   }
 
   export type VerificationTokenUpdateInput = {
@@ -9752,10 +9752,10 @@ export namespace Prisma {
     key?: StringFieldUpdateOperationsInput | string
     token?: StringFieldUpdateOperationsInput | string
     type?: EnumTokenTypeFieldUpdateOperationsInput | $Enums.TokenType
-    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expires_at?: DateTimeFieldUpdateOperationsInput | Date | string
     used?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    user?: UserUpdateOneWithoutVerificationTokensNestedInput
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneWithoutVerification_tokensNestedInput
   }
 
   export type VerificationTokenUncheckedUpdateInput = {
@@ -9763,11 +9763,11 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     key?: StringFieldUpdateOperationsInput | string
     token?: StringFieldUpdateOperationsInput | string
-    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    user_id?: NullableStringFieldUpdateOperationsInput | string | null
     type?: EnumTokenTypeFieldUpdateOperationsInput | $Enums.TokenType
-    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expires_at?: DateTimeFieldUpdateOperationsInput | Date | string
     used?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type VerificationTokenCreateManyInput = {
@@ -9775,11 +9775,11 @@ export namespace Prisma {
     email: string
     key: string
     token: string
-    userId?: string | null
+    user_id?: string | null
     type?: $Enums.TokenType
-    expiresAt: Date | string
+    expires_at: Date | string
     used?: boolean
-    createdAt?: Date | string
+    created_at?: Date | string
   }
 
   export type VerificationTokenUpdateManyMutationInput = {
@@ -9788,9 +9788,9 @@ export namespace Prisma {
     key?: StringFieldUpdateOperationsInput | string
     token?: StringFieldUpdateOperationsInput | string
     type?: EnumTokenTypeFieldUpdateOperationsInput | $Enums.TokenType
-    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expires_at?: DateTimeFieldUpdateOperationsInput | Date | string
     used?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type VerificationTokenUncheckedUpdateManyInput = {
@@ -9798,11 +9798,11 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     key?: StringFieldUpdateOperationsInput | string
     token?: StringFieldUpdateOperationsInput | string
-    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    user_id?: NullableStringFieldUpdateOperationsInput | string | null
     type?: EnumTokenTypeFieldUpdateOperationsInput | $Enums.TokenType
-    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expires_at?: DateTimeFieldUpdateOperationsInput | Date | string
     used?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -9919,17 +9919,17 @@ export namespace Prisma {
     name?: SortOrder
     email?: SortOrder
     password?: SortOrder
-    jobTitle?: SortOrder
-    profilePicture?: SortOrder
-    isPaidUser?: SortOrder
-    twoFactorEnabled?: SortOrder
-    twoFactorSecret?: SortOrder
-    aiPersonality?: SortOrder
+    job_title?: SortOrder
+    profile_picture?: SortOrder
+    is_paid_user?: SortOrder
+    two_factor_enabled?: SortOrder
+    two_factor_secret?: SortOrder
+    ai_personality?: SortOrder
     status?: SortOrder
-    emailVerified?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    lastLoginAt?: SortOrder
+    email_verified?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    last_login_at?: SortOrder
   }
 
   export type UserMaxOrderByAggregateInput = {
@@ -9937,17 +9937,17 @@ export namespace Prisma {
     name?: SortOrder
     email?: SortOrder
     password?: SortOrder
-    jobTitle?: SortOrder
-    profilePicture?: SortOrder
-    isPaidUser?: SortOrder
-    twoFactorEnabled?: SortOrder
-    twoFactorSecret?: SortOrder
-    aiPersonality?: SortOrder
+    job_title?: SortOrder
+    profile_picture?: SortOrder
+    is_paid_user?: SortOrder
+    two_factor_enabled?: SortOrder
+    two_factor_secret?: SortOrder
+    ai_personality?: SortOrder
     status?: SortOrder
-    emailVerified?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    lastLoginAt?: SortOrder
+    email_verified?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    last_login_at?: SortOrder
   }
 
   export type UserMinOrderByAggregateInput = {
@@ -9955,17 +9955,17 @@ export namespace Prisma {
     name?: SortOrder
     email?: SortOrder
     password?: SortOrder
-    jobTitle?: SortOrder
-    profilePicture?: SortOrder
-    isPaidUser?: SortOrder
-    twoFactorEnabled?: SortOrder
-    twoFactorSecret?: SortOrder
-    aiPersonality?: SortOrder
+    job_title?: SortOrder
+    profile_picture?: SortOrder
+    is_paid_user?: SortOrder
+    two_factor_enabled?: SortOrder
+    two_factor_secret?: SortOrder
+    ai_personality?: SortOrder
     status?: SortOrder
-    emailVerified?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    lastLoginAt?: SortOrder
+    email_verified?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    last_login_at?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -10091,57 +10091,57 @@ export namespace Prisma {
 
   export type DocumentCountOrderByAggregateInput = {
     id?: SortOrder
-    fileName?: SortOrder
-    originalFileName?: SortOrder
-    filePath?: SortOrder
-    fileSize?: SortOrder
-    mimeType?: SortOrder
+    file_name?: SortOrder
+    original_file_name?: SortOrder
+    file_path?: SortOrder
+    file_size?: SortOrder
+    mime_type?: SortOrder
     status?: SortOrder
-    isScanned?: SortOrder
-    pageCount?: SortOrder
-    ownerId?: SortOrder
-    uploadedAt?: SortOrder
-    updatedAt?: SortOrder
+    is_scanned?: SortOrder
+    page_count?: SortOrder
+    owner_id?: SortOrder
+    uploaded_at?: SortOrder
+    updated_at?: SortOrder
   }
 
   export type DocumentAvgOrderByAggregateInput = {
-    fileSize?: SortOrder
-    pageCount?: SortOrder
+    file_size?: SortOrder
+    page_count?: SortOrder
   }
 
   export type DocumentMaxOrderByAggregateInput = {
     id?: SortOrder
-    fileName?: SortOrder
-    originalFileName?: SortOrder
-    filePath?: SortOrder
-    fileSize?: SortOrder
-    mimeType?: SortOrder
+    file_name?: SortOrder
+    original_file_name?: SortOrder
+    file_path?: SortOrder
+    file_size?: SortOrder
+    mime_type?: SortOrder
     status?: SortOrder
-    isScanned?: SortOrder
-    pageCount?: SortOrder
-    ownerId?: SortOrder
-    uploadedAt?: SortOrder
-    updatedAt?: SortOrder
+    is_scanned?: SortOrder
+    page_count?: SortOrder
+    owner_id?: SortOrder
+    uploaded_at?: SortOrder
+    updated_at?: SortOrder
   }
 
   export type DocumentMinOrderByAggregateInput = {
     id?: SortOrder
-    fileName?: SortOrder
-    originalFileName?: SortOrder
-    filePath?: SortOrder
-    fileSize?: SortOrder
-    mimeType?: SortOrder
+    file_name?: SortOrder
+    original_file_name?: SortOrder
+    file_path?: SortOrder
+    file_size?: SortOrder
+    mime_type?: SortOrder
     status?: SortOrder
-    isScanned?: SortOrder
-    pageCount?: SortOrder
-    ownerId?: SortOrder
-    uploadedAt?: SortOrder
-    updatedAt?: SortOrder
+    is_scanned?: SortOrder
+    page_count?: SortOrder
+    owner_id?: SortOrder
+    uploaded_at?: SortOrder
+    updated_at?: SortOrder
   }
 
   export type DocumentSumOrderByAggregateInput = {
-    fileSize?: SortOrder
-    pageCount?: SortOrder
+    file_size?: SortOrder
+    page_count?: SortOrder
   }
 
   export type IntWithAggregatesFilter<$PrismaModel = never> = {
@@ -10212,31 +10212,31 @@ export namespace Prisma {
   export type ChatSessionCountOrderByAggregateInput = {
     id?: SortOrder
     title?: SortOrder
-    userId?: SortOrder
-    documentId?: SortOrder
-    isSaved?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
+    user_id?: SortOrder
+    document_id?: SortOrder
+    is_saved?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
   }
 
   export type ChatSessionMaxOrderByAggregateInput = {
     id?: SortOrder
     title?: SortOrder
-    userId?: SortOrder
-    documentId?: SortOrder
-    isSaved?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
+    user_id?: SortOrder
+    document_id?: SortOrder
+    is_saved?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
   }
 
   export type ChatSessionMinOrderByAggregateInput = {
     id?: SortOrder
     title?: SortOrder
-    userId?: SortOrder
-    documentId?: SortOrder
-    isSaved?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
+    user_id?: SortOrder
+    document_id?: SortOrder
+    is_saved?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
   }
 
   export type EnumMessageRoleFilter<$PrismaModel = never> = {
@@ -10276,38 +10276,38 @@ export namespace Prisma {
 
   export type ChatMessageCountOrderByAggregateInput = {
     id?: SortOrder
-    sessionId?: SortOrder
+    session_id?: SortOrder
     role?: SortOrder
     content?: SortOrder
-    sourceNodes?: SortOrder
-    tokensUsed?: SortOrder
-    createdAt?: SortOrder
+    source_nodes?: SortOrder
+    tokens_used?: SortOrder
+    created_at?: SortOrder
   }
 
   export type ChatMessageAvgOrderByAggregateInput = {
-    tokensUsed?: SortOrder
+    tokens_used?: SortOrder
   }
 
   export type ChatMessageMaxOrderByAggregateInput = {
     id?: SortOrder
-    sessionId?: SortOrder
+    session_id?: SortOrder
     role?: SortOrder
     content?: SortOrder
-    tokensUsed?: SortOrder
-    createdAt?: SortOrder
+    tokens_used?: SortOrder
+    created_at?: SortOrder
   }
 
   export type ChatMessageMinOrderByAggregateInput = {
     id?: SortOrder
-    sessionId?: SortOrder
+    session_id?: SortOrder
     role?: SortOrder
     content?: SortOrder
-    tokensUsed?: SortOrder
-    createdAt?: SortOrder
+    tokens_used?: SortOrder
+    created_at?: SortOrder
   }
 
   export type ChatMessageSumOrderByAggregateInput = {
-    tokensUsed?: SortOrder
+    tokens_used?: SortOrder
   }
 
   export type EnumMessageRoleWithAggregatesFilter<$PrismaModel = never> = {
@@ -10355,32 +10355,32 @@ export namespace Prisma {
 
   export type SecurityLogCountOrderByAggregateInput = {
     id?: SortOrder
-    userId?: SortOrder
+    user_id?: SortOrder
     action?: SortOrder
     details?: SortOrder
-    ipAddress?: SortOrder
-    userAgent?: SortOrder
-    createdAt?: SortOrder
+    ip_address?: SortOrder
+    user_agent?: SortOrder
+    created_at?: SortOrder
   }
 
   export type SecurityLogMaxOrderByAggregateInput = {
     id?: SortOrder
-    userId?: SortOrder
+    user_id?: SortOrder
     action?: SortOrder
     details?: SortOrder
-    ipAddress?: SortOrder
-    userAgent?: SortOrder
-    createdAt?: SortOrder
+    ip_address?: SortOrder
+    user_agent?: SortOrder
+    created_at?: SortOrder
   }
 
   export type SecurityLogMinOrderByAggregateInput = {
     id?: SortOrder
-    userId?: SortOrder
+    user_id?: SortOrder
     action?: SortOrder
     details?: SortOrder
-    ipAddress?: SortOrder
-    userAgent?: SortOrder
-    createdAt?: SortOrder
+    ip_address?: SortOrder
+    user_agent?: SortOrder
+    created_at?: SortOrder
   }
 
   export type EnumSecurityActionWithAggregatesFilter<$PrismaModel = never> = {
@@ -10410,11 +10410,11 @@ export namespace Prisma {
     email?: SortOrder
     key?: SortOrder
     token?: SortOrder
-    userId?: SortOrder
+    user_id?: SortOrder
     type?: SortOrder
-    expiresAt?: SortOrder
+    expires_at?: SortOrder
     used?: SortOrder
-    createdAt?: SortOrder
+    created_at?: SortOrder
   }
 
   export type VerificationTokenMaxOrderByAggregateInput = {
@@ -10422,11 +10422,11 @@ export namespace Prisma {
     email?: SortOrder
     key?: SortOrder
     token?: SortOrder
-    userId?: SortOrder
+    user_id?: SortOrder
     type?: SortOrder
-    expiresAt?: SortOrder
+    expires_at?: SortOrder
     used?: SortOrder
-    createdAt?: SortOrder
+    created_at?: SortOrder
   }
 
   export type VerificationTokenMinOrderByAggregateInput = {
@@ -10434,11 +10434,11 @@ export namespace Prisma {
     email?: SortOrder
     key?: SortOrder
     token?: SortOrder
-    userId?: SortOrder
+    user_id?: SortOrder
     type?: SortOrder
-    expiresAt?: SortOrder
+    expires_at?: SortOrder
     used?: SortOrder
-    createdAt?: SortOrder
+    created_at?: SortOrder
   }
 
   export type EnumTokenTypeWithAggregatesFilter<$PrismaModel = never> = {
@@ -10723,15 +10723,15 @@ export namespace Prisma {
     deleteMany?: ChatSessionScalarWhereInput | ChatSessionScalarWhereInput[]
   }
 
-  export type UserCreateNestedOneWithoutChatSessionsInput = {
-    create?: XOR<UserCreateWithoutChatSessionsInput, UserUncheckedCreateWithoutChatSessionsInput>
-    connectOrCreate?: UserCreateOrConnectWithoutChatSessionsInput
+  export type UserCreateNestedOneWithoutChat_sessionsInput = {
+    create?: XOR<UserCreateWithoutChat_sessionsInput, UserUncheckedCreateWithoutChat_sessionsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutChat_sessionsInput
     connect?: UserWhereUniqueInput
   }
 
-  export type DocumentCreateNestedOneWithoutChatSessionsInput = {
-    create?: XOR<DocumentCreateWithoutChatSessionsInput, DocumentUncheckedCreateWithoutChatSessionsInput>
-    connectOrCreate?: DocumentCreateOrConnectWithoutChatSessionsInput
+  export type DocumentCreateNestedOneWithoutChat_sessionsInput = {
+    create?: XOR<DocumentCreateWithoutChat_sessionsInput, DocumentUncheckedCreateWithoutChat_sessionsInput>
+    connectOrCreate?: DocumentCreateOrConnectWithoutChat_sessionsInput
     connect?: DocumentWhereUniqueInput
   }
 
@@ -10749,20 +10749,20 @@ export namespace Prisma {
     connect?: ChatMessageWhereUniqueInput | ChatMessageWhereUniqueInput[]
   }
 
-  export type UserUpdateOneRequiredWithoutChatSessionsNestedInput = {
-    create?: XOR<UserCreateWithoutChatSessionsInput, UserUncheckedCreateWithoutChatSessionsInput>
-    connectOrCreate?: UserCreateOrConnectWithoutChatSessionsInput
-    upsert?: UserUpsertWithoutChatSessionsInput
+  export type UserUpdateOneRequiredWithoutChat_sessionsNestedInput = {
+    create?: XOR<UserCreateWithoutChat_sessionsInput, UserUncheckedCreateWithoutChat_sessionsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutChat_sessionsInput
+    upsert?: UserUpsertWithoutChat_sessionsInput
     connect?: UserWhereUniqueInput
-    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutChatSessionsInput, UserUpdateWithoutChatSessionsInput>, UserUncheckedUpdateWithoutChatSessionsInput>
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutChat_sessionsInput, UserUpdateWithoutChat_sessionsInput>, UserUncheckedUpdateWithoutChat_sessionsInput>
   }
 
-  export type DocumentUpdateOneRequiredWithoutChatSessionsNestedInput = {
-    create?: XOR<DocumentCreateWithoutChatSessionsInput, DocumentUncheckedCreateWithoutChatSessionsInput>
-    connectOrCreate?: DocumentCreateOrConnectWithoutChatSessionsInput
-    upsert?: DocumentUpsertWithoutChatSessionsInput
+  export type DocumentUpdateOneRequiredWithoutChat_sessionsNestedInput = {
+    create?: XOR<DocumentCreateWithoutChat_sessionsInput, DocumentUncheckedCreateWithoutChat_sessionsInput>
+    connectOrCreate?: DocumentCreateOrConnectWithoutChat_sessionsInput
+    upsert?: DocumentUpsertWithoutChat_sessionsInput
     connect?: DocumentWhereUniqueInput
-    update?: XOR<XOR<DocumentUpdateToOneWithWhereWithoutChatSessionsInput, DocumentUpdateWithoutChatSessionsInput>, DocumentUncheckedUpdateWithoutChatSessionsInput>
+    update?: XOR<XOR<DocumentUpdateToOneWithWhereWithoutChat_sessionsInput, DocumentUpdateWithoutChat_sessionsInput>, DocumentUncheckedUpdateWithoutChat_sessionsInput>
   }
 
   export type ChatMessageUpdateManyWithoutSessionNestedInput = {
@@ -10811,9 +10811,9 @@ export namespace Prisma {
     update?: XOR<XOR<ChatSessionUpdateToOneWithWhereWithoutMessagesInput, ChatSessionUpdateWithoutMessagesInput>, ChatSessionUncheckedUpdateWithoutMessagesInput>
   }
 
-  export type UserCreateNestedOneWithoutSecurityLogsInput = {
-    create?: XOR<UserCreateWithoutSecurityLogsInput, UserUncheckedCreateWithoutSecurityLogsInput>
-    connectOrCreate?: UserCreateOrConnectWithoutSecurityLogsInput
+  export type UserCreateNestedOneWithoutSecurity_logsInput = {
+    create?: XOR<UserCreateWithoutSecurity_logsInput, UserUncheckedCreateWithoutSecurity_logsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSecurity_logsInput
     connect?: UserWhereUniqueInput
   }
 
@@ -10821,17 +10821,17 @@ export namespace Prisma {
     set?: $Enums.SecurityAction
   }
 
-  export type UserUpdateOneRequiredWithoutSecurityLogsNestedInput = {
-    create?: XOR<UserCreateWithoutSecurityLogsInput, UserUncheckedCreateWithoutSecurityLogsInput>
-    connectOrCreate?: UserCreateOrConnectWithoutSecurityLogsInput
-    upsert?: UserUpsertWithoutSecurityLogsInput
+  export type UserUpdateOneRequiredWithoutSecurity_logsNestedInput = {
+    create?: XOR<UserCreateWithoutSecurity_logsInput, UserUncheckedCreateWithoutSecurity_logsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSecurity_logsInput
+    upsert?: UserUpsertWithoutSecurity_logsInput
     connect?: UserWhereUniqueInput
-    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSecurityLogsInput, UserUpdateWithoutSecurityLogsInput>, UserUncheckedUpdateWithoutSecurityLogsInput>
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSecurity_logsInput, UserUpdateWithoutSecurity_logsInput>, UserUncheckedUpdateWithoutSecurity_logsInput>
   }
 
-  export type UserCreateNestedOneWithoutVerificationTokensInput = {
-    create?: XOR<UserCreateWithoutVerificationTokensInput, UserUncheckedCreateWithoutVerificationTokensInput>
-    connectOrCreate?: UserCreateOrConnectWithoutVerificationTokensInput
+  export type UserCreateNestedOneWithoutVerification_tokensInput = {
+    create?: XOR<UserCreateWithoutVerification_tokensInput, UserUncheckedCreateWithoutVerification_tokensInput>
+    connectOrCreate?: UserCreateOrConnectWithoutVerification_tokensInput
     connect?: UserWhereUniqueInput
   }
 
@@ -10839,14 +10839,14 @@ export namespace Prisma {
     set?: $Enums.TokenType
   }
 
-  export type UserUpdateOneWithoutVerificationTokensNestedInput = {
-    create?: XOR<UserCreateWithoutVerificationTokensInput, UserUncheckedCreateWithoutVerificationTokensInput>
-    connectOrCreate?: UserCreateOrConnectWithoutVerificationTokensInput
-    upsert?: UserUpsertWithoutVerificationTokensInput
+  export type UserUpdateOneWithoutVerification_tokensNestedInput = {
+    create?: XOR<UserCreateWithoutVerification_tokensInput, UserUncheckedCreateWithoutVerification_tokensInput>
+    connectOrCreate?: UserCreateOrConnectWithoutVerification_tokensInput
+    upsert?: UserUpsertWithoutVerification_tokensInput
     disconnect?: UserWhereInput | boolean
     delete?: UserWhereInput | boolean
     connect?: UserWhereUniqueInput
-    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutVerificationTokensInput, UserUpdateWithoutVerificationTokensInput>, UserUncheckedUpdateWithoutVerificationTokensInput>
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutVerification_tokensInput, UserUpdateWithoutVerification_tokensInput>, UserUncheckedUpdateWithoutVerification_tokensInput>
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -11173,32 +11173,32 @@ export namespace Prisma {
 
   export type DocumentCreateWithoutOwnerInput = {
     id?: string
-    fileName: string
-    originalFileName: string
-    filePath: string
-    fileSize: number
-    mimeType: string
+    file_name: string
+    original_file_name: string
+    file_path: string
+    file_size: number
+    mime_type: string
     status?: $Enums.DocumentStatus
-    isScanned?: boolean | null
-    pageCount?: number | null
-    uploadedAt?: Date | string
-    updatedAt?: Date | string
-    chatSessions?: ChatSessionCreateNestedManyWithoutDocumentInput
+    is_scanned?: boolean | null
+    page_count?: number | null
+    uploaded_at?: Date | string
+    updated_at?: Date | string
+    chat_sessions?: ChatSessionCreateNestedManyWithoutDocumentInput
   }
 
   export type DocumentUncheckedCreateWithoutOwnerInput = {
     id?: string
-    fileName: string
-    originalFileName: string
-    filePath: string
-    fileSize: number
-    mimeType: string
+    file_name: string
+    original_file_name: string
+    file_path: string
+    file_size: number
+    mime_type: string
     status?: $Enums.DocumentStatus
-    isScanned?: boolean | null
-    pageCount?: number | null
-    uploadedAt?: Date | string
-    updatedAt?: Date | string
-    chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutDocumentInput
+    is_scanned?: boolean | null
+    page_count?: number | null
+    uploaded_at?: Date | string
+    updated_at?: Date | string
+    chat_sessions?: ChatSessionUncheckedCreateNestedManyWithoutDocumentInput
   }
 
   export type DocumentCreateOrConnectWithoutOwnerInput = {
@@ -11214,20 +11214,20 @@ export namespace Prisma {
   export type ChatSessionCreateWithoutUserInput = {
     id?: string
     title?: string | null
-    isSaved?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    document: DocumentCreateNestedOneWithoutChatSessionsInput
+    is_saved?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    document: DocumentCreateNestedOneWithoutChat_sessionsInput
     messages?: ChatMessageCreateNestedManyWithoutSessionInput
   }
 
   export type ChatSessionUncheckedCreateWithoutUserInput = {
     id?: string
     title?: string | null
-    documentId: string
-    isSaved?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
+    document_id: string
+    is_saved?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
     messages?: ChatMessageUncheckedCreateNestedManyWithoutSessionInput
   }
 
@@ -11245,18 +11245,18 @@ export namespace Prisma {
     id?: string
     action: $Enums.SecurityAction
     details?: string | null
-    ipAddress?: string | null
-    userAgent?: string | null
-    createdAt?: Date | string
+    ip_address?: string | null
+    user_agent?: string | null
+    created_at?: Date | string
   }
 
   export type SecurityLogUncheckedCreateWithoutUserInput = {
     id?: string
     action: $Enums.SecurityAction
     details?: string | null
-    ipAddress?: string | null
-    userAgent?: string | null
-    createdAt?: Date | string
+    ip_address?: string | null
+    user_agent?: string | null
+    created_at?: Date | string
   }
 
   export type SecurityLogCreateOrConnectWithoutUserInput = {
@@ -11275,9 +11275,9 @@ export namespace Prisma {
     key: string
     token: string
     type?: $Enums.TokenType
-    expiresAt: Date | string
+    expires_at: Date | string
     used?: boolean
-    createdAt?: Date | string
+    created_at?: Date | string
   }
 
   export type VerificationTokenUncheckedCreateWithoutUserInput = {
@@ -11286,9 +11286,9 @@ export namespace Prisma {
     key: string
     token: string
     type?: $Enums.TokenType
-    expiresAt: Date | string
+    expires_at: Date | string
     used?: boolean
-    createdAt?: Date | string
+    created_at?: Date | string
   }
 
   export type VerificationTokenCreateOrConnectWithoutUserInput = {
@@ -11322,17 +11322,17 @@ export namespace Prisma {
     OR?: DocumentScalarWhereInput[]
     NOT?: DocumentScalarWhereInput | DocumentScalarWhereInput[]
     id?: StringFilter<"Document"> | string
-    fileName?: StringFilter<"Document"> | string
-    originalFileName?: StringFilter<"Document"> | string
-    filePath?: StringFilter<"Document"> | string
-    fileSize?: IntFilter<"Document"> | number
-    mimeType?: StringFilter<"Document"> | string
+    file_name?: StringFilter<"Document"> | string
+    original_file_name?: StringFilter<"Document"> | string
+    file_path?: StringFilter<"Document"> | string
+    file_size?: IntFilter<"Document"> | number
+    mime_type?: StringFilter<"Document"> | string
     status?: EnumDocumentStatusFilter<"Document"> | $Enums.DocumentStatus
-    isScanned?: BoolNullableFilter<"Document"> | boolean | null
-    pageCount?: IntNullableFilter<"Document"> | number | null
-    ownerId?: StringFilter<"Document"> | string
-    uploadedAt?: DateTimeFilter<"Document"> | Date | string
-    updatedAt?: DateTimeFilter<"Document"> | Date | string
+    is_scanned?: BoolNullableFilter<"Document"> | boolean | null
+    page_count?: IntNullableFilter<"Document"> | number | null
+    owner_id?: StringFilter<"Document"> | string
+    uploaded_at?: DateTimeFilter<"Document"> | Date | string
+    updated_at?: DateTimeFilter<"Document"> | Date | string
   }
 
   export type ChatSessionUpsertWithWhereUniqueWithoutUserInput = {
@@ -11357,11 +11357,11 @@ export namespace Prisma {
     NOT?: ChatSessionScalarWhereInput | ChatSessionScalarWhereInput[]
     id?: StringFilter<"ChatSession"> | string
     title?: StringNullableFilter<"ChatSession"> | string | null
-    userId?: StringFilter<"ChatSession"> | string
-    documentId?: StringFilter<"ChatSession"> | string
-    isSaved?: BoolFilter<"ChatSession"> | boolean
-    createdAt?: DateTimeFilter<"ChatSession"> | Date | string
-    updatedAt?: DateTimeFilter<"ChatSession"> | Date | string
+    user_id?: StringFilter<"ChatSession"> | string
+    document_id?: StringFilter<"ChatSession"> | string
+    is_saved?: BoolFilter<"ChatSession"> | boolean
+    created_at?: DateTimeFilter<"ChatSession"> | Date | string
+    updated_at?: DateTimeFilter<"ChatSession"> | Date | string
   }
 
   export type SecurityLogUpsertWithWhereUniqueWithoutUserInput = {
@@ -11385,12 +11385,12 @@ export namespace Prisma {
     OR?: SecurityLogScalarWhereInput[]
     NOT?: SecurityLogScalarWhereInput | SecurityLogScalarWhereInput[]
     id?: StringFilter<"SecurityLog"> | string
-    userId?: StringFilter<"SecurityLog"> | string
+    user_id?: StringFilter<"SecurityLog"> | string
     action?: EnumSecurityActionFilter<"SecurityLog"> | $Enums.SecurityAction
     details?: StringNullableFilter<"SecurityLog"> | string | null
-    ipAddress?: StringNullableFilter<"SecurityLog"> | string | null
-    userAgent?: StringNullableFilter<"SecurityLog"> | string | null
-    createdAt?: DateTimeFilter<"SecurityLog"> | Date | string
+    ip_address?: StringNullableFilter<"SecurityLog"> | string | null
+    user_agent?: StringNullableFilter<"SecurityLog"> | string | null
+    created_at?: DateTimeFilter<"SecurityLog"> | Date | string
   }
 
   export type VerificationTokenUpsertWithWhereUniqueWithoutUserInput = {
@@ -11417,11 +11417,11 @@ export namespace Prisma {
     email?: StringFilter<"VerificationToken"> | string
     key?: StringFilter<"VerificationToken"> | string
     token?: StringFilter<"VerificationToken"> | string
-    userId?: StringNullableFilter<"VerificationToken"> | string | null
+    user_id?: StringNullableFilter<"VerificationToken"> | string | null
     type?: EnumTokenTypeFilter<"VerificationToken"> | $Enums.TokenType
-    expiresAt?: DateTimeFilter<"VerificationToken"> | Date | string
+    expires_at?: DateTimeFilter<"VerificationToken"> | Date | string
     used?: BoolFilter<"VerificationToken"> | boolean
-    createdAt?: DateTimeFilter<"VerificationToken"> | Date | string
+    created_at?: DateTimeFilter<"VerificationToken"> | Date | string
   }
 
   export type UserCreateWithoutDocumentsInput = {
@@ -11429,20 +11429,20 @@ export namespace Prisma {
     name?: string | null
     email: string
     password: string
-    jobTitle?: string | null
-    profilePicture?: string | null
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: string | null
-    aiPersonality?: string | null
+    job_title?: string | null
+    profile_picture?: string | null
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    ai_personality?: string | null
     status?: $Enums.UserStatus
-    emailVerified?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    lastLoginAt?: Date | string | null
-    chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
-    securityLogs?: SecurityLogCreateNestedManyWithoutUserInput
-    verificationTokens?: VerificationTokenCreateNestedManyWithoutUserInput
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
+    chat_sessions?: ChatSessionCreateNestedManyWithoutUserInput
+    security_logs?: SecurityLogCreateNestedManyWithoutUserInput
+    verification_tokens?: VerificationTokenCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutDocumentsInput = {
@@ -11450,20 +11450,20 @@ export namespace Prisma {
     name?: string | null
     email: string
     password: string
-    jobTitle?: string | null
-    profilePicture?: string | null
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: string | null
-    aiPersonality?: string | null
+    job_title?: string | null
+    profile_picture?: string | null
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    ai_personality?: string | null
     status?: $Enums.UserStatus
-    emailVerified?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    lastLoginAt?: Date | string | null
-    chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
-    securityLogs?: SecurityLogUncheckedCreateNestedManyWithoutUserInput
-    verificationTokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
+    chat_sessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    security_logs?: SecurityLogUncheckedCreateNestedManyWithoutUserInput
+    verification_tokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutDocumentsInput = {
@@ -11474,20 +11474,20 @@ export namespace Prisma {
   export type ChatSessionCreateWithoutDocumentInput = {
     id?: string
     title?: string | null
-    isSaved?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    user: UserCreateNestedOneWithoutChatSessionsInput
+    is_saved?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    user: UserCreateNestedOneWithoutChat_sessionsInput
     messages?: ChatMessageCreateNestedManyWithoutSessionInput
   }
 
   export type ChatSessionUncheckedCreateWithoutDocumentInput = {
     id?: string
     title?: string | null
-    userId: string
-    isSaved?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
+    user_id: string
+    is_saved?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
     messages?: ChatMessageUncheckedCreateNestedManyWithoutSessionInput
   }
 
@@ -11517,20 +11517,20 @@ export namespace Prisma {
     name?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    profilePicture?: NullableStringFieldUpdateOperationsInput | string | null
-    isPaidUser?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorEnabled?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
-    aiPersonality?: NullableStringFieldUpdateOperationsInput | string | null
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    is_paid_user?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    emailVerified?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
-    securityLogs?: SecurityLogUpdateManyWithoutUserNestedInput
-    verificationTokens?: VerificationTokenUpdateManyWithoutUserNestedInput
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    chat_sessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    security_logs?: SecurityLogUpdateManyWithoutUserNestedInput
+    verification_tokens?: VerificationTokenUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDocumentsInput = {
@@ -11538,20 +11538,20 @@ export namespace Prisma {
     name?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    profilePicture?: NullableStringFieldUpdateOperationsInput | string | null
-    isPaidUser?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorEnabled?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
-    aiPersonality?: NullableStringFieldUpdateOperationsInput | string | null
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    is_paid_user?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    emailVerified?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
-    securityLogs?: SecurityLogUncheckedUpdateManyWithoutUserNestedInput
-    verificationTokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    chat_sessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    security_logs?: SecurityLogUncheckedUpdateManyWithoutUserNestedInput
+    verification_tokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type ChatSessionUpsertWithWhereUniqueWithoutDocumentInput = {
@@ -11570,104 +11570,104 @@ export namespace Prisma {
     data: XOR<ChatSessionUpdateManyMutationInput, ChatSessionUncheckedUpdateManyWithoutDocumentInput>
   }
 
-  export type UserCreateWithoutChatSessionsInput = {
+  export type UserCreateWithoutChat_sessionsInput = {
     id?: string
     name?: string | null
     email: string
     password: string
-    jobTitle?: string | null
-    profilePicture?: string | null
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: string | null
-    aiPersonality?: string | null
+    job_title?: string | null
+    profile_picture?: string | null
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    ai_personality?: string | null
     status?: $Enums.UserStatus
-    emailVerified?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    lastLoginAt?: Date | string | null
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
     documents?: DocumentCreateNestedManyWithoutOwnerInput
-    securityLogs?: SecurityLogCreateNestedManyWithoutUserInput
-    verificationTokens?: VerificationTokenCreateNestedManyWithoutUserInput
+    security_logs?: SecurityLogCreateNestedManyWithoutUserInput
+    verification_tokens?: VerificationTokenCreateNestedManyWithoutUserInput
   }
 
-  export type UserUncheckedCreateWithoutChatSessionsInput = {
+  export type UserUncheckedCreateWithoutChat_sessionsInput = {
     id?: string
     name?: string | null
     email: string
     password: string
-    jobTitle?: string | null
-    profilePicture?: string | null
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: string | null
-    aiPersonality?: string | null
+    job_title?: string | null
+    profile_picture?: string | null
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    ai_personality?: string | null
     status?: $Enums.UserStatus
-    emailVerified?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    lastLoginAt?: Date | string | null
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
     documents?: DocumentUncheckedCreateNestedManyWithoutOwnerInput
-    securityLogs?: SecurityLogUncheckedCreateNestedManyWithoutUserInput
-    verificationTokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    security_logs?: SecurityLogUncheckedCreateNestedManyWithoutUserInput
+    verification_tokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
-  export type UserCreateOrConnectWithoutChatSessionsInput = {
+  export type UserCreateOrConnectWithoutChat_sessionsInput = {
     where: UserWhereUniqueInput
-    create: XOR<UserCreateWithoutChatSessionsInput, UserUncheckedCreateWithoutChatSessionsInput>
+    create: XOR<UserCreateWithoutChat_sessionsInput, UserUncheckedCreateWithoutChat_sessionsInput>
   }
 
-  export type DocumentCreateWithoutChatSessionsInput = {
+  export type DocumentCreateWithoutChat_sessionsInput = {
     id?: string
-    fileName: string
-    originalFileName: string
-    filePath: string
-    fileSize: number
-    mimeType: string
+    file_name: string
+    original_file_name: string
+    file_path: string
+    file_size: number
+    mime_type: string
     status?: $Enums.DocumentStatus
-    isScanned?: boolean | null
-    pageCount?: number | null
-    uploadedAt?: Date | string
-    updatedAt?: Date | string
+    is_scanned?: boolean | null
+    page_count?: number | null
+    uploaded_at?: Date | string
+    updated_at?: Date | string
     owner: UserCreateNestedOneWithoutDocumentsInput
   }
 
-  export type DocumentUncheckedCreateWithoutChatSessionsInput = {
+  export type DocumentUncheckedCreateWithoutChat_sessionsInput = {
     id?: string
-    fileName: string
-    originalFileName: string
-    filePath: string
-    fileSize: number
-    mimeType: string
+    file_name: string
+    original_file_name: string
+    file_path: string
+    file_size: number
+    mime_type: string
     status?: $Enums.DocumentStatus
-    isScanned?: boolean | null
-    pageCount?: number | null
-    ownerId: string
-    uploadedAt?: Date | string
-    updatedAt?: Date | string
+    is_scanned?: boolean | null
+    page_count?: number | null
+    owner_id: string
+    uploaded_at?: Date | string
+    updated_at?: Date | string
   }
 
-  export type DocumentCreateOrConnectWithoutChatSessionsInput = {
+  export type DocumentCreateOrConnectWithoutChat_sessionsInput = {
     where: DocumentWhereUniqueInput
-    create: XOR<DocumentCreateWithoutChatSessionsInput, DocumentUncheckedCreateWithoutChatSessionsInput>
+    create: XOR<DocumentCreateWithoutChat_sessionsInput, DocumentUncheckedCreateWithoutChat_sessionsInput>
   }
 
   export type ChatMessageCreateWithoutSessionInput = {
     id?: string
     role: $Enums.MessageRole
     content: string
-    sourceNodes?: NullableJsonNullValueInput | InputJsonValue
-    tokensUsed?: number | null
-    createdAt?: Date | string
+    source_nodes?: NullableJsonNullValueInput | InputJsonValue
+    tokens_used?: number | null
+    created_at?: Date | string
   }
 
   export type ChatMessageUncheckedCreateWithoutSessionInput = {
     id?: string
     role: $Enums.MessageRole
     content: string
-    sourceNodes?: NullableJsonNullValueInput | InputJsonValue
-    tokensUsed?: number | null
-    createdAt?: Date | string
+    source_nodes?: NullableJsonNullValueInput | InputJsonValue
+    tokens_used?: number | null
+    created_at?: Date | string
   }
 
   export type ChatMessageCreateOrConnectWithoutSessionInput = {
@@ -11680,98 +11680,98 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  export type UserUpsertWithoutChatSessionsInput = {
-    update: XOR<UserUpdateWithoutChatSessionsInput, UserUncheckedUpdateWithoutChatSessionsInput>
-    create: XOR<UserCreateWithoutChatSessionsInput, UserUncheckedCreateWithoutChatSessionsInput>
+  export type UserUpsertWithoutChat_sessionsInput = {
+    update: XOR<UserUpdateWithoutChat_sessionsInput, UserUncheckedUpdateWithoutChat_sessionsInput>
+    create: XOR<UserCreateWithoutChat_sessionsInput, UserUncheckedCreateWithoutChat_sessionsInput>
     where?: UserWhereInput
   }
 
-  export type UserUpdateToOneWithWhereWithoutChatSessionsInput = {
+  export type UserUpdateToOneWithWhereWithoutChat_sessionsInput = {
     where?: UserWhereInput
-    data: XOR<UserUpdateWithoutChatSessionsInput, UserUncheckedUpdateWithoutChatSessionsInput>
+    data: XOR<UserUpdateWithoutChat_sessionsInput, UserUncheckedUpdateWithoutChat_sessionsInput>
   }
 
-  export type UserUpdateWithoutChatSessionsInput = {
+  export type UserUpdateWithoutChat_sessionsInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    profilePicture?: NullableStringFieldUpdateOperationsInput | string | null
-    isPaidUser?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorEnabled?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
-    aiPersonality?: NullableStringFieldUpdateOperationsInput | string | null
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    is_paid_user?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    emailVerified?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     documents?: DocumentUpdateManyWithoutOwnerNestedInput
-    securityLogs?: SecurityLogUpdateManyWithoutUserNestedInput
-    verificationTokens?: VerificationTokenUpdateManyWithoutUserNestedInput
+    security_logs?: SecurityLogUpdateManyWithoutUserNestedInput
+    verification_tokens?: VerificationTokenUpdateManyWithoutUserNestedInput
   }
 
-  export type UserUncheckedUpdateWithoutChatSessionsInput = {
+  export type UserUncheckedUpdateWithoutChat_sessionsInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    profilePicture?: NullableStringFieldUpdateOperationsInput | string | null
-    isPaidUser?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorEnabled?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
-    aiPersonality?: NullableStringFieldUpdateOperationsInput | string | null
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    is_paid_user?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    emailVerified?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     documents?: DocumentUncheckedUpdateManyWithoutOwnerNestedInput
-    securityLogs?: SecurityLogUncheckedUpdateManyWithoutUserNestedInput
-    verificationTokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    security_logs?: SecurityLogUncheckedUpdateManyWithoutUserNestedInput
+    verification_tokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
-  export type DocumentUpsertWithoutChatSessionsInput = {
-    update: XOR<DocumentUpdateWithoutChatSessionsInput, DocumentUncheckedUpdateWithoutChatSessionsInput>
-    create: XOR<DocumentCreateWithoutChatSessionsInput, DocumentUncheckedCreateWithoutChatSessionsInput>
+  export type DocumentUpsertWithoutChat_sessionsInput = {
+    update: XOR<DocumentUpdateWithoutChat_sessionsInput, DocumentUncheckedUpdateWithoutChat_sessionsInput>
+    create: XOR<DocumentCreateWithoutChat_sessionsInput, DocumentUncheckedCreateWithoutChat_sessionsInput>
     where?: DocumentWhereInput
   }
 
-  export type DocumentUpdateToOneWithWhereWithoutChatSessionsInput = {
+  export type DocumentUpdateToOneWithWhereWithoutChat_sessionsInput = {
     where?: DocumentWhereInput
-    data: XOR<DocumentUpdateWithoutChatSessionsInput, DocumentUncheckedUpdateWithoutChatSessionsInput>
+    data: XOR<DocumentUpdateWithoutChat_sessionsInput, DocumentUncheckedUpdateWithoutChat_sessionsInput>
   }
 
-  export type DocumentUpdateWithoutChatSessionsInput = {
+  export type DocumentUpdateWithoutChat_sessionsInput = {
     id?: StringFieldUpdateOperationsInput | string
-    fileName?: StringFieldUpdateOperationsInput | string
-    originalFileName?: StringFieldUpdateOperationsInput | string
-    filePath?: StringFieldUpdateOperationsInput | string
-    fileSize?: IntFieldUpdateOperationsInput | number
-    mimeType?: StringFieldUpdateOperationsInput | string
+    file_name?: StringFieldUpdateOperationsInput | string
+    original_file_name?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    file_size?: IntFieldUpdateOperationsInput | number
+    mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    isScanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    pageCount?: NullableIntFieldUpdateOperationsInput | number | null
-    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     owner?: UserUpdateOneRequiredWithoutDocumentsNestedInput
   }
 
-  export type DocumentUncheckedUpdateWithoutChatSessionsInput = {
+  export type DocumentUncheckedUpdateWithoutChat_sessionsInput = {
     id?: StringFieldUpdateOperationsInput | string
-    fileName?: StringFieldUpdateOperationsInput | string
-    originalFileName?: StringFieldUpdateOperationsInput | string
-    filePath?: StringFieldUpdateOperationsInput | string
-    fileSize?: IntFieldUpdateOperationsInput | number
-    mimeType?: StringFieldUpdateOperationsInput | string
+    file_name?: StringFieldUpdateOperationsInput | string
+    original_file_name?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    file_size?: IntFieldUpdateOperationsInput | number
+    mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    isScanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    pageCount?: NullableIntFieldUpdateOperationsInput | number | null
-    ownerId?: StringFieldUpdateOperationsInput | string
-    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    owner_id?: StringFieldUpdateOperationsInput | string
+    uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ChatMessageUpsertWithWhereUniqueWithoutSessionInput = {
@@ -11795,32 +11795,32 @@ export namespace Prisma {
     OR?: ChatMessageScalarWhereInput[]
     NOT?: ChatMessageScalarWhereInput | ChatMessageScalarWhereInput[]
     id?: StringFilter<"ChatMessage"> | string
-    sessionId?: StringFilter<"ChatMessage"> | string
+    session_id?: StringFilter<"ChatMessage"> | string
     role?: EnumMessageRoleFilter<"ChatMessage"> | $Enums.MessageRole
     content?: StringFilter<"ChatMessage"> | string
-    sourceNodes?: JsonNullableFilter<"ChatMessage">
-    tokensUsed?: IntNullableFilter<"ChatMessage"> | number | null
-    createdAt?: DateTimeFilter<"ChatMessage"> | Date | string
+    source_nodes?: JsonNullableFilter<"ChatMessage">
+    tokens_used?: IntNullableFilter<"ChatMessage"> | number | null
+    created_at?: DateTimeFilter<"ChatMessage"> | Date | string
   }
 
   export type ChatSessionCreateWithoutMessagesInput = {
     id?: string
     title?: string | null
-    isSaved?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    user: UserCreateNestedOneWithoutChatSessionsInput
-    document: DocumentCreateNestedOneWithoutChatSessionsInput
+    is_saved?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    user: UserCreateNestedOneWithoutChat_sessionsInput
+    document: DocumentCreateNestedOneWithoutChat_sessionsInput
   }
 
   export type ChatSessionUncheckedCreateWithoutMessagesInput = {
     id?: string
     title?: string | null
-    userId: string
-    documentId: string
-    isSaved?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
+    user_id: string
+    document_id: string
+    is_saved?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
   }
 
   export type ChatSessionCreateOrConnectWithoutMessagesInput = {
@@ -11842,253 +11842,253 @@ export namespace Prisma {
   export type ChatSessionUpdateWithoutMessagesInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: NullableStringFieldUpdateOperationsInput | string | null
-    isSaved?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    user?: UserUpdateOneRequiredWithoutChatSessionsNestedInput
-    document?: DocumentUpdateOneRequiredWithoutChatSessionsNestedInput
+    is_saved?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutChat_sessionsNestedInput
+    document?: DocumentUpdateOneRequiredWithoutChat_sessionsNestedInput
   }
 
   export type ChatSessionUncheckedUpdateWithoutMessagesInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: NullableStringFieldUpdateOperationsInput | string | null
-    userId?: StringFieldUpdateOperationsInput | string
-    documentId?: StringFieldUpdateOperationsInput | string
-    isSaved?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user_id?: StringFieldUpdateOperationsInput | string
+    document_id?: StringFieldUpdateOperationsInput | string
+    is_saved?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type UserCreateWithoutSecurityLogsInput = {
+  export type UserCreateWithoutSecurity_logsInput = {
     id?: string
     name?: string | null
     email: string
     password: string
-    jobTitle?: string | null
-    profilePicture?: string | null
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: string | null
-    aiPersonality?: string | null
+    job_title?: string | null
+    profile_picture?: string | null
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    ai_personality?: string | null
     status?: $Enums.UserStatus
-    emailVerified?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    lastLoginAt?: Date | string | null
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
     documents?: DocumentCreateNestedManyWithoutOwnerInput
-    chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
-    verificationTokens?: VerificationTokenCreateNestedManyWithoutUserInput
+    chat_sessions?: ChatSessionCreateNestedManyWithoutUserInput
+    verification_tokens?: VerificationTokenCreateNestedManyWithoutUserInput
   }
 
-  export type UserUncheckedCreateWithoutSecurityLogsInput = {
+  export type UserUncheckedCreateWithoutSecurity_logsInput = {
     id?: string
     name?: string | null
     email: string
     password: string
-    jobTitle?: string | null
-    profilePicture?: string | null
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: string | null
-    aiPersonality?: string | null
+    job_title?: string | null
+    profile_picture?: string | null
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    ai_personality?: string | null
     status?: $Enums.UserStatus
-    emailVerified?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    lastLoginAt?: Date | string | null
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
     documents?: DocumentUncheckedCreateNestedManyWithoutOwnerInput
-    chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
-    verificationTokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    chat_sessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    verification_tokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
-  export type UserCreateOrConnectWithoutSecurityLogsInput = {
+  export type UserCreateOrConnectWithoutSecurity_logsInput = {
     where: UserWhereUniqueInput
-    create: XOR<UserCreateWithoutSecurityLogsInput, UserUncheckedCreateWithoutSecurityLogsInput>
+    create: XOR<UserCreateWithoutSecurity_logsInput, UserUncheckedCreateWithoutSecurity_logsInput>
   }
 
-  export type UserUpsertWithoutSecurityLogsInput = {
-    update: XOR<UserUpdateWithoutSecurityLogsInput, UserUncheckedUpdateWithoutSecurityLogsInput>
-    create: XOR<UserCreateWithoutSecurityLogsInput, UserUncheckedCreateWithoutSecurityLogsInput>
+  export type UserUpsertWithoutSecurity_logsInput = {
+    update: XOR<UserUpdateWithoutSecurity_logsInput, UserUncheckedUpdateWithoutSecurity_logsInput>
+    create: XOR<UserCreateWithoutSecurity_logsInput, UserUncheckedCreateWithoutSecurity_logsInput>
     where?: UserWhereInput
   }
 
-  export type UserUpdateToOneWithWhereWithoutSecurityLogsInput = {
+  export type UserUpdateToOneWithWhereWithoutSecurity_logsInput = {
     where?: UserWhereInput
-    data: XOR<UserUpdateWithoutSecurityLogsInput, UserUncheckedUpdateWithoutSecurityLogsInput>
+    data: XOR<UserUpdateWithoutSecurity_logsInput, UserUncheckedUpdateWithoutSecurity_logsInput>
   }
 
-  export type UserUpdateWithoutSecurityLogsInput = {
+  export type UserUpdateWithoutSecurity_logsInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    profilePicture?: NullableStringFieldUpdateOperationsInput | string | null
-    isPaidUser?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorEnabled?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
-    aiPersonality?: NullableStringFieldUpdateOperationsInput | string | null
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    is_paid_user?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    emailVerified?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     documents?: DocumentUpdateManyWithoutOwnerNestedInput
-    chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
-    verificationTokens?: VerificationTokenUpdateManyWithoutUserNestedInput
+    chat_sessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    verification_tokens?: VerificationTokenUpdateManyWithoutUserNestedInput
   }
 
-  export type UserUncheckedUpdateWithoutSecurityLogsInput = {
+  export type UserUncheckedUpdateWithoutSecurity_logsInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    profilePicture?: NullableStringFieldUpdateOperationsInput | string | null
-    isPaidUser?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorEnabled?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
-    aiPersonality?: NullableStringFieldUpdateOperationsInput | string | null
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    is_paid_user?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    emailVerified?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     documents?: DocumentUncheckedUpdateManyWithoutOwnerNestedInput
-    chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
-    verificationTokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    chat_sessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    verification_tokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
-  export type UserCreateWithoutVerificationTokensInput = {
+  export type UserCreateWithoutVerification_tokensInput = {
     id?: string
     name?: string | null
     email: string
     password: string
-    jobTitle?: string | null
-    profilePicture?: string | null
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: string | null
-    aiPersonality?: string | null
+    job_title?: string | null
+    profile_picture?: string | null
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    ai_personality?: string | null
     status?: $Enums.UserStatus
-    emailVerified?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    lastLoginAt?: Date | string | null
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
     documents?: DocumentCreateNestedManyWithoutOwnerInput
-    chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
-    securityLogs?: SecurityLogCreateNestedManyWithoutUserInput
+    chat_sessions?: ChatSessionCreateNestedManyWithoutUserInput
+    security_logs?: SecurityLogCreateNestedManyWithoutUserInput
   }
 
-  export type UserUncheckedCreateWithoutVerificationTokensInput = {
+  export type UserUncheckedCreateWithoutVerification_tokensInput = {
     id?: string
     name?: string | null
     email: string
     password: string
-    jobTitle?: string | null
-    profilePicture?: string | null
-    isPaidUser?: boolean
-    twoFactorEnabled?: boolean
-    twoFactorSecret?: string | null
-    aiPersonality?: string | null
+    job_title?: string | null
+    profile_picture?: string | null
+    is_paid_user?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    ai_personality?: string | null
     status?: $Enums.UserStatus
-    emailVerified?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    lastLoginAt?: Date | string | null
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
     documents?: DocumentUncheckedCreateNestedManyWithoutOwnerInput
-    chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
-    securityLogs?: SecurityLogUncheckedCreateNestedManyWithoutUserInput
+    chat_sessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    security_logs?: SecurityLogUncheckedCreateNestedManyWithoutUserInput
   }
 
-  export type UserCreateOrConnectWithoutVerificationTokensInput = {
+  export type UserCreateOrConnectWithoutVerification_tokensInput = {
     where: UserWhereUniqueInput
-    create: XOR<UserCreateWithoutVerificationTokensInput, UserUncheckedCreateWithoutVerificationTokensInput>
+    create: XOR<UserCreateWithoutVerification_tokensInput, UserUncheckedCreateWithoutVerification_tokensInput>
   }
 
-  export type UserUpsertWithoutVerificationTokensInput = {
-    update: XOR<UserUpdateWithoutVerificationTokensInput, UserUncheckedUpdateWithoutVerificationTokensInput>
-    create: XOR<UserCreateWithoutVerificationTokensInput, UserUncheckedCreateWithoutVerificationTokensInput>
+  export type UserUpsertWithoutVerification_tokensInput = {
+    update: XOR<UserUpdateWithoutVerification_tokensInput, UserUncheckedUpdateWithoutVerification_tokensInput>
+    create: XOR<UserCreateWithoutVerification_tokensInput, UserUncheckedCreateWithoutVerification_tokensInput>
     where?: UserWhereInput
   }
 
-  export type UserUpdateToOneWithWhereWithoutVerificationTokensInput = {
+  export type UserUpdateToOneWithWhereWithoutVerification_tokensInput = {
     where?: UserWhereInput
-    data: XOR<UserUpdateWithoutVerificationTokensInput, UserUncheckedUpdateWithoutVerificationTokensInput>
+    data: XOR<UserUpdateWithoutVerification_tokensInput, UserUncheckedUpdateWithoutVerification_tokensInput>
   }
 
-  export type UserUpdateWithoutVerificationTokensInput = {
+  export type UserUpdateWithoutVerification_tokensInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    profilePicture?: NullableStringFieldUpdateOperationsInput | string | null
-    isPaidUser?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorEnabled?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
-    aiPersonality?: NullableStringFieldUpdateOperationsInput | string | null
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    is_paid_user?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    emailVerified?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     documents?: DocumentUpdateManyWithoutOwnerNestedInput
-    chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
-    securityLogs?: SecurityLogUpdateManyWithoutUserNestedInput
+    chat_sessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    security_logs?: SecurityLogUpdateManyWithoutUserNestedInput
   }
 
-  export type UserUncheckedUpdateWithoutVerificationTokensInput = {
+  export type UserUncheckedUpdateWithoutVerification_tokensInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    profilePicture?: NullableStringFieldUpdateOperationsInput | string | null
-    isPaidUser?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorEnabled?: BoolFieldUpdateOperationsInput | boolean
-    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
-    aiPersonality?: NullableStringFieldUpdateOperationsInput | string | null
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    is_paid_user?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    emailVerified?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     documents?: DocumentUncheckedUpdateManyWithoutOwnerNestedInput
-    chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
-    securityLogs?: SecurityLogUncheckedUpdateManyWithoutUserNestedInput
+    chat_sessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    security_logs?: SecurityLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type DocumentCreateManyOwnerInput = {
     id?: string
-    fileName: string
-    originalFileName: string
-    filePath: string
-    fileSize: number
-    mimeType: string
+    file_name: string
+    original_file_name: string
+    file_path: string
+    file_size: number
+    mime_type: string
     status?: $Enums.DocumentStatus
-    isScanned?: boolean | null
-    pageCount?: number | null
-    uploadedAt?: Date | string
-    updatedAt?: Date | string
+    is_scanned?: boolean | null
+    page_count?: number | null
+    uploaded_at?: Date | string
+    updated_at?: Date | string
   }
 
   export type ChatSessionCreateManyUserInput = {
     id?: string
     title?: string | null
-    documentId: string
-    isSaved?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
+    document_id: string
+    is_saved?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
   }
 
   export type SecurityLogCreateManyUserInput = {
     id?: string
     action: $Enums.SecurityAction
     details?: string | null
-    ipAddress?: string | null
-    userAgent?: string | null
-    createdAt?: Date | string
+    ip_address?: string | null
+    user_agent?: string | null
+    created_at?: Date | string
   }
 
   export type VerificationTokenCreateManyUserInput = {
@@ -12097,109 +12097,109 @@ export namespace Prisma {
     key: string
     token: string
     type?: $Enums.TokenType
-    expiresAt: Date | string
+    expires_at: Date | string
     used?: boolean
-    createdAt?: Date | string
+    created_at?: Date | string
   }
 
   export type DocumentUpdateWithoutOwnerInput = {
     id?: StringFieldUpdateOperationsInput | string
-    fileName?: StringFieldUpdateOperationsInput | string
-    originalFileName?: StringFieldUpdateOperationsInput | string
-    filePath?: StringFieldUpdateOperationsInput | string
-    fileSize?: IntFieldUpdateOperationsInput | number
-    mimeType?: StringFieldUpdateOperationsInput | string
+    file_name?: StringFieldUpdateOperationsInput | string
+    original_file_name?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    file_size?: IntFieldUpdateOperationsInput | number
+    mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    isScanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    pageCount?: NullableIntFieldUpdateOperationsInput | number | null
-    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    chatSessions?: ChatSessionUpdateManyWithoutDocumentNestedInput
+    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    chat_sessions?: ChatSessionUpdateManyWithoutDocumentNestedInput
   }
 
   export type DocumentUncheckedUpdateWithoutOwnerInput = {
     id?: StringFieldUpdateOperationsInput | string
-    fileName?: StringFieldUpdateOperationsInput | string
-    originalFileName?: StringFieldUpdateOperationsInput | string
-    filePath?: StringFieldUpdateOperationsInput | string
-    fileSize?: IntFieldUpdateOperationsInput | number
-    mimeType?: StringFieldUpdateOperationsInput | string
+    file_name?: StringFieldUpdateOperationsInput | string
+    original_file_name?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    file_size?: IntFieldUpdateOperationsInput | number
+    mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    isScanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    pageCount?: NullableIntFieldUpdateOperationsInput | number | null
-    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    chatSessions?: ChatSessionUncheckedUpdateManyWithoutDocumentNestedInput
+    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    chat_sessions?: ChatSessionUncheckedUpdateManyWithoutDocumentNestedInput
   }
 
   export type DocumentUncheckedUpdateManyWithoutOwnerInput = {
     id?: StringFieldUpdateOperationsInput | string
-    fileName?: StringFieldUpdateOperationsInput | string
-    originalFileName?: StringFieldUpdateOperationsInput | string
-    filePath?: StringFieldUpdateOperationsInput | string
-    fileSize?: IntFieldUpdateOperationsInput | number
-    mimeType?: StringFieldUpdateOperationsInput | string
+    file_name?: StringFieldUpdateOperationsInput | string
+    original_file_name?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    file_size?: IntFieldUpdateOperationsInput | number
+    mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    isScanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    pageCount?: NullableIntFieldUpdateOperationsInput | number | null
-    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ChatSessionUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: NullableStringFieldUpdateOperationsInput | string | null
-    isSaved?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    document?: DocumentUpdateOneRequiredWithoutChatSessionsNestedInput
+    is_saved?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    document?: DocumentUpdateOneRequiredWithoutChat_sessionsNestedInput
     messages?: ChatMessageUpdateManyWithoutSessionNestedInput
   }
 
   export type ChatSessionUncheckedUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: NullableStringFieldUpdateOperationsInput | string | null
-    documentId?: StringFieldUpdateOperationsInput | string
-    isSaved?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    document_id?: StringFieldUpdateOperationsInput | string
+    is_saved?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     messages?: ChatMessageUncheckedUpdateManyWithoutSessionNestedInput
   }
 
   export type ChatSessionUncheckedUpdateManyWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: NullableStringFieldUpdateOperationsInput | string | null
-    documentId?: StringFieldUpdateOperationsInput | string
-    isSaved?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    document_id?: StringFieldUpdateOperationsInput | string
+    is_saved?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SecurityLogUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     action?: EnumSecurityActionFieldUpdateOperationsInput | $Enums.SecurityAction
     details?: NullableStringFieldUpdateOperationsInput | string | null
-    ipAddress?: NullableStringFieldUpdateOperationsInput | string | null
-    userAgent?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    ip_address?: NullableStringFieldUpdateOperationsInput | string | null
+    user_agent?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SecurityLogUncheckedUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     action?: EnumSecurityActionFieldUpdateOperationsInput | $Enums.SecurityAction
     details?: NullableStringFieldUpdateOperationsInput | string | null
-    ipAddress?: NullableStringFieldUpdateOperationsInput | string | null
-    userAgent?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    ip_address?: NullableStringFieldUpdateOperationsInput | string | null
+    user_agent?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SecurityLogUncheckedUpdateManyWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     action?: EnumSecurityActionFieldUpdateOperationsInput | $Enums.SecurityAction
     details?: NullableStringFieldUpdateOperationsInput | string | null
-    ipAddress?: NullableStringFieldUpdateOperationsInput | string | null
-    userAgent?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    ip_address?: NullableStringFieldUpdateOperationsInput | string | null
+    user_agent?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type VerificationTokenUpdateWithoutUserInput = {
@@ -12208,9 +12208,9 @@ export namespace Prisma {
     key?: StringFieldUpdateOperationsInput | string
     token?: StringFieldUpdateOperationsInput | string
     type?: EnumTokenTypeFieldUpdateOperationsInput | $Enums.TokenType
-    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expires_at?: DateTimeFieldUpdateOperationsInput | Date | string
     used?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type VerificationTokenUncheckedUpdateWithoutUserInput = {
@@ -12219,9 +12219,9 @@ export namespace Prisma {
     key?: StringFieldUpdateOperationsInput | string
     token?: StringFieldUpdateOperationsInput | string
     type?: EnumTokenTypeFieldUpdateOperationsInput | $Enums.TokenType
-    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expires_at?: DateTimeFieldUpdateOperationsInput | Date | string
     used?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type VerificationTokenUncheckedUpdateManyWithoutUserInput = {
@@ -12230,83 +12230,83 @@ export namespace Prisma {
     key?: StringFieldUpdateOperationsInput | string
     token?: StringFieldUpdateOperationsInput | string
     type?: EnumTokenTypeFieldUpdateOperationsInput | $Enums.TokenType
-    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expires_at?: DateTimeFieldUpdateOperationsInput | Date | string
     used?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ChatSessionCreateManyDocumentInput = {
     id?: string
     title?: string | null
-    userId: string
-    isSaved?: boolean
-    createdAt?: Date | string
-    updatedAt?: Date | string
+    user_id: string
+    is_saved?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
   }
 
   export type ChatSessionUpdateWithoutDocumentInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: NullableStringFieldUpdateOperationsInput | string | null
-    isSaved?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    user?: UserUpdateOneRequiredWithoutChatSessionsNestedInput
+    is_saved?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutChat_sessionsNestedInput
     messages?: ChatMessageUpdateManyWithoutSessionNestedInput
   }
 
   export type ChatSessionUncheckedUpdateWithoutDocumentInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: NullableStringFieldUpdateOperationsInput | string | null
-    userId?: StringFieldUpdateOperationsInput | string
-    isSaved?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user_id?: StringFieldUpdateOperationsInput | string
+    is_saved?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     messages?: ChatMessageUncheckedUpdateManyWithoutSessionNestedInput
   }
 
   export type ChatSessionUncheckedUpdateManyWithoutDocumentInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: NullableStringFieldUpdateOperationsInput | string | null
-    userId?: StringFieldUpdateOperationsInput | string
-    isSaved?: BoolFieldUpdateOperationsInput | boolean
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user_id?: StringFieldUpdateOperationsInput | string
+    is_saved?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ChatMessageCreateManySessionInput = {
     id?: string
     role: $Enums.MessageRole
     content: string
-    sourceNodes?: NullableJsonNullValueInput | InputJsonValue
-    tokensUsed?: number | null
-    createdAt?: Date | string
+    source_nodes?: NullableJsonNullValueInput | InputJsonValue
+    tokens_used?: number | null
+    created_at?: Date | string
   }
 
   export type ChatMessageUpdateWithoutSessionInput = {
     id?: StringFieldUpdateOperationsInput | string
     role?: EnumMessageRoleFieldUpdateOperationsInput | $Enums.MessageRole
     content?: StringFieldUpdateOperationsInput | string
-    sourceNodes?: NullableJsonNullValueInput | InputJsonValue
-    tokensUsed?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    source_nodes?: NullableJsonNullValueInput | InputJsonValue
+    tokens_used?: NullableIntFieldUpdateOperationsInput | number | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ChatMessageUncheckedUpdateWithoutSessionInput = {
     id?: StringFieldUpdateOperationsInput | string
     role?: EnumMessageRoleFieldUpdateOperationsInput | $Enums.MessageRole
     content?: StringFieldUpdateOperationsInput | string
-    sourceNodes?: NullableJsonNullValueInput | InputJsonValue
-    tokensUsed?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    source_nodes?: NullableJsonNullValueInput | InputJsonValue
+    tokens_used?: NullableIntFieldUpdateOperationsInput | number | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ChatMessageUncheckedUpdateManyWithoutSessionInput = {
     id?: StringFieldUpdateOperationsInput | string
     role?: EnumMessageRoleFieldUpdateOperationsInput | $Enums.MessageRole
     content?: StringFieldUpdateOperationsInput | string
-    sourceNodes?: NullableJsonNullValueInput | InputJsonValue
-    tokensUsed?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    source_nodes?: NullableJsonNullValueInput | InputJsonValue
+    tokens_used?: NullableIntFieldUpdateOperationsInput | number | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
 

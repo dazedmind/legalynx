@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'This verification link has already been used' }, { status: 400 });
     }
 
-    if (verificationToken.expiresAt < new Date()) {
+    if (verificationToken.expires_at < new Date()) {
       return NextResponse.json({ error: 'Verification link has expired' }, { status: 400 });
     }
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       where: { email: verificationToken.email }
     });
 
-    if (existingUser && existingUser.emailVerified) {
+    if (existingUser && existingUser.email_verified) {
       return NextResponse.json({ error: 'Email is already verified' }, { status: 400 });
     }
 
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
           email: verificationToken.email,
           password: verificationToken.key,
           name: '',
-          emailVerified: true,
+          email_verified: true,
           status: 'ACTIVE'
         }
       });
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       await prisma.user.update({
         where: { email: verificationToken.email },
         data: { 
-            emailVerified: true,
+            email_verified: true,
             password: verificationToken.key
         }
       });

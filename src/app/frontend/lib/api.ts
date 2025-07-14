@@ -1,5 +1,5 @@
 // src/app/frontend/lib/api.ts
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { authUtils } from '@/lib/auth';
 
 // API base URLs
@@ -7,7 +7,7 @@ const MAIN_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3
 const RAG_API_BASE_URL = 'http://localhost:8000'; // Your existing RAG system
 
 // Main API instance (for database operations)
-const mainApi = axios.create({
+export const mainApi = axios.create({
   baseURL: MAIN_API_BASE_URL,
   timeout: 30000,
 });
@@ -346,3 +346,93 @@ export const handleApiError = (error: any): string => {
   }
   return 'An unexpected error occurred';
 };
+
+// Add this to your existing src/app/frontend/lib/api.ts file
+
+// Profile API functions
+export const profileService = {
+  // Get user profile
+  async getProfile(): Promise<UserProfile> {
+    try {
+      const response = await mainApi.get<UserProfile>('/backend/api/profile');
+      return response.data;
+    } catch (error) {
+      throw new Error('Failed to fetch profile');
+    }
+  },
+
+  // Update user profile
+  async updateProfile(updates: UpdateProfileRequest): Promise<UpdateProfileResponse> {
+    try {
+      const response = await mainApi.patch<UpdateProfileResponse>('/backend/api/profile', updates);
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError && error.response?.status === 400) {
+        throw new Error(error.response.data.error || 'Invalid profile data');
+      }
+      throw new Error('Failed to update profile');
+    }
+  },
+
+  // Delete user account
+  async deleteAccount(): Promise<{ message: string }> {
+    try {
+      const response = await mainApi.delete<{ message: string }>('/backend/api/profile?confirm=true');
+      return response.data;
+    } catch (error) {
+      throw new Error('Failed to delete account');
+    }
+  }
+};
+
+// Add these types to your existing types or create src/app/frontend/types/profile.ts
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  email_verified: boolean;
+  status: 'ACTIVE' | 'SUSPENDED' | 'PENDING';
+  is_paid_user: boolean;
+  profile_picture?: string;
+  job_title?: string;
+  created_at: string;
+  last_login_at?: string;
+  
+  stats: {
+    document_count: number;
+    chat_session_count: number;
+    total_messages: number;
+    storage_used: number;
+  };
+  
+  recentActivity: {
+    documents: Array<{
+      id: string;
+      name: string;
+      uploaded_at: string;
+      size: number;
+      pages?: number;
+    }>;
+    chat_sessions: Array<{
+      id: string;
+      title?: string;
+      document_name: string;
+      message_count: number;
+      last_activity: string;
+      is_saved: boolean;
+    }>;
+  };
+}
+
+export interface UpdateProfileRequest {
+  name?: string;
+  job_title?: string;
+  profile_picture?: string;
+  current_password?: string;
+  new_password?: string;
+}
+
+export interface UpdateProfileResponse {
+  message: string;
+  user: Partial<UserProfile>;
+}

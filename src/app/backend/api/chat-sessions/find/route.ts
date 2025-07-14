@@ -18,22 +18,22 @@ export async function GET(request: Request) {
 
     const session = await prisma.chatSession.findFirst({
       where: {
-        userId,
-        documentId
+        user_id: userId,
+        document_id: documentId
       },
       include: {
         messages: {
-          orderBy: { createdAt: 'asc' }
+          orderBy: { created_at: 'asc' }
         },
         document: {
           select: {
             id: true,
-            fileName: true,
-            originalFileName: true
+            file_name: true,
+            original_file_name: true
           }
         }
       },
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { updated_at: 'desc' }
     });
 
     if (!session) {

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const session = await prisma.chatSession.findFirst({
       where: {
         id: sessionId,
-        userId: user.id
+        user_id: user.id
       }
     });
 
@@ -48,27 +48,27 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Create message
     const message = await prisma.chatMessage.create({
       data: {
-        sessionId,
+        session_id: sessionId,
         role: role.toUpperCase(), // USER or ASSISTANT
         content,
-        sourceNodes: sourceNodes || null,
-        tokensUsed: tokensUsed || null
+        source_nodes: sourceNodes || null,
+        tokens_used: tokensUsed || null
       }
     });
 
     // Update session's updatedAt
     await prisma.chatSession.update({
       where: { id: sessionId },
-      data: { updatedAt: new Date() }
+      data: { updated_at: new Date() }
     });
 
     return NextResponse.json({
       messageId: message.id,
       content: message.content,
       role: message.role,
-      createdAt: message.createdAt,
-      sourceNodes: message.sourceNodes,
-      tokensUsed: message.tokensUsed
+      createdAt: message.created_at,
+      sourceNodes: message.source_nodes,
+      tokensUsed: message.tokens_used
     });
 
   } catch (error) {
@@ -90,11 +90,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const session = await prisma.chatSession.findFirst({
       where: {
         id: sessionId,
-        userId: user.id
+        user_id: user.id
       },
       include: {
         messages: {
-          orderBy: { createdAt: 'asc' }
+          orderBy: { created_at: 'asc' }
         },
         document: true
       }
@@ -109,17 +109,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       title: session.title,
       document: {
         id: session.document.id,
-        name: session.document.originalFileName,
-        size: session.document.fileSize,
-        pages: session.document.pageCount
+        name: session.document.original_file_name,
+        size: session.document.file_size,
+        pages: session.document.page_count
       },
       messages: session.messages.map(msg => ({
         id: msg.id,
         role: msg.role.toLowerCase(),
         content: msg.content,
-        sourceNodes: msg.sourceNodes,
-        tokensUsed: msg.tokensUsed,
-        createdAt: msg.createdAt
+        sourceNodes: msg.source_nodes,
+        tokensUsed: msg.tokens_used,
+        createdAt: msg.created_at
       }))
     });
 

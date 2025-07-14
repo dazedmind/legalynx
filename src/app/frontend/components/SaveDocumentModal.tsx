@@ -24,7 +24,7 @@ function SaveDocumentModal({ isOpen, onClose, onSave }: SaveDocumentModalProps) 
 
         <div className="flex space-x-3">
             <button
-            onClick={() => onSave(false)}
+            onClick={() => onClose()}
             className="flex-1 cursor-pointer px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
             >
             Don't Save

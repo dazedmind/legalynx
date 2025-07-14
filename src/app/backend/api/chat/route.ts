@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const document = await prisma.document.findFirst({
       where: {
         id: documentId,
-        ownerId: user.id
+        owner_id: user.id
       }
     });
 
@@ -43,14 +43,14 @@ export async function POST(request: NextRequest) {
     // Create chat session
     const chatSession = await prisma.chatSession.create({
       data: {
-        title: title || `Chat with ${document.originalFileName}`,
-        userId: user.id,
-        documentId: documentId
+        title: title || `Chat with ${document.original_file_name}`,
+        user_id: user.id,
+        document_id: documentId
       },
       include: {
         document: true,
         messages: {
-          orderBy: { createdAt: 'asc' }
+          orderBy: { created_at: 'asc' }
         }
       }
     });
@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       sessionId: chatSession.id,
       title: chatSession.title,
-      documentId: chatSession.documentId,
-      documentName: chatSession.document.originalFileName,
-      createdAt: chatSession.createdAt,
+      documentId: chatSession.document_id,
+      documentName: chatSession.document.original_file_name,
+      createdAt: chatSession.created_at,
       messages: chatSession.messages
     });
 
@@ -79,26 +79,26 @@ export async function GET(request: NextRequest) {
     const user = await getUserFromToken(request);
     
     const chatSessions = await prisma.chatSession.findMany({
-      where: { userId: user.id },
+      where: { user_id: user.id },
       include: {
         document: true,
         messages: {
           take: 1,
-          orderBy: { createdAt: 'desc' }
+          orderBy: { created_at: 'desc' }
         }
       },
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { updated_at: 'desc' }
     });
 
     const formattedSessions = chatSessions.map(session => ({
       id: session.id,
       title: session.title,
-      documentId: session.documentId,
-      documentName: session.document.originalFileName,
+      documentId: session.document_id,
+      documentName: session.document.original_file_name,
       lastMessage: session.messages[0]?.content || null,
-      createdAt: session.createdAt,
-      updatedAt: session.updatedAt,
-      isSaved: session.isSaved
+      createdAt: session.created_at,
+      updatedAt: session.updated_at,
+      isSaved: session.is_saved
     }));
 
     return NextResponse.json({ sessions: formattedSessions });

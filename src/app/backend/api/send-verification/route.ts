@@ -23,7 +23,7 @@ export async function POST(req: Request) {
         where: { email }
       });
 
-      if (existingUser && existingUser.emailVerified) {
+      if (existingUser && existingUser.email_verified) {
         return NextResponse.json({ error: 'User already exists' }, { status: 400 });
       }
 
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
         data: {
           email,
           token: verificationToken,
-          expiresAt,
+          expires_at: expiresAt,
           type: 'EMAIL_VERIFICATION',
           key: hashedPassword
         }

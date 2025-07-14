@@ -1,3 +1,4 @@
+// Updated Home page to handle session selection
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -19,6 +20,7 @@ export default function Home() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null); // Add this
   const { user, logout, isPaidUser } = useAuth();
 
   const [notification, setNotification] = useState<{
@@ -30,12 +32,7 @@ export default function Home() {
   useEffect(() => {
     const clearUploadedFiles = async () => {
       try {
-        // Don't clear localStorage on page load anymore
-        // Users want to keep their saved documents
-        
-        // Just load system status
         await loadSystemStatus();
-        
         console.log('✅ Page loaded, checking system status');
       } catch (error) {
         console.error('Failed to load system status:', error);
@@ -64,22 +61,22 @@ export default function Home() {
       message: `Successfully processed ${response.filename} with ${response.pages_processed} pages!`
     });
     
-    // Refresh system status after successful upload
     setTimeout(() => {
       loadSystemStatus();
     }, 1000);
     
-    // Clear notification after 5 seconds
     setTimeout(() => {
       setNotification(null);
     }, 5000);
 
-    // Switch to chat tab after successful upload
     setActiveTab('chat');
   };
 
   const handleNewChat = () => {
     setActiveTab('upload');
+    // Clear current session when starting new chat
+    setCurrentSessionId(null);
+    setCurrentDocumentId(null);
   };
 
   const handleTabClick = (tab: ActiveTab) => {
@@ -89,17 +86,22 @@ export default function Home() {
   const handleDocumentSelect = async (docId: string) => {
     setCurrentDocumentId(docId);
     
-    // Get document info from localStorage
     const savedDocs = localStorage.getItem('uploaded_documents');
     if (savedDocs) {
       const docs = JSON.parse(savedDocs);
       const selectedDoc = docs.find((doc: any) => doc.id === docId);
       
       if (selectedDoc) {
-        // Switch to chat tab
         setActiveTab('chat');
       }
     }
+  };
+
+  // Add this new handler for session selection
+  const handleSessionSelect = async (sessionId: string, documentId: string) => {
+    setCurrentSessionId(sessionId);
+    setCurrentDocumentId(documentId);
+    setActiveTab('chat');
   };
 
   const handleSystemReset = async () => {
@@ -110,6 +112,7 @@ export default function Home() {
     try {
       await apiService.resetSystem();
       setCurrentDocumentId(null);
+      setCurrentSessionId(null); // Also clear session
       
       setNotification({
         type: 'success',
@@ -123,7 +126,6 @@ export default function Home() {
       });
     }
 
-    // Clear notification after 5 seconds
     setTimeout(() => {
       setNotification(null);
     }, 5000);
@@ -144,13 +146,6 @@ export default function Home() {
         {/* Sidebar */}
         <aside className="w-1/5 bg-neutral-100 p-6 flex flex-col border-r border-gray-200 flex-shrink-0">
           {/* Navigation Buttons */}
-          {/* <button 
-            onClick={handleNewChat}
-            className="w-full cursor-pointer flex items-center gap-1 text-left mb-2 p-3 rounded-lg transition-colors bg-gradient-to-br from-blue-600 to-blue-400 text-white hover:from-blue-400 hover:to-blue-500"
-          >
-            <Plus className="w-5 h-5" />
-            New Chat
-          </button> */}
    
           <div className="space-y-2 mb-8">
             <button
@@ -222,14 +217,12 @@ export default function Home() {
 
           {/* Tab Content */}
           <div className="flex-1 overflow-hidden">
-            {/* {activeTab === 'upload' && (
-              <UploadPage onUploadSuccess={handleUploadSuccess} />
-            )} */}
 
             {activeTab === 'chat' && (
               <ChatViewer 
                 isSystemReady={!!isSystemReady} 
                 onUploadSuccess={handleUploadSuccess}
+                selectedSessionId={currentSessionId || ''} // Pass the selected session ID
               />
             )}
 
@@ -243,6 +236,7 @@ export default function Home() {
             {activeTab === 'chat_history' && (
               <ChatHistory 
                 onDocumentSelect={handleDocumentSelect}
+                onSessionSelect={handleSessionSelect} // Pass the new handler
                 currentDocumentId={currentDocumentId || ''}
               />
             )}

@@ -34,20 +34,20 @@ export async function GET(
     const chatSession = await prisma.chatSession.findFirst({
       where: {
         id: sessionId,
-        userId: user.id // Ensure user owns this session
+        user_id: user.id // Ensure user owns this session
       },
       include: {
         document: {
           select: {
             id: true,
-            fileName: true,
-            originalFileName: true,
-            fileSize: true,
-            pageCount: true
+            file_name: true,
+            original_file_name: true,
+            file_size: true,
+            page_count: true
           }
         },
         messages: {
-          orderBy: { createdAt: 'asc' }
+          orderBy: { created_at: 'asc' }
         }
       }
     });
@@ -83,7 +83,7 @@ export async function PATCH(
     const existingSession = await prisma.chatSession.findFirst({
       where: {
         id: sessionId,
-        userId: user.id
+        user_id: user.id
       }
     });
 
@@ -99,8 +99,8 @@ export async function PATCH(
       where: { id: sessionId },
       data: {
         title: body.title,
-        isSaved: body.isSaved,
-        updatedAt: body.updatedAt ? new Date(body.updatedAt) : new Date()
+        is_saved: body.isSaved,
+        updated_at: body.updatedAt ? new Date(body.updatedAt) : new Date()
       }
     });
 
@@ -127,7 +127,7 @@ export async function DELETE(
     const chatSession = await prisma.chatSession.findFirst({
       where: {
         id: sessionId,
-        userId: user.id
+        user_id: user.id
       }
     });
 
@@ -142,7 +142,7 @@ export async function DELETE(
     await prisma.$transaction(async (tx) => {
       // Delete all messages associated with this session
       await tx.chatMessage.deleteMany({
-        where: { sessionId }
+        where: { session_id: sessionId }
       });
 
       // Delete the chat session
@@ -155,13 +155,13 @@ export async function DELETE(
     try {
       await prisma.securityLog.create({
         data: {
-          userId: user.id,
+          user_id: user.id,
           action: 'CHAT_DELETE',
           details: `Deleted chat session: ${chatSession.title || sessionId}`,
-          ipAddress: request.headers.get('x-forwarded-for') || 
+          ip_address: request.headers.get('x-forwarded-for') || 
                     request.headers.get('x-real-ip') || 
                     'unknown',
-          userAgent: request.headers.get('user-agent') || 'unknown'
+          user_agent: request.headers.get('user-agent') || 'unknown'
         }
       });
     } catch (logError) {

@@ -22,7 +22,7 @@ export async function POST(request: Request) {
                 id: true,
                 email: true,
                 password: true,
-                emailVerified: true,
+                email_verified: true,
                 status: true,
             }
         });
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
         }
 
         // Check if email is verified
-        if (!user.emailVerified) {
+        if (!user.email_verified) {
             return NextResponse.json({ 
                 message: "Please verify your email before logging in" 
             }, { status: 401 });
@@ -70,19 +70,19 @@ export async function POST(request: Request) {
         // Update last login
         await prisma.user.update({
             where: { id: user.id },
-            data: { lastLoginAt: new Date() }
+            data: { last_login_at: new Date() }
         });
 
           // Log security event
           await prisma.securityLog.create({
             data: {
-                userId: user.id,
+                user_id: user.id,
                 action: 'LOGIN',
                 details: 'User logged in successfully',
-                ipAddress: request.headers.get('x-forwarded-for') || 
+                ip_address: request.headers.get('x-forwarded-for') || 
                           request.headers.get('x-real-ip') || 
                           'unknown',
-                userAgent: request.headers.get('user-agent') || 'unknown'
+                user_agent: request.headers.get('user-agent') || 'unknown'
             }
         });
 

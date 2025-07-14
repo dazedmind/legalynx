@@ -16,8 +16,8 @@ export async function GET(request: Request) {
     }
 
     const messages = await prisma.chatMessage.findMany({
-      where: { sessionId },
-      orderBy: { createdAt: 'asc' }
+      where: { session_id: sessionId },
+      orderBy: { created_at: 'asc' }
     });
 
     return NextResponse.json(messages);
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { id, sessionId, role, content, timestamp, tokensUsed } = body;
+    const { id, sessionId, role, content, timestamp, tokens_used } = body;
 
     if (!sessionId || !role || !content) {
       return NextResponse.json(
@@ -46,18 +46,18 @@ export async function POST(request: Request) {
     const message = await prisma.chatMessage.create({
       data: {
         id,
-        sessionId,
+        session_id: sessionId,
         role,
         content,
-        createdAt: timestamp ? new Date(timestamp) : new Date(),
-        tokensUsed, 
+        created_at: timestamp ? new Date(timestamp) : new Date(),
+        tokens_used: tokens_used, 
       }
     });
 
     // Update session's updatedAt timestamp
     await prisma.chatSession.update({
       where: { id: sessionId },
-      data: { updatedAt: new Date() }
+      data: { updated_at: new Date() }
     });
 
     return NextResponse.json(message, { status: 201 });

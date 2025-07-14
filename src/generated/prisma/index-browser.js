@@ -125,62 +125,62 @@ exports.Prisma.UserScalarFieldEnum = {
   name: 'name',
   email: 'email',
   password: 'password',
-  jobTitle: 'jobTitle',
-  profilePicture: 'profilePicture',
-  isPaidUser: 'isPaidUser',
-  twoFactorEnabled: 'twoFactorEnabled',
-  twoFactorSecret: 'twoFactorSecret',
-  aiPersonality: 'aiPersonality',
+  job_title: 'job_title',
+  profile_picture: 'profile_picture',
+  is_paid_user: 'is_paid_user',
+  two_factor_enabled: 'two_factor_enabled',
+  two_factor_secret: 'two_factor_secret',
+  ai_personality: 'ai_personality',
   status: 'status',
-  emailVerified: 'emailVerified',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  lastLoginAt: 'lastLoginAt'
+  email_verified: 'email_verified',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  last_login_at: 'last_login_at'
 };
 
 exports.Prisma.DocumentScalarFieldEnum = {
   id: 'id',
-  fileName: 'fileName',
-  originalFileName: 'originalFileName',
-  filePath: 'filePath',
-  fileSize: 'fileSize',
-  mimeType: 'mimeType',
+  file_name: 'file_name',
+  original_file_name: 'original_file_name',
+  file_path: 'file_path',
+  file_size: 'file_size',
+  mime_type: 'mime_type',
   status: 'status',
-  isScanned: 'isScanned',
-  pageCount: 'pageCount',
-  ownerId: 'ownerId',
-  uploadedAt: 'uploadedAt',
-  updatedAt: 'updatedAt'
+  is_scanned: 'is_scanned',
+  page_count: 'page_count',
+  owner_id: 'owner_id',
+  uploaded_at: 'uploaded_at',
+  updated_at: 'updated_at'
 };
 
 exports.Prisma.ChatSessionScalarFieldEnum = {
   id: 'id',
   title: 'title',
-  userId: 'userId',
-  documentId: 'documentId',
-  isSaved: 'isSaved',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  user_id: 'user_id',
+  document_id: 'document_id',
+  is_saved: 'is_saved',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
 };
 
 exports.Prisma.ChatMessageScalarFieldEnum = {
   id: 'id',
-  sessionId: 'sessionId',
+  session_id: 'session_id',
   role: 'role',
   content: 'content',
-  sourceNodes: 'sourceNodes',
-  tokensUsed: 'tokensUsed',
-  createdAt: 'createdAt'
+  source_nodes: 'source_nodes',
+  tokens_used: 'tokens_used',
+  created_at: 'created_at'
 };
 
 exports.Prisma.SecurityLogScalarFieldEnum = {
   id: 'id',
-  userId: 'userId',
+  user_id: 'user_id',
   action: 'action',
   details: 'details',
-  ipAddress: 'ipAddress',
-  userAgent: 'userAgent',
-  createdAt: 'createdAt'
+  ip_address: 'ip_address',
+  user_agent: 'user_agent',
+  created_at: 'created_at'
 };
 
 exports.Prisma.VerificationTokenScalarFieldEnum = {
@@ -188,11 +188,11 @@ exports.Prisma.VerificationTokenScalarFieldEnum = {
   email: 'email',
   key: 'key',
   token: 'token',
-  userId: 'userId',
+  user_id: 'user_id',
   type: 'type',
-  expiresAt: 'expiresAt',
+  expires_at: 'expires_at',
   used: 'used',
-  createdAt: 'createdAt'
+  created_at: 'created_at'
 };
 
 exports.Prisma.SortOrder = {

@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
@@ -29,16 +28,16 @@ import { Button } from '@/components/ui/button';
 interface DocumentInfo {
   id: string;
   filename: string;
-  originalName: string;
+  originalName: string; // Keep camelCase for frontend consistency
   size: number;
-  uploadedAt: string;
+  uploadedAt: string; // Keep camelCase for frontend consistency
   pages?: number;
-  status: 'processing' | 'ready';
+  status: 'processing' | 'ready' | 'indexed' | 'uploaded' | 'temporary' | 'failed';
   starred?: boolean;
-  lastAccessed?: string;
+  lastAccessed?: string; // Keep camelCase for frontend consistency
   tags?: string[];
-  chatSessionsCount?: number;
-  mimeType?: string;
+  chatSessionsCount?: number; // Keep camelCase for frontend consistency
+  mimeType?: string; // Keep camelCase for frontend consistency
 }
 
 interface FileManagerProps {
@@ -57,6 +56,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string>('');
+  const [isClient, setIsClient] = useState(false);
   
   // UI State
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,54 +65,102 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showStarredOnly, setShowStarredOnly] = useState(false);
 
+  // Ensure we're on the client side
   useEffect(() => {
-    loadDocuments();
-  }, [isAuthenticated, user?.id]);
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient) {
+      loadDocuments();
+    }
+  }, [isAuthenticated, user?.id, isClient]);
 
   useEffect(() => {
     filterAndSortDocuments();
   }, [documents, searchQuery, sortField, sortOrder, showStarredOnly]);
 
   const loadDocuments = async () => {
+    if (!isClient) return;
+    
     setIsLoading(true);
+    setError('');
+    
     try {
-      if (isAuthenticated) {
-        // Load from database - only INDEXED documents
+      console.log('Loading documents...', { isAuthenticated, userId: user?.id });
+      
+      if (isAuthenticated && user) {
+        // Load from database
+        console.log('Loading from database...');
         const data = await apiService.getDocuments();
-        const formattedDocs = data.documents
-          .filter(doc => doc.status === 'indexed') // Only show indexed documents
-          .map(doc => ({
-            id: doc.id,
-            filename: doc.filename,
-            originalName: doc.originalName,
-            size: doc.size,
-            uploadedAt: doc.uploadedAt,
-            pages: doc.pageCount,
-            status: 'ready' as const,
-            chatSessionsCount: doc.chatSessionsCount,
-            starred: false,
-            lastAccessed: undefined
-          }));
-        setDocuments(formattedDocs);
+        console.log('Database response:', data);
+        
+        if (data && data.documents) {
+          // Map database response to frontend format
+          const formattedDocs: DocumentInfo[] = data.documents
+            .filter(doc => {
+              // Show documents that are ready to use
+              const validStatuses = ['indexed', 'ready', 'processed'];
+              const isValid = validStatuses.includes(doc.status?.toLowerCase() || '');
+              console.log(`Document ${doc.originalName}: status=${doc.status}, valid=${isValid}`);
+              return isValid;
+            })
+            .map(doc => ({
+              id: doc.id,
+              filename: doc.filename,
+              originalName: doc.originalName,
+              size: doc.size,
+              uploadedAt: doc.uploadedAt,
+              pages: doc.pageCount,
+              status: doc.status?.toLowerCase() === 'indexed' ? 'indexed' : 'ready',
+              chatSessionsCount: doc.chatSessionsCount,
+              mimeType: doc.mimeType,
+              starred: false, // TODO: Add starred field to database
+              lastAccessed: undefined // TODO: Add lastAccessed field to database
+            }));
+          
+          console.log('Formatted documents:', formattedDocs);
+          setDocuments(formattedDocs);
+        } else {
+          console.log('No documents found in database response');
+          setDocuments([]);
+        }
       } else {
-        // Load from user-specific localStorage for non-authenticated users
+        // Load from localStorage for non-authenticated users
+        console.log('Loading from localStorage...');
         const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
         const saved = localStorage.getItem(userKey);
+        
         if (saved) {
-          const docs = JSON.parse(saved);
-          // Only show ready documents for localStorage users
-          const readyDocs = docs.filter((doc: DocumentInfo) => doc.status === 'ready');
-          setDocuments(readyDocs);
+          try {
+            const docs = JSON.parse(saved);
+            console.log('LocalStorage docs:', docs);
+            
+            // Filter for ready documents
+            const readyDocs = docs.filter((doc: any) => {
+              const validStatuses = ['ready', 'indexed'];
+              return validStatuses.includes(doc.status);
+            });
+            
+            console.log('Ready docs from localStorage:', readyDocs);
+            setDocuments(readyDocs);
+          } catch (parseError) {
+            console.error('Failed to parse localStorage documents:', parseError);
+            setDocuments([]);
+          }
+        } else {
+          console.log('No documents in localStorage');
+          setDocuments([]);
         }
       }
     } catch (error) {
       console.error('Failed to load documents:', error);
       setError(handleApiError(error));
+      setDocuments([]);
     } finally {
       setIsLoading(false);
     }
   };
-
 
   const filterAndSortDocuments = () => {
     let filtered = [...documents];
@@ -187,8 +235,9 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
     setDocuments(updatedDocs);
     
     // Save to appropriate storage
-    if (!isAuthenticated) {
-      localStorage.setItem('uploaded_documents', JSON.stringify(updatedDocs));
+    if (!isAuthenticated && isClient) {
+      const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+      localStorage.setItem(userKey, JSON.stringify(updatedDocs));
     }
     
     onDocumentSelect?.(docId);
@@ -204,8 +253,9 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
     setDocuments(updatedDocs);
     
     // Save to appropriate storage
-    if (!isAuthenticated) {
-      localStorage.setItem('uploaded_documents', JSON.stringify(updatedDocs));
+    if (!isAuthenticated && isClient) {
+      const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+      localStorage.setItem(userKey, JSON.stringify(updatedDocs));
     }
   };
 
@@ -221,13 +271,14 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
       if (isAuthenticated) {
         // Delete from database
         await apiService.deleteDocument(docId);
-      } else {
+      } else if (isClient) {
         // Delete from localStorage
-        const saved = localStorage.getItem('uploaded_documents');
+        const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+        const saved = localStorage.getItem(userKey);
         if (saved) {
           const docs = JSON.parse(saved);
           const updatedDocs = docs.filter((d: DocumentInfo) => d.id !== docId);
-          localStorage.setItem('uploaded_documents', JSON.stringify(updatedDocs));
+          localStorage.setItem(userKey, JSON.stringify(updatedDocs));
         }
       }
       
@@ -261,13 +312,14 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
         for (const docId of selectedDocs) {
           await apiService.deleteDocument(docId);
         }
-      } else {
+      } else if (isClient) {
         // Delete from localStorage
-        const saved = localStorage.getItem('uploaded_documents');
+        const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+        const saved = localStorage.getItem(userKey);
         if (saved) {
           const docs = JSON.parse(saved);
           const updatedDocs = docs.filter((doc: DocumentInfo) => !selectedDocs.has(doc.id));
-          localStorage.setItem('uploaded_documents', JSON.stringify(updatedDocs));
+          localStorage.setItem(userKey, JSON.stringify(updatedDocs));
         }
       }
       
@@ -320,7 +372,13 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
     });
   };
 
-  if (isLoading) {
+  // Add refresh button for debugging
+  const handleRefresh = () => {
+    console.log('Manual refresh triggered');
+    loadDocuments();
+  };
+
+  if (!isClient || isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6 h-full flex items-center justify-center">
         <div className="text-center">
@@ -343,6 +401,12 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
           </p>
         </div>
         <div className="flex items-center space-x-2">
+          <button
+            onClick={handleRefresh}
+            className="text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            Refresh
+          </button>
           <div className="flex items-center text-sm text-gray-600">
             <HardDrive className="w-4 h-4 mr-1" />
             {formatFileSize(documents.reduce((total, doc) => total + doc.size, 0))}
@@ -440,8 +504,9 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
           {error}
         </div>
       )}
-    {/* Content */}
-    {filteredDocuments.length === 0 ? (
+
+      {/* Content */}
+      {filteredDocuments.length === 0 ? (
         <div className="flex-1 flex items-center justify-center text-gray-500">
           <div className="text-center">
             {documents.length === 0 ? (
@@ -449,6 +514,14 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
                 <Upload className="mx-auto w-16 h-16 mb-4 opacity-50" />
                 <p className="text-lg font-medium mb-2">No documents uploaded</p>
                 <p className="text-sm">Upload a PDF document to get started</p>
+                {isAuthenticated && (
+                  <button
+                    onClick={handleRefresh}
+                    className="mt-2 text-blue-600 underline text-sm"
+                  >
+                    Refresh to check for new documents
+                  </button>
+                )}
               </>
             ) : (
               <>
@@ -509,7 +582,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
                       <FileText className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" />
                       <div className="min-w-0">
                         <p className="font-medium text-gray-900 truncate">{doc.originalName}</p>
-                        <div className="flex items-center space-x-2 text-xs text-gray-500">                 
+                        <div className="flex items-center space-x-2 text-xs text-gray-500">
                           {doc.lastAccessed && (
                             <span className="flex items-center">
                               <Clock className="w-3 h-3 mr-1" />
@@ -547,7 +620,6 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
                         <Trash2 className="w-4 h-4" />
                       </button>
 
-                      {/* Star */}
                       <button
                         onClick={(e) => toggleStar(doc.id, e)}
                         className="text-gray-400 hover:text-yellow-500 transition-colors"
@@ -589,16 +661,35 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
                 
                       {/* More Options */}
                       <div className="flex-shrink-0">
-                        <button
-                          onClick={(e) => toggleStar(doc.id, e)}
-                          className="rounded-full p-1 hover:bg-gray-200 cursor-pointer transition-colors duration-200"
-                        >
-                          <Star className={`w-4 h-4 ${doc.starred ? 'fill-yellow-500 text-yellow-500' : ''}`} />
-                        </button>
-
-                        <button className=" rounded-full p-1 hover:bg-gray-200 cursor-pointer transition-colors duration-200">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="rounded-full p-1 hover:bg-gray-200 cursor-pointer transition-colors duration-200">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleStar(doc.id, e);
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <Star className={`w-4 h-4 ${doc.starred ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                              {doc.starred ? 'Unfavorite' : 'Favorite'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteDocument(doc.id, e);
+                              }}
+                              className="cursor-pointer text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
 
@@ -613,6 +704,9 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
                         {doc.originalName}
                       </h3>
                       <div className="space-y-1 text-xs text-gray-500">
+                        <div className="flex justify-center">
+                      
+                        </div>
                         <p>{formatFileSize(doc.size)} • {doc.pages || 'N/A'} pages</p>
                         <p>{formatDate(doc.uploadedAt)}</p>
                       </div>
