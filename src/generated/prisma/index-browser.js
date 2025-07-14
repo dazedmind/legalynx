@@ -127,7 +127,7 @@ exports.Prisma.UserScalarFieldEnum = {
   password: 'password',
   job_title: 'job_title',
   profile_picture: 'profile_picture',
-  is_paid_user: 'is_paid_user',
+  subscription_status: 'subscription_status',
   two_factor_enabled: 'two_factor_enabled',
   two_factor_secret: 'two_factor_secret',
   ai_personality: 'ai_personality',
@@ -195,6 +195,32 @@ exports.Prisma.VerificationTokenScalarFieldEnum = {
   created_at: 'created_at'
 };
 
+exports.Prisma.AccountScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  type: 'type',
+  provider: 'provider',
+  providerAccountId: 'providerAccountId',
+  refresh_token: 'refresh_token',
+  access_token: 'access_token',
+  expires_at: 'expires_at',
+  token_type: 'token_type',
+  scope: 'scope',
+  id_token: 'id_token',
+  session_state: 'session_state',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.SessionScalarFieldEnum = {
+  id: 'id',
+  sessionToken: 'sessionToken',
+  userId: 'userId',
+  expires: 'expires',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -220,6 +246,12 @@ exports.Prisma.JsonNullValueFilter = {
   JsonNull: Prisma.JsonNull,
   AnyNull: Prisma.AnyNull
 };
+exports.SubscriptionStatus = exports.$Enums.SubscriptionStatus = {
+  BASIC: 'BASIC',
+  STANDARD: 'STANDARD',
+  PREMIUM: 'PREMIUM'
+};
+
 exports.UserStatus = exports.$Enums.UserStatus = {
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE',
@@ -265,7 +297,9 @@ exports.Prisma.ModelName = {
   ChatSession: 'ChatSession',
   ChatMessage: 'ChatMessage',
   SecurityLog: 'SecurityLog',
-  VerificationToken: 'VerificationToken'
+  VerificationToken: 'VerificationToken',
+  Account: 'Account',
+  Session: 'Session'
 };
 
 /**

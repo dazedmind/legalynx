@@ -392,7 +392,7 @@ export interface UserProfile {
   name: string;
   email_verified: boolean;
   status: 'ACTIVE' | 'SUSPENDED' | 'PENDING';
-  is_paid_user: boolean;
+  subscription_status: 'BASIC' | 'STANDARD' | 'PREMIUM';
   profile_picture?: string;
   job_title?: string;
   created_at: string;

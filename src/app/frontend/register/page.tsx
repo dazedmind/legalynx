@@ -17,7 +17,7 @@ function Register() {
         acceptTerms: false
         })
     
-    const validateEmail = (email: string) => {
+    const emailValidation = (email: string) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         return emailRegex.test(email)
     }
@@ -25,10 +25,6 @@ function Register() {
     const validateForm = () => {
         if (formData.email === '' || formData.password === '') {
             toast.error('Please fill in all fields')
-            return false
-        }
-        if (!validateEmail(formData.email)) {
-            toast.error('Please enter a valid email address')
             return false
         }
         if (formData.password !== formData.confirmPassword) {
@@ -95,15 +91,29 @@ function Register() {
         </header>
 
         <main className='flex flex-row  w-full'>
-            <div className='flex flex-col  items-start mx-40 w-1/2 px-10 py-20 justify-center my-0 gap-2'>
+            <div className='flex flex-col  items-start mx-50 w-1/2 px-10 py-20 justify-center my-0 gap-2'>
                 <h1 className='text-4xl font-bold font-serif'>Sign Up</h1>
                 <p className='text-gray-600 mb-4'>Create your account</p>
 
                 <div className='flex flex-col items-start justify-center gap-4 w-2/3'>
-                    <span className='flex flex-col items-start gap-2 justify-start w-full'>
+                <span className='flex flex-col items-start gap-2 justify-start w-full'>
                         <p className='text-sm text-gray-600'>Email address</p>
-                        <Input type='email' name='email' placeholder='Enter your email' value={formData.email} onChange={handleChange} />
-                    </span>
+                        <Input
+                            name='email'
+                            type='email'
+                            placeholder='Enter your email'
+                            value={formData.email}
+                            onChange={handleChange}
+                            className={
+                                formData.email && !emailValidation(formData.email)
+                                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                                    : ''
+                            }
+                        />
+                        {formData.email && !emailValidation(formData.email) && (
+                            <p className='text-red-500 text-xs'>Must be a valid email address</p>
+                        )}
+                    </span> 
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
                         <p className='text-sm text-gray-600'>Password</p>
                         <Input type='password' name='password' placeholder='Enter your password' value={formData.password} onChange={handleChange} />
@@ -139,7 +149,7 @@ function Register() {
                 <img src="/images/login.png" alt="Login" className='w-1/2' />
             </div>
         </main>
-        <Toaster />
+        <Toaster position='top-right' richColors />
     </div>
   )
 }

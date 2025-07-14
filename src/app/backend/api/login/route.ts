@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
         if (!user) {
             return NextResponse.json({ 
-                message: "User not found" 
+                message: "User not found or email not verified" 
             }, { status: 404 });
         }
 

@@ -14,25 +14,27 @@ datasource db {
 // ============================================
 
 model User {
-  id                 String     @id @default(uuid())
-  name               String?
-  email              String     @unique
-  password           String
-  job_title          String?    @map("job_title")
-  profile_picture    String?    @map("profile_picture")
-  is_paid_user       Boolean    @default(false) @map("is_paid_user")
-  two_factor_enabled Boolean    @default(false) @map("two_factor_enabled")
-  two_factor_secret  String?    @map("two_factor_secret")
-  ai_personality     String?    @map("ai_personality") @db.Text
-  status             UserStatus @default(ACTIVE)
-  email_verified     Boolean    @default(false) @map("email_verified")
-  created_at         DateTime   @default(now()) @map("created_at")
-  updated_at         DateTime   @updatedAt @map("updated_at")
-  last_login_at      DateTime?  @map("last_login_at")
+  id                  String             @id @default(uuid())
+  name                String?
+  email               String             @unique
+  password            String
+  job_title           String?            @map("job_title")
+  profile_picture     String?            @map("profile_picture")
+  subscription_status SubscriptionStatus @default(BASIC) @map("subscription_status")
+  two_factor_enabled  Boolean            @default(false) @map("two_factor_enabled")
+  two_factor_secret   String?            @map("two_factor_secret")
+  ai_personality      String?            @map("ai_personality") @db.Text
+  status              UserStatus         @default(ACTIVE)
+  email_verified      Boolean            @default(false) @map("email_verified")
+  created_at          DateTime           @default(now()) @map("created_at")
+  updated_at          DateTime           @updatedAt @map("updated_at")
+  last_login_at       DateTime?          @map("last_login_at")
 
   documents           Document[]
   chat_sessions       ChatSession[]       @relation("UserChatSessions")
   security_logs       SecurityLog[]       @relation("UserSecurityLogs")
+  accounts            Account[]
+  sessions            Session[]
   verification_tokens VerificationToken[] @relation("UserVerificationTokens")
 
   @@map("users")
@@ -128,19 +130,56 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
+model Account {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id") // Map to snake_case
+  type              String
+  provider          String
+  providerAccountId String   @map("provider_account_id")
+  refresh_token     String?  @db.Text
+  access_token      String?  @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?  @db.Text
+  session_state     String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts") // Use snake_case table name
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions") // Use snake_case table name
+}
+
 enum TokenType {
   EMAIL_VERIFICATION
   PASSWORD_RESET
 }
 
-// ============================================
-// ENUMS
-// ============================================
-
 enum UserStatus {
   ACTIVE
   INACTIVE
   SUSPENDED
+}
+
+enum SubscriptionStatus {
+  BASIC
+  STANDARD
+  PREMIUM
 }
 
 enum DocumentStatus {
