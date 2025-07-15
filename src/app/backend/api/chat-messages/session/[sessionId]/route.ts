@@ -5,10 +5,10 @@ import { prisma } from '@/lib/prisma';
 // DELETE /backend/api/chat-messages/session/[sessionId]
 export async function DELETE(
   request: Request,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
-    const sessionId = params.sessionId;
+    const { sessionId } = await params;
 
     // Delete all messages for this session
     const result = await prisma.chatMessage.deleteMany({

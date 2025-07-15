@@ -30,7 +30,7 @@ async function getUserFromToken(request: NextRequest) {
     console.log('Token length:', token.length);
     console.log('Token starts with:', token.substring(0, 20) + '...');
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as { userId: string };
     
     if (!decoded.userId) {
       throw new Error('Token missing userId');
@@ -60,15 +60,15 @@ async function getUserFromToken(request: NextRequest) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     console.log('=== Document Status Check ===');
-    console.log('Document ID:', params.id);
+    console.log('Document ID:', (await params).id);
     console.log('Auth header present:', !!request.headers.get('authorization'));
 
     const user = await getUserFromToken(request);
-    const documentId = params.id;
+    const { id: documentId } = await params;
 
     if (!documentId) {
       return NextResponse.json({ error: 'Document ID required' }, { status: 400 });

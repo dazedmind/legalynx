@@ -1,6 +1,7 @@
 // src/lib/s3.ts
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Readable } from 'stream';
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION!,
@@ -92,7 +93,7 @@ export class S3Service {
 
       // Convert stream to buffer
       const chunks: Buffer[] = [];
-      const stream = response.Body as any;
+      const stream = response.Body as Readable;
       
       for await (const chunk of stream) {
         chunks.push(chunk);
@@ -154,8 +155,8 @@ export class S3Service {
 
       await s3Client.send(command);
       return true;
-    } catch (error: any) {
-      if (error.name === 'NotFound') {
+    } catch (error: unknown) {
+      if (typeof error === 'object' && error !== null && 'name' in error && (error as { name: string }).name === 'NotFound') {
         return false;
       }
       throw error;

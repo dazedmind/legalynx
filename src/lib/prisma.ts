@@ -1,7 +1,7 @@
 // 1. Update your src/lib/prisma.ts file to properly handle connections
 
 import { PrismaClient } from "@prisma/client";
-import { withAccelerate } from '@prisma/extension-accelerate'
+import { withAccelerate as _withAccelerate } from '@prisma/extension-accelerate'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

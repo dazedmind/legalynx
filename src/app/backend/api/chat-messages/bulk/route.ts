@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const result = await prisma.$transaction(async (tx) => {
       // Get existing message IDs to avoid duplicates
       const existingMessages = await tx.chatMessage.findMany({
-        where: { sessionId },
+        where: { session_id: sessionId },
         select: { id: true }
       });
       
@@ -42,11 +42,12 @@ export async function POST(request: Request) {
           tx.chatMessage.create({
             data: {
               id: message.id,
-              sessionId,
+              session_id: sessionId,
               role: message.role,
               content: message.content,
-              createdAt: new Date(message.timestamp),
-              tokensUsed: message.tokensUsed
+              created_at: new Date(message.timestamp),
+              tokens_used: message.tokensUsed,
+              source_nodes: message.sourceNodes
             }
           })
         )
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
       // Update session's updatedAt timestamp
       await tx.chatSession.update({
         where: { id: sessionId },
-        data: { updatedAt: new Date() }
+        data: { updated_at: new Date() }
       });
 
       return savedMessages;

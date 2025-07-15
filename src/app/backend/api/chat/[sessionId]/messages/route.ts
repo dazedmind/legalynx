@@ -23,14 +23,14 @@ async function getUserFromToken(request: NextRequest) {
 }
 
 interface RouteParams {
-  params: { sessionId: string }
+  params: Promise<{ sessionId: string }>
 }
 
 // Add message to chat session
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getUserFromToken(request);
-    const { sessionId } = params;
+    const { sessionId } = await params;
     const { content, role, sourceNodes, tokensUsed } = await request.json();
 
     // Verify session belongs to user
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getUserFromToken(request);
-    const { sessionId } = params;
+    const { sessionId } = await params;
 
     // Verify session belongs to user
     const session = await prisma.chatSession.findFirst({

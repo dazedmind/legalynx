@@ -55,7 +55,8 @@ export const authUtils = {
     
     try {
       // Verify token is not expired
-      const decoded = jwt.decode(token) as any;
+      type DecodedToken = { exp: number; [key: string]: unknown };
+      const decoded = jwt.decode(token) as DecodedToken | null;
       if (!decoded || !decoded.exp) return false;
       
       return decoded.exp > Date.now() / 1000;
@@ -74,6 +75,7 @@ export const authUtils = {
   logout: () => {
     Cookies.remove(AUTH_COOKIE_NAME, { path: '/' });
     Cookies.remove(USER_COOKIE_NAME, { path: '/' });
+    
   },
 
   // Update user data

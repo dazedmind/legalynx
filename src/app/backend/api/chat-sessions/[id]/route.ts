@@ -25,11 +25,11 @@ async function getUserFromToken(request: NextRequest) {
 // GET /backend/api/chat-sessions/[id]
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
-    const sessionId = params.id;
+    const { sessionId } = await params;
 
     const chatSession = await prisma.chatSession.findFirst({
       where: {
@@ -72,11 +72,11 @@ export async function GET(
 // PATCH /backend/api/chat-sessions/[id]
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
-    const sessionId = params.id;
+    const { sessionId } = await params;
     const body = await request.json();
 
     // Verify session belongs to user
@@ -117,11 +117,11 @@ export async function PATCH(
 // DELETE /backend/api/chat-sessions/[id]
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
-    const sessionId = params.id;
+    const { sessionId } = await params;
 
     // Verify session belongs to user
     const chatSession = await prisma.chatSession.findFirst({

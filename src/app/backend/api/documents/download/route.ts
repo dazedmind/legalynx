@@ -6,30 +6,59 @@ import S3Service from '@/lib/s3';
 
 // Helper function to get user from token
 async function getUserFromToken(request: NextRequest) {
-  const token = request.headers.get('authorization')?.replace('Bearer ', '');
-  if (!token) {
-    throw new Error('No token provided');
+    try {
+      const token = request.headers.get('authorization')?.replace('Bearer ', '');
+      if (!token) {
+        throw new Error('No token provided');
+      }
+  
+      if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET not configured');
+      }
+  
+      const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
+      
+      if (!decoded || !decoded.userId) {
+        throw new Error('Invalid token payload');
+      }
+  
+      console.log('🔍 Looking for user with ID:', decoded.userId);
+  
+      // ✅ FIX: Ensure Prisma is connected before querying
+      await prisma.$connect();
+      
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId }
+      });
+  
+      if (!user) {
+        throw new Error('User not found');
+      }
+  
+      console.log('✅ User found:', user.email);
+      return user;
+  
+    } catch (error) {
+      console.error('❌ getUserFromToken error:', error);
+      
+      if (error instanceof jwt.JsonWebTokenError) {
+        throw new Error('Invalid token');
+      }
+      if (error instanceof jwt.TokenExpiredError) {
+        throw new Error('Token expired');
+      }
+      
+      throw error;
+    }
   }
-
-  const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-  const user = await prisma.user.findUnique({
-    where: { id: decoded.userId }
-  });
-
-  if (!user) {
-    throw new Error('User not found');
-  }
-
-  return user;
-}
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
-    const documentId = params.id;
+    const { id: documentId } = await params;
 
     // Verify document belongs to user
     const document = await prisma.document.findFirst({

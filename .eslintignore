@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Generated files
+generated/
+**/generated/
+.prisma/
+**/prisma/generated/
+
+# Prisma WASM files
+**/wasm.js
+
+# Build outputs
+build/
+dist/
+
+# Config files (if needed)
+*.config.js
+
+# Environment files
+.env*
