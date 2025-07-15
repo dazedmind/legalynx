@@ -9,10 +9,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================
-// USER MANAGEMENT & AUTHENTICATION
-// ============================================
-
 model User {
   id                String    @id @default(uuid())
   name              String?
@@ -40,33 +36,34 @@ model User {
   @@map("users")
 }
 
-// ============================================
-// DOCUMENT MANAGEMENT
-// ============================================
-
 model Document {
-  id                 String         @id @default(uuid())
-  file_name          String         @map("file_name")
-  original_file_name String         @map("original_file_name")
-  file_path          String         @map("file_path")
-  file_size          Int            @map("file_size")
-  mime_type          String         @map("mime_type")
-  status             DocumentStatus @default(UPLOADED)
-  is_scanned         Boolean?       @map("is_scanned")
-  page_count         Int?           @map("page_count")
-  owner_id           String         @map("owner_id")
-  owner              User           @relation(fields: [owner_id], references: [id], onDelete: Cascade)
-  uploaded_at        DateTime       @default(now()) @map("uploaded_at")
-  updated_at         DateTime       @updatedAt @map("updated_at")
+  id                String         @id @default(cuid())
+  file_name         String         // S3 key when INDEXED, original name when UPLOADED
+  original_file_name String
+  file_path         String         // S3 URL when INDEXED, empty when UPLOADED
+  s3_key           String?         // S3 object key (only when INDEXED)
+  s3_bucket        String?         // S3 bucket name (only when INDEXED)
+  file_size         Int
+  mime_type         String
+  status            DocumentStatus @default(UPLOADED)
+  page_count        Int?
+  processing_started_at DateTime?   // When RAG processing started
+  processing_completed_at DateTime? // When RAG processing completed
+  s3_uploaded_at    DateTime?      // When uploaded to S3
+  owner_id          String
+  uploaded_at       DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
   
-  chat_sessions      ChatSession[]  @relation("DocumentChatSessions")
+  // Relations
+  owner            User @relation(fields: [owner_id], references: [id], onDelete: Cascade)
+  chat_sessions    ChatSession[] @relation("DocumentChatSessions")
   
+  // Indexes for performance
+  @@index([owner_id, status])
+  @@index([status, updated_at])
   @@map("documents")
 }
 
-// ============================================
-// CHAT SYSTEM
-// ============================================
 
 model ChatSession {
   id          String        @id @default(uuid())
@@ -80,7 +77,7 @@ model ChatSession {
   updated_at  DateTime      @updatedAt @map("updated_at")
   
   messages    ChatMessage[] @relation("SessionMessages")
-  
+    
   @@map("chat_sessions")
 }
 
@@ -96,10 +93,6 @@ model ChatMessage {
   
   @@map("chat_messages")
 }
-
-// ============================================
-// SECURITY & AUDIT
-// ============================================
 
 model SecurityLog {
   id         String          @id @default(uuid())
@@ -183,11 +176,12 @@ enum SubscriptionStatus {
 }
 
 enum DocumentStatus {
-  UPLOADED
-  PROCESSING
-  TEMPORARY
-  INDEXED
-  FAILED
+  UPLOADED    // Initial upload, not processed yet
+  PROCESSING  // Currently being processed by RAG pipeline
+  PROCESSED   // RAG processing complete, ready for S3 upload
+  INDEXED     // Uploaded to S3 and fully ready for use
+  FAILED      // Processing or upload failed
+  TEMPORARY   // Session-only document (not saved to account)
 }
 
 enum MessageRole {
@@ -206,6 +200,7 @@ enum SecurityAction {
   TWO_FACTOR_LOGIN
   DOCUMENT_UPLOAD
   DOCUMENT_DELETE
+  DOCUMENT_DOWNLOAD
   CHAT_SAVE
   CHAT_DELETE
 }

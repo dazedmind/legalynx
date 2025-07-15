@@ -145,6 +145,11 @@
 @layer base {
   * {
     @apply border-border outline-none;
+    .fade-gradient {
+      /* For browsers that support mask-image */
+      mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, black 20%, transparent 80%);
+    }
   }
   body {
     @apply bg-background text-foreground;

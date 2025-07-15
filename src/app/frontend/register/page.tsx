@@ -7,6 +7,9 @@ import Link from 'next/link'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast , Toaster } from 'sonner'
 import { useRouter } from 'next/navigation'
+import logo from '../img/legalynxlogo.png'
+import Image from 'next/image'
+
 
 function Register() {
     const router = useRouter()
@@ -90,8 +93,8 @@ function Register() {
             <Header />
         </header>
 
-        <main className='flex flex-row  w-full'>
-            <div className='flex flex-col  items-start mx-50 w-1/2 px-10 py-20 justify-center my-0 gap-2'>
+        <main className='flex flex-col md:flex-row  w-full'>
+            <div className='flex flex-col  items-center md:items-start mx-0 md:ml-60 w-full md:w-1/2 px-0 md:px-10 py-20 justify-center my-0 gap-2'>
                 <h1 className='text-4xl font-bold font-serif'>Sign Up</h1>
                 <p className='text-gray-600 mb-4'>Create your account</p>
 
@@ -145,8 +148,16 @@ function Register() {
                 </div>  
             </div>
 
-            <div className='flex flex-col  items-center justify-center w-1/2 mx-auto px-4 sm:px-6 lg:px-8 my-30 gap-2'>
-                <img src="/images/login.png" alt="Login" className='w-1/2' />
+            <div className='hidden md:flex flex-col  items-center justify-center mr-40 w-full md:w-1/2 gap-2 relative'>
+                <Image
+                    src={logo}
+                    alt="Login"
+                    width={600}
+                    height={500}
+                    className="fade-gradient"
+                />
+                <p className='text-2xl mx-auto text-center absolute bottom-20 text-gray-600'>Linking you to legal clarity</p>
+
             </div>
         </main>
         <Toaster position='top-right' richColors />

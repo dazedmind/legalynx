@@ -40,10 +40,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(userData);
   };
 
-  const logout = () => {
-    authUtils.logout();
-    setUser(null);
-    router.push('/');
+  const logout = async () => {
+    try {
+      // Call API logout endpoint
+      const token = authUtils.getToken();
+      if (token) {
+        await fetch('/backend/api/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
+    } catch (error) {
+      // Log error but don't prevent logout
+      console.error('API logout failed:', error);
+    } finally {
+      // Always clear local auth state regardless of API call success
+      authUtils.logout();
+      setUser(null);
+      router.push('/');
+    }
   };
 
   const updateUser = (userData: Partial<User>) => {

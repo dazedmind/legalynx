@@ -172,6 +172,17 @@ export const apiService = {
     }
   },
 
+  async bulkDeleteDocuments(documentIds: string[]): Promise<{ message: string }> {
+    try {
+      const response = await mainApi.delete<{ message: string }>(`/backend/api/documents/bulk-delete`, {
+        data: { documentIds }
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error('Failed to delete documents');
+    }
+  },
+
   // Chat Management (Database)
   async createChatSession(documentId: string, title?: string): Promise<ChatSession> {
     try {
@@ -436,3 +447,4 @@ export interface UpdateProfileResponse {
   message: string;
   user: Partial<UserProfile>;
 }
+

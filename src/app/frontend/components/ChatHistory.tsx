@@ -35,10 +35,11 @@ interface ChatSession {
 interface ChatHistoryProps {
   onDocumentSelect?: (docId: string) => void;
   onSessionSelect?: (sessionId: string, documentId: string) => void; // Add this prop
+  onDocumentDeleted?: (docId: string) => void; // Add this prop
   currentDocumentId?: string;
 }
 
-export default function ChatHistory({ onDocumentSelect, onSessionSelect, currentDocumentId }: ChatHistoryProps) {
+export default function ChatHistory({ onDocumentSelect, onSessionSelect, currentDocumentId, onDocumentDeleted }: ChatHistoryProps) {
   const { isAuthenticated, user } = useAuth();
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,8 +67,13 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
   };
 
   const loadChatSessions = async () => {
-    if (!user || !isAuthenticated) return;
-
+    if (!user || !isAuthenticated) {
+      // Clear sessions if no user
+      setChatSessions([]);
+      setError('');
+      return;
+    }
+  
     setIsLoading(true);
     setError('');
     
@@ -77,8 +83,16 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
         headers: getAuthHeaders()
       });
       
+      // Always try to parse the response, even if not ok
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.log('Failed to parse response, treating as empty:', parseError);
+        data = { sessions: [] };
+      }
+      
       if (response.ok) {
-        const data = await response.json();
         const sessions = data.sessions || [];
         
         const formattedSessions = sessions.map((session: any) => ({
@@ -98,18 +112,84 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
         }));
         
         setChatSessions(formattedSessions);
+        setError(''); // Clear any previous errors
+        
       } else if (response.status === 401) {
-        setError('Authentication failed. Please sign in again.');
+        // Handle authentication errors gracefully
+        console.log('Authentication failed, clearing sessions');
+        setChatSessions([]);
+        setError(''); // Don't show auth errors as user errors
+        
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to load chat sessions');
+        // Handle other errors gracefully
+        console.log('Failed to load sessions, using empty array');
+        setChatSessions([]);
+        setError(''); // Don't show these errors to user
       }
+      
     } catch (error) {
-      console.error('Failed to load chat sessions:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load chat history');
+      console.log('Network or other error loading chat sessions:', error);
+      
+      // Always fallback to empty sessions instead of showing errors
       setChatSessions([]);
+      setError(''); // Don't show network errors to user
+      
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Helper function to handle session deletion gracefully
+  const handleDeleteSession = async (sessionId: string, deleteFile: boolean = false, event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    
+    const confirmMessage = deleteFile 
+      ? 'Are you sure you want to delete this chat session AND the associated document file? This will remove the file completely and cannot be undone.'
+      : 'Are you sure you want to delete this chat session? This action cannot be undone.';
+      
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+  
+    try {
+      // Build the delete URL with query parameters
+      const deleteUrl = `/backend/api/chat-sessions?sessionId=${sessionId}&deleteDocument=${deleteFile}`;
+      
+      const response = await fetch(deleteUrl, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+  
+      // Always treat as success since API returns 200 even for missing sessions
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Remove from local state
+        setChatSessions(prev => prev.filter(session => session.id !== sessionId));
+        
+        if (selectedSession === sessionId) {
+          setSelectedSession(null);
+        }
+        
+        if (result.documentDeleted) {
+          toast.success('Chat session and document file deleted successfully');
+        } else {
+          toast.success('Chat session deleted successfully');
+        }
+        
+      } else {
+        // Even if response not ok, try to refresh the list
+        console.log('Delete request failed, refreshing session list');
+        await loadChatSessions();
+        toast.info('Session list refreshed');
+      }
+      
+    } catch (error) {
+      console.log('Failed to delete session, refreshing list:', error);
+      
+      // Always try to refresh the list on error
+      await loadChatSessions();
+      toast.info('Refreshed session list');
     }
   };
 
@@ -129,43 +209,6 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
     } catch (error) {
       console.error('Failed to select session:', error);
       toast.error('Failed to select session');
-    }
-  };
-
-  const handleDeleteSession = async (sessionId: string, event?: React.MouseEvent) => {
-    event?.stopPropagation();
-    
-    if (!confirm('Are you sure you want to delete this chat session? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/backend/api/chat-sessions/${sessionId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
-
-      if (response.ok) {
-        setChatSessions(prev => prev.filter(session => session.id !== sessionId));
-        
-        if (selectedSession === sessionId) {
-          setSelectedSession(null);
-        }
-        
-        toast.success('Chat session deleted successfully');
-      } else if (response.status === 404) {
-        setChatSessions(prev => prev.filter(session => session.id !== sessionId));
-        toast.info('Session was already deleted');
-      } else if (response.status === 401) {
-        setError('Authentication failed. Please sign in again.');
-        toast.error('Authentication failed');
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to delete session');
-      }
-    } catch (error) {
-      console.error('Failed to delete session:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete chat session');
     }
   };
 
@@ -326,7 +369,7 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
                 {/* Actions */}
                 <div className="col-span-1 flex items-center justify-end">
                   <button 
-                    onClick={(e) => handleDeleteSession(session.id, e)}
+                    onClick={(e) => handleDeleteSession(session.id, true, e)}
                     className="cursor-pointer p-2 rounded-full text-red-600 hover:text-red-800 hover:bg-red-100 transition-colors"
                     title="Delete session"
                   >

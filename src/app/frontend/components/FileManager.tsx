@@ -24,7 +24,9 @@ import { apiService, handleApiError, Document } from '../lib/api';
 import { useAuth } from '@/lib/context/AuthContext';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-
+import { toast, Toaster} from 'sonner';
+import { authUtils } from '@/lib/auth';
+  
 interface DocumentInfo {
   id: string;
   filename: string;
@@ -32,7 +34,7 @@ interface DocumentInfo {
   size: number;
   uploadedAt: string; // Keep camelCase for frontend consistency
   pages?: number;
-  status: 'processing' | 'ready' | 'indexed' | 'uploaded' | 'temporary' | 'failed';
+  status: 'PROCESSING' | 'READY' | 'INDEXED' | 'UPLOADED' | 'TEMPORARY' | 'FAILED';
   starred?: boolean;
   lastAccessed?: string; // Keep camelCase for frontend consistency
   tags?: string[];
@@ -43,13 +45,15 @@ interface DocumentInfo {
 interface FileManagerProps {
   onDocumentSelect?: (docId: string) => void;
   currentDocumentId?: string;
+  onDocumentDeleted?: (docId: string) => void; // ✅ Add this
+
 }
 
 type SortField = 'name' | 'size' | 'uploadedAt' | 'lastAccessed' | 'pages';
 type SortOrder = 'asc' | 'desc';
 type ViewMode = 'grid' | 'list';
 
-export default function FileManager({ onDocumentSelect, currentDocumentId }: FileManagerProps) {
+export default function FileManager({ onDocumentSelect, currentDocumentId, onDocumentDeleted }: FileManagerProps) {
   const { isAuthenticated, user } = useAuth();
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<DocumentInfo[]>([]);
@@ -100,8 +104,8 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
           const formattedDocs: DocumentInfo[] = data.documents
             .filter(doc => {
               // Show documents that are ready to use
-              const validStatuses = ['indexed', 'ready', 'processed'];
-              const isValid = validStatuses.includes(doc.status?.toLowerCase() || '');
+              const validStatuses = ['INDEXED', 'READY', 'PROCESSING'];
+              const isValid = validStatuses.includes(doc.status || '');
               console.log(`Document ${doc.originalName}: status=${doc.status}, valid=${isValid}`);
               return isValid;
             })
@@ -112,7 +116,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
               size: doc.size,
               uploadedAt: doc.uploadedAt,
               pages: doc.pageCount,
-              status: doc.status?.toLowerCase() === 'indexed' ? 'indexed' : 'ready',
+              status: doc.status === 'INDEXED' ? 'INDEXED' : 'READY',
               chatSessionsCount: doc.chatSessionsCount,
               mimeType: doc.mimeType,
               starred: false, // TODO: Add starred field to database
@@ -138,9 +142,9 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
             
             // Filter for ready documents
             const readyDocs = docs.filter((doc: any) => {
-              const validStatuses = ['ready', 'indexed'];
+              const validStatuses = ['INDEXED'];
               return validStatuses.includes(doc.status);
-            });
+            }); 
             
             console.log('Ready docs from localStorage:', readyDocs);
             setDocuments(readyDocs);
@@ -259,82 +263,200 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
     }
   };
 
-  const handleDeleteDocument = async (docId: string, event?: React.MouseEvent) => {
-    event?.stopPropagation();
+ // ✅ UPDATED: handleDeleteDocument with callback
+ const handleDeleteDocument = async (docId: string, event?: React.MouseEvent) => {
+  event?.stopPropagation();
+  
+  const doc = documents.find(d => d.id === docId);
+  if (!confirm(`Are you sure you want to delete "${doc?.originalName}"?\n\nThis will permanently remove the document${doc?.status === 'INDEXED' ? ' from cloud storage' : ''} and cannot be undone.`)) {
+    return;
+  }
+
+  try {
+    console.log(`🗑️ Deleting document: ${docId} (status: ${doc?.status})`);
     
-    const doc = documents.find(d => d.id === docId);
-    if (!confirm(`Are you sure you want to delete "${doc?.originalName}"?`)) {
-      return;
-    }
+    if (isAuthenticated) {
+      const token = authUtils.getToken();
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
 
-    try {
-      if (isAuthenticated) {
-        // Delete from database
-        await apiService.deleteDocument(docId);
-      } else if (isClient) {
-        // Delete from localStorage
-        const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
-        const saved = localStorage.getItem(userKey);
-        if (saved) {
-          const docs = JSON.parse(saved);
-          const updatedDocs = docs.filter((d: DocumentInfo) => d.id !== docId);
-          localStorage.setItem(userKey, JSON.stringify(updatedDocs));
+      const response = await fetch(`/backend/api/documents?id=${docId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      }
-      
-      // Update local state
-      setDocuments(prev => prev.filter(d => d.id !== docId));
-      
-      // Update selections
-      const newSelected = new Set(selectedDocs);
-      newSelected.delete(docId);
-      setSelectedDocs(newSelected);
+      });
 
-      // Reset system if this was the current document
-      if (docId === currentDocumentId) {
-        await apiService.resetSystem();
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Delete response:', result);
+        
+        if (result.s3Deleted) {
+          toast.success(`Document deleted from database and cloud storage`);
+        } else if (result.s3Error) {
+          toast.warning(`Document deleted from database. Cloud storage error: ${result.s3Error}`);
+        } else {
+          toast.success('Document deleted successfully');
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete document');
       }
-    } catch (error) {
-      setError(handleApiError(error));
+    } else if (isClient) {
+      const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+      const saved = localStorage.getItem(userKey);
+      if (saved) {
+        const docs = JSON.parse(saved);
+        const updatedDocs = docs.filter((d: DocumentInfo) => d.id !== docId);
+        localStorage.setItem(userKey, JSON.stringify(updatedDocs));
+        toast.success('Document removed from session');
+      }
     }
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedDocs.size === 0) return;
     
-    if (!confirm(`Are you sure you want to delete ${selectedDocs.size} document(s)?`)) {
-      return;
-    }
+    // Update local state
+    setDocuments(prev => prev.filter(d => d.id !== docId));
+    
+    // Update selections
+    const newSelected = new Set(selectedDocs);
+    newSelected.delete(docId);
+    setSelectedDocs(newSelected);
 
-    try {
-      if (isAuthenticated) {
-        // Delete from database
-        for (const docId of selectedDocs) {
-          await apiService.deleteDocument(docId);
-        }
-      } else if (isClient) {
-        // Delete from localStorage
-        const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
-        const saved = localStorage.getItem(userKey);
-        if (saved) {
-          const docs = JSON.parse(saved);
-          const updatedDocs = docs.filter((doc: DocumentInfo) => !selectedDocs.has(doc.id));
-          localStorage.setItem(userKey, JSON.stringify(updatedDocs));
+    // ✅ NEW: Notify parent component about deletion
+    onDocumentDeleted?.(docId);
+
+    // Reset system if this was the current document
+    if (docId === currentDocumentId) {
+      await apiService.resetSystem();
+    }
+    
+  } catch (error) {
+    console.error('❌ Delete failed:', error);
+    const errorMessage = handleApiError(error);
+    setError(errorMessage);
+    toast.error(`Failed to delete document: ${errorMessage}`);
+  }
+};
+
+// ✅ UPDATED: handleBulkDelete with callbacks
+const handleBulkDelete = async () => {
+  if (selectedDocs.size === 0) return;
+  
+  if (!confirm(`Are you sure you want to delete ${selectedDocs.size} document(s)?`)) {
+    return;
+  }
+
+  const deletedDocIds: string[] = [];
+
+  try {
+    if (isAuthenticated) {
+      const token = authUtils.getToken();
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      for (const docId of selectedDocs) {
+        const response = await fetch(`/backend/api/documents?id=${docId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          deletedDocIds.push(docId);
         }
       }
       
-      // Update local state
-      const updatedDocs = documents.filter(doc => !selectedDocs.has(doc.id));
-      setDocuments(updatedDocs);
-      setSelectedDocs(new Set());
-
-      if (selectedDocs.has(currentDocumentId || '')) {
-        await apiService.resetSystem();
+      toast.success(`Successfully deleted ${deletedDocIds.length} document(s)`);
+      
+    } else if (isClient) {
+      const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+      const saved = localStorage.getItem(userKey);
+      if (saved) {
+        const docs = JSON.parse(saved);
+        const updatedDocs = docs.filter((doc: DocumentInfo) => !selectedDocs.has(doc.id));
+        localStorage.setItem(userKey, JSON.stringify(updatedDocs));
       }
-    } catch (error) {
-      setError(handleApiError(error));
+      
+      deletedDocIds.push(...Array.from(selectedDocs));
+      toast.success(`Removed ${selectedDocs.size} document(s) from session`);
     }
-  };
+    
+    // Update local state
+    setDocuments(prev => prev.filter(doc => !deletedDocIds.includes(doc.id)));
+    setSelectedDocs(new Set());
+
+    // ✅ NEW: Notify parent about each deleted document
+    deletedDocIds.forEach(docId => {
+      onDocumentDeleted?.(docId);
+    });
+
+    if (selectedDocs.has(currentDocumentId || '')) {
+      await apiService.resetSystem();
+    }
+    
+  } catch (error) {
+    console.error('❌ Bulk delete failed:', error);
+    const errorMessage = handleApiError(error);
+    setError(errorMessage);
+    toast.error(`Failed to delete documents: ${errorMessage}`);
+  }
+};
+
+  // Fixed handleDownloadDocument function
+const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) => {
+  event?.stopPropagation();
+  
+  const doc = documents.find(d => d.id === docId);
+  if (!doc) return;
+
+  try {
+    if (isAuthenticated) {
+      // ✅ FIX: Use authUtils.getToken() instead of user?.accessToken
+      const token = authUtils.getToken();
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      // Download from S3 via API
+      const response = await fetch(`/backend/api/documents/download/${docId}?method=signed-url`, {
+        headers: {
+          'Authorization': `Bearer ${token}` // ✅ Fixed this line
+        }
+      });
+
+      if (response.ok) {
+        const { downloadUrl, filename } = await response.json();
+        
+        // Create temporary link for download
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename || doc.originalName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast.success('Download started');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get download URL');
+      }
+    } else {
+      // For non-authenticated users, you might not have S3 access
+      toast.error('Download requires authentication');
+    }
+  } catch (error) {
+    console.error('❌ Download failed:', error);
+    const errorMessage = handleApiError(error);
+    toast.error(`Failed to download document: ${errorMessage}`);
+  }
+};
 
   const toggleDocumentSelection = (docId: string) => {
     const newSelected = new Set(selectedDocs);

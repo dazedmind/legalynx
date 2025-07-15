@@ -87,9 +87,10 @@ export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof Subscr
 export const DocumentStatus: {
   UPLOADED: 'UPLOADED',
   PROCESSING: 'PROCESSING',
-  TEMPORARY: 'TEMPORARY',
+  PROCESSED: 'PROCESSED',
   INDEXED: 'INDEXED',
-  FAILED: 'FAILED'
+  FAILED: 'FAILED',
+  TEMPORARY: 'TEMPORARY'
 };
 
 export type DocumentStatus = (typeof DocumentStatus)[keyof typeof DocumentStatus]
@@ -114,6 +115,7 @@ export const SecurityAction: {
   TWO_FACTOR_LOGIN: 'TWO_FACTOR_LOGIN',
   DOCUMENT_UPLOAD: 'DOCUMENT_UPLOAD',
   DOCUMENT_DELETE: 'DOCUMENT_DELETE',
+  DOCUMENT_DOWNLOAD: 'DOCUMENT_DOWNLOAD',
   CHAT_SAVE: 'CHAT_SAVE',
   CHAT_DELETE: 'CHAT_DELETE'
 };
@@ -3102,11 +3104,15 @@ export namespace Prisma {
     file_name: string | null
     original_file_name: string | null
     file_path: string | null
+    s3_key: string | null
+    s3_bucket: string | null
     file_size: number | null
     mime_type: string | null
     status: $Enums.DocumentStatus | null
-    is_scanned: boolean | null
     page_count: number | null
+    processing_started_at: Date | null
+    processing_completed_at: Date | null
+    s3_uploaded_at: Date | null
     owner_id: string | null
     uploaded_at: Date | null
     updated_at: Date | null
@@ -3117,11 +3123,15 @@ export namespace Prisma {
     file_name: string | null
     original_file_name: string | null
     file_path: string | null
+    s3_key: string | null
+    s3_bucket: string | null
     file_size: number | null
     mime_type: string | null
     status: $Enums.DocumentStatus | null
-    is_scanned: boolean | null
     page_count: number | null
+    processing_started_at: Date | null
+    processing_completed_at: Date | null
+    s3_uploaded_at: Date | null
     owner_id: string | null
     uploaded_at: Date | null
     updated_at: Date | null
@@ -3132,11 +3142,15 @@ export namespace Prisma {
     file_name: number
     original_file_name: number
     file_path: number
+    s3_key: number
+    s3_bucket: number
     file_size: number
     mime_type: number
     status: number
-    is_scanned: number
     page_count: number
+    processing_started_at: number
+    processing_completed_at: number
+    s3_uploaded_at: number
     owner_id: number
     uploaded_at: number
     updated_at: number
@@ -3159,11 +3173,15 @@ export namespace Prisma {
     file_name?: true
     original_file_name?: true
     file_path?: true
+    s3_key?: true
+    s3_bucket?: true
     file_size?: true
     mime_type?: true
     status?: true
-    is_scanned?: true
     page_count?: true
+    processing_started_at?: true
+    processing_completed_at?: true
+    s3_uploaded_at?: true
     owner_id?: true
     uploaded_at?: true
     updated_at?: true
@@ -3174,11 +3192,15 @@ export namespace Prisma {
     file_name?: true
     original_file_name?: true
     file_path?: true
+    s3_key?: true
+    s3_bucket?: true
     file_size?: true
     mime_type?: true
     status?: true
-    is_scanned?: true
     page_count?: true
+    processing_started_at?: true
+    processing_completed_at?: true
+    s3_uploaded_at?: true
     owner_id?: true
     uploaded_at?: true
     updated_at?: true
@@ -3189,11 +3211,15 @@ export namespace Prisma {
     file_name?: true
     original_file_name?: true
     file_path?: true
+    s3_key?: true
+    s3_bucket?: true
     file_size?: true
     mime_type?: true
     status?: true
-    is_scanned?: true
     page_count?: true
+    processing_started_at?: true
+    processing_completed_at?: true
+    s3_uploaded_at?: true
     owner_id?: true
     uploaded_at?: true
     updated_at?: true
@@ -3291,11 +3317,15 @@ export namespace Prisma {
     file_name: string
     original_file_name: string
     file_path: string
+    s3_key: string | null
+    s3_bucket: string | null
     file_size: number
     mime_type: string
     status: $Enums.DocumentStatus
-    is_scanned: boolean | null
     page_count: number | null
+    processing_started_at: Date | null
+    processing_completed_at: Date | null
+    s3_uploaded_at: Date | null
     owner_id: string
     uploaded_at: Date
     updated_at: Date
@@ -3325,11 +3355,15 @@ export namespace Prisma {
     file_name?: boolean
     original_file_name?: boolean
     file_path?: boolean
+    s3_key?: boolean
+    s3_bucket?: boolean
     file_size?: boolean
     mime_type?: boolean
     status?: boolean
-    is_scanned?: boolean
     page_count?: boolean
+    processing_started_at?: boolean
+    processing_completed_at?: boolean
+    s3_uploaded_at?: boolean
     owner_id?: boolean
     uploaded_at?: boolean
     updated_at?: boolean
@@ -3343,11 +3377,15 @@ export namespace Prisma {
     file_name?: boolean
     original_file_name?: boolean
     file_path?: boolean
+    s3_key?: boolean
+    s3_bucket?: boolean
     file_size?: boolean
     mime_type?: boolean
     status?: boolean
-    is_scanned?: boolean
     page_count?: boolean
+    processing_started_at?: boolean
+    processing_completed_at?: boolean
+    s3_uploaded_at?: boolean
     owner_id?: boolean
     uploaded_at?: boolean
     updated_at?: boolean
@@ -3359,11 +3397,15 @@ export namespace Prisma {
     file_name?: boolean
     original_file_name?: boolean
     file_path?: boolean
+    s3_key?: boolean
+    s3_bucket?: boolean
     file_size?: boolean
     mime_type?: boolean
     status?: boolean
-    is_scanned?: boolean
     page_count?: boolean
+    processing_started_at?: boolean
+    processing_completed_at?: boolean
+    s3_uploaded_at?: boolean
     owner_id?: boolean
     uploaded_at?: boolean
     updated_at?: boolean
@@ -3375,17 +3417,21 @@ export namespace Prisma {
     file_name?: boolean
     original_file_name?: boolean
     file_path?: boolean
+    s3_key?: boolean
+    s3_bucket?: boolean
     file_size?: boolean
     mime_type?: boolean
     status?: boolean
-    is_scanned?: boolean
     page_count?: boolean
+    processing_started_at?: boolean
+    processing_completed_at?: boolean
+    s3_uploaded_at?: boolean
     owner_id?: boolean
     uploaded_at?: boolean
     updated_at?: boolean
   }
 
-  export type DocumentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "file_name" | "original_file_name" | "file_path" | "file_size" | "mime_type" | "status" | "is_scanned" | "page_count" | "owner_id" | "uploaded_at" | "updated_at", ExtArgs["result"]["document"]>
+  export type DocumentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "file_name" | "original_file_name" | "file_path" | "s3_key" | "s3_bucket" | "file_size" | "mime_type" | "status" | "page_count" | "processing_started_at" | "processing_completed_at" | "s3_uploaded_at" | "owner_id" | "uploaded_at" | "updated_at", ExtArgs["result"]["document"]>
   export type DocumentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     owner?: boolean | UserDefaultArgs<ExtArgs>
     chat_sessions?: boolean | Document$chat_sessionsArgs<ExtArgs>
@@ -3409,11 +3455,15 @@ export namespace Prisma {
       file_name: string
       original_file_name: string
       file_path: string
+      s3_key: string | null
+      s3_bucket: string | null
       file_size: number
       mime_type: string
       status: $Enums.DocumentStatus
-      is_scanned: boolean | null
       page_count: number | null
+      processing_started_at: Date | null
+      processing_completed_at: Date | null
+      s3_uploaded_at: Date | null
       owner_id: string
       uploaded_at: Date
       updated_at: Date
@@ -3846,11 +3896,15 @@ export namespace Prisma {
     readonly file_name: FieldRef<"Document", 'String'>
     readonly original_file_name: FieldRef<"Document", 'String'>
     readonly file_path: FieldRef<"Document", 'String'>
+    readonly s3_key: FieldRef<"Document", 'String'>
+    readonly s3_bucket: FieldRef<"Document", 'String'>
     readonly file_size: FieldRef<"Document", 'Int'>
     readonly mime_type: FieldRef<"Document", 'String'>
     readonly status: FieldRef<"Document", 'DocumentStatus'>
-    readonly is_scanned: FieldRef<"Document", 'Boolean'>
     readonly page_count: FieldRef<"Document", 'Int'>
+    readonly processing_started_at: FieldRef<"Document", 'DateTime'>
+    readonly processing_completed_at: FieldRef<"Document", 'DateTime'>
+    readonly s3_uploaded_at: FieldRef<"Document", 'DateTime'>
     readonly owner_id: FieldRef<"Document", 'String'>
     readonly uploaded_at: FieldRef<"Document", 'DateTime'>
     readonly updated_at: FieldRef<"Document", 'DateTime'>
@@ -11061,11 +11115,15 @@ export namespace Prisma {
     file_name: 'file_name',
     original_file_name: 'original_file_name',
     file_path: 'file_path',
+    s3_key: 's3_key',
+    s3_bucket: 's3_bucket',
     file_size: 'file_size',
     mime_type: 'mime_type',
     status: 'status',
-    is_scanned: 'is_scanned',
     page_count: 'page_count',
+    processing_started_at: 'processing_started_at',
+    processing_completed_at: 'processing_completed_at',
+    s3_uploaded_at: 's3_uploaded_at',
     owner_id: 'owner_id',
     uploaded_at: 'uploaded_at',
     updated_at: 'updated_at'
@@ -11498,11 +11556,15 @@ export namespace Prisma {
     file_name?: StringFilter<"Document"> | string
     original_file_name?: StringFilter<"Document"> | string
     file_path?: StringFilter<"Document"> | string
+    s3_key?: StringNullableFilter<"Document"> | string | null
+    s3_bucket?: StringNullableFilter<"Document"> | string | null
     file_size?: IntFilter<"Document"> | number
     mime_type?: StringFilter<"Document"> | string
     status?: EnumDocumentStatusFilter<"Document"> | $Enums.DocumentStatus
-    is_scanned?: BoolNullableFilter<"Document"> | boolean | null
     page_count?: IntNullableFilter<"Document"> | number | null
+    processing_started_at?: DateTimeNullableFilter<"Document"> | Date | string | null
+    processing_completed_at?: DateTimeNullableFilter<"Document"> | Date | string | null
+    s3_uploaded_at?: DateTimeNullableFilter<"Document"> | Date | string | null
     owner_id?: StringFilter<"Document"> | string
     uploaded_at?: DateTimeFilter<"Document"> | Date | string
     updated_at?: DateTimeFilter<"Document"> | Date | string
@@ -11515,11 +11577,15 @@ export namespace Prisma {
     file_name?: SortOrder
     original_file_name?: SortOrder
     file_path?: SortOrder
+    s3_key?: SortOrderInput | SortOrder
+    s3_bucket?: SortOrderInput | SortOrder
     file_size?: SortOrder
     mime_type?: SortOrder
     status?: SortOrder
-    is_scanned?: SortOrderInput | SortOrder
     page_count?: SortOrderInput | SortOrder
+    processing_started_at?: SortOrderInput | SortOrder
+    processing_completed_at?: SortOrderInput | SortOrder
+    s3_uploaded_at?: SortOrderInput | SortOrder
     owner_id?: SortOrder
     uploaded_at?: SortOrder
     updated_at?: SortOrder
@@ -11535,11 +11601,15 @@ export namespace Prisma {
     file_name?: StringFilter<"Document"> | string
     original_file_name?: StringFilter<"Document"> | string
     file_path?: StringFilter<"Document"> | string
+    s3_key?: StringNullableFilter<"Document"> | string | null
+    s3_bucket?: StringNullableFilter<"Document"> | string | null
     file_size?: IntFilter<"Document"> | number
     mime_type?: StringFilter<"Document"> | string
     status?: EnumDocumentStatusFilter<"Document"> | $Enums.DocumentStatus
-    is_scanned?: BoolNullableFilter<"Document"> | boolean | null
     page_count?: IntNullableFilter<"Document"> | number | null
+    processing_started_at?: DateTimeNullableFilter<"Document"> | Date | string | null
+    processing_completed_at?: DateTimeNullableFilter<"Document"> | Date | string | null
+    s3_uploaded_at?: DateTimeNullableFilter<"Document"> | Date | string | null
     owner_id?: StringFilter<"Document"> | string
     uploaded_at?: DateTimeFilter<"Document"> | Date | string
     updated_at?: DateTimeFilter<"Document"> | Date | string
@@ -11552,11 +11622,15 @@ export namespace Prisma {
     file_name?: SortOrder
     original_file_name?: SortOrder
     file_path?: SortOrder
+    s3_key?: SortOrderInput | SortOrder
+    s3_bucket?: SortOrderInput | SortOrder
     file_size?: SortOrder
     mime_type?: SortOrder
     status?: SortOrder
-    is_scanned?: SortOrderInput | SortOrder
     page_count?: SortOrderInput | SortOrder
+    processing_started_at?: SortOrderInput | SortOrder
+    processing_completed_at?: SortOrderInput | SortOrder
+    s3_uploaded_at?: SortOrderInput | SortOrder
     owner_id?: SortOrder
     uploaded_at?: SortOrder
     updated_at?: SortOrder
@@ -11575,11 +11649,15 @@ export namespace Prisma {
     file_name?: StringWithAggregatesFilter<"Document"> | string
     original_file_name?: StringWithAggregatesFilter<"Document"> | string
     file_path?: StringWithAggregatesFilter<"Document"> | string
+    s3_key?: StringNullableWithAggregatesFilter<"Document"> | string | null
+    s3_bucket?: StringNullableWithAggregatesFilter<"Document"> | string | null
     file_size?: IntWithAggregatesFilter<"Document"> | number
     mime_type?: StringWithAggregatesFilter<"Document"> | string
     status?: EnumDocumentStatusWithAggregatesFilter<"Document"> | $Enums.DocumentStatus
-    is_scanned?: BoolNullableWithAggregatesFilter<"Document"> | boolean | null
     page_count?: IntNullableWithAggregatesFilter<"Document"> | number | null
+    processing_started_at?: DateTimeNullableWithAggregatesFilter<"Document"> | Date | string | null
+    processing_completed_at?: DateTimeNullableWithAggregatesFilter<"Document"> | Date | string | null
+    s3_uploaded_at?: DateTimeNullableWithAggregatesFilter<"Document"> | Date | string | null
     owner_id?: StringWithAggregatesFilter<"Document"> | string
     uploaded_at?: DateTimeWithAggregatesFilter<"Document"> | Date | string
     updated_at?: DateTimeWithAggregatesFilter<"Document"> | Date | string
@@ -12181,11 +12259,15 @@ export namespace Prisma {
     file_name: string
     original_file_name: string
     file_path: string
+    s3_key?: string | null
+    s3_bucket?: string | null
     file_size: number
     mime_type: string
     status?: $Enums.DocumentStatus
-    is_scanned?: boolean | null
     page_count?: number | null
+    processing_started_at?: Date | string | null
+    processing_completed_at?: Date | string | null
+    s3_uploaded_at?: Date | string | null
     uploaded_at?: Date | string
     updated_at?: Date | string
     owner: UserCreateNestedOneWithoutDocumentsInput
@@ -12197,11 +12279,15 @@ export namespace Prisma {
     file_name: string
     original_file_name: string
     file_path: string
+    s3_key?: string | null
+    s3_bucket?: string | null
     file_size: number
     mime_type: string
     status?: $Enums.DocumentStatus
-    is_scanned?: boolean | null
     page_count?: number | null
+    processing_started_at?: Date | string | null
+    processing_completed_at?: Date | string | null
+    s3_uploaded_at?: Date | string | null
     owner_id: string
     uploaded_at?: Date | string
     updated_at?: Date | string
@@ -12213,11 +12299,15 @@ export namespace Prisma {
     file_name?: StringFieldUpdateOperationsInput | string
     original_file_name?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
+    s3_key?: NullableStringFieldUpdateOperationsInput | string | null
+    s3_bucket?: NullableStringFieldUpdateOperationsInput | string | null
     file_size?: IntFieldUpdateOperationsInput | number
     mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
     page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    processing_started_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    processing_completed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    s3_uploaded_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     owner?: UserUpdateOneRequiredWithoutDocumentsNestedInput
@@ -12229,11 +12319,15 @@ export namespace Prisma {
     file_name?: StringFieldUpdateOperationsInput | string
     original_file_name?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
+    s3_key?: NullableStringFieldUpdateOperationsInput | string | null
+    s3_bucket?: NullableStringFieldUpdateOperationsInput | string | null
     file_size?: IntFieldUpdateOperationsInput | number
     mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
     page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    processing_started_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    processing_completed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    s3_uploaded_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     owner_id?: StringFieldUpdateOperationsInput | string
     uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -12245,11 +12339,15 @@ export namespace Prisma {
     file_name: string
     original_file_name: string
     file_path: string
+    s3_key?: string | null
+    s3_bucket?: string | null
     file_size: number
     mime_type: string
     status?: $Enums.DocumentStatus
-    is_scanned?: boolean | null
     page_count?: number | null
+    processing_started_at?: Date | string | null
+    processing_completed_at?: Date | string | null
+    s3_uploaded_at?: Date | string | null
     owner_id: string
     uploaded_at?: Date | string
     updated_at?: Date | string
@@ -12260,11 +12358,15 @@ export namespace Prisma {
     file_name?: StringFieldUpdateOperationsInput | string
     original_file_name?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
+    s3_key?: NullableStringFieldUpdateOperationsInput | string | null
+    s3_bucket?: NullableStringFieldUpdateOperationsInput | string | null
     file_size?: IntFieldUpdateOperationsInput | number
     mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
     page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    processing_started_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    processing_completed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    s3_uploaded_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -12274,11 +12376,15 @@ export namespace Prisma {
     file_name?: StringFieldUpdateOperationsInput | string
     original_file_name?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
+    s3_key?: NullableStringFieldUpdateOperationsInput | string | null
+    s3_bucket?: NullableStringFieldUpdateOperationsInput | string | null
     file_size?: IntFieldUpdateOperationsInput | number
     mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
     page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    processing_started_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    processing_completed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    s3_uploaded_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     owner_id?: StringFieldUpdateOperationsInput | string
     uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -13057,11 +13163,6 @@ export namespace Prisma {
     not?: NestedEnumDocumentStatusFilter<$PrismaModel> | $Enums.DocumentStatus
   }
 
-  export type BoolNullableFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
-    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
-  }
-
   export type IntNullableFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
@@ -13083,11 +13184,15 @@ export namespace Prisma {
     file_name?: SortOrder
     original_file_name?: SortOrder
     file_path?: SortOrder
+    s3_key?: SortOrder
+    s3_bucket?: SortOrder
     file_size?: SortOrder
     mime_type?: SortOrder
     status?: SortOrder
-    is_scanned?: SortOrder
     page_count?: SortOrder
+    processing_started_at?: SortOrder
+    processing_completed_at?: SortOrder
+    s3_uploaded_at?: SortOrder
     owner_id?: SortOrder
     uploaded_at?: SortOrder
     updated_at?: SortOrder
@@ -13103,11 +13208,15 @@ export namespace Prisma {
     file_name?: SortOrder
     original_file_name?: SortOrder
     file_path?: SortOrder
+    s3_key?: SortOrder
+    s3_bucket?: SortOrder
     file_size?: SortOrder
     mime_type?: SortOrder
     status?: SortOrder
-    is_scanned?: SortOrder
     page_count?: SortOrder
+    processing_started_at?: SortOrder
+    processing_completed_at?: SortOrder
+    s3_uploaded_at?: SortOrder
     owner_id?: SortOrder
     uploaded_at?: SortOrder
     updated_at?: SortOrder
@@ -13118,11 +13227,15 @@ export namespace Prisma {
     file_name?: SortOrder
     original_file_name?: SortOrder
     file_path?: SortOrder
+    s3_key?: SortOrder
+    s3_bucket?: SortOrder
     file_size?: SortOrder
     mime_type?: SortOrder
     status?: SortOrder
-    is_scanned?: SortOrder
     page_count?: SortOrder
+    processing_started_at?: SortOrder
+    processing_completed_at?: SortOrder
+    s3_uploaded_at?: SortOrder
     owner_id?: SortOrder
     uploaded_at?: SortOrder
     updated_at?: SortOrder
@@ -13157,14 +13270,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumDocumentStatusFilter<$PrismaModel>
     _max?: NestedEnumDocumentStatusFilter<$PrismaModel>
-  }
-
-  export type BoolNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
-    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedBoolNullableFilter<$PrismaModel>
-    _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
   export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -13843,10 +13948,6 @@ export namespace Prisma {
     set?: $Enums.DocumentStatus
   }
 
-  export type NullableBoolFieldUpdateOperationsInput = {
-    set?: boolean | null
-  }
-
   export type NullableIntFieldUpdateOperationsInput = {
     set?: number | null
     increment?: number
@@ -14233,11 +14334,6 @@ export namespace Prisma {
     not?: NestedEnumDocumentStatusFilter<$PrismaModel> | $Enums.DocumentStatus
   }
 
-  export type NestedBoolNullableFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
-    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
-  }
-
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -14273,14 +14369,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumDocumentStatusFilter<$PrismaModel>
     _max?: NestedEnumDocumentStatusFilter<$PrismaModel>
-  }
-
-  export type NestedBoolNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
-    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedBoolNullableFilter<$PrismaModel>
-    _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -14389,11 +14477,15 @@ export namespace Prisma {
     file_name: string
     original_file_name: string
     file_path: string
+    s3_key?: string | null
+    s3_bucket?: string | null
     file_size: number
     mime_type: string
     status?: $Enums.DocumentStatus
-    is_scanned?: boolean | null
     page_count?: number | null
+    processing_started_at?: Date | string | null
+    processing_completed_at?: Date | string | null
+    s3_uploaded_at?: Date | string | null
     uploaded_at?: Date | string
     updated_at?: Date | string
     chat_sessions?: ChatSessionCreateNestedManyWithoutDocumentInput
@@ -14404,11 +14496,15 @@ export namespace Prisma {
     file_name: string
     original_file_name: string
     file_path: string
+    s3_key?: string | null
+    s3_bucket?: string | null
     file_size: number
     mime_type: string
     status?: $Enums.DocumentStatus
-    is_scanned?: boolean | null
     page_count?: number | null
+    processing_started_at?: Date | string | null
+    processing_completed_at?: Date | string | null
+    s3_uploaded_at?: Date | string | null
     uploaded_at?: Date | string
     updated_at?: Date | string
     chat_sessions?: ChatSessionUncheckedCreateNestedManyWithoutDocumentInput
@@ -14606,11 +14702,15 @@ export namespace Prisma {
     file_name?: StringFilter<"Document"> | string
     original_file_name?: StringFilter<"Document"> | string
     file_path?: StringFilter<"Document"> | string
+    s3_key?: StringNullableFilter<"Document"> | string | null
+    s3_bucket?: StringNullableFilter<"Document"> | string | null
     file_size?: IntFilter<"Document"> | number
     mime_type?: StringFilter<"Document"> | string
     status?: EnumDocumentStatusFilter<"Document"> | $Enums.DocumentStatus
-    is_scanned?: BoolNullableFilter<"Document"> | boolean | null
     page_count?: IntNullableFilter<"Document"> | number | null
+    processing_started_at?: DateTimeNullableFilter<"Document"> | Date | string | null
+    processing_completed_at?: DateTimeNullableFilter<"Document"> | Date | string | null
+    s3_uploaded_at?: DateTimeNullableFilter<"Document"> | Date | string | null
     owner_id?: StringFilter<"Document"> | string
     uploaded_at?: DateTimeFilter<"Document"> | Date | string
     updated_at?: DateTimeFilter<"Document"> | Date | string
@@ -14979,11 +15079,15 @@ export namespace Prisma {
     file_name: string
     original_file_name: string
     file_path: string
+    s3_key?: string | null
+    s3_bucket?: string | null
     file_size: number
     mime_type: string
     status?: $Enums.DocumentStatus
-    is_scanned?: boolean | null
     page_count?: number | null
+    processing_started_at?: Date | string | null
+    processing_completed_at?: Date | string | null
+    s3_uploaded_at?: Date | string | null
     uploaded_at?: Date | string
     updated_at?: Date | string
     owner: UserCreateNestedOneWithoutDocumentsInput
@@ -14994,11 +15098,15 @@ export namespace Prisma {
     file_name: string
     original_file_name: string
     file_path: string
+    s3_key?: string | null
+    s3_bucket?: string | null
     file_size: number
     mime_type: string
     status?: $Enums.DocumentStatus
-    is_scanned?: boolean | null
     page_count?: number | null
+    processing_started_at?: Date | string | null
+    processing_completed_at?: Date | string | null
+    s3_uploaded_at?: Date | string | null
     owner_id: string
     uploaded_at?: Date | string
     updated_at?: Date | string
@@ -15110,11 +15218,15 @@ export namespace Prisma {
     file_name?: StringFieldUpdateOperationsInput | string
     original_file_name?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
+    s3_key?: NullableStringFieldUpdateOperationsInput | string | null
+    s3_bucket?: NullableStringFieldUpdateOperationsInput | string | null
     file_size?: IntFieldUpdateOperationsInput | number
     mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
     page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    processing_started_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    processing_completed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    s3_uploaded_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     owner?: UserUpdateOneRequiredWithoutDocumentsNestedInput
@@ -15125,11 +15237,15 @@ export namespace Prisma {
     file_name?: StringFieldUpdateOperationsInput | string
     original_file_name?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
+    s3_key?: NullableStringFieldUpdateOperationsInput | string | null
+    s3_bucket?: NullableStringFieldUpdateOperationsInput | string | null
     file_size?: IntFieldUpdateOperationsInput | number
     mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
     page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    processing_started_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    processing_completed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    s3_uploaded_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     owner_id?: StringFieldUpdateOperationsInput | string
     uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15657,11 +15773,15 @@ export namespace Prisma {
     file_name: string
     original_file_name: string
     file_path: string
+    s3_key?: string | null
+    s3_bucket?: string | null
     file_size: number
     mime_type: string
     status?: $Enums.DocumentStatus
-    is_scanned?: boolean | null
     page_count?: number | null
+    processing_started_at?: Date | string | null
+    processing_completed_at?: Date | string | null
+    s3_uploaded_at?: Date | string | null
     uploaded_at?: Date | string
     updated_at?: Date | string
   }
@@ -15724,11 +15844,15 @@ export namespace Prisma {
     file_name?: StringFieldUpdateOperationsInput | string
     original_file_name?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
+    s3_key?: NullableStringFieldUpdateOperationsInput | string | null
+    s3_bucket?: NullableStringFieldUpdateOperationsInput | string | null
     file_size?: IntFieldUpdateOperationsInput | number
     mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
     page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    processing_started_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    processing_completed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    s3_uploaded_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     chat_sessions?: ChatSessionUpdateManyWithoutDocumentNestedInput
@@ -15739,11 +15863,15 @@ export namespace Prisma {
     file_name?: StringFieldUpdateOperationsInput | string
     original_file_name?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
+    s3_key?: NullableStringFieldUpdateOperationsInput | string | null
+    s3_bucket?: NullableStringFieldUpdateOperationsInput | string | null
     file_size?: IntFieldUpdateOperationsInput | number
     mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
     page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    processing_started_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    processing_completed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    s3_uploaded_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     chat_sessions?: ChatSessionUncheckedUpdateManyWithoutDocumentNestedInput
@@ -15754,11 +15882,15 @@ export namespace Prisma {
     file_name?: StringFieldUpdateOperationsInput | string
     original_file_name?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
+    s3_key?: NullableStringFieldUpdateOperationsInput | string | null
+    s3_bucket?: NullableStringFieldUpdateOperationsInput | string | null
     file_size?: IntFieldUpdateOperationsInput | number
     mime_type?: StringFieldUpdateOperationsInput | string
     status?: EnumDocumentStatusFieldUpdateOperationsInput | $Enums.DocumentStatus
-    is_scanned?: NullableBoolFieldUpdateOperationsInput | boolean | null
     page_count?: NullableIntFieldUpdateOperationsInput | number | null
+    processing_started_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    processing_completed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    s3_uploaded_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     uploaded_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }

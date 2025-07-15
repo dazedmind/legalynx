@@ -22,11 +22,8 @@ export default function Home() {
   const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null); // Add this
   const { user, logout, isPaidUser } = useAuth();
+  const [resetChatViewer, setResetChatViewer] = useState(false); // Add this
 
-  const [notification, setNotification] = useState<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
 
   // Clear uploaded files and reset system on page load
   useEffect(() => {
@@ -42,6 +39,7 @@ export default function Home() {
     clearUploadedFiles();
   }, []);
 
+
   const loadSystemStatus = async () => {
     setIsLoadingStatus(true);
     try {
@@ -55,34 +53,26 @@ export default function Home() {
     }
   };
 
-  const handleUploadSuccess = (response: UploadResponse) => {
-    setNotification({
-      type: 'success',
-      message: `Successfully processed ${response.filename} with ${response.pages_processed} pages!`
-    });
-    
-    setTimeout(() => {
-      loadSystemStatus();
-    }, 1000);
-    
-    setTimeout(() => {
-      setNotification(null);
-    }, 5000);
-
-    setActiveTab('chat');
-  };
-
-  const handleNewChat = () => {
-    setActiveTab('upload');
-    // Clear current session when starting new chat
-    setCurrentSessionId(null);
-    setCurrentDocumentId(null);
-  };
-
-  const handleTabClick = (tab: ActiveTab) => {
-    setActiveTab(tab);
-  };
-
+    // ✅ NEW: Handle document deletion from FileManager
+    const handleDocumentDeleted = async (deletedDocId: string) => {
+      // If the deleted document was the current one, reset everything
+      if (deletedDocId === currentDocumentId) {
+        setCurrentDocumentId(null);
+        setCurrentSessionId(null);
+        
+        // Switch back to upload tab
+        setActiveTab('upload');
+        
+        // Reset system status
+        try {
+          await apiService.resetSystem();
+          await loadSystemStatus();
+        } catch (error) {
+          console.error('Failed to reset system after document deletion:', error);
+        }
+      }
+    };
+    // ✅ UPDATED: Pass the new handler to FileManager
   const handleDocumentSelect = async (docId: string) => {
     setCurrentDocumentId(docId);
     
@@ -95,6 +85,26 @@ export default function Home() {
         setActiveTab('chat');
       }
     }
+  };
+
+  const handleUploadSuccess = (response: UploadResponse) => {
+    
+    setTimeout(() => {
+      loadSystemStatus();
+    }, 1000);
+    
+    setActiveTab('chat');
+  };
+
+  const handleNewChat = () => {
+    setActiveTab('upload');
+    // Clear current session when starting new chat
+    setCurrentSessionId(null);
+    setCurrentDocumentId(null);
+  };
+
+  const handleTabClick = (tab: ActiveTab) => {
+    setActiveTab(tab);
   };
 
   // Add this new handler for session selection
@@ -114,21 +124,11 @@ export default function Home() {
       setCurrentDocumentId(null);
       setCurrentSessionId(null); // Also clear session
       
-      setNotification({
-        type: 'success',
-        message: 'System reset successfully!'
-      });
+
       loadSystemStatus();
     } catch (error) {
-      setNotification({
-        type: 'error',
-        message: handleApiError(error)
-      });
     }
 
-    setTimeout(() => {
-      setNotification(null);
-    }, 5000);
   };
 
   const isSystemReady = systemStatus?.pdf_loaded && systemStatus?.index_ready;
@@ -200,21 +200,6 @@ export default function Home() {
         
         {/* Main Content Area */}
         <section className="flex-1 flex flex-col overflow-hidden">
-          {/* Notification Bar */}
-          {notification && (
-            <div className="flex-shrink-0 p-4">
-              <div
-                className={`p-4 rounded-md border ${
-                  notification.type === 'success'
-                    ? 'bg-green-50 border-green-200 text-green-800'
-                    : 'bg-red-50 border-red-200 text-red-800'
-                }`}
-              >
-                {notification.message}  
-              </div>
-            </div>
-          )}
-
           {/* Tab Content */}
           <div className="flex-1 overflow-hidden">
 
@@ -222,13 +207,15 @@ export default function Home() {
               <ChatViewer 
                 isSystemReady={!!isSystemReady} 
                 onUploadSuccess={handleUploadSuccess}
-                selectedSessionId={currentSessionId || ''} // Pass the selected session ID
+                selectedSessionId={currentSessionId || ''} 
+                resetToUpload={resetChatViewer} // ✅ Add this prop
               />
             )}
 
             {activeTab === 'documents' && (
               <FileManager 
                 onDocumentSelect={handleDocumentSelect}
+                onDocumentDeleted={handleDocumentDeleted} // ✅ Add this prop
                 currentDocumentId={currentDocumentId || ''}
               />
             )}

@@ -40,12 +40,12 @@ export async function POST(request: Request) {
         // Find all TEMPORARY documents for this user
         const temporaryDocuments = await prisma.document.findMany({
             where: {
-                ownerId: user.id, // Assuming the field is ownerId based on your schema
+                owner_id: user.id, // Assuming the field is ownerId based on your schema
                 status: 'TEMPORARY'
             },
             select: {
                 id: true,
-                originalFileName: true,
+                original_file_name: true,
                 status: true
             }
         });
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
                 await tx.chatMessage.deleteMany({
                     where: {
                         session: {
-                            documentId: {
+                            document_id: {
                                 in: temporaryDocuments.map(doc => doc.id)
                             }
                         }
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
                 // Then delete all chat sessions for these documents
                 await tx.chatSession.deleteMany({
                     where: {
-                        documentId: {
+                        document_id: {
                             in: temporaryDocuments.map(doc => doc.id)
                         }
                     }
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
                 // Finally, delete the TEMPORARY documents
                 await tx.document.deleteMany({
                     where: {
-                        ownerId: user.id,
+                        owner_id: user.id,
                         status: 'TEMPORARY'
                     }
                 });

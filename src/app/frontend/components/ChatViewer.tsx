@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle2, Search, MessageSquare, Bot, Save, Plus } from 'lucide-react';
+import { FileText, AlertCircle, Search, MessageSquare, Bot, Plus } from 'lucide-react';
 import { apiService, handleApiError, AnalysisResponse, RerankDemo, UploadResponse } from '../lib/api';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
-import { GoCopy, GoSync, GoThumbsdown, GoThumbsup } from 'react-icons/go';
+import { GoCopy, GoDownload, GoSync, GoThumbsdown, GoThumbsup } from 'react-icons/go';
 import SaveDocumentModal from './SaveDocumentModal';
+import UploadPage from './UploadPage';
 
 interface ChatMessage {
   id: string;
@@ -35,120 +36,56 @@ interface CombinedComponentProps {
   isSystemReady: boolean;
   onUploadSuccess: (response: UploadResponse) => void;
   selectedSessionId?: string;
+  resetToUpload?: boolean; // ✅ Add this prop
+
 }
 
-export default function ChatViewer({ isSystemReady, onUploadSuccess, selectedSessionId }: CombinedComponentProps) {
+export default function ChatViewer({ isSystemReady, onUploadSuccess, selectedSessionId, resetToUpload }: CombinedComponentProps) {
   const { isAuthenticated, user } = useAuth();
   
-  // Upload states
-  const [file, setFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [statusMessage, setStatusMessage] = useState('');
+  // Document and session states
   const [currentDocument, setCurrentDocument] = useState<any>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [isLoadingSession, setIsLoadingSession] = useState(false);
+  // Add isSaving state at the top with other states
+  // Add isSaving state at the top with other states
   const [isSaving, setIsSaving] = useState(false);
-  const [lastSaveTimestamp, setLastSaveTimestamp] = useState<number>(0);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
 
-  // Query states
+  // Chat states
   const [query, setQuery] = useState('');
   const [isQuerying, setIsQuerying] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [presetQueries, setPresetQueries] = useState<Record<string, string>>({});
   const [error, setError] = useState<string>('');
   const [showPresets, setShowPresets] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isCreatingSession, setIsCreatingSession] = useState(false);
-  const [isLoadingSession, setIsLoadingSession] = useState(false);
-  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
 
-  // Load preset queries and chat session on component mount
+  useEffect(() => {
+    if (resetToUpload) {
+      console.log('🔄 Resetting ChatViewer to upload state');
+      handleNewChat();
+    }
+  }, [resetToUpload]);
+
+  // Load current document and session on component mount
   useEffect(() => {
     if (isSystemReady) {
-      // loadPresetQueries();
       loadCurrentDocument();
     }
   }, [isSystemReady, user]);
 
+  // Handle selected session loading
   useEffect(() => {
-    // Only save if we have unsaved changes and it's been at least 2 seconds since last save
-    if (hasUnsavedChanges && 
-        chatHistory.length > 0 && 
-        currentSessionId && 
-        user && 
-        !isSaving &&
-        Date.now() - lastSaveTimestamp > 2000) {
-      
-      const timeoutId = setTimeout(() => {
-        saveSessionToDatabase();
-      }, 1000);
-
-      return () => clearTimeout(timeoutId);
+    if (selectedSessionId && selectedSessionId !== currentSessionId) {
+      loadSpecificSession(selectedSessionId);
     }
-  }, [hasUnsavedChanges, currentSessionId, user, isSaving, lastSaveTimestamp]);
+  }, [selectedSessionId]);
 
-    useEffect(() => {
-      if (selectedSessionId && selectedSessionId !== currentSessionId) {
-        loadSpecificSession(selectedSessionId); // NEW function
-      }
-    }, [selectedSessionId]);
-
-    
-const loadSpecificSession = async (sessionId: string) => {
-  if (!user || isLoadingSession) return;
-
-  setIsLoadingSession(true);
-  try {
-    const response = await fetch(`/backend/api/chat/${sessionId}/messages`, {
-      method: 'GET',
-      headers: getAuthHeaders() // This was missing!
-    });
-
-    if (response.ok) {
-      const sessionData = await response.json();
-      
-      setCurrentSessionId(sessionData.sessionId);
-      
-      const documentInfo = {
-        id: sessionData.document.id,
-        originalName: sessionData.document.name,
-        size: sessionData.document.size,
-        pages: sessionData.document.pages,
-        status: 'ready' as const,
-        uploadedAt: new Date().toISOString()
-      };
-      setCurrentDocument(documentInfo);
-      
-      const formattedMessages: ChatMessage[] = sessionData.messages.map((msg: any) => ({
-        id: msg.id,
-        type: msg.role,
-        content: msg.content,
-        createdAt: new Date(msg.createdAt),
-        sourceCount: msg.tokensUsed
-      }));
-      
-      setChatHistory(formattedMessages);
-      setShowPresets(false);
-    } else if (response.status === 401) {
-      toast.error('Authentication failed. Please sign in again.');
-      // Optionally redirect to login
-    } else {
-      throw new Error('Failed to load session');
-    }
-  } catch (error) {
-    console.error('Failed to load specific session:', error);
-    toast.error('Failed to load chat session');
-  } finally {
-    setIsLoadingSession(false);
-  }
-};
   // Load or create session when document changes
   useEffect(() => {
     if (currentDocument && user && !currentSessionId) {
-      // Only create/load session if we don't already have one
       loadOrCreateSession();
     }
   }, [currentDocument, user, currentSessionId]);
@@ -160,54 +97,6 @@ const loadSpecificSession = async (sessionId: string) => {
     }
   }, [user, isAuthenticated, currentDocument]);
 
-  const loadChatHistoryFromDatabase = async () => {
-    if (!user || !isAuthenticated || !currentDocument) return;
-
-    try {
-      // Get all sessions for this user and document
-      const response = await fetch('/backend/api/chat', {
-        method: 'GET',
-        headers: getAuthHeaders()
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const sessions = data.sessions || [];
-        
-        // Find the most recent session for this document
-        const documentSessions = sessions.filter((session: any) => session.documentId === currentDocument.id);
-        
-        if (documentSessions.length > 0) {
-          const mostRecentSession = documentSessions[0]; // Already sorted by updatedAt desc
-          setCurrentSessionId(mostRecentSession.id);
-          
-          // Load messages for this session
-          const messagesResponse = await fetch(
-            `/backend/api/chat-messages?sessionId=${mostRecentSession.id}`,
-            { headers: getAuthHeaders() }
-          );
-          
-          if (messagesResponse.ok) {
-            const messages = await messagesResponse.json();
-            const formattedMessages = messages.map((msg: any) => ({
-              id: msg.id,
-              type: msg.role, // Map 'role' to 'type'
-              content: msg.content,
-              createdAt: new Date(msg.createdAt || msg.timestamp)
-            }));
-            setChatHistory(formattedMessages);
-          }
-        } else {
-          // No existing session for this document - DON'T CREATE ONE YET
-          setCurrentSessionId(null);
-          setChatHistory([]);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load chat history from database:', error);
-    }
-  };
-
   // Scroll to bottom when new messages are added
   useEffect(() => {
     scrollToBottom();
@@ -216,14 +105,26 @@ const loadSpecificSession = async (sessionId: string) => {
   // Auto-save session when messages change
   useEffect(() => {
     if (chatHistory.length > 0 && currentSessionId && user) {
-      // Debounce the save to avoid too many API calls
       const timeoutId = setTimeout(() => {
         saveSessionToDatabase();
       }, 1000);
-
       return () => clearTimeout(timeoutId);
     }
   }, [chatHistory, currentSessionId]);
+
+  // Helper function to get auth headers
+  const getAuthHeaders = (): HeadersInit => {
+    const token = authUtils.getToken();
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return headers;
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -249,7 +150,7 @@ const loadSpecificSession = async (sessionId: string) => {
               size: mostRecent.size,
               uploadedAt: mostRecent.uploadedAt,
               pages: mostRecent.pageCount,
-              status: mostRecent.status.toLowerCase(),
+              status: mostRecent.status,
               databaseId: mostRecent.id
             };
             setCurrentDocument(documentInfo);
@@ -274,29 +175,103 @@ const loadSpecificSession = async (sessionId: string) => {
     }
   };
 
-  // Helper function to get auth headers
-  const getAuthHeaders = (): HeadersInit => {
-    const token = authUtils.getToken(); // Use authUtils instead of localStorage
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json'
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+  const loadSpecificSession = async (sessionId: string) => {
+    if (!user || isLoadingSession) return;
+
+    setIsLoadingSession(true);
+    try {
+      const response = await fetch(`/backend/api/chat/${sessionId}/messages`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (response.ok) {
+        const sessionData = await response.json();
+        
+        setCurrentSessionId(sessionData.sessionId);
+        
+        const documentInfo = {
+          id: sessionData.document.id,
+          originalName: sessionData.document.name,
+          size: sessionData.document.size,
+          pages: sessionData.document.pages,
+          status: sessionData.document.status,
+          uploadedAt: new Date().toISOString()
+        };
+        setCurrentDocument(documentInfo);
+        
+        const formattedMessages: ChatMessage[] = sessionData.messages.map((msg: any) => ({
+          id: msg.id,
+          type: msg.role,
+          content: msg.content,
+          createdAt: new Date(msg.createdAt),
+          sourceCount: msg.tokensUsed
+        }));
+        
+        setChatHistory(formattedMessages);
+        setShowPresets(false);
+      } else if (response.status === 401) {
+        toast.error('Authentication failed. Please sign in again.');
+      } else {
+      }
+    } catch (error) {
+      console.error('Failed to load specific session:', error);
+    } finally {
+      setIsLoadingSession(false);
     }
-    
-    return headers;
   };
+
+  const loadChatHistoryFromDatabase = async () => {
+    if (!user || !isAuthenticated || !currentDocument) return;
+
+    try {
+      const response = await fetch('/backend/api/chat', {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const sessions = data.sessions || [];
+        
+        const documentSessions = sessions.filter((session: any) => session.documentId === currentDocument.id);
+        
+        if (documentSessions.length > 0) {
+          const mostRecentSession = documentSessions[0];
+          setCurrentSessionId(mostRecentSession.id);
+          
+          const messagesResponse = await fetch(
+            `/backend/api/chat-messages?sessionId=${mostRecentSession.id}`,
+            { headers: getAuthHeaders() }
+          );
+          
+          if (messagesResponse.ok) {
+            const messages = await messagesResponse.json();
+            const formattedMessages = messages.map((msg: any) => ({
+              id: msg.id,
+              type: msg.role,
+              content: msg.content,
+              createdAt: new Date(msg.createdAt || msg.timestamp)
+            }));
+            setChatHistory(formattedMessages);
+          }
+        } else {
+          setCurrentSessionId(null);
+          setChatHistory([]);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load chat history from database:', error);
+    }
+  };
+
   const loadOrCreateSession = async () => {
     if (!user || !currentDocument || isCreatingSession) return;
   
     try {
       setIsCreatingSession(true);
-      
-      // Use a consistent document ID - prefer database ID if available
       const documentId = currentDocument.databaseId || currentDocument.id;
       
-      // Try to find existing session for this user and document
       const response = await fetch(
         `/backend/api/chat-sessions/find?userId=${user.id}&documentId=${documentId}`,
         { headers: getAuthHeaders() }
@@ -306,28 +281,26 @@ const loadSpecificSession = async (sessionId: string) => {
         const session = await response.json();
         setCurrentSessionId(session.id);
         
-        // Load messages for this session
         const messagesResponse = await fetch(
-          `/backend/api/chat-messages?sessionId=${session.id}`,
+          `/backend/api/chat/${session.id}/messages`,
           { headers: getAuthHeaders() }
         );
         if (messagesResponse.ok) {
-          const messages = await messagesResponse.json();
+          const response = await messagesResponse.json();
+          const messages = response.messages || [];
           const formattedMessages = messages.map((msg: any) => ({
             ...msg,
-            createdAt: new Date(msg.createdAt || msg.timestamp) // Handle both formats
+            createdAt: new Date(msg.createdAt || msg.timestamp)
           }));
           setChatHistory(formattedMessages);
         }
       } else if (response.status === 404) {
-        // Only create new session if none exists
         await createNewSession(documentId);
       } else {
-        throw new Error('Failed to check for existing session');
+        handleDocumentDeleted();
       }
     } catch (error) {
       console.error('Failed to load or create session:', error);
-      // Only create fallback session if we don't have one
       if (!currentSessionId) {
         await createNewSession(currentDocument.databaseId || currentDocument.id);
       }
@@ -338,7 +311,10 @@ const loadSpecificSession = async (sessionId: string) => {
   
   const createNewSession = async (documentId?: string) => {
     if (!user || !currentDocument || isCreatingSession) return;
-  
+    if(!currentDocument.databaseId){
+      toast.error('Document is not saved to your account');
+      return;
+    }
     try {
       setIsCreatingSession(true);
       const useDocumentId = documentId || currentDocument.databaseId || currentDocument.id;
@@ -363,8 +339,7 @@ const loadSpecificSession = async (sessionId: string) => {
         throw new Error('Failed to create session');
       }
     } catch (error) {
-      console.error('Failed to create session:', error);
-      toast.error('Failed to create chat session');
+      handleDocumentDeleted(); // if document is deleted, reset to upload page
     } finally {
       setIsCreatingSession(false);
     }
@@ -374,13 +349,11 @@ const loadSpecificSession = async (sessionId: string) => {
     if (!currentSessionId || !user || chatHistory.length === 0) return;
 
     try {
-      // Generate title from first user message if not set
       const firstUserMessage = chatHistory.find(m => m.type === 'USER');
       const title = firstUserMessage 
         ? `${firstUserMessage.content.substring(0, 50)}${firstUserMessage.content.length > 50 ? '...' : ''}`
         : `Chat with ${currentDocument?.originalName || 'Document'}`;
 
-      // Update session title
       await fetch(`/backend/api/chat-sessions/${currentSessionId}`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
@@ -397,216 +370,134 @@ const loadSpecificSession = async (sessionId: string) => {
     }
   };
 
-  // Database save function for documents
-  const saveDocumentToDatabase = async (documentInfo: any) => {
-    if (!isAuthenticated || !user || !file) {
-      // For non-authenticated users, just save to localStorage
-      const storageKey = 'uploaded_documents';
-      const existingDocs = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      existingDocs.push(documentInfo);
-      localStorage.setItem(storageKey, JSON.stringify(existingDocs));
-      return documentInfo;
-    }
-
-    try {
-      // Use the /backend/api/documents/upload endpoint with FormData
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch('/backend/api/documents/upload', {
-        method: 'POST',
-        headers: {
-          // Don't set Content-Type for FormData, let browser set it
-          'Authorization': authUtils.getToken() ? `Bearer ${authUtils.getToken()}` : ''
-        },
-        body: formData
-      });
-
-      if (response.ok) {
-        const savedDocument = await response.json();
-        
-        // Also save to localStorage for immediate access
-        const storageKey = `uploaded_documents_${user.id}`;
-        const existingDocs = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        const localDocInfo = {
-          id: savedDocument.documentId || savedDocument.id,
-          filename: savedDocument.filename,
-          originalName: savedDocument.originalName,
-          size: savedDocument.size,
-          uploaded_at: savedDocument.uploaded_at,
-          pages: savedDocument.pages_processed || 1,
-          status: 'ready' as const,
-          databaseId: savedDocument.documentId || savedDocument.id
-        };
-        existingDocs.push(localDocInfo);
-        localStorage.setItem(storageKey, JSON.stringify(existingDocs));
-        
-        toast.success('Document uploaded please wait while we process!');
-        return localDocInfo;
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save document to database');
-      }
-    } catch (error) {
-      console.error('Failed to save to database:', error);
-      toast.error(`Upload succeeded but failed to save to database: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      
-      // Fallback to localStorage
-      const storageKey = isAuthenticated && user?.id 
-        ? `uploaded_documents_${user.id}` 
-        : 'uploaded_documents';
-      const existingDocs = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      existingDocs.push(documentInfo);
-      localStorage.setItem(storageKey, JSON.stringify(existingDocs));
-      
-      return documentInfo;
-    }
+  // Function to handle when current document is deleted
+  const handleDocumentDeleted = () => {
+    // Reset all state to go back to upload page
+    setCurrentSessionId(null);
+    setChatHistory([]);
+    setCurrentDocument(null);
+    setQuery('');
+    setError('');
+    setShowPresets(true);
+    
+    // Notify parent component to update system status
+    onUploadSuccess({
+      documentId: '',
+      filename: '',
+      originalName: '',
+      size: 0,
+      uploadedAt: '',
+      pages_processed: 0
+    });
+    
+    toast.info('Document was deleted - returned to upload page');
   };
 
-  // Upload functions
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    if (selectedFile && selectedFile.type === 'application/pdf') {
-      setFile(selectedFile);
-      setUploadStatus('idle');
-      setStatusMessage('');
-    } else {
-      setFile(null);
-      setUploadStatus('error');
-      setStatusMessage('Please select a valid PDF file');
-    }
-  };
+  const addMessage = async (message: Omit<ChatMessage, 'id' | 'createdAt'>) => {
+    const newMessage: ChatMessage = {
+      ...message,
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date()
+    };
 
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-  };
+    setChatHistory(prev => [...prev, newMessage]);
 
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const droppedFile = event.dataTransfer.files[0];
-    if (droppedFile && droppedFile.type === 'application/pdf') {
-      setFile(droppedFile);
-      setUploadStatus('idle');
-      setStatusMessage('');
-    } else {
-      setUploadStatus('error');
-      setStatusMessage('Please drop a valid PDF file');
-    }
-  };
+    if (currentSessionId) {
+      try {
+        const response = await fetch('/backend/api/chat-messages', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            id: newMessage.id,
+            sessionId: currentSessionId,
+            role: newMessage.type.toUpperCase(),
+            content: newMessage.content,
+            createdAt: newMessage.createdAt.toISOString(),
+            tokensUsed: 0
+          })
+        });
 
-  const handleUpload = async () => {
-    if (!file) {
-      setUploadStatus('error');
-      setStatusMessage('Please select a PDF file first');
-      return;
-    }
-  
-    setIsUploading(true);
-    setUploadStatus('idle');
-    setStatusMessage('');
-  
-    try {
-      // First, upload to RAG system for processing
-      const ragResponse = await apiService.uploadPdf(file);
-      
-      // Create consistent document info structure
-      const baseDocumentInfo = {
-        id: Date.now().toString(), // Temporary ID
-        filename: ragResponse.filename,
-        originalName: file.name, // ✅ Use actual file name
-        size: file.size,
-        uploadedAt: new Date().toISOString(),
-        pages: ragResponse.pages_processed,
-        status: 'ready' as const
-      };
-  
-      if (isAuthenticated && user) {
-        // For authenticated users, also save to database
-        try {
-          const savedDocumentInfo = await saveDocumentToDatabase(baseDocumentInfo);
-          
-          // ✅ IMPORTANT: Update state immediately with saved document info
-          setCurrentDocument({
-            ...savedDocumentInfo,
-            databaseId: savedDocumentInfo.id
-          });
-          
-          setUploadStatus('success');
-          setStatusMessage('Successfully processed document and saved to your account');
-          
-          console.log('Document saved and state updated:', savedDocumentInfo); // Debug log
-          
-        } catch (saveError) {
-          console.error('Database save failed, using local info:', saveError);
-          
-          // ✅ Fallback: Still update state with local info
-          setCurrentDocument(baseDocumentInfo);
-          setUploadStatus('success');
-          setStatusMessage('Document processed successfully (local session)');
+        if (response.ok) {
+          const savedMessage = await response.json();
+          console.log('Message saved successfully:', savedMessage.messageId || savedMessage.id);
         }
-      } else {
-        // For non-authenticated users, save to localStorage and update state
-        await saveDocumentToDatabase(baseDocumentInfo);
-        
-        // ✅ Update state immediately
-        setCurrentDocument(baseDocumentInfo);
-        setUploadStatus('success');
-        setStatusMessage(`Successfully processed ${ragResponse.pages_processed} pages from ${file.name}`);
+      } catch (error) {
+        console.error('Failed to save message to database:', error);
       }
-      
-      // ✅ Trigger parent component update
-      onUploadSuccess({
-        documentId: baseDocumentInfo.id,
-        filename: ragResponse.filename,
-        originalName: file.name,
-        size: file.size,
-        uploadedAt: baseDocumentInfo.uploadedAt,
-        pages_processed: ragResponse.pages_processed
-      });
-      
-      // Reset form
-      setFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      
-    } catch (error) {
-      console.error('Upload failed:', error);
-      setUploadStatus('error');
-      setStatusMessage(handleApiError(error));
-      toast.error('Upload failed: ' + handleApiError(error));
-    } finally {
-      setIsUploading(false);
     }
   };
-  
 
-  // New Chat function - complete reset back to upload state
-  const handleNewChat = async () => {
-    if (chatHistory.length > 0 && !confirm('Are you sure you want to start a new chat? This will clear everything and return to upload.')) {
+  const handleQuery = async (queryText?: string) => {
+    const currentQuery = queryText || query;
+    
+    if (!currentQuery.trim()) {
+      setError('Please enter a query');
       return;
     }
 
+    if (!currentSessionId && user && currentDocument) {
+      if (isCreatingSession) {
+        toast.info('Creating session, please wait...');
+        return;
+      }
+      await createNewSession();
+      
+      if (!currentSessionId) {
+        setError('Failed to create chat session');
+        return;
+      }
+    }
+
+    await addMessage({
+      type: 'USER',
+      content: currentQuery,
+      query: currentQuery
+    });
+
+    setIsQuerying(true);
+    setError('');
+    setQuery('');
+    setShowPresets(false);
+
     try {
+      const result = await apiService.queryDocuments(currentQuery);
+      
+      await addMessage({
+        type: 'ASSISTANT',
+        content: result.response,
+        query: currentQuery,
+        sourceCount: result.source_count
+      });
+    } catch (error) {
+      const errorMessage = handleApiError(error);
+      setError(errorMessage);
+      
+      await addMessage({
+        type: 'ASSISTANT',
+        content: `Sorry, I encountered an error: ${errorMessage}`,
+        query: currentQuery
+      });
+    } finally {
+      setIsQuerying(false);
+    }
+  };
+
+  const handleNewChat = async () => {
+    try {
+      console.log('🆕 Starting new chat - resetting all state');
+      
       // Clear ALL state - complete reset
       setCurrentSessionId(null);
       setChatHistory([]);
       setCurrentDocument(null);
-      setFile(null);
-      setUploadStatus('idle');
-      setStatusMessage('');
       setQuery('');
       setError('');
       setShowPresets(true);
-      setIsUploading(false);
       
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      // Reset system
+      await apiService.resetSystem();
       
-      // Trigger the parent component to reset system ready state
-      // This will show the upload interface again
+      // Trigger parent component reset by calling onUploadSuccess with empty data
       onUploadSuccess({
         documentId: '',
         filename: '',
@@ -616,7 +507,8 @@ const loadSpecificSession = async (sessionId: string) => {
         pages_processed: 0
       });
       
-      toast.success('Reset to upload - ready for new document');
+      console.log('✅ ChatViewer reset complete');
+      
     } catch (error) {
       console.error('Failed to reset:', error);
       toast.error('Failed to reset');
@@ -627,17 +519,36 @@ const loadSpecificSession = async (sessionId: string) => {
     setIsSaveModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsSaveModalOpen(false);
-  };
-
   const handleSaveFile = async () => {
     if (!currentDocument || !isAuthenticated || !user) {
       toast.error('No document to save or user not authenticated');
       return;
     }
   
+    const documentStatus = currentDocument.status
+    
+    console.log('📄 Document status check:', {
+      originalStatus: currentDocument.status,
+      normalizedStatus: documentStatus,
+      documentId: currentDocument.id
+    });
+  
+    // Check if document is already saved (indexed status means it's saved)
+    if (documentStatus === 'INDEXED') {
+      toast.info('Document is already saved to your account');
+      return;
+    }
+    const savableStatuses = ['TEMPORARY', 'READY', 'UPLOADED'];
+
+    // ✅ FIX: Allow saving of temporary documents (handle both 'temporary' and 'temp')
+    if (!savableStatuses.includes(documentStatus)) {
+      toast.error(`Cannot save document with status: ${currentDocument.status}. Only temporary documents can be saved.`);
+      return;
+    }
+  
     try {
+      setIsSaving(true);
+      
       const response = await fetch('/backend/api/documents/save-document', {
         method: 'POST',
         headers: {
@@ -656,140 +567,51 @@ const loadSpecificSession = async (sessionId: string) => {
       }
   
       const savedDocumentInfo = await response.json();
-      setCurrentDocument(savedDocumentInfo);
+      
+      // Update current document with new info
+      setCurrentDocument({
+        ...currentDocument,
+        status: 'INDEXED', // Now saved to cloud
+        s3Key: savedDocumentInfo.s3Key,
+        s3Url: savedDocumentInfo.s3Url
+      });
+      
       setIsSaveModalOpen(false);
-      toast.success('Document saved to your account!');
+      toast.success('Document saved to your account and cloud storage!');
+      
     } catch (error: any) {
       console.error('Failed to save file:', error);
-      toast.error(error.message || 'Failed to save file to account');
-    }
-  };
-  
-
-  const resetUpload = () => {
-    setFile(null);
-    setUploadStatus('idle');
-    setStatusMessage('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  // Query functions
-  // const loadPresetQueries = async () => {
-  //   try {
-  //     const data = await apiService.getPresetQueries();
-  //     setPresetQueries(data.preset_queries);
-  //   } catch (error) {
-  //     console.error('Failed to load preset queries:', error);
-  //   }
-  // };
-
-  const addMessage = async (message: Omit<ChatMessage, 'id' | 'createdAt'>) => {
-    const newMessage: ChatMessage = {
-      ...message,
-      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date()
-    };
-
-    // Add to local state immediately for UI responsiveness
-    setChatHistory(prev => [...prev, newMessage]);
-
-    // Save individual message to database
-    if (currentSessionId) {
-      try {
-        console.log('Saving message to database:', newMessage.content.substring(0, 50));
-        const response = await fetch('/backend/api/chat-messages', {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            id: newMessage.id,
-            sessionId: currentSessionId,
-            role: newMessage.type.toUpperCase(), // USER or ASSISTANT
-            content: newMessage.content,
-            createdAt: newMessage.createdAt.toISOString(),
-            tokensUsed: 0
-          })
-        });
-
-        if (response.ok) {
-          const savedMessage = await response.json();
-          console.log('Message saved successfully:', savedMessage.messageId || savedMessage.id);
-        } else {
-          const errorData = await response.json();
-          console.error('Failed to save message:', errorData);
-        }
-      } catch (error) {
-        console.error('Failed to save message to database:', error);
-        // Message is still in local state, so chat continues to work
-      }
-    }
-  };
-
-  const handleQuery = async (queryText?: string) => {
-    const currentQuery = queryText || query;
-    
-    if (!currentQuery.trim()) {
-      setError('Please enter a query');
-      return;
-    }
-
-     // Ensure we have a session before proceeding
-    if (!currentSessionId && user && currentDocument) {
-      if (isCreatingSession) {
-        // Wait for session creation to complete
-        toast.info('Creating session, please wait...');
-        return;
-      }
-      await createNewSession();
       
-      // If we still don't have a session after creating, something went wrong
-      if (!currentSessionId) {
-        setError('Failed to create chat session');
-        return;
+      if (error.message.includes('Temporary file not found') || error.message.includes('no longer available')) {
+        toast.error('Document file expired. Please re-upload the document.'+ documentStatus);
+        handleNewChat();
+      } else {
+        toast.error(error.message || 'Failed to save file to account');
       }
-    }
-
-    // Add user message
-    await addMessage({
-      type: 'USER',
-      content: currentQuery,
-      query: currentQuery
-    });
-
-    setIsQuerying(true);
-    setError('');
-    setQuery(''); // Clear input after sending
-    setShowPresets(false);
-
-    try {
-      const result = await apiService.queryDocuments(currentQuery);
-      
-      // Add assistant response
-      await addMessage({
-        type: 'ASSISTANT',
-        content: result.response,
-        query: currentQuery,
-        sourceCount: result.source_count
-      });
-    } catch (error) {
-      const errorMessage = handleApiError(error);
-      setError(errorMessage);
-      
-      // Add error message to chat
-      await addMessage({
-        type: 'ASSISTANT',
-        content: `Sorry, I encountered an error: ${errorMessage}`,
-        query: currentQuery
-      });
     } finally {
-      setIsQuerying(false);
+      setIsSaving(false);
     }
   };
 
-  const selectPresetQuery = (selectedQuery: string) => {
-    setQuery(selectedQuery);
-    setError('');
+  const handleUploadSuccess = (response: UploadResponse) => {
+    // Update current document when upload is successful
+    const documentInfo = {
+      id: response.documentId,
+      filename: response.filename,
+      originalName: response.originalName || response.filename,
+      size: response.size || 0,
+      uploadedAt: response.uploadedAt || new Date().toISOString(),
+      pages: response.pages_processed,
+      status: response.status,
+      databaseId: response.documentId
+    };
+    
+    setCurrentDocument(documentInfo);
+    
+    // Call the parent success handler
+    onUploadSuccess(response);
+    
+    toast.success('Document uploaded and ready to chat!');
   };
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
@@ -830,7 +652,19 @@ const loadSpecificSession = async (sessionId: string) => {
             </div>
             <div className="flex items-center gap-2">
               <div className="flex space-x-2">
-                {/* New Chat button - always visible when document is loaded */}
+                <button 
+                  onClick={handleSaveModal}
+                  disabled={currentDocument?.status === 'INDEXED'}
+                  className={`flex items-center cursor-pointer p-2 px-3 text-sm rounded-lg transition-all duration-300 ${
+                    currentDocument?.status === 'INDEXED' 
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : ' text-black hover:brightness-105 hover:bg-yellow-200/20 hover:text-yellow-600'
+                  }`}
+                >
+                  <GoDownload className="w-4 h-4 mr-1" />
+                  {currentDocument?.status === 'INDEXED' ? 'Saved' : 'Save File'}
+                </button>
+
                 <button 
                   onClick={handleNewChat}
                   className="flex items-center cursor-pointer p-2 px-3 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-all duration-300"
@@ -838,12 +672,6 @@ const loadSpecificSession = async (sessionId: string) => {
                   <Plus className="w-3 h-3 mr-1" />
                   New Chat
                 </button>
-                  <button 
-                    onClick={handleSaveModal}
-                    className="flex items-center cursor-pointer p-2 px-3 text-sm bg-[#e4c858] text-white rounded-lg hover:brightness-105 transition-all duration-300"
-                  >
-                    Save File
-                  </button>
               </div>
             </div>
           </div>  
@@ -857,107 +685,9 @@ const loadSpecificSession = async (sessionId: string) => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {!currentDocument ? (
-          /* Upload Section */
+          /* Upload Section - Use UploadPage Component */
           <div className="flex-1 flex flex-col justify-center p-8 max-w-2xl mx-auto w-full">
-            {/* Compact File Upload Area */}
-            <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors mb-4 ${
-                file
-                  ? 'border-green-400 bg-green-50'
-                  : 'border-gray-300 hover:border-gray-400 bg-gray-50'
-              }`}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            >
-              {file ? (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-green-600" />
-                    <span className="font-medium text-green-800">{file.name}</span>
-                    <span className="text-sm text-green-600">
-                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                    </span>
-                  </div>
-                  <button
-                    onClick={resetUpload}
-                    className="text-sm text-red-600 hover:text-red-800 underline"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-3">
-                  <Upload className="w-8 h-8 text-gray-400" />
-                  <div>
-                    <span className="text-gray-600">
-                      Drop PDF here or{' '}
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="text-blue-600 hover:text-blue-800 underline"
-                      >
-                        browse files
-                      </button>
-                    </span>
-                    <p className="text-sm text-gray-500 mt-1">Supports PDF files up to 50MB</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Hidden File Input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-
-            {/* Upload Button */}
-            <button
-              onClick={handleUpload}
-              disabled={!file || isUploading}
-              className={`w-full py-3 px-4 rounded-md font-medium transition-colors mb-4 ${
-                !file || isUploading
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-            >
-              {isUploading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Processing PDF...
-                </div>
-              ) : (
-                'Upload and Process PDF'
-              )}
-            </button>
-
-            {/* Status Message */}
-            {statusMessage && (
-              <div
-                className={`p-4 rounded-md flex items-start text-sm ${
-                  uploadStatus === 'success'
-                    ? 'bg-green-50 text-green-700 border border-green-200'
-                    : 'bg-red-50 text-red-700 border border-red-200'
-                }`}
-              >
-                {uploadStatus === 'success' ? (
-                  <CheckCircle2 className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
-                )}
-                <span>{statusMessage}</span>
-              </div>
-            )}
-
-            {/* Authentication Notice */}
-            {!isAuthenticated && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
-                <p className="font-medium">Session Only Mode</p>
-                <p>Your document will be processed for this session only. <a href="/frontend/login" className="underline hover:text-yellow-900">Sign in</a> to save documents permanently.</p>
-              </div>
-            )}
+            <UploadPage onUploadSuccess={handleUploadSuccess} />
           </div>
         ) : (
           /* Chat Section */
@@ -989,7 +719,6 @@ const loadSpecificSession = async (sessionId: string) => {
                           </div>
                         )}
                       </div>
-                 
                     </div>
                   ))
                 )}
@@ -1013,14 +742,14 @@ const loadSpecificSession = async (sessionId: string) => {
 
             {/* Fixed Input Area */}
             <div className="flex-shrink-0 bg-white border-t border-gray-200 p-6">
-              {/* Preset Queries - Fixed */}
+              {/* Preset Queries */}
               {showPresets && Object.keys(presetQueries).length > 0 && chatHistory.length === 0 && (
                 <div className="flex-shrink-0 pb-6">
                   <div className="flex gap-2 flex-wrap justify-start">
                     {Object.entries(presetQueries).map(([key, value]) => (
                       <button
                         key={key}
-                        onClick={() => selectPresetQuery(value)}
+                        onClick={() => setQuery(value)}
                         className="text-left p-2 px-3 text-sm bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-full cursor-pointer transition-colors"
                       >
                         {key}
@@ -1029,6 +758,7 @@ const loadSpecificSession = async (sessionId: string) => {
                   </div>
                 </div>
               )}
+
               {/* Error Message */}
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
@@ -1073,10 +803,11 @@ const loadSpecificSession = async (sessionId: string) => {
           </>
         )}
 
+        {/* Save Document Modal */}
         {isSaveModalOpen && (
           <SaveDocumentModal
             isOpen={isSaveModalOpen}
-            onClose={handleCloseModal}
+            onClose={() => setIsSaveModalOpen(false)}
             onSave={handleSaveFile}
           />
         )}

@@ -143,11 +143,15 @@ exports.Prisma.DocumentScalarFieldEnum = {
   file_name: 'file_name',
   original_file_name: 'original_file_name',
   file_path: 'file_path',
+  s3_key: 's3_key',
+  s3_bucket: 's3_bucket',
   file_size: 'file_size',
   mime_type: 'mime_type',
   status: 'status',
-  is_scanned: 'is_scanned',
   page_count: 'page_count',
+  processing_started_at: 'processing_started_at',
+  processing_completed_at: 'processing_completed_at',
+  s3_uploaded_at: 's3_uploaded_at',
   owner_id: 'owner_id',
   uploaded_at: 'uploaded_at',
   updated_at: 'updated_at'
@@ -261,9 +265,10 @@ exports.UserStatus = exports.$Enums.UserStatus = {
 exports.DocumentStatus = exports.$Enums.DocumentStatus = {
   UPLOADED: 'UPLOADED',
   PROCESSING: 'PROCESSING',
-  TEMPORARY: 'TEMPORARY',
+  PROCESSED: 'PROCESSED',
   INDEXED: 'INDEXED',
-  FAILED: 'FAILED'
+  FAILED: 'FAILED',
+  TEMPORARY: 'TEMPORARY'
 };
 
 exports.MessageRole = exports.$Enums.MessageRole = {
@@ -282,6 +287,7 @@ exports.SecurityAction = exports.$Enums.SecurityAction = {
   TWO_FACTOR_LOGIN: 'TWO_FACTOR_LOGIN',
   DOCUMENT_UPLOAD: 'DOCUMENT_UPLOAD',
   DOCUMENT_DELETE: 'DOCUMENT_DELETE',
+  DOCUMENT_DOWNLOAD: 'DOCUMENT_DOWNLOAD',
   CHAT_SAVE: 'CHAT_SAVE',
   CHAT_DELETE: 'CHAT_DELETE'
 };

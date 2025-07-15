@@ -6,77 +6,10 @@ import { apiService, handleApiError, SystemStatus, UploadResponse } from './fron
 import { Button } from '@/components/ui/button';
 import Header from './frontend/components/Header';
 import BlurText from './frontend/components/reactbits/BlurText';
-
+import Image from 'next/image';
+import heroImg from './frontend/img/document-hero.png'
 export default function Home() {
-  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
-  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
-  const [notification, setNotification] = useState<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
-
-  // Load system status on component mount
-  useEffect(() => {
-    loadSystemStatus();
-  }, []);
-
-  const loadSystemStatus = async () => {
-    setIsLoadingStatus(true);
-    try {
-      const status = await apiService.getStatus();
-      setSystemStatus(status);
-    } catch (error) {
-      console.error('Failed to load system status:', error);
-      setSystemStatus(null);
-    } finally {
-      setIsLoadingStatus(false);
-    }
-  };
-
-  const handleUploadSuccess = (response: UploadResponse) => {
-    setNotification({
-      type: 'success',
-      message: `Successfully processed ${response.filename} with ${response.pages_processed} pages!`
-    });
-    
-    // Refresh system status after successful upload
-    setTimeout(() => {
-      loadSystemStatus();
-    }, 1000);
-    
-    // Clear notification after 5 seconds
-    setTimeout(() => {
-      setNotification(null);
-    }, 5000);
-  };
-
-  const handleSystemReset = async () => {
-    if (!confirm('Are you sure you want to reset the system? This will clear all uploaded documents and indices.')) {
-      return;
-    }
-
-    try {
-      await apiService.resetSystem();
-      setNotification({
-        type: 'success',
-        message: 'System reset successfully!'
-      });
-      loadSystemStatus();
-    } catch (error) {
-      setNotification({
-        type: 'error',
-        message: handleApiError(error)
-      });
-    }
-
-    // Clear notification after 5 seconds
-    setTimeout(() => {
-      setNotification(null);
-    }, 5000);
-  };
-
-  const isSystemReady = systemStatus?.pdf_loaded && systemStatus?.index_ready;
-
+  
   return (
     <div className="min-h-screen bg-secondary">
       {/* Header */}
@@ -86,10 +19,23 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className='flex flex-col my-60 items-start justify-center gap-2'>
-          <BlurText text="LegalynX" className='text-6xl font-bold font-serif' />
-          <p className='text-2xl text-gray-600'>Linking you to legal clarity</p>
-          <Button className='cursor-pointer'>Get Started</Button>
+        <div className='flex items-center my-30 justify-between gap-2'>
+          <span className='flex flex-col items-start justify-center gap-2'>
+            <BlurText text="LegalynX" className='text-6xl font-bold font-serif' />
+            <p className='text-2xl text-gray-600'>Linking you to legal clarity</p>
+            <Button className='cursor-pointer'>Get Started</Button>
+          </span>
+  
+
+          <div>
+              <Image 
+              src={heroImg} 
+              alt="LegalynX Logo" 
+              width={400} 
+              height={400} 
+              className='fade-gradient'
+              />
+          </div>
         </div>
 
 

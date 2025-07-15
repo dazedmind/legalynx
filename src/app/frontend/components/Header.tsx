@@ -3,15 +3,14 @@ import React from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
-
+import Image from 'next/image'
+import logo from '../img/legalynxlogo.png'
 function Header() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
     <div className="flex items-center justify-between">
-      <div className="flex items-center space-x-3">
-        <div className="bg-blue-600 p-2 rounded-lg">
-          <Brain className="w-8 h-8 text-white" />
-        </div>
+      <div className="flex items-center space-x-1">
+          <Image src={logo} alt="LegalynX" width={60} height={60} />
         <div>
             <Link href="/">
                 <h1 className="text-2xl font-bold text-gray-900">LegalynX</h1>

@@ -12,13 +12,13 @@ export async function DELETE(
 
     // Delete all messages for this session
     const result = await prisma.chatMessage.deleteMany({
-      where: { sessionId }
+      where: { session_id: sessionId }
     });
 
     // Update session's updatedAt timestamp
     await prisma.chatSession.update({
       where: { id: sessionId },
-      data: { updatedAt: new Date() }
+      data: { updated_at: new Date() }
     });
 
     return NextResponse.json({

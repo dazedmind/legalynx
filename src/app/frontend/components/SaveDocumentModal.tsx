@@ -1,45 +1,69 @@
-import { Save, X } from 'lucide-react'
+// src/app/frontend/components/SaveDocumentModal.tsx - Updated
+import { Save, X, Cloud, Loader2 } from 'lucide-react'
 import React from 'react'
 
 interface SaveDocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (shouldSave: boolean) => void;
+  isSaving?: boolean;
+  documentName?: string;
 }
 
-function SaveDocumentModal({ isOpen, onClose, onSave }: SaveDocumentModalProps) {
+function SaveDocumentModal({ isOpen, onClose, onSave, isSaving, documentName }: SaveDocumentModalProps) {
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-8 w-md mx-4 border border-gray-200">
-        <div className="flex items-center justify-center mb-2">
-            <h3 className="text-2xl font-semibold text-gray-900">Save Document</h3>
-    
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-8 w-md mx-4 border border-gray-200 max-w-md">
+        <div className="flex items-center justify-center mb-4">
+          <div className="p-3 bg-blue-100 rounded-full">
+            <Cloud className="w-8 h-8 text-blue-600" />
+          </div>
         </div>
         
-        <div className="mb-6">
-            <p className="text-gray-600 text-center">
-            Would you like to save it to your document library for future access?
-            </p>
+        <div className="text-center mb-6">
+          <h3 className="text-2xl font-semibold text-gray-900 mb-2">Save to Cloud Storage</h3>
+          {documentName && (
+            <p className="text-sm text-gray-600 mb-3 font-medium">"{documentName}"</p>
+          )}
+          <p className="text-gray-600">
+            Save this document to your account for permanent access across all your devices. 
+            The document will be securely stored in cloud storage.
+          </p>
         </div>
 
-        <div className="flex space-x-3">
-            <button
-            onClick={() => onClose()}
-            className="flex-1 cursor-pointer px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-            >
-            Don't Save
-            </button>
-            <button
+        <div className="space-y-3">
+          <button
             onClick={() => onSave(true)}
-            className="flex-1 cursor-pointer px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md transition-colors flex items-center justify-center gap-2"
-            >
-            Save Document
-            </button>
+            disabled={isSaving}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving to Cloud...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save to Account
+              </>
+            )}
+          </button>
+          
+          <button
+            onClick={onClose}
+            disabled={isSaving}
+            className="w-full px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            {isSaving ? 'Please wait...' : 'Keep Session Only'}
+          </button>
         </div>
-        
-        </div>
+
+      </div>
     </div>
-    )
+  )
 }
 
 export default SaveDocumentModal
