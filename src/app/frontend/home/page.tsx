@@ -3,7 +3,6 @@
 
 //allen test july 16
 
-import React, { useState, useEffect } from 'react';
 import ChatViewer from '../components/ChatViewer';
 import FileManager from '../components/FileManager';
 import ChatHistory from '../components/ChatHistory';
