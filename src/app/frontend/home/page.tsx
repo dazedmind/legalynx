@@ -1,7 +1,8 @@
 // Updated Home page to handle session selection
 'use client';
 
-import React, { useState, useEffect } from 'react';
+//allen test july 16
+
 import ChatViewer from '../components/ChatViewer';
 import FileManager from '../components/FileManager';
 import ChatHistory from '../components/ChatHistory';
