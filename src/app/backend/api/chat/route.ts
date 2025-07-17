@@ -1,97 +1,31 @@
-// src/app/backend/api/chat/route.ts
+// src/app/backend/api/chat/route.ts - Updated to include file paths
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 
 // Helper function to get user from token
 async function getUserFromToken(request: NextRequest) {
-  try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token) {
-      return null; // Return null instead of throwing
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
-    });
-
-    return user;
-  } catch (error) {
-    console.log('Token verification failed:', error);
-    return null; // Return null instead of throwing
+  const token = request.headers.get('authorization')?.replace('Bearer ', '');
+  if (!token) {
+    throw new Error('No token provided');
   }
-}
 
-// Get user's chat sessions
-export async function GET(request: NextRequest) {
-  try {
-    const user = await getUserFromToken(request);
-    
-    if (!user) {
-      // Return empty sessions instead of 401 error
-      return NextResponse.json({ 
-        sessions: [],
-        message: 'No authentication provided'
-      });
-    }
-    
-    let chatSessions: any[] = [];
-    
-    try {
-      chatSessions = await prisma.chatSession.findMany({
-        where: { user_id: user.id },
-        include: {
-          document: true,
-          messages: {
-            take: 1,
-            orderBy: { created_at: 'desc' }
-          }
-        },
-        orderBy: { updated_at: 'desc' }
-      });
-    } catch (dbError) {
-      console.log('Database error loading chat sessions:', dbError);
-      chatSessions = []; // Fallback to empty array
-    }
+  const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+  const user = await prisma.user.findUnique({
+    where: { id: decoded.userId }
+  });
 
-    const formattedSessions = chatSessions.map(session => ({
-      id: session.id,
-      title: session.title,
-      documentId: session.document_id,
-      documentName: session.document?.original_file_name || 'Unknown Document',
-      lastMessage: session.messages[0]?.content || null,
-      createdAt: session.created_at,
-      updatedAt: session.updated_at,
-      isSaved: session.is_saved
-    }));
-
-    return NextResponse.json({ 
-      sessions: formattedSessions,
-      count: formattedSessions.length
-    });
-
-  } catch (error) {
-    console.error('Get chat sessions error:', error);
-    
-    // Always return empty sessions instead of 500 error
-    return NextResponse.json({ 
-      sessions: [],
-      count: 0,
-      message: 'Unable to load chat sessions'
-    });
+  if (!user) {
+    throw new Error('User not found');
   }
+
+  return user;
 }
 
 // Create new chat session
 export async function POST(request: NextRequest) {
   try {
     const user = await getUserFromToken(request);
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-    
     const { documentId, title } = await request.json();
 
     // Verify document belongs to user
@@ -114,7 +48,17 @@ export async function POST(request: NextRequest) {
         document_id: documentId
       },
       include: {
-        document: true,
+        document: {
+          select: {
+            id: true,
+            file_name: true,
+            original_file_name: true,
+            file_path: true, // Include file path
+            file_size: true,
+            page_count: true,
+            mime_type: true
+          }
+        },
         messages: {
           orderBy: { created_at: 'asc' }
         }
@@ -127,13 +71,80 @@ export async function POST(request: NextRequest) {
       documentId: chatSession.document_id,
       documentName: chatSession.document.original_file_name,
       createdAt: chatSession.created_at,
-      messages: chatSession.messages
+      messages: chatSession.messages,
+      document: {
+        id: chatSession.document.id,
+        filename: chatSession.document.file_name,
+        originalName: chatSession.document.original_file_name,
+        filePath: chatSession.document.file_path, // Include file path
+        size: chatSession.document.file_size,
+        pages: chatSession.document.page_count,
+        mimeType: chatSession.document.mime_type
+      }
     });
 
   } catch (error) {
     console.error('Chat session creation error:', error);
     return NextResponse.json(
       { error: 'Failed to create chat session' }, 
+      { status: 500 }
+    );
+  }
+}
+
+// Get user's chat sessions - UPDATED to include file paths
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getUserFromToken(request);
+    
+    const chatSessions = await prisma.chatSession.findMany({
+      where: { user_id: user.id },
+      include: {
+        document: {
+          select: {
+            id: true,
+            file_name: true,
+            original_file_name: true,
+            file_path: true, // ✅ Include file path
+            file_size: true,
+            page_count: true,
+            mime_type: true
+          }
+        },
+        messages: {
+          take: 1,
+          orderBy: { created_at: 'desc' }
+        }
+      },
+      orderBy: { updated_at: 'desc' }
+    });
+
+    const formattedSessions = chatSessions.map(session => ({
+      id: session.id,
+      title: session.title,
+      documentId: session.document_id,
+      documentName: session.document.original_file_name,
+      lastMessage: session.messages[0]?.content || null,
+      createdAt: session.created_at,
+      updatedAt: session.updated_at,
+      isSaved: session.is_saved,
+      document: {
+        id: session.document.id,
+        filename: session.document.file_name,
+        originalName: session.document.original_file_name,
+        filePath: session.document.file_path, // ✅ Include file path
+        size: session.document.file_size,
+        pages: session.document.page_count,
+        mimeType: session.document.mime_type
+      }
+    }));
+
+    return NextResponse.json({ sessions: formattedSessions });
+
+  } catch (error) {
+    console.error('Get chat sessions error:', error);
+    return NextResponse.json(
+      { error: 'Failed to get chat sessions' }, 
       { status: 500 }
     );
   }

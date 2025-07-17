@@ -78,7 +78,6 @@ export default function NavBar() {
         if (profile?.subscription_status === 'PREMIUM') return 'Premium';
         if (profile?.subscription_status === 'STANDARD') return 'Standard';
         if (profile?.subscription_status === 'BASIC') return 'Basic';
-        return 'Free';
     };
 
     const getProfilePicture = () => {

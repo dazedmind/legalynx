@@ -1,9 +1,8 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   FileText, 
   Trash2, 
-  Download, 
   Calendar, 
   HardDrive, 
   AlertCircle, 
@@ -11,49 +10,345 @@ import {
   Filter,
   Grid,
   List,
-  SortAsc,
-  SortDesc,
   Star,
   Clock,
   File,
   Upload,
   MoreHorizontal,
-  MessageSquare
+  MessageSquare,
+  Info,
+  X,
 } from 'lucide-react';
-import { apiService, handleApiError, Document } from '../lib/api';
+import { apiService, handleApiError } from '../lib/api';
 import { useAuth } from '@/lib/context/AuthContext';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { toast, Toaster} from 'sonner';
-import { authUtils } from '@/lib/auth';
-  
+
 interface DocumentInfo {
   id: string;
   filename: string;
-  originalName: string; // Keep camelCase for frontend consistency
+  originalName: string;
   size: number;
-  uploadedAt: string; // Keep camelCase for frontend consistency
+  uploadedAt: string;
   pages?: number;
-  status: 'PROCESSING' | 'READY' | 'INDEXED' | 'UPLOADED' | 'TEMPORARY' | 'FAILED';
+  status: 'processing' | 'ready' | 'indexed' | 'uploaded' | 'temporary' | 'failed';
   starred?: boolean;
-  lastAccessed?: string; // Keep camelCase for frontend consistency
+  lastAccessed?: string;
   tags?: string[];
-  chatSessionsCount?: number; // Keep camelCase for frontend consistency
-  mimeType?: string; // Keep camelCase for frontend consistency
+  chatSessionsCount?: number;
+  mimeType?: string;
 }
 
 interface FileManagerProps {
   onDocumentSelect?: (docId: string) => void;
   currentDocumentId?: string;
-  onDocumentDeleted?: (docId: string) => void; // ✅ Add this
-
 }
 
 type SortField = 'name' | 'size' | 'uploadedAt' | 'lastAccessed' | 'pages';
 type SortOrder = 'asc' | 'desc';
 type ViewMode = 'grid' | 'list';
 
-export default function FileManager({ onDocumentSelect, currentDocumentId, onDocumentDeleted }: FileManagerProps) {
+// Context Menu Component
+interface ContextMenuProps {
+  isOpen: boolean;
+  position: { x: number; y: number };
+  onClose: () => void;
+  onOpenInChat: () => void;
+  onToggleFavorite: () => void;
+  onViewDetails: () => void;
+  onDelete: () => void;
+  isStarred: boolean;
+}
+
+const ContextMenu: React.FC<ContextMenuProps> = ({
+  isOpen,
+  position,
+  onClose,
+  onOpenInChat,
+  onToggleFavorite,
+  onViewDetails,
+  onDelete,
+  isStarred
+}) => {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      ref={menuRef}
+      className="fixed z-50 bg-white border border-gray-200 rounded-md shadow-lg py-2 min-w-[180px]"
+      style={{ left: position.x, top: position.y }}
+    >
+      <button
+        onClick={onOpenInChat}
+        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+      >
+        <MessageSquare className="w-4 h-4" />
+        Open in Chat
+      </button>
+      <button
+        onClick={onToggleFavorite}
+        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+      >
+        <Star className={`w-4 h-4 ${isStarred ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+        {isStarred ? 'Remove from Favorites' : 'Add to Favorites'}
+      </button>
+      <button
+        onClick={onViewDetails}
+        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+      >
+        <Info className="w-4 h-4" />
+        View File Details
+      </button>
+      <div className="border-t border-gray-200 my-1"></div>
+      <button
+        onClick={onDelete}
+        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 text-red-600 flex items-center gap-2"
+      >
+        <Trash2 className="w-4 h-4" />
+        Delete
+      </button>
+    </div>
+  );
+};
+
+// PDF Viewer Component
+interface PDFViewerProps {
+  isOpen: boolean;
+  document: DocumentInfo | null;
+  onClose: () => void;
+}
+
+const PDFViewer: React.FC<PDFViewerProps> = ({ isOpen, document, onClose }) => {
+  const [pdfUrl, setPdfUrl] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [zoom, setZoom] = useState(100);
+  const [rotation, setRotation] = useState(0);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (isOpen && document) {
+      loadPdfUrl();
+    }
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+        setPdfUrl('');
+      }
+    };
+  }, [isOpen, document]);
+
+  const loadPdfUrl = async () => {
+    if (!document || !user) return;
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Import authUtils to get the token properly
+      const { authUtils } = await import('@/lib/auth');
+      
+      // Get the file from your API endpoint
+      const response = await fetch(`/backend/api/documents/${document.id}/file`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authUtils.getToken()}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load PDF file');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setPdfUrl(url);
+    } catch (error) {
+      console.error('Error loading PDF:', error);
+      setError('Failed to load PDF file');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 25, 200));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 25, 50));
+  const handleRotate = () => setRotation(prev => (prev + 90) % 360);
+
+  if (!isOpen || !document) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/20 flex items-center justify-center">
+      <div className="bg-white rounded-lg w-2xl h-10/11 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-2 border-b">
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-blue-600" />
+            <h3 className="font-semibold text-lg">{document.originalName}</h3>
+          </div>
+          <div className="flex items-center gap-2">
+
+            <Button size="sm" variant="outline" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* PDF Content */}
+        <div className="flex-1 overflow-auto bg-gray-100 p-4">
+          {isLoading && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading PDF...</p>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center text-red-600">
+                <AlertCircle className="w-12 h-12 mx-auto mb-4" />
+                <p>{error}</p>
+              </div>
+            </div>
+          )}
+
+          {pdfUrl && !isLoading && !error && (
+            <div className="flex justify-center">
+              <iframe
+                src={pdfUrl}
+                className="border border-gray-300 rounded"
+                style={{
+                  width: `${zoom}%`,
+                  height: '80vh',
+                  transform: `rotate(${rotation}deg)`,
+                  transformOrigin: 'center center'
+                }}
+                title={`PDF Viewer - ${document.originalName}`}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t bg-gray-50">
+          <div className="flex justify-between items-center text-sm text-gray-600">
+            <div>
+              Size: {(document.size / 1024 / 1024).toFixed(2)} MB
+              {document.pages && ` • ${document.pages} pages`}
+            </div>
+            <div>
+              Uploaded: {new Date(document.uploadedAt).toLocaleDateString()}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// File Details Modal Component
+interface FileDetailsModalProps {
+  isOpen: boolean;
+  document: DocumentInfo | null;
+  onClose: () => void;
+}
+
+const FileDetailsModal: React.FC<FileDetailsModalProps> = ({ isOpen, document, onClose }) => {
+  if (!isOpen || !document) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+      <div className="bg-white rounded-lg w-full max-w-2xl mx-4">
+        <div className="flex items-center justify-between p-6 border-b">
+          <h3 className="text-xl font-semibold">File Details</h3>
+          <Button size="sm" variant="outline" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+        
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-500">File Name</label>
+              <p className="mt-1 text-sm text-gray-900">{document.originalName}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">File Size</label>
+              <p className="mt-1 text-sm text-gray-900">{(document.size / 1024 / 1024).toFixed(2)} MB</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Upload Date</label>
+              <p className="mt-1 text-sm text-gray-900">
+                {new Date(document.uploadedAt).toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Status</label>
+              <p className="mt-1 text-sm">
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  document.status === 'indexed' ? 'bg-green-100 text-green-800' :
+                  document.status === 'ready' ? 'bg-blue-100 text-blue-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {document.status}
+                </span>
+              </p>
+            </div>
+            {document.pages && (
+              <div>
+                <label className="text-sm font-medium text-gray-500">Pages</label>
+                <p className="mt-1 text-sm text-gray-900">{document.pages}</p>
+              </div>
+            )}
+            {document.chatSessionsCount !== undefined && (
+              <div>
+                <label className="text-sm font-medium text-gray-500">Chat Sessions</label>
+                <p className="mt-1 text-sm text-gray-900">{document.chatSessionsCount}</p>
+              </div>
+            )}
+          </div>
+          
+          <div>
+            <label className="text-sm font-medium text-gray-500">File ID</label>
+            <p className="mt-1 text-sm text-gray-900 font-mono">{document.id}</p>
+          </div>
+          
+          {document.lastAccessed && (
+            <div>
+              <label className="text-sm font-medium text-gray-500">Last Accessed</label>
+              <p className="mt-1 text-sm text-gray-900">
+                {new Date(document.lastAccessed).toLocaleString()}
+              </p>
+            </div>
+          )}
+        </div>
+        
+        <div className="p-6 border-t bg-gray-50 flex justify-end">
+          <Button onClick={onClose}>Close</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function FileManager({ onDocumentSelect, currentDocumentId }: FileManagerProps) {
   const { isAuthenticated, user } = useAuth();
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<DocumentInfo[]>([]);
@@ -68,6 +363,34 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showStarredOnly, setShowStarredOnly] = useState(false);
+
+  // Context Menu State
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    position: { x: number; y: number };
+    documentId: string | null;
+  }>({
+    isOpen: false,
+    position: { x: 0, y: 0 },
+    documentId: null
+  });
+
+  // Modal States
+  const [pdfViewer, setPdfViewer] = useState<{
+    isOpen: boolean;
+    document: DocumentInfo | null;
+  }>({
+    isOpen: false,
+    document: null
+  });
+
+  const [fileDetails, setFileDetails] = useState<{
+    isOpen: boolean;
+    document: DocumentInfo | null;
+  }>({
+    isOpen: false,
+    document: null
+  });
 
   // Ensure we're on the client side
   useEffect(() => {
@@ -94,18 +417,15 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
       console.log('Loading documents...', { isAuthenticated, userId: user?.id });
       
       if (isAuthenticated && user) {
-        // Load from database
         console.log('Loading from database...');
         const data = await apiService.getDocuments();
         console.log('Database response:', data);
         
         if (data && data.documents) {
-          // Map database response to frontend format
           const formattedDocs: DocumentInfo[] = data.documents
             .filter(doc => {
-              // Show documents that are ready to use
-              const validStatuses = ['INDEXED', 'READY', 'PROCESSING'];
-              const isValid = validStatuses.includes(doc.status || '');
+              const validStatuses = ['indexed', 'ready', 'processed'];
+              const isValid = validStatuses.includes(doc.status?.toLowerCase() || '');
               console.log(`Document ${doc.originalName}: status=${doc.status}, valid=${isValid}`);
               return isValid;
             })
@@ -116,11 +436,11 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
               size: doc.size,
               uploadedAt: doc.uploadedAt,
               pages: doc.pageCount,
-              status: doc.status === 'INDEXED' ? 'INDEXED' : 'READY',
+              status: doc.status?.toLowerCase() === 'indexed' ? 'indexed' : 'ready',
               chatSessionsCount: doc.chatSessionsCount,
               mimeType: doc.mimeType,
-              starred: false, // TODO: Add starred field to database
-              lastAccessed: undefined // TODO: Add lastAccessed field to database
+              starred: false,
+              lastAccessed: undefined
             }));
           
           console.log('Formatted documents:', formattedDocs);
@@ -130,7 +450,6 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
           setDocuments([]);
         }
       } else {
-        // Load from localStorage for non-authenticated users
         console.log('Loading from localStorage...');
         const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
         const saved = localStorage.getItem(userKey);
@@ -140,11 +459,10 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
             const docs = JSON.parse(saved);
             console.log('LocalStorage docs:', docs);
             
-            // Filter for ready documents
             const readyDocs = docs.filter((doc: any) => {
-              const validStatuses = ['INDEXED'];
+              const validStatuses = ['ready', 'indexed'];
               return validStatuses.includes(doc.status);
-            }); 
+            });
             
             console.log('Ready docs from localStorage:', readyDocs);
             setDocuments(readyDocs);
@@ -169,7 +487,6 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
   const filterAndSortDocuments = () => {
     let filtered = [...documents];
 
-    // Apply search filter
     if (searchQuery.trim()) {
       filtered = filtered.filter(doc => 
         doc.originalName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -177,12 +494,10 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
       );
     }
 
-    // Apply starred filter
     if (showStarredOnly) {
       filtered = filtered.filter(doc => doc.starred);
     }
 
-    // Apply sorting
     filtered.sort((a, b) => {
       let aValue: any;
       let bValue: any;
@@ -229,12 +544,12 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
     }
   };
 
-  const handleDocumentSelect = (docId: string) => {
+  const handleDocumentClick = (doc: DocumentInfo) => {
     // Update last accessed time
-    const updatedDocs = documents.map(doc => 
-      doc.id === docId 
-        ? { ...doc, lastAccessed: new Date().toISOString() }
-        : doc
+    const updatedDocs = documents.map(d => 
+      d.id === doc.id 
+        ? { ...d, lastAccessed: new Date().toISOString() }
+        : d
     );
     setDocuments(updatedDocs);
     
@@ -244,228 +559,113 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
       localStorage.setItem(userKey, JSON.stringify(updatedDocs));
     }
     
-    onDocumentSelect?.(docId);
-  };
-
-  const toggleStar = (docId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    const updatedDocs = documents.map(doc => 
-      doc.id === docId 
-        ? { ...doc, starred: !doc.starred }
-        : doc
-    );
-    setDocuments(updatedDocs);
-    
-    // Save to appropriate storage
-    if (!isAuthenticated && isClient) {
-      const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
-      localStorage.setItem(userKey, JSON.stringify(updatedDocs));
-    }
-  };
-
- // ✅ UPDATED: handleDeleteDocument with callback
- const handleDeleteDocument = async (docId: string, event?: React.MouseEvent) => {
-  event?.stopPropagation();
-  
-  const doc = documents.find(d => d.id === docId);
-  if (!confirm(`Are you sure you want to delete "${doc?.originalName}"?\n\nThis will permanently remove the document${doc?.status === 'INDEXED' ? ' from cloud storage' : ''} and cannot be undone.`)) {
-    return;
-  }
-
-  try {
-    console.log(`🗑️ Deleting document: ${docId} (status: ${doc?.status})`);
-    
-    if (isAuthenticated) {
-      const token = authUtils.getToken();
-      
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      const response = await fetch(`/backend/api/documents?id=${docId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('✅ Delete response:', result);
-        
-        if (result.s3Deleted) {
-          toast.success(`Document deleted from database and cloud storage`);
-        } else if (result.s3Error) {
-          toast.warning(`Document deleted from database. Cloud storage error: ${result.s3Error}`);
-        } else {
-          toast.success('Document deleted successfully');
-        }
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete document');
-      }
-    } else if (isClient) {
-      const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
-      const saved = localStorage.getItem(userKey);
-      if (saved) {
-        const docs = JSON.parse(saved);
-        const updatedDocs = docs.filter((d: DocumentInfo) => d.id !== docId);
-        localStorage.setItem(userKey, JSON.stringify(updatedDocs));
-        toast.success('Document removed from session');
-      }
-    }
-    
-    // Update local state
-    setDocuments(prev => prev.filter(d => d.id !== docId));
-    
-    // Update selections
-    const newSelected = new Set(selectedDocs);
-    newSelected.delete(docId);
-    setSelectedDocs(newSelected);
-
-    // ✅ NEW: Notify parent component about deletion
-    onDocumentDeleted?.(docId);
-
-    // Reset system if this was the current document
-    if (docId === currentDocumentId) {
-      await apiService.resetSystem();
-    }
-    
-  } catch (error) {
-    console.error('❌ Delete failed:', error);
-    const errorMessage = handleApiError(error);
-    setError(errorMessage);
-    toast.error(`Failed to delete document: ${errorMessage}`);
-  }
-};
-
-// ✅ UPDATED: handleBulkDelete with callbacks
-const handleBulkDelete = async () => {
-  if (selectedDocs.size === 0) return;
-  
-  if (!confirm(`Are you sure you want to delete ${selectedDocs.size} document(s)?`)) {
-    return;
-  }
-
-  const deletedDocIds: string[] = [];
-
-  try {
-    if (isAuthenticated) {
-      const token = authUtils.getToken();
-      
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      for (const docId of selectedDocs) {
-        const response = await fetch(`/backend/api/documents?id=${docId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          deletedDocIds.push(docId);
-        }
-      }
-      
-      toast.success(`Successfully deleted ${deletedDocIds.length} document(s)`);
-      
-    } else if (isClient) {
-      const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
-      const saved = localStorage.getItem(userKey);
-      if (saved) {
-        const docs = JSON.parse(saved);
-        const updatedDocs = docs.filter((doc: DocumentInfo) => !selectedDocs.has(doc.id));
-        localStorage.setItem(userKey, JSON.stringify(updatedDocs));
-      }
-      
-      deletedDocIds.push(...Array.from(selectedDocs));
-      toast.success(`Removed ${selectedDocs.size} document(s) from session`);
-    }
-    
-    // Update local state
-    setDocuments(prev => prev.filter(doc => !deletedDocIds.includes(doc.id)));
-    setSelectedDocs(new Set());
-
-    // ✅ NEW: Notify parent about each deleted document
-    deletedDocIds.forEach(docId => {
-      onDocumentDeleted?.(docId);
+    // Open PDF viewer
+    setPdfViewer({
+      isOpen: true,
+      document: doc
     });
+  };
 
-    if (selectedDocs.has(currentDocumentId || '')) {
-      await apiService.resetSystem();
+  const handleRightClick = (event: React.MouseEvent, doc: DocumentInfo) => {
+    event.preventDefault();
+    setContextMenu({
+      isOpen: true,
+      position: { x: event.clientX, y: event.clientY },
+      documentId: doc.id
+    });
+  };
+
+  const handleContextMenuClose = () => {
+    setContextMenu({
+      isOpen: false,
+      position: { x: 0, y: 0 },
+      documentId: null
+    });
+  };
+
+  const getContextMenuDocument = () => {
+    return documents.find(doc => doc.id === contextMenu.documentId) || null;
+  };
+
+  const handleOpenInChat = () => {
+    const doc = getContextMenuDocument();
+    if (doc) {
+      onDocumentSelect?.(doc.id);
+      handleContextMenuClose();
     }
-    
-  } catch (error) {
-    console.error('❌ Bulk delete failed:', error);
-    const errorMessage = handleApiError(error);
-    setError(errorMessage);
-    toast.error(`Failed to delete documents: ${errorMessage}`);
-  }
-};
+  };
 
-  // Fixed handleDownloadDocument function
-const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) => {
-  event?.stopPropagation();
-  
-  const doc = documents.find(d => d.id === docId);
-  if (!doc) return;
-
-  try {
-    if (isAuthenticated) {
-      // ✅ FIX: Use authUtils.getToken() instead of user?.accessToken
-      const token = authUtils.getToken();
+  const handleToggleFavorite = () => {
+    const doc = getContextMenuDocument();
+    if (doc) {
+      const updatedDocs = documents.map(d => 
+        d.id === doc.id 
+          ? { ...d, starred: !d.starred }
+          : d
+      );
+      setDocuments(updatedDocs);
       
-      if (!token) {
-        throw new Error('Authentication token not found');
+      if (!isAuthenticated && isClient) {
+        const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+        localStorage.setItem(userKey, JSON.stringify(updatedDocs));
       }
+      
+      handleContextMenuClose();
+    }
+  };
 
-      // Download from S3 via API
-      const response = await fetch(`/backend/api/documents/download/${docId}?method=signed-url`, {
-        headers: {
-          'Authorization': `Bearer ${token}` // ✅ Fixed this line
-        }
+  const handleViewDetails = () => {
+    const doc = getContextMenuDocument();
+    if (doc) {
+      setFileDetails({
+        isOpen: true,
+        document: doc
       });
+      handleContextMenuClose();
+    }
+  };
 
-      if (response.ok) {
-        const { downloadUrl, filename } = await response.json();
-        
-        // Create temporary link for download
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = filename || doc.originalName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        toast.success('Download started');
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get download URL');
+  const handleDeleteFromContext = () => {
+    const doc = getContextMenuDocument();
+    if (doc) {
+      handleDeleteDocument(doc.id);
+      handleContextMenuClose();
+    }
+  };
+
+  const handleDeleteDocument = async (docId: string, event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    
+    const doc = documents.find(d => d.id === docId);
+    if (!confirm(`Are you sure you want to delete "${doc?.originalName}"?`)) {
+      return;
+    }
+
+    try {
+      if (isAuthenticated) {
+        await apiService.deleteDocument(docId);
+      } else if (isClient) {
+        const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+        const saved = localStorage.getItem(userKey);
+        if (saved) {
+          const docs = JSON.parse(saved);
+          const updatedDocs = docs.filter((d: DocumentInfo) => d.id !== docId);
+          localStorage.setItem(userKey, JSON.stringify(updatedDocs));
+        }
       }
-    } else {
-      // For non-authenticated users, you might not have S3 access
-      toast.error('Download requires authentication');
-    }
-  } catch (error) {
-    console.error('❌ Download failed:', error);
-    const errorMessage = handleApiError(error);
-    toast.error(`Failed to download document: ${errorMessage}`);
-  }
-};
-
-  const toggleDocumentSelection = (docId: string) => {
-    const newSelected = new Set(selectedDocs);
-    if (newSelected.has(docId)) {
+      
+      setDocuments(prev => prev.filter(d => d.id !== docId));
+      
+      const newSelected = new Set(selectedDocs);
       newSelected.delete(docId);
-    } else {
-      newSelected.add(docId);
+      setSelectedDocs(newSelected);
+
+      if (docId === currentDocumentId) {
+        await apiService.resetSystem();
+      }
+    } catch (error) {
+      setError(handleApiError(error));
     }
-    setSelectedDocs(newSelected);
   };
 
   const selectAllDocuments = () => {
@@ -494,12 +694,6 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
     });
   };
 
-  // Add refresh button for debugging
-  const handleRefresh = () => {
-    console.log('Manual refresh triggered');
-    loadDocuments();
-  };
-
   if (!isClient || isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6 h-full flex items-center justify-center">
@@ -523,12 +717,7 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <button
-            onClick={handleRefresh}
-            className="text-sm text-blue-600 hover:text-blue-800 underline"
-          >
-            Refresh
-          </button>
+ 
           <div className="flex items-center text-sm text-gray-600">
             <HardDrive className="w-4 h-4 mr-1" />
             {formatFileSize(documents.reduce((total, doc) => total + doc.size, 0))}
@@ -538,7 +727,6 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-        {/* Search */}
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
@@ -550,9 +738,7 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
           />
         </div>
 
-        {/* Filters and View Controls */}
         <div className="flex items-center space-x-2">
-          {/* Starred Filter */}
           <button
             onClick={() => setShowStarredOnly(!showStarredOnly)}
             className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer ${
@@ -565,25 +751,21 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
             Starred
           </button>
 
-          {/* Sort Controls */}
-          <div className="flex flex-wrap gap-2 cursor-pointer rounded-lg">
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                <span className="flex items-center gap-1 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer border border-gray-300 text-gray-600 hover:bg-gray-50">
-                  <Filter className="w-4 h-4" />
-                  Sort
-                </span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => handleSort('name')}>Name</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleSort('uploadedAt')}>Upload Date</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleSort('size')}>Size</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleSort('pages')}>Pages</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <span className="flex items-center gap-1 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer border border-gray-300 text-gray-600 hover:bg-gray-50">
+                <Filter className="w-4 h-4" />
+                Sort
+              </span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => handleSort('name')}>Name</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSort('uploadedAt')}>Upload Date</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSort('size')}>Size</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSort('pages')}>Pages</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          {/* View Mode Toggle */}
           <div className="flex border border-gray-300 rounded-md overflow-hidden">
             <button
               onClick={() => setViewMode('list')}
@@ -606,17 +788,6 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
               <Grid className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Bulk Actions */}
-          {selectedDocs.size > 0 && (
-            <button
-              onClick={handleBulkDelete}
-              className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete ({selectedDocs.size})
-            </button>
-          )}
         </div>
       </div>
 
@@ -636,14 +807,6 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
                 <Upload className="mx-auto w-16 h-16 mb-4 opacity-50" />
                 <p className="text-lg font-medium mb-2">No documents uploaded</p>
                 <p className="text-sm">Upload a PDF document to get started</p>
-                {isAuthenticated && (
-                  <button
-                    onClick={handleRefresh}
-                    className="mt-2 text-blue-600 underline text-sm"
-                  >
-                    Refresh to check for new documents
-                  </button>
-                )}
               </>
             ) : (
               <>
@@ -687,21 +850,35 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
                         ? 'border-green-500 bg-green-50'
                         : 'border-gray-200'
                     }`}
-                    onClick={() => handleDocumentSelect(doc.id)}
+                    onClick={() => handleDocumentClick(doc)}
+                    onContextMenu={(e) => handleRightClick(e, doc)}
                   >
                     {/* Checkbox */}
                     <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedDocs.has(doc.id)}
-                        onChange={() => toggleDocumentSelection(doc.id)}
+                        onChange={() => {
+                          const newSelected = new Set(selectedDocs);
+                          if (newSelected.has(doc.id)) {
+                            newSelected.delete(doc.id);
+                          } else {
+                            newSelected.add(doc.id);
+                          }
+                          setSelectedDocs(newSelected);
+                        }}
                         className="rounded"
                       />
                     </div>
 
                     {/* File Info */}
                     <div className="col-span-4 flex items-center">
-                      <FileText className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" />
+                      <div className="flex items-center">
+                        {doc.starred && (
+                          <Star className="w-4 h-4 text-yellow-500 fill-current mr-2" />
+                        )}
+                        <FileText className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" />
+                      </div>
                       <div className="min-w-0">
                         <p className="font-medium text-gray-900 truncate">{doc.originalName}</p>
                         <div className="flex items-center space-x-2 text-xs text-gray-500">
@@ -741,13 +918,6 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-
-                      <button
-                        onClick={(e) => toggleStar(doc.id, e)}
-                        className="text-gray-400 hover:text-yellow-500 transition-colors"
-                      >
-                        <Star className={`w-4 h-4 ${doc.starred ? 'fill-yellow-500 text-yellow-500' : ''}`} />
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -755,19 +925,20 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
             </>
           ) : (
             /* Grid View */
-            <div className="flex-1 overflow-y-auto px-10">
+            <div className="flex-1 overflow-y-auto px-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredDocuments.map((doc) => (
                   <div
                     key={doc.id}
-                    className={`border rounded-lg p-4 transition-colors cursor-pointer hover:shadow-md ${
+                    className={`border rounded-lg p-4 transition-all cursor-pointer hover:shadow-md ${
                       selectedDocs.has(doc.id)
                         ? 'border-blue-500 bg-blue-50'
                         : currentDocumentId === doc.id
                         ? 'border-green-500 bg-green-50'
                         : 'border-gray-200 bg-white'
                     }`}
-                    onClick={() => handleDocumentSelect(doc.id)}
+                    onClick={() => handleDocumentClick(doc)}
+                    onContextMenu={(e) => handleRightClick(e, doc)}
                   >
                     {/* Header */}
                     <div className="flex justify-between items-start mb-3">
@@ -775,17 +946,31 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
                         <input
                           type="checkbox"
                           checked={selectedDocs.has(doc.id)}
-                          onChange={() => toggleDocumentSelection(doc.id)}
+                          onChange={() => {
+                            const newSelected = new Set(selectedDocs);
+                            if (newSelected.has(doc.id)) {
+                              newSelected.delete(doc.id);
+                            } else {
+                              newSelected.add(doc.id);
+                            }
+                            setSelectedDocs(newSelected);
+                          }}
                           onClick={(e) => e.stopPropagation()}
                           className="rounded"
                         />
+                        {doc.starred && (
+                          <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                        )}
                       </div>
-                
-                      {/* More Options */}
-                      <div className="flex-shrink-0">
+
+                      {/* Quick Actions */}
+                      <div className="flex items-center space-x-1">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="rounded-full p-1 hover:bg-gray-200 cursor-pointer transition-colors duration-200">
+                            <button 
+                              className="rounded-full p-1 hover:bg-gray-200 cursor-pointer transition-colors duration-200"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <MoreHorizontal className="w-4 h-4" />
                             </button>
                           </DropdownMenuTrigger>
@@ -793,17 +978,45 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
                             <DropdownMenuItem 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                toggleStar(doc.id, e);
+                                onDocumentSelect?.(doc.id);
                               }}
                               className="cursor-pointer"
                             >
-                              <Star className={`w-4 h-4 ${doc.starred ? 'fill-yellow-500 text-yellow-500' : ''}`} />
-                              {doc.starred ? 'Unfavorite' : 'Favorite'}
+                              <MessageSquare className="w-4 h-4" />
+                              Open in Chat
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDeleteDocument(doc.id, e);
+                                const updatedDocs = documents.map(d => 
+                                  d.id === doc.id ? { ...d, starred: !d.starred } : d
+                                );
+                                setDocuments(updatedDocs);
+                                if (!isAuthenticated && isClient) {
+                                  const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+                                  localStorage.setItem(userKey, JSON.stringify(updatedDocs));
+                                }
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <Star className={`w-4 h-4 ${doc.starred ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                              {doc.starred ? 'Remove from Favorites' : 'Add to Favorites'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFileDetails({ isOpen: true, document: doc });
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <Info className="w-4 h-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteDocument(doc.id);
                               }}
                               className="cursor-pointer text-red-600 focus:text-red-600"
                             >
@@ -817,7 +1030,9 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
 
                     {/* File Icon */}
                     <div className="flex justify-center mb-3">
-                      <FileText className="w-12 h-12 text-red-500" />
+                      <div className="relative">
+                        <FileText className="w-12 h-12 text-red-500" />
+                      </div>
                     </div>
 
                     {/* File Info */}
@@ -826,11 +1041,14 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
                         {doc.originalName}
                       </h3>
                       <div className="space-y-1 text-xs text-gray-500">
-                        <div className="flex justify-center">
-                      
-                        </div>
                         <p>{formatFileSize(doc.size)} • {doc.pages || 'N/A'} pages</p>
                         <p>{formatDate(doc.uploadedAt)}</p>
+                        {doc.chatSessionsCount !== undefined && doc.chatSessionsCount > 0 && (
+                          <p className="text-blue-600">
+                            <MessageSquare className="w-3 h-3 inline mr-1" />
+                            {doc.chatSessionsCount} chats
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -848,12 +1066,51 @@ const handleDownloadDocument = async (docId: string, event?: React.MouseEvent) =
             Total: {documents.length} documents • {formatFileSize(documents.reduce((total, doc) => total + doc.size, 0))}
           </span>
           {selectedDocs.size > 0 && (
-            <span className="text-blue-600">
-              {selectedDocs.size} document{selectedDocs.size !== 1 ? 's' : ''} selected
-            </span>
+            <div className="flex items-center space-x-2">
+              <span className="text-blue-600">
+                {selectedDocs.size} document{selectedDocs.size !== 1 ? 's' : ''} selected
+              </span>
+              <button
+                onClick={() => {
+                  const selectedDocuments = filteredDocuments.filter(doc => selectedDocs.has(doc.id));
+                  if (selectedDocuments.length > 0 && confirm(`Delete ${selectedDocuments.length} selected documents?`)) {
+                    selectedDocuments.forEach(doc => handleDeleteDocument(doc.id));
+                  }
+                }}
+                className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
+              >
+                Delete Selected
+              </button>
+            </div>
           )}
         </div>
       </div>
+
+      {/* Context Menu */}
+      <ContextMenu
+        isOpen={contextMenu.isOpen}
+        position={contextMenu.position}
+        onClose={handleContextMenuClose}
+        onOpenInChat={handleOpenInChat}
+        onToggleFavorite={handleToggleFavorite}
+        onViewDetails={handleViewDetails}
+        onDelete={handleDeleteFromContext}
+        isStarred={getContextMenuDocument()?.starred || false}
+      />
+
+      {/* PDF Viewer Modal */}
+      <PDFViewer
+        isOpen={pdfViewer.isOpen}
+        document={pdfViewer.document}
+        onClose={() => setPdfViewer({ isOpen: false, document: null })}
+      />
+
+      {/* File Details Modal */}
+      <FileDetailsModal
+        isOpen={fileDetails.isOpen}
+        document={fileDetails.document}
+        onClose={() => setFileDetails({ isOpen: false, document: null })}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-// src/app/backend/api/chat-sessions/[id]/route.ts
+// src/app/backend/api/chat-sessions/[id]/route.ts - Fixed version
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
@@ -25,11 +25,19 @@ async function getUserFromToken(request: NextRequest) {
 // GET /backend/api/chat-sessions/[id]
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ sessionId: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const user = await getUserFromToken(request);
-    const { sessionId } = await params;
+    const sessionId = params.id;
+
+    // Validate sessionId
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'Session ID is required' },
+        { status: 400 }
+      );
+    }
 
     const chatSession = await prisma.chatSession.findFirst({
       where: {
@@ -72,12 +80,24 @@ export async function GET(
 // PATCH /backend/api/chat-sessions/[id]
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ sessionId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
-    const { sessionId } = await params;
+    const sessionId = (await params).id;
+
+    // Validate sessionId
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'Session ID is required' },
+        { status: 400 }
+      );
+    }
+
+    console.log('PATCH request - sessionId:', sessionId); // Debug log
+
     const body = await request.json();
+    console.log('PATCH request - body:', body); // Debug log
 
     // Verify session belongs to user
     const existingSession = await prisma.chatSession.findFirst({
@@ -94,15 +114,32 @@ export async function PATCH(
       );
     }
 
+    // Prepare update data
+    const updateData: any = {};
+    
+    if (body.title !== undefined) {
+      updateData.title = body.title;
+    }
+    
+    if (body.isSaved !== undefined) {
+      updateData.is_saved = body.isSaved;
+    }
+    
+    if (body.updatedAt !== undefined) {
+      updateData.updated_at = new Date(body.updatedAt);
+    } else {
+      updateData.updated_at = new Date();
+    }
+
+    console.log('Update data:', updateData); // Debug log
+
     // Update the session
     const updatedSession = await prisma.chatSession.update({
-      where: { id: sessionId },
-      data: {
-        title: body.title,
-        is_saved: body.isSaved,
-        updated_at: body.updatedAt ? new Date(body.updatedAt) : new Date()
-      }
+      where: { id: sessionId }, // Make sure sessionId is not undefined
+      data: updateData
     });
+
+    console.log('Updated session:', updatedSession); // Debug log
 
     return NextResponse.json(updatedSession);
   } catch (error) {
@@ -117,11 +154,19 @@ export async function PATCH(
 // DELETE /backend/api/chat-sessions/[id]
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ sessionId: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const user = await getUserFromToken(request);
-    const { sessionId } = await params;
+    const sessionId = params.id;
+
+    // Validate sessionId
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'Session ID is required' },
+        { status: 400 }
+      );
+    }
 
     // Verify session belongs to user
     const chatSession = await prisma.chatSession.findFirst({

@@ -5,10 +5,8 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/context/AuthContext';
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
-import { FcGoogle } from 'react-icons/fc'
 import { useRouter } from 'next/navigation'
 import { toast, Toaster } from 'sonner'
-import { signIn, signOut, useSession, getSession } from "next-auth/react";
 import logo from '../img/legalynxlogo.png'
 import Image from 'next/image';
 
@@ -103,30 +101,6 @@ function Login() {
                         Forgot Password?
                     </span>
                     <Button onClick={handleLogin} className='w-full cursor-pointer bg-blue-600 text-white'>Sign In</Button>
-
-                    <span className='flex flex-row items-center justify-center gap-2 w-full'>
-                        <div className='w-full h-px bg-gray-200 my-4'></div>
-                        <p className='text-sm text-gray-600'>or</p>
-                        <div className='w-full h-px bg-gray-200 my-4'></div>
-                    </span>
-
-                        <Button 
-                            className='w-full cursor-pointer' 
-                            variant='outline'
-                            disabled={isGoogleLoading}
-                        >
-                            {isGoogleLoading ? (
-                                <div className="flex items-center">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
-                                    Signing in with Google...
-                                </div>
-                            ) : (
-                                <>
-                                    <FcGoogle className="mr-2" />
-                                    Sign In with Google
-                                </>
-                            )}
-                        </Button>
 
                     <span className='text-sm text-gray-600'>
                         <Link href="/frontend/register" className='cursor-pointer hover:text-blue-600'>

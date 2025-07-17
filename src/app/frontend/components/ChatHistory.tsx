@@ -1,4 +1,4 @@
-// Updated ChatHistory.tsx - Pass session ID to parent
+// Fixed ChatHistory.tsx - Handles missing documents gracefully
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -29,22 +29,30 @@ interface ChatSession {
     id: string;
     filename: string;
     originalName: string;
+    filePath?: string;
+    exists?: boolean; // Add this to track if document exists
   };
 }
 
 interface ChatHistoryProps {
   onDocumentSelect?: (docId: string) => void;
-  onSessionSelect?: (sessionId: string, documentId: string) => void; // Add this prop
-  onDocumentDeleted?: (docId: string) => void; // Add this prop
+  onSessionSelect?: (sessionId: string, documentId: string) => void;
+  onDocumentDeleted?: (docId: string) => void;
   currentDocumentId?: string;
 }
 
-export default function ChatHistory({ onDocumentSelect, onSessionSelect, currentDocumentId, onDocumentDeleted }: ChatHistoryProps) {
+export default function ChatHistory({ 
+  onDocumentSelect, 
+  onSessionSelect, 
+  currentDocumentId, 
+  onDocumentDeleted 
+}: ChatHistoryProps) {
   const { isAuthenticated, user } = useAuth();
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false);
 
   useEffect(() => {
     if (user && isAuthenticated) {
@@ -66,9 +74,23 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
     return headers;
   };
 
+  // Check if a document exists in the database
+  const checkDocumentExists = async (documentId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/backend/api/documents/check/${documentId}`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+      
+      return response.ok;
+    } catch (error) {
+      console.log('Error checking document existence:', error);
+      return false;
+    }
+  };
+
   const loadChatSessions = async () => {
     if (!user || !isAuthenticated) {
-      // Clear sessions if no user
       setChatSessions([]);
       setError('');
       return;
@@ -83,7 +105,6 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
         headers: getAuthHeaders()
       });
       
-      // Always try to parse the response, even if not ok
       let data;
       try {
         data = await response.json();
@@ -95,101 +116,129 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
       if (response.ok) {
         const sessions = data.sessions || [];
         
-        const formattedSessions = sessions.map((session: any) => ({
-          ...session,
-          createdAt: new Date(session.createdAt),
-          updatedAt: new Date(session.updatedAt),
-          messages: (session.messages || []).map((msg: any) => ({
-            ...msg,
-            type: msg.role || msg.type,
-            timestamp: new Date(msg.createdAt || msg.timestamp)
-          })),
-          document: {
-            id: session.documentId,
-            filename: session.documentName || 'Unknown',
-            originalName: session.documentName || 'Unknown Document'
-          }
-        }));
+        // Check document existence for each session
+        const formattedSessions = await Promise.all(
+          sessions.map(async (session: any) => {
+            const documentExists = await checkDocumentExists(session.documentId);
+            
+            return {
+              ...session,
+              createdAt: new Date(session.createdAt),
+              updatedAt: new Date(session.updatedAt),
+              messages: (session.messages || []).map((msg: any) => ({
+                ...msg,
+                type: msg.role || msg.type,
+                timestamp: new Date(msg.createdAt || msg.timestamp)
+              })),
+              document: {
+                id: session.documentId,
+                filename: session.documentName || session.document?.filename || 'Unknown',
+                originalName: session.documentName || session.document?.originalName || 'Unknown Document',
+                filePath: session.document?.filePath || session.document?.file_path,
+                exists: documentExists // Mark if document exists
+              }
+            };
+          })
+        );
         
         setChatSessions(formattedSessions);
-        setError(''); // Clear any previous errors
+        setError('');
         
       } else if (response.status === 401) {
-        // Handle authentication errors gracefully
         console.log('Authentication failed, clearing sessions');
         setChatSessions([]);
-        setError(''); // Don't show auth errors as user errors
-        
+        setError('');
       } else {
-        // Handle other errors gracefully
         console.log('Failed to load sessions, using empty array');
         setChatSessions([]);
-        setError(''); // Don't show these errors to user
+        setError('');
       }
       
     } catch (error) {
       console.log('Network or other error loading chat sessions:', error);
-      
-      // Always fallback to empty sessions instead of showing errors
       setChatSessions([]);
-      setError(''); // Don't show network errors to user
-      
+      setError('');
     } finally {
       setIsLoading(false);
     }
   };
-  
-  // Helper function to handle session deletion gracefully
-  const handleDeleteSession = async (sessionId: string, deleteFile: boolean = false, event?: React.MouseEvent) => {
-    event?.stopPropagation();
-    
-    const confirmMessage = deleteFile 
-      ? 'Are you sure you want to delete this chat session AND the associated document file? This will remove the file completely and cannot be undone.'
-      : 'Are you sure you want to delete this chat session? This action cannot be undone.';
-      
-    if (!confirm(confirmMessage)) {
-      return;
-    }
-  
+
+  // Function to load PDF document into RAG system - with error handling
+  const loadPdfForSession = async (documentId: string): Promise<boolean> => {
     try {
-      // Build the delete URL with query parameters
-      const deleteUrl = `/backend/api/chat-sessions?sessionId=${sessionId}&deleteDocument=${deleteFile}`;
+      setIsLoadingPdf(true);
+      console.log('🔄 Loading PDF for document:', documentId);
       
-      const response = await fetch(deleteUrl, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
-  
-      // Always treat as success since API returns 200 even for missing sessions
-      if (response.ok) {
-        const result = await response.json();
-        
-        // Remove from local state
-        setChatSessions(prev => prev.filter(session => session.id !== sessionId));
-        
-        if (selectedSession === sessionId) {
-          setSelectedSession(null);
-        }
-        
-        if (result.documentDeleted) {
-          toast.success('Chat session and document file deleted successfully');
-        } else {
-          toast.success('Chat session deleted successfully');
-        }
-        
-      } else {
-        // Even if response not ok, try to refresh the list
-        console.log('Delete request failed, refreshing session list');
-        await loadChatSessions();
-        toast.info('Session list refreshed');
+      // First, check if document exists
+      const documentExists = await checkDocumentExists(documentId);
+      if (!documentExists) {
+        throw new Error('Document no longer exists in the database');
       }
       
-    } catch (error) {
-      console.log('Failed to delete session, refreshing list:', error);
+      // Get the document details from the database
+      const documentResponse = await fetch(`/backend/api/documents/${documentId}`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
       
-      // Always try to refresh the list on error
-      await loadChatSessions();
-      toast.info('Refreshed session list');
+      if (!documentResponse.ok) {
+        if (documentResponse.status === 404) {
+          throw new Error('Document file not found');
+        }
+        const errorData = await documentResponse.json();
+        throw new Error(errorData.error || 'Failed to get document details');
+      }
+      
+      const documentData = await documentResponse.json();
+      console.log('📄 Document details loaded:', documentData.originalName);
+      
+      // Check if the document file exists and get the file
+      const fileResponse = await fetch(`/backend/api/documents/${documentId}/file`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+      
+      if (!fileResponse.ok) {
+        if (fileResponse.status === 404) {
+          throw new Error('Document file not found in storage');
+        }
+        const errorData = await fileResponse.json();
+        throw new Error(errorData.error || 'Failed to get document file');
+      }
+      
+      // Get the file blob
+      const fileBlob = await fileResponse.blob();
+      console.log('📁 File blob received, size:', fileBlob.size);
+      
+      // Create a File object from the blob
+      const file = new File([fileBlob], documentData.originalName, { 
+        type: 'application/pdf' 
+      });
+      
+      // Upload to RAG system
+      console.log('📤 Uploading to RAG system...');
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const ragResponse = await fetch('http://localhost:8000/upload-pdf', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!ragResponse.ok) {
+        const ragError = await ragResponse.text();
+        throw new Error(`RAG system error: ${ragError}`);
+      }
+      
+      const ragResult = await ragResponse.json();
+      console.log('✅ PDF successfully loaded into RAG system:', ragResult);
+      return true;
+      
+    } catch (error) {
+      console.error('❌ Failed to load PDF for session:', error);
+      throw error;
+    } finally {
+      setIsLoadingPdf(false);
     }
   };
 
@@ -198,23 +247,107 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
     
     try {
       const session = chatSessions.find(s => s.id === sessionId);
-      if (session) {
-        // Call the new session select callback with session ID
-        onSessionSelect?.(sessionId, documentId);
-        
-        // Also call document select for backward compatibility
-        onDocumentSelect?.(documentId);
-        
+      if (!session) {
+        throw new Error('Session not found');
       }
+
+      // Check if document exists before attempting to load
+      if (!session.document.exists) {
+        toast.error('Document no longer exists. This session cannot be loaded.');
+        return;
+      }
+      
+      // Show loading toast
+      const loadingToastId = toast.loading('Loading document and chat session...');
+      
+      // Load the PDF document into RAG system first
+      try {
+        await loadPdfForSession(documentId);
+        toast.success('Document loaded successfully', { id: loadingToastId });
+      } catch (pdfError) {
+        console.error('Failed to load PDF:', pdfError);
+        
+        // Handle different types of errors
+        const errorMessage = pdfError instanceof Error ? pdfError.message : 'Unknown error';
+        
+        if (errorMessage.includes('not found') || errorMessage.includes('404')) {
+          toast.error('Document file not found. It may have been deleted.', { 
+            id: loadingToastId 
+          });
+          
+          // Mark document as non-existent and refresh sessions
+          await loadChatSessions();
+          return;
+        } else {
+          toast.error('Failed to load document. You may not be able to ask new questions.', { 
+            id: loadingToastId 
+          });
+        }
+      }
+      
+      // Call the session select callback
+      onSessionSelect?.(sessionId, documentId);
+      
+      // Also call document select for backward compatibility
+      onDocumentSelect?.(documentId);
+      
     } catch (error) {
       console.error('Failed to select session:', error);
       toast.error('Failed to select session');
     }
   };
 
-  const handleRefresh = () => {
-    if (user && isAuthenticated) {
-      loadChatSessions();
+  const handleDeleteSession = async (sessionId: string, deleteFile: boolean = false, event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    
+    const session = chatSessions.find(s => s.id === sessionId);
+    const documentExists = session?.document.exists;
+    
+    let confirmMessage = 'Are you sure you want to delete this chat session? This action cannot be undone.';
+    
+    if (deleteFile && documentExists) {
+      confirmMessage = 'Are you sure you want to delete this chat session AND the associated document file? This will remove the file completely and cannot be undone.';
+    } else if (deleteFile && !documentExists) {
+      confirmMessage = 'The document file no longer exists. Do you want to delete this chat session?';
+    }
+      
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+  
+    try {
+      // If trying to delete file but document doesn't exist, just delete the session
+      const actuallyDeleteFile = deleteFile && documentExists;
+      const deleteUrl = `/backend/api/chat-sessions/${sessionId}${actuallyDeleteFile ? '?deleteFile=true' : ''}`;
+      
+      const response = await fetch(deleteUrl, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+  
+      if (response.ok) {
+        setChatSessions(prev => prev.filter(session => session.id !== sessionId));
+        
+        if (selectedSession === sessionId) {
+          setSelectedSession(null);
+        }
+        
+        if (actuallyDeleteFile && onDocumentDeleted) {
+          onDocumentDeleted(session!.documentId);
+        }
+        
+        toast.success('Chat session deleted successfully');
+        
+      } else {
+        console.log('Delete request failed, refreshing session list');
+        await loadChatSessions();
+        toast.info('Session list refreshed');
+      }
+      
+    } catch (error) {
+      console.log('Failed to delete session, refreshing list:', error);
+      await loadChatSessions();
+      toast.info('Refreshed session list');
     }
   };
 
@@ -228,26 +361,6 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
     });
   };
 
-  const truncateText = (text: string, maxLength: number = 100): string => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
-
-  const getLastMessage = (session: ChatSession): string => {
-    if (!session.messages || session.messages.length === 0) {
-      return 'No messages yet';
-    }
-
-    const lastAssistantMessage = [...session.messages]
-      .reverse()
-      .find(m => m.type === 'assistant');
-    
-    return lastAssistantMessage 
-      ? lastAssistantMessage.content 
-      : session.messages[session.messages.length - 1].content;
-  };
-
-  // Rest of your component remains the same...
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6 h-full flex items-center justify-center">
@@ -268,14 +381,6 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
             <MessageSquare className="w-4 h-4 mr-1" />
             {chatSessions.length} session{chatSessions.length !== 1 ? 's' : ''}
           </div>
-          {user && isAuthenticated && (
-            <button
-              onClick={handleRefresh}
-              className="text-sm text-blue-600 hover:text-blue-800 underline"
-            >
-              Refresh
-            </button>
-          )}
         </div>
       </div>
 
@@ -283,14 +388,15 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
           <AlertCircle className="w-5 h-5 inline mr-2" />
           {error}
-          {user && isAuthenticated && (
-            <button 
-              onClick={handleRefresh}
-              className="ml-2 text-sm underline hover:no-underline"
-            >
-              Try again
-            </button>
-          )}
+        </div>
+      )}
+
+      {isLoadingPdf && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md text-blue-700">
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+            Loading document into RAG system...
+          </div>
         </div>
       )}
 
@@ -317,6 +423,7 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
             <div className="col-span-4">Session Title</div>
             <div className="col-span-4">Document</div>
             <div className="col-span-2">Date</div>
+            <div className="col-span-2">Actions</div>
           </div>
 
           {/* Chat Sessions List */}
@@ -324,25 +431,41 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
             {chatSessions.map((session) => (
               <div
                 key={session.id}
-                className={`grid grid-cols-12 gap-4 p-4 border rounded-lg transition-colors cursor-pointer hover:bg-gray-50 ${
-                  selectedSession === session.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200'
-                }`}
-                onClick={() => handleSessionSelect(session.id, session.documentId)}
+                className={`grid grid-cols-12 gap-4 p-4 border rounded-lg transition-colors ${
+                  !session.document.exists 
+                    ? 'bg-red-50 border-red-200 cursor-not-allowed' 
+                    : `cursor-pointer hover:bg-gray-50 ${
+                        selectedSession === session.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200'
+                      }`
+                } ${isLoadingPdf ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => session.document.exists && !isLoadingPdf && handleSessionSelect(session.id, session.documentId)}
               >
                 {/* Session Title */}
                 <div className="col-span-4 flex items-center">
-                  <MessageSquare className="w-5 h-5 text-blue-500 mr-3 flex-shrink-0" />
+                  <div className="flex items-center">
+                    {!session.document.exists && (
+                      <AlertCircle className="w-4 h-4 text-red-500 mr-2 flex-shrink-0" />
+                    )}
+                    <MessageSquare className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                      session.document.exists ? 'text-blue-500' : 'text-gray-400'
+                    }`} />
+                  </div>
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-900 truncate">
+                    <p className={`font-medium truncate ${
+                      session.document.exists ? 'text-gray-900' : 'text-gray-500'
+                    }`}>
                       {session.title || `Chat with ${session.document.originalName}`}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-gray-500">
+                      <span className={`text-xs ${
+                        session.document.exists ? 'text-gray-500' : 'text-red-500'
+                      }`}>
                         {(session.messages || []).length} messages
+                        {!session.document.exists && ' • Document deleted'}
                       </span>
-                      {session.isSaved && (
+                      {session.isSaved && session.document.exists && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
                           Saved
                         </span>
@@ -353,13 +476,19 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
 
                 {/* Document Name */}
                 <div className="col-span-4 flex items-center">
-                  <FileText className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
-                  <p className="text-sm text-gray-600 truncate">{session.document.originalName}</p>
+                  <FileText className={`w-4 h-4 mr-2 flex-shrink-0 ${
+                    session.document.exists ? 'text-gray-400' : 'text-red-400'
+                  }`} />
+                  <p className={`text-sm truncate ${
+                    session.document.exists ? 'text-gray-600' : 'text-red-600'
+                  }`}>
+                    {session.document.originalName}
+                    {!session.document.exists && ' (deleted)'}
+                  </p>
                 </div>
 
-
                 {/* Date */}
-                <div className="col-span-3 flex items-center text-sm text-gray-600">
+                <div className="col-span-2 flex items-center text-sm text-gray-600">
                   <Calendar className="w-4 h-4 mr-1" />
                   <div className="min-w-0">
                     <p className="truncate">{formatDate(session.updatedAt)}</p>
@@ -367,14 +496,17 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
                 </div>
 
                 {/* Actions */}
-                <div className="col-span-1 flex items-center justify-end">
-                  <button 
-                    onClick={(e) => handleDeleteSession(session.id, true, e)}
-                    className="cursor-pointer p-2 rounded-full text-red-600 hover:text-red-800 hover:bg-red-100 transition-colors"
-                    title="Delete session"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                <div className="col-span-2 flex items-center justify-end space-x-2">
+                  {session.document.exists && (
+                    <button 
+                      onClick={(e) => handleDeleteSession(session.id, true, e)}
+                      disabled={isLoadingPdf}
+                      className="cursor-pointer p-2 rounded-full text-red-600 hover:text-red-800 hover:bg-red-100 transition-colors disabled:opacity-50"
+                      title="Delete session and file"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -385,9 +517,18 @@ export default function ChatHistory({ onDocumentSelect, onSessionSelect, current
       {/* Footer */}
       <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="flex justify-between items-center text-sm text-gray-600">
-          <span>Total conversations: {chatSessions.length}</span>
+          <span>
+            Total conversations: {chatSessions.length}
+            {chatSessions.some(s => !s.document.exists) && (
+              <span className="text-red-600 ml-2">
+                • {chatSessions.filter(s => !s.document.exists).length} with deleted documents
+              </span>
+            )}
+          </span>
           {selectedSession && (
-            <span className="text-blue-600">Session selected - Switch to chat to continue</span>
+            <span className="text-blue-600">
+              {isLoadingPdf ? 'Loading document...' : 'Session selected - Switch to chat to continue'}
+            </span>
           )}
         </div>
       </div>

@@ -111,7 +111,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         id: session.document.id,
         name: session.document.original_file_name,
         size: session.document.file_size,
-        pages: session.document.page_count
+        pages: session.document.page_count,
+        status: session.document.status
       },
       messages: session.messages.map(msg => ({
         id: msg.id,

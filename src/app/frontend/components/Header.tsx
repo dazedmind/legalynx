@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import Image from 'next/image'
 import logo from '../img/legalynxlogo.png'
+import { GoLaw } from 'react-icons/go'
+import { PiNetwork, PiSuitcaseSimple } from 'react-icons/pi'
+
 function Header() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -30,21 +33,22 @@ function Header() {
               <HoverCardContent align='end' className='flex flex-col gap-2 text-sm'>
                 <div className='flex items-center gap-2 '>
                   <span className='p-2 bg-accent rounded-md'>
-                    <Brain className='w-4 h-4' />
+                  <PiSuitcaseSimple className='w-4 h-4' />
                   </span>
                   <p>Paralegals</p>
                 </div>
 
                 <div className='flex items-center gap-2 '>
                   <span className='p-2 bg-accent rounded-md'>
-                    <Brain className='w-4 h-4' />
+                  <PiNetwork className='w-4 h-4' />
+
                   </span>
                   <p>Social Media Managers</p>
                 </div>
 
                 <div className='flex items-center gap-2 '>
                   <span className='p-2 bg-accent rounded-md'>
-                    <Brain className='w-4 h-4' />
+                  <GoLaw className='w-4 h-4' />
                   </span>
                   <p>Lawyers</p>
                 </div>
@@ -52,7 +56,7 @@ function Header() {
               </HoverCardContent>
             </HoverCard>
           <Link href="/frontend/login">
-            <Button variant='outline' className='cursor-pointer'>Log In</Button>
+            <button className='cursor-pointer bg-yellow text-white px-4 py-2 rounded-md'>Sign In</button>
           </Link>
         </div>
       </div>
