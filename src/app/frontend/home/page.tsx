@@ -6,7 +6,7 @@ import ChatViewer from '../components/ChatViewer';
 import FileManager from '../components/FileManager';
 import ChatHistory from '../components/ChatHistory';
 import { apiService, handleApiError, SystemStatus, UploadResponse } from '../lib/api';
-import { GoComment, GoFile, GoHistory } from "react-icons/go";
+import { GoArchive, GoComment, GoFile, GoFileDirectory, GoHistory } from "react-icons/go";
 import NavBar from '../components/NavBar';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '@/lib/context/AuthContext';
@@ -21,7 +21,7 @@ export default function Home() {
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null); // Add this
-  const { user, logout, isPaidUser } = useAuth();
+  const { user, logout } = useAuth();
   const [resetChatViewer, setResetChatViewer] = useState(false); // Add this
 
 
@@ -171,7 +171,7 @@ export default function Home() {
                   : 'text-gray-700 hover:bg-gray-200'
               }`}
             >
-              <GoFile className="w-5 h-5" />
+              <GoFileDirectory className="w-5 h-5" />
               My Documents
             </button>
 
@@ -183,17 +183,17 @@ export default function Home() {
                   : 'text-gray-700 hover:bg-gray-200'
               }`}
             >
-              <GoHistory className="w-5 h-5" />
+              <GoArchive className="w-5 h-5" />
               Chat History
             </button>
           </div>
 
           <div className="mt-auto space-y-3">
             <button
-              onClick={handleSystemReset}
-              className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg text-orange-600 hover:bg-orange-50 border border-orange-200 transition-colors"
+              onClick={logout}
+              className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg text-orange-600 hover:bg-orange-50 border border-orange-200 transition-colors cursor-pointer"
             >
-              Reset Session
+              Sign out
             </button>
           </div>
         </aside>

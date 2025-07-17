@@ -1,8 +1,10 @@
-// src/app/backend/api/documents/[id]/file/route.ts - Updated for AWS S3
+// src/app/backend/api/documents/[id]/file/route.ts - Fixed with local file fallback
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import { S3Service } from '@/lib/s3';
+import fs from 'fs';
+import path from 'path';
 
 // Helper function to get user from token
 async function getUserFromToken(request: NextRequest) {
@@ -44,8 +46,8 @@ export async function GET(
       },
       select: {
         id: true,
-        file_path: true, // This should contain the S3 key
-        s3_key: true,    // Dedicated S3 key field if you have one
+        file_path: true,
+        s3_key: true,
         file_name: true,
         original_file_name: true,
         mime_type: true,
@@ -60,62 +62,142 @@ export async function GET(
       );
     }
 
-    // Determine S3 key - use dedicated field or file_path
-    const s3Key = document.s3_key || document.file_path;
-    
-    if (!s3Key) {
-      console.log(`No S3 key found for document: ${document.id}`);
-      return NextResponse.json(
-        { error: 'Document file location not found' }, 
-        { status: 404 }
-      );
-    }
+    let fileBuffer: Buffer;
+    let fileSource = '';
 
+    // Try multiple approaches in order of preference
     try {
-      // Method 1: Stream the file directly through your API (more secure)
-      // This bypasses CORS issues since the file comes through your API
-      const fileBuffer = await S3Service.getFileBuffer(s3Key);
-
-
-      // Return the file with appropriate headers
-      return new NextResponse(fileBuffer, {
-        headers: {
-          'Content-Type': document.mime_type || 'application/pdf',
-          'Content-Disposition': `attachment; filename="${document.original_file_name}"`,
-          'Content-Length': fileBuffer.length.toString(),
-          'Cache-Control': 'private, no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-          // Add CORS headers to prevent issues
-          'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || '*',
-          'Access-Control-Allow-Methods': 'GET',
-          'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+      // Method 1: Try S3 first if document is saved/indexed and has S3 key
+      if (document.status === 'INDEXED' && (document.s3_key || document.file_path?.startsWith('http'))) {
+        const s3Key = document.s3_key || document.file_path;
+        
+        try {
+          console.log(`📁 Attempting S3 retrieval for key: ${s3Key}`);
+          fileBuffer = await S3Service.getFileBuffer(s3Key);
+          fileSource = 'S3';
+          console.log(`✅ Retrieved from S3, size: ${fileBuffer.length} bytes`);
+        } catch (s3Error) {
+          console.error('❌ S3 retrieval failed, trying local fallback:', s3Error);
+          throw s3Error; // Let it fall through to local file attempt
         }
-      });
+      } 
+      // Method 2: Try local file path
+      else if (document.file_path && !document.file_path.startsWith('http')) {
+        console.log(`📁 Attempting local file retrieval: ${document.file_path}`);
+        
+        // Construct full local path - handle both absolute and relative paths
+        let fullPath: string;
+        if (document.file_path.startsWith('/uploads')) {
+          // Relative path from project root
+          fullPath = path.join(process.cwd(), document.file_path);
+        } else if (path.isAbsolute(document.file_path)) {
+          // Already absolute path
+          fullPath = document.file_path;
+        } else {
+          // Relative path, assume it's from project root
+          fullPath = path.join(process.cwd(), document.file_path);
+        }
+        
+        console.log(`📂 Full path resolved to: ${fullPath}`);
+        
+        // Check if file exists
+        if (!fs.existsSync(fullPath)) {
+          throw new Error(`Local file not found: ${fullPath}`);
+        }
+        
+        fileBuffer = fs.readFileSync(fullPath);
+        fileSource = 'LOCAL';
+        console.log(`✅ Retrieved from local storage, size: ${fileBuffer.length} bytes`);
+      }
+      // Method 3: Fallback - try local even if S3 failed
+      else {
+        throw new Error('No valid file path found');
+      }
 
-    } catch (s3Error: any) {
-      console.error('S3 Error:', s3Error);
+    } catch (primaryError) {
+      console.log('Primary retrieval method failed, trying fallback...');
       
-      // Handle specific S3 errors using our utility class
-      if (s3Error.message.includes('File not found')) {
+      // Fallback: If S3 failed, try local file path
+      if (document.file_path && !document.file_path.startsWith('http')) {
+        try {
+          console.log(`🔄 Fallback: Attempting local file retrieval: ${document.file_path}`);
+          
+          // Construct full local path for fallback
+          let fullPath: string;
+          if (document.file_path.startsWith('/uploads')) {
+            // Relative path from project root
+            fullPath = path.join(process.cwd(), document.file_path);
+          } else if (path.isAbsolute(document.file_path)) {
+            // Already absolute path
+            fullPath = document.file_path;
+          } else {
+            // Relative path, assume it's from project root
+            fullPath = path.join(process.cwd(), document.file_path);
+          }
+          
+          console.log(`📂 Fallback full path resolved to: ${fullPath}`);
+          
+          if (fs.existsSync(fullPath)) {
+            fileBuffer = fs.readFileSync(fullPath);
+            fileSource = 'LOCAL_FALLBACK';
+            console.log(`✅ Retrieved from local fallback, size: ${fileBuffer.length} bytes`);
+          } else {
+            throw new Error(`Fallback file not found: ${fullPath}`);
+          }
+        } catch (localError) {
+          console.error('❌ Local fallback also failed:', localError);
+          throw localError;
+        }
+      } else {
+        // No fallback available
+        console.error('❌ No fallback available, primary error:', primaryError);
+        
+        if (primaryError instanceof Error) {
+          if (primaryError.message.includes('File not found') || primaryError.message.includes('ENOENT')) {
+            return NextResponse.json(
+              { 
+                error: 'Document file not found',
+                details: 'The file may have been moved or deleted from storage'
+              }, 
+              { status: 404 }
+            );
+          }
+          if (primaryError.message.includes('Access denied') || primaryError.message.includes('EACCES')) {
+            return NextResponse.json(
+              { error: 'Access denied to document file' }, 
+              { status: 403 }
+            );
+          }
+        }
+        
         return NextResponse.json(
-          { error: 'Document file not found in storage' }, 
-          { status: 404 }
+          { 
+            error: 'Failed to retrieve document file',
+            details: 'File not accessible from any storage location'
+          }, 
+          { status: 500 }
         );
       }
-      
-      if (s3Error.message.includes('Access denied')) {
-        return NextResponse.json(
-          { error: 'Access denied to document file' }, 
-          { status: 403 }
-        );
-      }
-      
-      return NextResponse.json(
-        { error: 'Failed to retrieve document file from storage' }, 
-        { status: 500 }
-      );
     }
+
+    // Determine content type
+    const contentType = document.mime_type || 
+      (document.original_file_name?.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+
+    // Return the file with appropriate headers
+    return new NextResponse(fileBuffer, {
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `inline; filename="${document.original_file_name || 'document.pdf'}"`,
+        'Content-Length': fileBuffer.length.toString(),
+        'Cache-Control': 'private, max-age=3600', // Cache for 1 hour
+        'X-File-Source': fileSource, // Debug header to see which method worked
+        // CORS headers
+        'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || '*',
+        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+      }
+    });
 
   } catch (error) {
     console.error('Document file retrieval error:', error);
@@ -129,13 +211,16 @@ export async function GET(
     }
     
     return NextResponse.json(
-      { error: 'Failed to retrieve document file' }, 
+      { 
+        error: 'Failed to retrieve document file',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
       { status: 500 }
     );
   }
 }
 
-// Alternative endpoint: /documents/[id]/download - Returns a presigned URL
+// Alternative endpoint: /documents/[id]/download - Returns a presigned URL (S3 only)
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -170,17 +255,21 @@ export async function POST(
       );
     }
 
-    const s3Key = document.s3_key || document.file_path;
+    // This endpoint only works for S3 stored files
+    const s3Key = document.s3_key || (document.file_path?.startsWith('http') ? document.file_path : null);
     
     if (!s3Key) {
       return NextResponse.json(
-        { error: 'Document file location not found' }, 
-        { status: 404 }
+        { 
+          error: 'Presigned URLs only available for cloud-stored documents',
+          details: 'Use the GET endpoint for direct file access'
+        }, 
+        { status: 400 }
       );
     }
 
     try {
-      // Generate presigned URL valid for 1 hour using our utility
+      // Generate presigned URL valid for 1 hour
       const presignedUrl = await S3Service.getPresignedDownloadUrl(
         s3Key, 
         document.original_file_name, 

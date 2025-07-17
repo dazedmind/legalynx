@@ -1,4 +1,4 @@
-import { Brain, Home, LogOut, Settings, User } from 'lucide-react'
+import { LogOut, Settings } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import avatar from '../img/user.png'
@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/context/AuthContext'
 import { profileService } from '../lib/api'
 import { UserProfile } from '../types/profile'
 import { GoGift } from 'react-icons/go'
+import logo from '../img/legalynxlogo.png'
 
 export default function NavBar() {
     const { logout, user } = useAuth();
@@ -109,13 +110,12 @@ export default function NavBar() {
     return (
         <div className="px-8 py-4">
             <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                    <div className="bg-blue-600 p-2 rounded-lg">
-                        <Brain className="w-8 h-8 text-white" />
-                    </div>
+                <div className="flex items-center space-x-1">
+                    <Image src={logo} alt="LegalynX" width={60} height={60} />
+
                     <div>
                         <Link href="/frontend/home">
-                            <h1 className="text-2xl font-bold text-gray-900">LegalynX</h1>
+                            <h1 className="text-2xl font-bold font-serif text-gray-900">LegalynX</h1>
                         </Link>
                     </div>
                 </div>

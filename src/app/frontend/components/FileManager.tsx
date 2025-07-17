@@ -42,6 +42,7 @@ interface DocumentInfo {
 interface FileManagerProps {
   onDocumentSelect?: (docId: string) => void;
   currentDocumentId?: string;
+  onDocumentDeleted?: (docId: string) => void;
 }
 
 type SortField = 'name' | 'size' | 'uploadedAt' | 'lastAccessed' | 'pages';
@@ -348,7 +349,7 @@ const FileDetailsModal: React.FC<FileDetailsModalProps> = ({ isOpen, document, o
   );
 };
 
-export default function FileManager({ onDocumentSelect, currentDocumentId }: FileManagerProps) {
+export default function FileManager({ onDocumentSelect, currentDocumentId, onDocumentDeleted }: FileManagerProps) {
   const { isAuthenticated, user } = useAuth();
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<DocumentInfo[]>([]);
@@ -710,7 +711,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId }: Fil
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">My Documents</h2>
+          <h2 className="text-2xl font-bold font-serif text-gray-800">My Documents</h2>
           <p className="text-sm text-gray-600 mt-1">
             {filteredDocuments.length} of {documents.length} documents
             {selectedDocs.size > 0 && ` • ${selectedDocs.size} selected`}

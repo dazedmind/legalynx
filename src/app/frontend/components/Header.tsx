@@ -16,7 +16,7 @@ function Header() {
           <Image src={logo} alt="LegalynX" width={60} height={60} />
         <div>
             <Link href="/">
-                <h1 className="text-2xl font-bold text-gray-900">LegalynX</h1>
+                <h1 className="text-2xl font-bold font-serif text-gray-900">LegalynX</h1>
             </Link>
         </div>
       </div>

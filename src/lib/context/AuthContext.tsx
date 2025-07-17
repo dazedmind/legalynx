@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { authUtils, User } from '../auth';
 import { useRouter } from 'next/navigation';
+import { ragCacheService } from '../ragCacheService';
 
 interface AuthContextType {
   user: User | null;
@@ -61,6 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authUtils.logout();
       setUser(null);
       router.push('/');
+      ragCacheService.clearAll();
     }
   };
 

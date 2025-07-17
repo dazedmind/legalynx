@@ -31,7 +31,7 @@ function normalizePathForStorage(filePath: string): string {
 }
 
 // Helper function to save file to disk
-async function saveFileToDisk(file: File, userId: string): Promise<{ filePath: string; fileName: string; storagePath: string }> {
+async function saveFileToDisk(file: File, userId: string): Promise<{ filePath: string; fileName: string; cutFilePath: string }> {
   // Create uploads directory structure: uploads/userId/
   const baseUploadDir = path.join(process.cwd(), 'uploads');
   const userUploadDir = path.join(baseUploadDir, userId);
@@ -52,7 +52,7 @@ async function saveFileToDisk(file: File, userId: string): Promise<{ filePath: s
   const baseName = path.basename(file.name, fileExtension);
   const uniqueFileName = `${baseName}_${uuidv4()}${fileExtension}`;
   const filePath = path.join(userUploadDir, uniqueFileName);
-  
+  const cutFilePath = cutToUploadsOnly(filePath);
   // Create a storage path that's normalized for cross-platform compatibility
   const storagePath = normalizePathForStorage(filePath);
   
@@ -61,6 +61,7 @@ async function saveFileToDisk(file: File, userId: string): Promise<{ filePath: s
   console.log('  - Unique name:', uniqueFileName);
   console.log('  - Full path:', filePath);
   console.log('  - Storage path:', storagePath);
+  console.log('  - Cut file path:', cutFilePath);
   
   // Convert file to buffer and save
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -77,8 +78,13 @@ async function saveFileToDisk(file: File, userId: string): Promise<{ filePath: s
   return { 
     filePath: filePath, // Actual system path for immediate use
     fileName: uniqueFileName,
-    storagePath: storagePath // Normalized path for database storage
+    cutFilePath: cutFilePath // Normalized path for database storage
   };
+}
+
+function cutToUploadsOnly(fullPath: string): string {
+  const idx = fullPath.toLowerCase().indexOf('uploads');
+  return idx !== -1 ? fullPath.slice(idx).replace(/\//g, '\\') : fullPath;
 }
 
 export async function POST(request: NextRequest) {
@@ -102,14 +108,14 @@ export async function POST(request: NextRequest) {
     console.log('📄 Processing file:', file.name, 'Size:', file.size);
 
     // Save file to disk
-    const { filePath, fileName, storagePath } = await saveFileToDisk(file, user.id);
+    const { filePath, fileName, cutFilePath } = await saveFileToDisk(file, user.id);
 
     // Create document record in database with normalized storage path
     const document = await prisma.document.create({
       data: {
         file_name: fileName,
         original_file_name: file.name,
-        file_path: storagePath, // ✅ Store normalized path
+        file_path: cutFilePath, // ✅ Store normalized path
         file_size: file.size,
         mime_type: file.type,
         status: 'UPLOADED', // Start with UPLOADED status

@@ -7,7 +7,7 @@ import NextAuthSessionProvider from '@/app/frontend/components/SessionProvider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'RAG Pipeline - Document Analysis & Q&A',
+  title: 'LegalynX',
   description: 'Upload PDF documents and ask questions using AI-powered retrieval-augmented generation',
   keywords: 'RAG, PDF, AI, Document Analysis, Question Answering, LlamaIndex, Gemini',
 }

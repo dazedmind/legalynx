@@ -56,7 +56,8 @@ export async function POST(request: NextRequest) {
             file_path: true, // Include file path
             file_size: true,
             page_count: true,
-            mime_type: true
+            mime_type: true,
+            status: true
           }
         },
         messages: {
@@ -79,7 +80,8 @@ export async function POST(request: NextRequest) {
         filePath: chatSession.document.file_path, // Include file path
         size: chatSession.document.file_size,
         pages: chatSession.document.page_count,
-        mimeType: chatSession.document.mime_type
+        mimeType: chatSession.document.mime_type,
+        status: chatSession.document.status
       }
     });
 
@@ -108,7 +110,8 @@ export async function GET(request: NextRequest) {
             file_path: true, // ✅ Include file path
             file_size: true,
             page_count: true,
-            mime_type: true
+            mime_type: true,
+            status: true
           }
         },
         messages: {
@@ -135,7 +138,8 @@ export async function GET(request: NextRequest) {
         filePath: session.document.file_path, // ✅ Include file path
         size: session.document.file_size,
         pages: session.document.page_count,
-        mimeType: session.document.mime_type
+        mimeType: session.document.mime_type,
+        status: session.document.status
       }
     }));
 

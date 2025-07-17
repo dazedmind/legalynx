@@ -108,7 +108,7 @@ function UploadPage({ onUploadSuccess }: UploadPageProps) {
                 
                 try {
                     // Step 1: Save to database
-                    setStatusMessage('Saving document to your account...');
+                    setStatusMessage('Reading file content...');
                     documentInfo = await saveDocumentToDatabase(file);
                     
                     // Step 2: Upload to RAG system
@@ -116,10 +116,7 @@ function UploadPage({ onUploadSuccess }: UploadPageProps) {
                     ragResponse = await uploadToRagSystem(file);
                     
                     setUploadStatus('success');
-                    setStatusMessage('Document saved to your account and ready for AI analysis!');
-                    
-                    toast.success('Document uploaded and saved to your account!');
-                    
+                    setStatusMessage('Document saved to your account and ready for AI analysis!');                    
                 } catch (error) {
                     console.error('Hybrid upload failed, trying RAG only:', error);
                     
@@ -210,6 +207,10 @@ function UploadPage({ onUploadSuccess }: UploadPageProps) {
 
     return (
         <div className="space-y-6">
+
+            <div>
+                <h1 className='font-serif text-2xl font-bold text-gray-900'>To get started, upload a PDF document below</h1>
+            </div>
             {/* Upload Area */}
             <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
@@ -262,7 +263,7 @@ function UploadPage({ onUploadSuccess }: UploadPageProps) {
                 className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
                     !file || isUploading
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
                 }`}
             >
                 {isUploading ? (
@@ -274,35 +275,12 @@ function UploadPage({ onUploadSuccess }: UploadPageProps) {
                     'Upload File'
                 )}
             </button>
-
-            {/* Status Message */}
-            {statusMessage && (
-                <div
-                    className={`p-4 rounded-md flex items-start text-sm ${
-                        uploadStatus === 'success'
-                            ? 'bg-green-50 text-green-700 border border-green-200'
-                            : uploadStatus === 'error'
-                            ? 'bg-red-50 text-red-700 border border-red-200'
-                            : 'bg-blue-50 text-blue-700 border border-blue-200'
-                    }`}
-                >
-                    {uploadStatus === 'success' ? (
-                        <CheckCircle2 className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
-                    ) : uploadStatus === 'error' ? (
-                        <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
-                    ) : (
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2 mt-0.5 flex-shrink-0"></div>
-                    )}
-                    <span>{statusMessage}</span>
-                </div>
-            )}
-
-       
+   
             <div className="mt-4 p-4 flex gap-4 items-center bg-gray-50 border-dashed border-2 border-neutral-400 rounded-md text-neutral-800 text-sm">
                 <MessageSquareDashed className="w-10 h-10 mt-0.5 flex-shrink-0" />
                 <span className="flex flex-col">
                     <p className="font-medium">Session Only Mode</p>
-                    <p>Your document will be processed for this session only and will be deleted after you sign out. You have the option to save documents permanently.</p>
+                    <p>Your document will be processed for this session only and will be deleted right after you sign out. You have the option to save documents permanently.</p>
                 </span>
 
             </div>

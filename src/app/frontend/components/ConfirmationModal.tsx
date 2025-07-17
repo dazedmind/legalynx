@@ -1,16 +1,23 @@
 // src/app/frontend/components/SaveDocumentModal.tsx - Updated
 import { Save, X, Cloud, Loader2 } from 'lucide-react'
 import React from 'react'
+import { GoQuestion } from 'react-icons/go';
 
-interface SaveDocumentModalProps {
+interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (shouldSave: boolean) => void;
   isSaving?: boolean;
   documentName?: string;
+  modal: {
+    header: string;
+    message: string;
+    trueButton: string;
+    falseButton: string;
+  }
 }
 
-function SaveDocumentModal({ isOpen, onClose, onSave, isSaving, documentName }: SaveDocumentModalProps) {
+function ConfirmationModal({ isOpen, onClose, onSave, isSaving, documentName, modal }: ConfirmationModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -18,22 +25,21 @@ function SaveDocumentModal({ isOpen, onClose, onSave, isSaving, documentName }: 
       <div className="bg-white rounded-lg p-8 w-md mx-4 border border-gray-200 max-w-md">
         <div className="flex items-center justify-center mb-4">
           <div className="p-3 bg-blue-100 rounded-full">
-            <Cloud className="w-8 h-8 text-blue-600" />
+            <GoQuestion className="w-8 h-8 text-blue-600" />
           </div>
         </div>
         
         <div className="text-center mb-6">
-          <h3 className="text-2xl font-semibold text-gray-900 mb-2">Save to Cloud Storage</h3>
+          <h3 className="text-2xl font-semibold text-gray-900 mb-2">{modal.header}</h3>
           {documentName && (
             <p className="text-sm text-gray-600 mb-3 font-medium">"{documentName}"</p>
           )}
           <p className="text-gray-600">
-            Save this document to your account for permanent access across all your devices. 
-            The document will be securely stored in cloud storage.
+            {modal.message}
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="flex flex-row-reverse gap-2">
           <button
             onClick={() => onSave(true)}
             disabled={isSaving}
@@ -42,12 +48,12 @@ function SaveDocumentModal({ isOpen, onClose, onSave, isSaving, documentName }: 
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Saving to Cloud...
+                {modal.trueButton}
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                Save to Account
+                {modal.trueButton}
               </>
             )}
           </button>
@@ -57,7 +63,7 @@ function SaveDocumentModal({ isOpen, onClose, onSave, isSaving, documentName }: 
             disabled={isSaving}
             className="w-full px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors disabled:opacity-50 cursor-pointer"
           >
-            {isSaving ? 'Please wait...' : 'Keep Session Only'}
+            {isSaving ? 'Please wait...' : modal.falseButton}
           </button>
         </div>
 
@@ -66,4 +72,4 @@ function SaveDocumentModal({ isOpen, onClose, onSave, isSaving, documentName }: 
   )
 }
 
-export default SaveDocumentModal
+export default ConfirmationModal
