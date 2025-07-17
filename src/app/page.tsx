@@ -11,7 +11,7 @@ import heroImg from './frontend/img/document-hero.png'
 export default function Home() {
   
   return (
-    <div className="min-h-screen bg-secondary">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <Header />

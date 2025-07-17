@@ -1,8 +1,15 @@
+## [0.1.3] - 2025-07-17
+- Added PDF Viewer on File Manager
+
+**Fixed**
+- Error when loading a deleted/nonexistent chat session
+- Every login, now defaults to upload file page
+
+
 ## [0.1.2] - 2025-07-15
 **NEW**
 - S3 Integration
 - Polished session-based chats and files
-
 
 **FIXED**
 - Bug when deleting a file/chat history
