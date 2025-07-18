@@ -16,7 +16,7 @@ import UploadPage from '../components/UploadPage';
 type ActiveTab = 'chat' | 'documents' | 'chat_history' | 'upload';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('upload');
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null);
@@ -38,7 +38,6 @@ export default function Home() {
 
     clearUploadedFiles();
   }, []);
-
 
   const loadSystemStatus = async () => {
     setIsLoadingStatus(true);
@@ -88,12 +87,25 @@ export default function Home() {
   };
 
   const handleUploadSuccess = (response: UploadResponse) => {
+    console.log('📤 Upload success in Home component:', response);
     
+    if (response && response.documentId) {
+      // Set the document ID for the newly uploaded document
+      setCurrentDocumentId(response.documentId);
+      
+      // Clear any existing session since this is a new document
+      setCurrentSessionId(null);
+      
+      // Always switch to chat tab after successful upload
+      setActiveTab('chat');
+      
+      console.log('🔄 Switched to chat tab for document:', response.documentId);
+    }
+    
+    // Load system status after upload
     setTimeout(() => {
       loadSystemStatus();
     }, 1000);
-    
-    setActiveTab('chat');
   };
 
   const handleNewChat = () => {
@@ -108,9 +120,8 @@ export default function Home() {
   };
 
   // Add this new handler for session selection
-  const handleSessionSelect = async (sessionId: string, documentId: string) => {
+  const handleSessionSelect = async (sessionId: string) => {
     setCurrentSessionId(sessionId);
-    setCurrentDocumentId(documentId);
     setActiveTab('chat');
   };
 
@@ -133,6 +144,7 @@ export default function Home() {
 
   const isSystemReady = systemStatus?.pdf_loaded && systemStatus?.index_ready;
 
+
   return (
     <ProtectedRoute>
     <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col overflow-hidden">
@@ -148,7 +160,7 @@ export default function Home() {
           {/* Navigation Buttons */}
    
           <div className="space-y-2 mb-8">
-            <button
+            {/* <button
               onClick={() => handleTabClick('chat')}
               className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
                 activeTab === 'chat'
@@ -161,6 +173,18 @@ export default function Home() {
               {isSystemReady && (
                 <span className="ml-auto w-2 h-2 bg-green-500 rounded-full"></span>
               )}
+            </button> */}
+
+            <button
+              onClick={() => handleTabClick('chat_history')}
+              className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                activeTab === 'chat_history' || activeTab === 'chat'
+                  ? 'bg-blue-100 text-blue-700 font-semibold'
+                  : 'text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <GoArchive className="w-5 h-5" />
+              Chat History
             </button>
 
             <button
@@ -173,18 +197,6 @@ export default function Home() {
             >
               <GoFileDirectory className="w-5 h-5" />
               My Documents
-            </button>
-
-            <button
-              onClick={() => handleTabClick('chat_history')}
-              className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
-                activeTab === 'chat_history'
-                  ? 'bg-blue-100 text-blue-700 font-semibold'
-                  : 'text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <GoArchive className="w-5 h-5" />
-              Chat History
             </button>
           </div>
 
@@ -202,13 +214,19 @@ export default function Home() {
         <section className="flex-1 flex flex-col overflow-hidden">
           {/* Tab Content */}
           <div className="flex-1 overflow-hidden">
-
+            {activeTab === 'upload' && (
+              <UploadPage 
+                onUploadSuccess={handleUploadSuccess}
+              />
+            )}
+            
             {activeTab === 'chat' && (
               <ChatViewer 
                 isSystemReady={!!isSystemReady} 
                 onUploadSuccess={handleUploadSuccess}
                 selectedSessionId={currentSessionId || ''} 
                 resetToUpload={resetChatViewer} // ✅ Add this prop
+                handleNewChat={handleNewChat}
               />
             )}
 
@@ -223,7 +241,7 @@ export default function Home() {
             {activeTab === 'chat_history' && (
               <ChatHistory 
                 onDocumentSelect={handleDocumentSelect}
-                onSessionSelect={handleSessionSelect} // Pass the new handler
+                onSessionSelect={handleSessionSelect}
                 currentDocumentId={currentDocumentId || ''}
               />
             )}

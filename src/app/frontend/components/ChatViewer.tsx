@@ -1,17 +1,20 @@
-// Updated ChatViewer.tsx with proper refactoring
+// Updated ChatViewer.tsx with SessionLoader integration
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FileText, AlertCircle, Plus, ArrowUp, Zap, Cloud } from 'lucide-react';
+import { FileText, AlertCircle, Plus, ArrowUp, Zap, Cloud, Download } from 'lucide-react';
 import { apiService, handleApiError, AnalysisResponse, RerankDemo, UploadResponse } from '../lib/api';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
 import { GoDownload } from 'react-icons/go';
-import UploadPage from './UploadPage';
+import UploadPage from './UploadComponent';
 import { useRAGCache } from '@/lib/ragCacheService';
 import ConfirmationModal from './ConfirmationModal';
 import { ChatContainer } from './ChatContainer';
+import SessionLoader from './SessionLoader'; // Import the new loader
+import { DownloadCloud, CloudCheck, AudioLines } from 'lucide-react';
+import Link from 'next/link';
 
 interface ChatMessage {
   id: string;
@@ -35,18 +38,33 @@ interface ChatSession {
   messages: ChatMessage[];
 }
 
+interface SavedChatSession {
+  id: string;
+  title: string;
+  documentId: string;
+  documentName: string;
+  messageCount: number;
+}
+
 interface CombinedComponentProps {
   isSystemReady: boolean;
   onUploadSuccess: (response: UploadResponse) => void;
+  onSessionDelete?: (sessionId: string) => void;
   selectedSessionId?: string;
   resetToUpload?: boolean;
+  handleNewChat?: () => void;
 }
+
+// Add loading stage type
+type LoadingStage = 'loading_session' | 'loading_document' | 'loading_rag' | 'preparing_chat';
 
 export default function ChatViewer({ 
   isSystemReady, 
   onUploadSuccess, 
+  onSessionDelete,
   selectedSessionId, 
-  resetToUpload 
+  resetToUpload,
+  handleNewChat
 }: CombinedComponentProps) {
   const { isAuthenticated, user } = useAuth();
   const ragCache = useRAGCache();
@@ -62,12 +80,14 @@ export default function ChatViewer({
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
-  // const confirmationModalConfig = {
-  //   header: 'Start New Chat',
-  //   message: 'Are you sure you want to discard all changes and start a new chat?',
-  //   trueButton: 'Discard Changes',
-  //   falseButton: 'Cancel',
-  // };
+  const [savedSessions, setSavedSessions] = useState<SavedChatSession[]>([]);
+
+  // ✅ NEW: Loading stage tracking
+  const [loadingStage, setLoadingStage] = useState<LoadingStage>('loading_session');
+  const [loadingSessionInfo, setLoadingSessionInfo] = useState<{
+    title?: string;
+    documentName?: string;
+  }>({});
   
   // Chat states
   const [query, setQuery] = useState('');
@@ -104,14 +124,6 @@ export default function ChatViewer({
     }
     setConfirmationModalConfig(null);
   };
-
-  useEffect(() => {
-    handleNewChat();
-    if (resetToUpload) {
-      console.log('🔄 Resetting ChatViewer to upload state');
-      handleNewChat();
-    }
-  }, [resetToUpload]);
 
   useEffect(() => {
     // Only load document on system ready, not during reset or if already have document
@@ -243,7 +255,7 @@ export default function ChatViewer({
     }
   };
 
-  // Enhanced loadSpecificSession with RAG caching
+  // ✅ Enhanced loadSpecificSession with loading stages
   const loadSpecificSession = async (sessionId: string) => {
     if (!user || isLoadingSession || loadingSessionId === sessionId) {
       console.log('🚫 Skipping session load - already loading or same session:', {
@@ -257,9 +269,12 @@ export default function ChatViewer({
 
     setIsLoadingSession(true);
     setLoadingSessionId(sessionId);
+    setLoadingStage('loading_session');
     console.log('🔄 Loading specific session:', sessionId);
     
     try {
+      // Stage 1: Load session data
+      setLoadingStage('loading_session');
       const response = await fetch(`/backend/api/chat/${sessionId}/messages`, {
         method: 'GET',
         headers: getAuthHeaders()
@@ -269,6 +284,14 @@ export default function ChatViewer({
         const sessionData = await response.json();
         console.log('📄 Session data loaded:', sessionData);
         
+        // Set loading info for display
+        setLoadingSessionInfo({
+          title: sessionData.title || `Chat with ${sessionData.document.name}`,
+          documentName: sessionData.document.name
+        });
+        
+        // Stage 2: Check document exists
+        setLoadingStage('loading_document');
         const docExists = await checkDocumentExists(sessionData.document.id);
         
         if (!docExists) {
@@ -294,7 +317,8 @@ export default function ChatViewer({
         
         console.log('📁 Document info:', documentInfo);
         
-        // FIXED: Properly load PDF into RAG system
+        // Stage 3: Load PDF into RAG system
+        setLoadingStage('loading_rag');
         try {
           console.log('📤 Loading PDF into RAG system...');
           await loadPdfIntoRagSystemCached(sessionData.document.id, documentInfo.originalName);
@@ -308,17 +332,22 @@ export default function ChatViewer({
           }
         }
         
+        // Stage 4: Prepare chat interface
+        setLoadingStage('preparing_chat');
         setCurrentDocument(documentInfo);
         
         const formattedMessages: ChatMessage[] = sessionData.messages.map((msg: any) => ({
           id: msg.id,
           type: msg.role,
           content: msg.content,
-          createdAt: new Date(msg.createdAt),
+          createdAt: new Date(msg.createdAt), 
           sourceCount: msg.tokensUsed
         }));
         
         setChatHistory(formattedMessages);
+        
+        // Small delay to show the final stage
+        await new Promise(resolve => setTimeout(resolve, 500));
         
       } else if (response.status === 401) {
         toast.error('Authentication failed. Please sign in again.', { 
@@ -342,6 +371,7 @@ export default function ChatViewer({
     } finally {
       setIsLoadingSession(false);
       setLoadingSessionId(null);
+      setLoadingSessionInfo({});
     }
   };
 
@@ -611,25 +641,6 @@ export default function ChatViewer({
     }
   };
 
-  useEffect(() => {
-    if (hasUnsavedChanges && 
-        chatHistory.length > 0 && 
-        currentSessionId && 
-        user && 
-        !isSaving &&
-        documentExists &&
-        Date.now() - lastSaveTimestamp > 2000) {
-      
-      console.log('Auto-saving session due to changes...');
-      
-      const timeoutId = setTimeout(() => {
-        saveSessionToDatabase();
-      }, 1000);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [hasUnsavedChanges, currentSessionId, user, isSaving, lastSaveTimestamp, chatHistory.length, documentExists]);
-  
   const addMessage = async (message: Omit<ChatMessage, 'id' | 'createdAt'>) => {
     if (!documentExists) {
       console.warn('Cannot add message - document does not exist');
@@ -699,6 +710,33 @@ export default function ChatViewer({
         break;
       default:
         break;
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    if (!sessionId) return;
+        
+    try {
+      const response = await fetch(`/backend/api/chat-sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        // Remove from local state
+        setSavedSessions(prev => prev.filter(s => s.id !== sessionId));
+        
+        // Notify parent component
+        onSessionDelete?.(sessionId);
+        
+        toast.success('Chat session deleted successfully');
+      } else {
+        throw new Error('Failed to delete session');
+      }
+      
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+      toast.error('Failed to delete chat session');
     }
   };
 
@@ -823,35 +861,30 @@ export default function ChatViewer({
     }
   };
 
-  // The actual new chat logic
-  const handleNewChat = async () => {
-    try {
-      setCurrentSessionId(null);
-      setChatHistory([]);
-      setCurrentDocument(null);
-      setQuery('');
-      setError('');
-      setDocumentExists(false);
-      setIsLoadingSession(false);
-      setLoadingSessionId(null);
-      toast.dismiss();
-      await apiService.resetSystem();
-      onUploadSuccess({
-        documentId: '',
-        filename: '',
-        originalName: '',
-        size: 0,
-        uploadedAt: '',
-        pages_processed: 0
-      });
-      console.log('✅ ChatViewer reset complete');
-    } catch (error) {
-      console.error('Failed to reset:', error);
-      toast.error('Failed to reset');
-    } finally {
-      setIsResetting(false);
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleQuery();
     }
   };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Get cache status for current document
+  const getCacheStatus = () => {
+    if (!currentDocument) return null;
+    return ragCache.getCached(currentDocument.id);
+  };
+
+  const cacheStatus = getCacheStatus();
+  const cacheStats = ragCache.getStats();
+
 
   const handleSaveFile = async () => {
     if (!currentDocument || !isAuthenticated || !user || !documentExists) {
@@ -933,7 +966,9 @@ export default function ChatViewer({
           error.message.includes('not found')) {
         toast.error('Document file expired or was deleted. Please re-upload the document.');
         setDocumentExists(false);
-        handleNewChat();
+        if (handleNewChat) {
+          handleNewChat();
+        }
       } else {
         toast.error(error.message || 'Failed to save file to account');
       }
@@ -942,52 +977,20 @@ export default function ChatViewer({
     }
   };
 
-  const handleUploadSuccess = (response: UploadResponse) => {
-    const documentInfo = {
-      id: response.documentId,
-      filename: response.filename,
-      originalName: response.originalName || response.filename,
-      size: response.size || 0,
-      uploadedAt: response.uploadedAt || new Date().toISOString(),
-      pages: response.pages_processed,
-      status: response.status,
-      databaseId: response.documentId
-    };
-    
-    setCurrentDocument(documentInfo);
-    setDocumentExists(true);
-    
-    onUploadSuccess(response);
-    
-    toast.success('Document uploaded and ready to chat!');
-  };
-
-  const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      handleQuery();
-    }
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  // Get cache status for current document
-  const getCacheStatus = () => {
-    if (!currentDocument) return null;
-    return ragCache.getCached(currentDocument.id);
-  };
-
-  const cacheStatus = getCacheStatus();
-  const cacheStats = ragCache.getStats();
+  // ✅ Show SessionLoader when loading a session
+  if (isLoadingSession && loadingSessionId) {
+    return (
+      <SessionLoader
+        sessionTitle={loadingSessionInfo.title}
+        documentName={loadingSessionInfo.documentName}
+        stage={loadingStage}
+      />
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">
+      {/* Rest of your existing ChatViewer JSX remains the same... */}
       {/* Fixed Document Header */}
       <div className="flex-shrink-0 bg-white p-4">
         {currentDocument ? (
@@ -1003,28 +1006,11 @@ export default function ChatViewer({
                     {currentDocument.originalName}
                     {!documentExists && ' (Document Deleted)'}
                   </h3>
-                  {/* RAG Cache Status Indicator */}
-                  {documentExists && cacheStatus && (
-                    <div className="flex items-center">
-                      <Zap className={`w-4 h-4 ml-2 ${
-                        cacheStatus.status === 'loaded' ? 'text-green-500' : 
-                        cacheStatus.status === 'loading' ? 'text-yellow-500' : 'text-red-500'
-                      }`} />
-                      <span className={`text-xs ml-1 ${
-                        cacheStatus.status === 'loaded' ? 'text-green-600' : 
-                        cacheStatus.status === 'loading' ? 'text-yellow-600' : 'text-red-600'
-                      }`}>
-                        {cacheStatus.status === 'loaded' ? 'Cached' : 
-                         cacheStatus.status === 'loading' ? 'Loading...' : 'Error'}
-                      </span>
-                    </div>
-                  )}
                 </div>
                 <p className={`text-sm ${documentExists ? 'text-gray-600' : 'text-red-600'}`}>
                   {documentExists ? (
                     <>
-                      {currentDocument.pages} pages • {formatFileSize(currentDocument.size)} • 
-                      Uploaded {new Date(currentDocument.uploadedAt).toLocaleDateString()}
+                      {currentDocument.pages} pages • Document loaded
                       {currentSessionId && currentDocument.status === 'INDEXED' ? (
                         <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full font-medium">
                           Session Saved
@@ -1042,8 +1028,7 @@ export default function ChatViewer({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex space-x-2">
-                <button 
+            <button 
                   onClick={() => openConfirmationModal(
                     {
                       header: 'Save to Account',
@@ -1060,42 +1045,65 @@ export default function ChatViewer({
                       : 'text-black hover:brightness-105 hover:bg-yellow-200/20 hover:text-yellow-600 cursor-pointer'
                   }`}
                 >
-                  <Cloud className="w-4 h-4 mr-1" />
                   {!documentExists 
                     ? 'Unavailable'
                     : currentDocument?.status === 'INDEXED' 
-                      ? 'Saved' 
-                      : 'Save File'
+                      ? <><CloudCheck className="w-4 h-4 mr-1" /> Saved</>
+                      : <><Cloud className="w-4 h-4 mr-1" /> Save File</>
                   }
                 </button>
-
-                <button 
-                  onClick={() => openConfirmationModal(
-                    {
-                      header: 'Start New Chat',
-                      message: 'Are you sure you want to discard all changes and start a new chat?',
-                      trueButton: 'Discard Changes',
-                      falseButton: 'Cancel',
-                    },
-                    handleNewChat
-                  )}
-                  className="flex items-center cursor-pointer p-2 px-3 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-all duration-300"
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  New Chat
-                </button>
-              </div>
+                
+              <button 
+                onClick={currentDocument.status === 'TEMPORARY' ? () => openConfirmationModal(
+                  {
+                    header: 'Unsaved Changes',
+                    message: 'You have unsaved changes. Are you sure you want to discard all files and start a new chat?',
+                    trueButton: 'Discard Files',
+                    falseButton: 'Cancel',
+                  },
+                  async () => {
+                    if (currentSessionId) {
+                      // Delete the session first
+                      await handleDeleteSession(currentSessionId);
+                    }
+                    if (handleNewChat) {
+                      handleNewChat();
+                    }
+                  }
+                ) : () => {if (handleNewChat) {handleNewChat()}}}
+                className="flex items-center cursor-pointer p-2 px-3 text-sm bg-gradient-to-bl from-yellow to-yellow-600 text-white rounded-lg hover:bg-blue-500 transition-all duration-300"
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                New Chat
+              </button>
             </div>
           </div>  
         ) : null}
-      
       </div>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {!currentDocument ? (
           <div className="flex-1 flex flex-col justify-center p-8 max-w-2xl mx-auto w-full">
-            <UploadPage onUploadSuccess={handleUploadSuccess} />
+            <UploadPage onUploadSuccess={(response: UploadResponse) => {
+              const documentInfo = {
+                id: response.documentId,
+                filename: response.filename,
+                originalName: response.originalName || response.filename,
+                size: response.size || 0,
+                uploadedAt: response.uploadedAt || new Date().toISOString(),
+                pages: response.pages_processed,
+                status: response.status,
+                databaseId: response.documentId
+              };
+              
+              setCurrentDocument(documentInfo);
+              setDocumentExists(true);
+              
+              onUploadSuccess(response);
+              
+              toast.success('Document uploaded and ready to chat!');
+            }} />
           </div>
         ) : (
           <>
@@ -1118,58 +1126,32 @@ export default function ChatViewer({
               onMessageAction={handleMessageAction}
             />
 
-            {/* Input Area */}
+            {/* Input Area - simplified */}
             <div className="flex-shrink-0 bg-white border-t border-gray-200 p-6">
-              {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-                  <AlertCircle className="w-4 h-4 inline mr-2" />
-                  {error}
-                </div>
-              )}
-
               {documentExists && (
-                <>
-                  <div className='flex gap-4 mx-auto w-full relative'>
-                    <div className="flex-1">
-                      <textarea
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder="Ask a question about the uploaded document..."
-                        rows={2}
-                        className="w-full px-3 py-2 h-16 border border-gray-300 rounded-md focus:outline-none resize-none"
-                      />
-                    </div>
-
-                    <button
-                      onClick={() => handleQuery()}
-                      disabled={isQuerying || !query.trim() || !documentExists}
-                      className="flex items-center absolute right-5 top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed h-fit"
-                    >
-                      {isQuerying ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      ) : (
-                        <ArrowUp className="w-6 h-6" />
-                      )}
-                    </button>
+                <div className='flex gap-4 mx-auto w-full relative'>
+                  <div className="flex-1">
+                    <textarea
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Ask a question about the uploaded document..."
+                      rows={2}
+                      className="w-full px-3 py-2 h-16 border border-gray-300 rounded-md focus:outline-none resize-none"
+                    />
                   </div>
-
-                  <div className="mt-2 text-xs text-gray-500 text-center">
-                    Press Enter to send, Shift+Enter for new line
-                  </div>
-                </>
-              )}
-
-              {!documentExists && (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-gray-600 mb-3">
-                    This document is no longer available. You can view the chat history above.
-                  </p>
                   <button
-                    onClick={handleNewChat}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    // onClick={() => {handleQuery()}}
+                    // disabled={isQuerying || !query.trim() || !documentExists}
+                    className="flex items-center absolute right-18 top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-gradient-to-tl from-yellow to-yellow-600 text-white hover:bg-blue-700 h-fit"
                   >
-                    Upload New Document
+                    <AudioLines className="w-6 h-6"/>
+                  </button>
+                  <button
+                    onClick={() => {handleQuery()}}
+                    disabled={isQuerying || !query.trim() || !documentExists}
+                    className="flex items-center absolute group right-5 top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed h-fit"
+                  >
+                    <ArrowUp className="w-6 h-6" />
                   </button>
                 </div>
               )}
@@ -1177,7 +1159,7 @@ export default function ChatViewer({
           </>
         )}
 
-        {/* Confirmation Modal for New Chat and Save File */}
+        {/* Confirmation Modal */}
         {confirmationModalConfig && (
           <ConfirmationModal
             isOpen={!!confirmationModalConfig}

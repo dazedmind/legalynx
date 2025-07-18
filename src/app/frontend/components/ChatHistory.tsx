@@ -1,4 +1,4 @@
-// SavedChatHistory.tsx - Clean component for INDEXED documents only
+// SavedChatHistory.tsx - FIXED VERSION with proper session loading and scrollable sessions
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -33,16 +33,16 @@ interface SavedChatSession {
 }
 
 interface SavedChatHistoryProps {
-  onSessionSelect: (sessionId: string, documentId: string) => void;
   onSessionDelete?: (sessionId: string) => void;
+  onSessionSelect?: (sessionId: string) => void;
   currentSessionId?: string;
   onDocumentSelect: (documentId: string) => void;
   currentDocumentId: string;
 }
 
 export default function SavedChatHistory({ 
-  onSessionSelect, 
   onSessionDelete,
+  onSessionSelect,
   currentSessionId,
   onDocumentSelect,
   currentDocumentId
@@ -133,6 +133,7 @@ export default function SavedChatHistory({
     }
   };
 
+  // ✅ Fixed: Proper session click handler that calls the parent's onSessionSelect
   const handleSessionClick = async (session: SavedChatSession) => {
     try {
       console.log(`🔄 Opening session: ${session.title}`);
@@ -140,8 +141,10 @@ export default function SavedChatHistory({
       // Show loading toast
       const loadingToastId = toast.loading('Opening chat session...');
       
-      // Call the session select callback
-      onSessionSelect(session.id, session.documentId);
+      // ✅ Call the session selection handler passed from parent
+      if (onSessionSelect) {
+        onSessionSelect(session.id);
+      }
       
       // Success message
       toast.success('Chat session opened', { id: loadingToastId });
@@ -231,7 +234,7 @@ export default function SavedChatHistory({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 h-full flex flex-col">
+    <div className="bg-white rounded-lg shadow-md p-6 w-full h-full flex flex-col">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -284,7 +287,7 @@ export default function SavedChatHistory({
       ) : (
         <div className="flex-1 overflow-hidden">
           {/* Sessions List */}
-          <div className="flex-1 overflow-y-auto space-y-3">
+          <div className="h-full overflow-y-auto space-y-3 scrollbar-hide">
             {savedSessions.map((session) => (
               <div
                 key={session.id}
@@ -293,6 +296,7 @@ export default function SavedChatHistory({
                     ? 'border-blue-500 bg-blue-50 shadow-sm'
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}
+                // ✅ Fixed: Direct function call that properly loads the session
                 onClick={() => handleSessionClick(session)}
               >
                 {/* Session Header */}
@@ -316,7 +320,10 @@ export default function SavedChatHistory({
                   {/* Actions */}
                   <div className="flex items-center space-x-2 ml-4">
                     <button
-                      onClick={(e) => handleSessionClick(session)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSessionClick(session);
+                      }}
                       className="p-2 text-blue-600 hover:bg-blue-100 rounded-full transition-colors"
                       title="Open chat session"
                     >

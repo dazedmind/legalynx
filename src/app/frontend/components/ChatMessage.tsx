@@ -17,6 +17,7 @@ interface ChatMessageProps {
   onThumbsUp?: (messageId: string) => void;
   onThumbsDown?: (messageId: string) => void;
   onRegenerate?: (messageId: string) => void;
+  messageType?: 'USER' | 'ASSISTANT';
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({
@@ -26,7 +27,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   onCopy,
   onThumbsUp,
   onThumbsDown,
-  onRegenerate
+  onRegenerate,
+  messageType
 }) => {
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
@@ -34,20 +36,20 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   };
 
   return (
-    <div className={`flex ${message.type === 'USER' ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex ${messageType === 'USER' ? 'justify-end' : 'justify-start'}`}>
       <div className={`max-w-[80%] rounded-xl p-4 ${
-        message.type === 'USER' 
+        messageType === 'USER' 
           ? 'bg-blue-600 text-white' 
           : 'bg-white text-gray-800 border border-gray-200'
       }`}>
         <div className="whitespace-pre-wrap">
-          {message.type === 'ASSISTANT' && isLatest && isTyping
+          {messageType === 'ASSISTANT' && isLatest && isTyping
             ? <TypingAnimation text={message.content} delay={20} />
             : message.content}
         </div>
         
-        {message.type === 'ASSISTANT' && (
-          <div className="flex gap-3 text-xs opacity-50 mt-2">
+        {messageType === 'ASSISTANT' && (
+          <div className="flex gap-3 text-sm opacity-50 mt-2">
             <GoCopy 
               className="w-4 h-4 cursor-pointer hover:text-blue-600 transition-colors" 
               onClick={handleCopy}
@@ -68,12 +70,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               onClick={() => onRegenerate?.(message.id)}
               title="Regenerate response"
             />
-          </div>
-        )}
-
-        {message.sourceCount && (
-          <div className="text-xs opacity-70 mt-1">
-            Sources: {message.sourceCount}
           </div>
         )}
       </div>
