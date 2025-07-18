@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "fastapi": "fastapi dev src/app/backend/main.py"
+    "fastapi": "fastapi dev src/app/backend/main.py",
+    "postinstall": "npx prisma generate"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
