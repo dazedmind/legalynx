@@ -8,8 +8,9 @@ import Header from './frontend/components/Header';
 import BlurText from './frontend/components/reactbits/BlurText';
 import Image from 'next/image';
 import heroImg from './frontend/img/document-hero.png'
+import Link from 'next/link';
+
 export default function Home() {
-  
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -23,7 +24,9 @@ export default function Home() {
           <span className='flex flex-col items-start justify-center gap-2'>
             <BlurText text="LegalynX" className='text-6xl font-bold font-serif' />
             <p className='text-2xl text-gray-600'>Linking you to legal clarity</p>
-            <Button className='cursor-pointer'>Get Started</Button>
+            <Link href="/frontend/pricing">
+              <Button className='cursor-pointer hover:brightness-110 transition-all duration-300'>Get Started</Button>
+            </Link>
           </span>
   
 

@@ -138,7 +138,7 @@ export default function NavBar() {
                                 </div>
                             )}
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align='end' className='w-48'>
+                        <DropdownMenuContent align='end' className='w-56'>
                             <DropdownMenuLabel className='flex items-center gap-2 text-md font-bold'>
                                     {profile?.profile_picture && (
                                     <Image 
@@ -166,19 +166,19 @@ export default function NavBar() {
                             <DropdownMenuSeparator />
                      
                             <Link href="/frontend/subscription" className='cursor-pointer'>
-                                <DropdownMenuItem className='cursor-pointer'>
+                                <DropdownMenuItem className='cursor-pointer p-2 px-3'>
                                     <GoGift className='w-4 h-4' />
                                     Manage Subscription
                                 </DropdownMenuItem>
                             </Link>
                             <Link href="/frontend/settings" className='cursor-pointer'>
-                                <DropdownMenuItem className='cursor-pointer'>
+                                <DropdownMenuItem className='cursor-pointer p-2 px-3'>
                                     <Settings className='w-4 h-4' />
                                     Settings
                                 </DropdownMenuItem>
                             </Link>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={handleLogout} className='cursor-pointer'>
+                            <DropdownMenuItem onClick={handleLogout} className='cursor-pointer p-2 px-3'>
                                 <LogOut className='w-4 h-4' />
                                 Logout
                             </DropdownMenuItem>

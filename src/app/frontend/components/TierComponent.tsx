@@ -1,11 +1,12 @@
 import React from 'react'
 import { GoCheck } from 'react-icons/go'
 import SpotlightCard from './reactbits/SpotlightCard'
+import Link from 'next/link'
 
 const tierColor: Record<string, string> = {
-  "Starter": "bg-blue-500/10 border-blue-500",
-  "Pro": "bg-blue-500/20 border-blue-500",
-  "Premium": "bg-gradient-to-br from-blue-500/20 to-blue-500/70 border-blue-500",
+  "Basic": "bg-blue-500/5 border-blue-500",
+  "Standard": "bg-blue-500/15 border-blue-500",
+  "Premium": "bg-gradient-to-br from-blue-500/20 to-blue-500/80 border-blue-500",
 }
 
 function TierComponent({ tierName, tierPrice, tierFeatures }: { tierName: string, tierPrice: string, tierFeatures: string[] }) {
@@ -22,9 +23,9 @@ function TierComponent({ tierName, tierPrice, tierFeatures }: { tierName: string
           ))}
       </span>
 
-      <button className='absolute bottom-5 cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-md'>
-        Get Started
-      </button>
+      <Link href="/frontend/login" className='absolute bottom-5 cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-md'>
+          Get Started
+      </Link>
     {/* </div> */}
     </SpotlightCard>
   )

@@ -69,7 +69,6 @@ export default function SessionLoader({
               {stageInfo.icon}
             </div>
             {/* Spinning ring around icon */}
-            <div className="absolute inset-0 border-2 border-transparent border-t-current rounded-full animate-spin opacity-30"></div>
           </div>
         </div>
 

@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Calendar, MessageSquare, AlertCircle, Eye, Trash2, RotateCcw } from 'lucide-react';
+import { FileText, Calendar, MessageSquare, AlertCircle, Eye, Trash2, RotateCcw, MessageSquarePlus } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -38,6 +38,8 @@ interface SavedChatHistoryProps {
   currentSessionId?: string;
   onDocumentSelect: (documentId: string) => void;
   currentDocumentId: string;
+  handleNewChat?: () => void;
+
 }
 
 export default function SavedChatHistory({ 
@@ -45,7 +47,8 @@ export default function SavedChatHistory({
   onSessionSelect,
   currentSessionId,
   onDocumentSelect,
-  currentDocumentId
+  currentDocumentId,
+  handleNewChat
 }: SavedChatHistoryProps) {
   const { isAuthenticated, user } = useAuth();
   const [savedSessions, setSavedSessions] = useState<SavedChatSession[]>([]);
@@ -243,15 +246,30 @@ export default function SavedChatHistory({
             {savedSessions.length} conversation{savedSessions.length !== 1 ? 's' : ''} with saved documents
           </p>
         </div>
-        <button
-          onClick={loadSavedSessions}
-          disabled={isLoading}
-          className="flex items-center px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors disabled:opacity-50 cursor-pointer"
-          title="Refresh chat history"
-        >
-          <RotateCcw className="w-4 h-4 mr-2" />
-          Refresh
-        </button>
+        
+        <span className='flex items-center gap-2'>
+          <button
+            onClick={loadSavedSessions}
+            disabled={isLoading}
+            className="flex items-center px-3 py-2 text-sm bg-yellow-100/50 text-yellow-700 rounded-md hover:bg-yellow/60 transition-colors disabled:opacity-50 cursor-pointer"
+            title="Refresh chat history"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Refresh
+          </button>
+
+          <button
+            onClick={() => handleNewChat?.()}
+            disabled={isLoading}
+            className="flex items-center px-3 py-2 text-sm bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-md hover:bg-blue-200 disabled:opacity-50 cursor-pointer"
+            title="Add a new chat"
+          >
+            <MessageSquarePlus className="w-4 h-4 mr-2" />
+            New Chat
+          </button>
+       
+        </span>
+   
       </div>
 
       {/* Error State */}

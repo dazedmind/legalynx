@@ -243,6 +243,7 @@ export default function Home() {
                 onDocumentSelect={handleDocumentSelect}
                 onSessionSelect={handleSessionSelect}
                 currentDocumentId={currentDocumentId || ''}
+                handleNewChat={handleNewChat}
               />
             )}
           </div>

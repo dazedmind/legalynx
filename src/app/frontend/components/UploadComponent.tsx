@@ -5,6 +5,7 @@ import { apiService, handleApiError, UploadResponse } from '../lib/api';
 import { useAuth } from '@/lib/context/AuthContext';
 import { toast } from 'sonner';
 import { authUtils } from '@/lib/auth';
+import BlurText from './reactbits/BlurText';
 
 interface UploadPageProps {
   onUploadSuccess: (response: UploadResponse) => void;
@@ -210,7 +211,11 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
         <div className="space-y-6">
 
             <div>
-                <h1 className='font-serif text-2xl font-bold text-gray-900'>To get started, upload a PDF document below</h1>
+                <BlurText
+                    text="To get started, upload a PDF document below"
+                    className='font-serif text-2xl font-bold text-gray-900'
+                    delay={100}
+                />
             </div>
             {/* Upload Area */}
             <div
@@ -277,7 +282,7 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
                 )}
             </button>
    
-            <div className="mt-4 p-4 flex gap-4 items-center bg-gray-50 border-dashed border-2 border-neutral-400 rounded-md text-neutral-800 text-sm">
+            <div className="mt-4 p-4 flex gap-4 items-center bg-yellow-100 border-dashed border-2 border-yellow rounded-md text-neutral-800 text-sm">
                 <MessageSquareDashed className="w-10 h-10 mt-0.5 flex-shrink-0" />
                 <span className="flex flex-col">
                     <p className="font-medium">Session Only Mode</p>

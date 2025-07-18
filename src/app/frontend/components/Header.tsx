@@ -20,8 +20,8 @@ function Header() {
             </Link>
         </div>
       </div>
-      <div className="flex items-center space-x-4">
-        <div className="hidden md:flex items-center space-x-10 text-sm text-gray-600">
+      <div className="flex items-center space-x-2">
+        <div className="hidden md:flex items-center space-x-8 text-sm text-gray-600">
           <Link href="/frontend/pricing">
             <div>
               Pricing
@@ -56,7 +56,7 @@ function Header() {
               </HoverCardContent>
             </HoverCard>
           <Link href="/frontend/login">
-            <button className='cursor-pointer bg-yellow text-white px-4 py-2 rounded-md'>Sign In</button>
+            <button className='cursor-pointer bg-gradient-to-tr from-yellow-500 to-yellow-300 hover:brightness-110 transition-all duration-300 text-white px-4 py-2 rounded-md'>Sign In</button>
           </Link>
         </div>
       </div>

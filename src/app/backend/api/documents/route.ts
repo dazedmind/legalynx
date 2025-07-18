@@ -147,7 +147,7 @@ export async function DELETE(request: NextRequest) {
       data: {
         user_id: user.id,
         action: 'DOCUMENT_DELETE',
-        details: `Deleted document: ${document.original_file_name} (Status: ${document.status}, S3: ${s3DeletionResult.reason})`,
+        details: `Deleted document: ${document.original_file_name}`,
         ip_address: request.headers.get('x-forwarded-for') || 
                   request.headers.get('x-real-ip') || 
                   'unknown',

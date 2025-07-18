@@ -23,13 +23,13 @@ function Pricing() {
             />
             <div className='flex items-start justify-start gap-6'>
                 <TierComponent 
-                    tierName="Starter" 
+                    tierName="Basic" 
                     tierPrice="Free" 
                     tierFeatures={["Upload documents", "Chat with Lynx AI", "Limited Queries per session", "100 messages"]} 
                 />
 
                 <TierComponent 
-                    tierName="Pro" 
+                    tierName="Standard" 
                     tierPrice="P 129.00/month" 
                     tierFeatures={["Upload documents", "Chat with Lynx AI", "Extended Limit per session", "Access to Chat History", "up to 300 messages"]} 
                 />

@@ -3,13 +3,13 @@ import axios, { AxiosError } from 'axios';
 import { authUtils } from '@/lib/auth';
 
 // API base URLs
-const MAIN_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-const RAG_API_BASE_URL = 'http://localhost:8000'; // Your existing RAG system
+const MAIN_API_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const RAG_API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'; // Your existing RAG system
 
 // Main API instance (for database operations)
 export const mainApi = axios.create({
   baseURL: MAIN_API_BASE_URL,
-  timeout: 30000,
+  timeout: 90000,
 });
 
 // RAG API instance (for your existing RAG system)
@@ -393,6 +393,15 @@ export const profileService = {
     } catch (error) {
       throw new Error('Failed to delete account');
     }
+  },
+
+  async getSecurityLogs(): Promise<{ logs: SecurityLog[] }> {
+    try {
+      const response = await mainApi.get<{ logs: SecurityLog[] }>('/backend/api/security-logs');
+      return response.data;
+    } catch (error) {
+      throw new Error('Failed to fetch security logs');
+    }
   }
 };
 
@@ -448,3 +457,15 @@ export interface UpdateProfileResponse {
   user: Partial<UserProfile>;
 }
 
+export interface SecurityLog {
+  id: string;
+  user_id: string;
+  action: string;
+  details: string;
+  ip_address: string;
+  created_at: string;
+  user: {
+    name: string;
+    email: string;
+  }
+}

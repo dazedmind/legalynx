@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
                 data: {
                     user_id: user.id,
                     action: 'DOCUMENT_UPLOAD',
-                    details: `Saved document to cloud storage: ${document.original_file_name} (S3 Key: ${savedDocument.s3_key})`,
+                    details: `Saved document to cloud storage: ${document.original_file_name}`,
                     ip_address: request.headers.get('x-forwarded-for') || 
                               request.headers.get('x-real-ip') || 
                               'unknown',
