@@ -59,10 +59,10 @@ async function saveDocumentToS3(document: any): Promise<any> {
           console.log('🔄 Attempting S3Service.uploadFile...');
           try {
             // Most S3 services expect (key, buffer, contentType) or (key, filePath, options)
-            s3Result = await S3Service.uploadFile(s3Key, buffer, contentType);
+            s3Result = await S3Service.uploadFile(buffer, s3Key, contentType, document.owner_id);
           } catch (error) {
             console.log('🔄 Retry with file path...');
-            s3Result = await S3Service.uploadFile(s3Key, document.file_path, contentType);
+            s3Result = await S3Service.uploadFile(document.file_path, s3Key, contentType, document.owner_id);
           }
         }
         // Method 2: Try upload method

@@ -1,8 +1,8 @@
-// src/app/backend/api/documents/[id]/file/route.ts - Fixed with local file fallback
+// src/app/backend/api/documents/[id]/file/route.ts - Fixed with correct S3Service methods
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
-import { S3Service } from '@/lib/s3';
+import { S3Service } from '@/lib/s3'; // ✅ Using named import
 import fs from 'fs';
 import path from 'path';
 
@@ -28,11 +28,11 @@ async function getUserFromToken(request: NextRequest) {
 // GET /backend/api/documents/[id]/file
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
-    const documentId = params.id;
+    const { id: documentId } = await params; // ✅ FIX: Handle async params
 
     if (!documentId) {
       return NextResponse.json({ error: 'Document ID required' }, { status: 400 });
@@ -73,7 +73,9 @@ export async function GET(
         
         try {
           console.log(`📁 Attempting S3 retrieval for key: ${s3Key}`);
-          fileBuffer = await S3Service.getFileBuffer(s3Key);
+          // ✅ FIX: Use correct method name and extract buffer from result
+          const s3Result = await S3Service.downloadFile(s3Key);
+          fileBuffer = s3Result.buffer;
           fileSource = 'S3';
           console.log(`✅ Retrieved from S3, size: ${fileBuffer.length} bytes`);
         } catch (s3Error) {
@@ -223,11 +225,11 @@ export async function GET(
 // Alternative endpoint: /documents/[id]/download - Returns a presigned URL (S3 only)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
-    const documentId = params.id;
+    const { id: documentId } = await params; // ✅ FIX: Handle async params
 
     if (!documentId) {
       return NextResponse.json({ error: 'Document ID required' }, { status: 400 });
@@ -269,11 +271,10 @@ export async function POST(
     }
 
     try {
-      // Generate presigned URL valid for 1 hour
-      const presignedUrl = await S3Service.getPresignedDownloadUrl(
+      // ✅ FIX: Use correct method name and parameters
+      const presignedUrl = await S3Service.getSignedDownloadUrl(
         s3Key, 
-        document.original_file_name, 
-        3600 // 1 hour
+        3600 // 1 hour - this is the correct parameter signature
       );
 
       return NextResponse.json({

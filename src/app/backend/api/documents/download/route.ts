@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
-import S3Service from '@/lib/s3';
+import { S3Service } from '@/lib/s3'; // ✅ Using named import as requested
 
 // Helper function to get user from token
 async function getUserFromToken(request: NextRequest) {
@@ -81,7 +81,7 @@ export async function GET(
     const method = searchParams.get('method') || 'direct';
 
     if (method === 'signed-url') {
-      // Return a signed URL for client-side download
+      // ✅ FIX: Use correct method name and parameter type
       const signedUrl = await S3Service.getSignedDownloadUrl(document.s3_key, 3600); // 1 hour
       
       return NextResponse.json({
@@ -90,7 +90,7 @@ export async function GET(
         expiresIn: 3600
       });
     } else {
-      // Direct download through server
+      // ✅ FIX: Use correct method name
       const fileData = await S3Service.downloadFile(document.s3_key);
 
       // Log download event
@@ -106,7 +106,7 @@ export async function GET(
         }
       });
 
-      // Return file as response
+      // ✅ FIX: Use correct property names from S3DownloadResult interface
       return new NextResponse(fileData.buffer, {
         status: 200,
         headers: {

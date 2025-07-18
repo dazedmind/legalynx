@@ -25,11 +25,11 @@ async function getUserFromToken(request: NextRequest) {
 // GET /backend/api/documents/check/[id]
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
-    const documentId = params.id;
+    const documentId = (await params).id;
 
     if (!documentId) {
       return NextResponse.json({ error: 'Document ID required' }, { status: 400 });

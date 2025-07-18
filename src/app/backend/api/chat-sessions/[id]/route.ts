@@ -25,11 +25,11 @@ async function getUserFromToken(request: NextRequest) {
 // GET /backend/api/chat-sessions/[id]
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
-    const sessionId = params.id;
+    const sessionId = (await params).id;
 
     // Validate sessionId
     if (!sessionId) {
@@ -154,11 +154,11 @@ export async function PATCH(
 // DELETE /backend/api/chat-sessions/[id]
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
-    const sessionId = params.id;
+    const sessionId = (await params).id;
 
     // Validate sessionId
     if (!sessionId) {
