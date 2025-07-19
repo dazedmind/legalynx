@@ -59,7 +59,7 @@ function ProfileSettings() {
     
         <section className='flex flex-col-reverse md:flex-row space-x-50 px-2 md:px-10 h-full overflow-y-auto overflow-x-hidden'>
          
-            <div>
+            <div className='w-full md:w-auto flex flex-col mt-6 md:mt-0'>
                 <InputField 
                     label="Name" 
                     type="text" 
@@ -121,7 +121,13 @@ function ProfileSettings() {
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
                     value={confirmNewPassword}
                 />
-         
+
+                <button onClick={handleSaveProfile} className='block md:hidden w-fit p-2 m-2 border bg-gradient-to-bl from-blue-500 to-blue-800 text-white rounded-md text-sm cursor-pointer'>
+                    <span className='flex items-center gap-2'>
+                        <Save className='w-4 h-4' />
+                        Save Changes
+                    </span>
+                </button>
             </div>   
 
             <div className='flex flex-col justify-between'>
@@ -140,7 +146,7 @@ function ProfileSettings() {
                    
                 </div>
                 <div className='flex flex-col justify-end'>
-                    <button onClick={handleSaveProfile} className='w-fit mt-5 p-2 border bg-gradient-to-bl from-blue-500 to-blue-800 text-white rounded-md text-sm cursor-pointer'>
+                    <button onClick={handleSaveProfile} className='hidden md:block w-fit mt-5 p-2 border bg-gradient-to-bl from-blue-500 to-blue-800 text-white rounded-md text-sm cursor-pointer'>
                         <span className='flex items-center gap-2'>
                             <Save className='w-4 h-4' />
                             Save Changes

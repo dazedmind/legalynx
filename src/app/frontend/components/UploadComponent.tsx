@@ -210,19 +210,12 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
 
     return (
         <div className="space-y-6">
-
             <div>
                 <BlurText
                     text="To get started, upload a PDF document below"
                     className='font-serif text-2xl font-bold text-gray-900'
                     delay={50}
                 />
-                {/* <SplitText
-                    text="To get started, upload a PDF document below"
-                    className='font-serif text-2xl font-bold text-gray-900'
-                    delay={20}
-                /> */}
-                {/* <h1 className='font-serif text-2xl font-bold text-gray-900'>To get started, upload a PDF document below</h1> */}
             </div>
             {/* Upload Area */}
             <div

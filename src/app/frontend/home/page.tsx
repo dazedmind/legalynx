@@ -157,8 +157,22 @@ export default function Home() {
     <ProtectedRoute>
       <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b flex-shrink-0">
-              <NavBar />
+        <header className="bg-white shadow-sm border-b flex-shrink-0 flex px-6 md:px-0">
+            <div className='flex items-center justify-between'>
+            <button
+                onClick={toggleMobileSidebar}
+                className="lg:hidden bg-white rounded-lg p-2 border"
+              >
+                {isMobileSidebarOpen ? (
+                  <X className="w-6 h-6 text-gray-600" />
+                ) : (
+                  <Menu className="w-6 h-6 text-gray-600" />
+                )}
+              </button>
+            </div>
+              <div className='flex-1 items-center justify-between'>
+                <NavBar />
+              </div>
         </header>
 
         {/* Main Content */}
@@ -166,7 +180,7 @@ export default function Home() {
           {/* Mobile Overlay */}
           {isMobileSidebarOpen && (
             <div 
-              className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+              className="fixed inset-0 bg-black/20 z-40 md:hidden"
               onClick={() => setIsMobileSidebarOpen(false)}
             />
           )}
@@ -227,22 +241,6 @@ export default function Home() {
         
           {/* Main Content Area */}
           <section className="flex-1 flex flex-col overflow-hidden">
-          <div className="lg:hidden bg-white border-b px-4 py-3 flex items-center gap-3">
-            <button
-              onClick={toggleMobileSidebar}
-              className="lg:hidden bg-white ounded-lg p-2 border"
-            >
-              {isMobileSidebarOpen ? (
-                <X className="w-6 h-6 text-gray-600" />
-              ) : (
-                <Menu className="w-6 h-6 text-gray-600" />
-              )}
-            </button>
-            <h1 className="text-lg font-semibold text-gray-800">
-              {menuItems.find(item => item.id === activeTab)?.label}
-            </h1>
-          </div>
-
             {/* Tab Content */}
             <div className="flex-1 overflow-hidden">
               {activeTab === 'upload' && (

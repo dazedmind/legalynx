@@ -72,7 +72,7 @@ function Login() {
                 <h1 className='text-4xl font-bold font-serif'>Sign In</h1>
                 <p className='text-gray-600 mb-4'>Welcome back to LegalynX</p>
 
-                <div className='flex flex-col items-start justify-center gap-4 w-2/3'>
+                <div className='flex flex-col items-start justify-center gap-4 w-full md:not-first:w-2/3'>
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
                         <p className='text-sm text-gray-600'>Email address</p>
                         <Input

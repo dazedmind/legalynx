@@ -48,7 +48,7 @@ export default function Home() {
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b flex-shrink-0">
+      <header className="bg-white shadow-sm border-b flex-shrink-0 px-6 md:px-0">
         <NavBar />
       </header>
 
@@ -60,7 +60,7 @@ export default function Home() {
         {/* Mobile Overlay */}
         {isMobileSidebarOpen && (
           <div 
-            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+            className="lg:hidden fixed inset-0 bg-black/20 z-30"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
         )}
@@ -122,7 +122,7 @@ export default function Home() {
           <div className="lg:hidden bg-white border-b px-4 py-3 flex items-center gap-3">
             <button
               onClick={toggleMobileSidebar}
-              className="lg:hidden bg-white ounded-lg p-2 border"
+              className="lg:hidden bg-white rounded-lg p-2 border"
             >
               {isMobileSidebarOpen ? (
                 <X className="w-6 h-6 text-gray-600" />

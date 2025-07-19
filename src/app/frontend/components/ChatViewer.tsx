@@ -986,7 +986,7 @@ export default function ChatViewer({
               <FileText className={`w-6 h-6 ${documentExists ? 'text-blue-600' : 'text-gray-400'}`} />
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className={`font-semibold ${documentExists ? 'text-gray-900' : 'text-gray-500'}`}>
+                  <h3 className={`text-sm md:text-base font-semibold ${documentExists ? 'text-gray-900' : 'text-gray-500'}`}>
                     {currentDocument.originalName}
                     {!documentExists && ' (Document Deleted)'}
                   </h3>

@@ -11,7 +11,7 @@ const tierColor: Record<string, string> = {
 
 function TierComponent({ tierName, tierPrice, tierFeatures }: { tierName: string, tierPrice: string, tierFeatures: string[] }) {
   return (
-    <SpotlightCard className={`custom-spotlight-card flex flex-col h-100 w-5/6 justify-start items-center border ${tierColor[tierName]} rounded-lg p-10`} spotlightColor="rgba(18, 96, 156, 0.8)">
+    <SpotlightCard className={`custom-spotlight-card flex flex-col h-110 md:h-100 w-10/11 md:w-5/6 justify-start items-center border ${tierColor[tierName]} rounded-lg p-10`} spotlightColor="rgba(18, 96, 156, 0.8)">
 
     {/* <div className={`relative flex flex-col items-center h-100 w-5/6 justify-start border ${tierColor[tierName]} rounded-lg p-10`}> */}
       <h1 className="text-3xl font-bold">{tierName}</h1>

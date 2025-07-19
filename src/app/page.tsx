@@ -20,7 +20,7 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className='flex flex-col md:flex-row items-start mx-10 md:items-center my-30 justify-between gap-10'>
+        <div className='flex flex-col md:flex-row items-start mx-10 md:items-center my-60 md:my-30 justify-between gap-10'>
           <span className='flex flex-col items-start justify-center gap-2'>
             <BlurText text="LegalynX" className='text-5xl md:text-6xl font-bold font-serif' />
             <p className='text-xl md:text-2xl text-gray-600'>Linking you to legal clarity</p>
@@ -30,7 +30,7 @@ export default function Home() {
           </span>
   
 
-          <div>
+          <div className='hidden md:block'>
               <Image 
               src={heroImg} 
               alt="LegalynX Logo" 
@@ -81,12 +81,17 @@ export default function Home() {
       <footer className="bg-white border-t mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center text-sm text-gray-600">
-            <p>RAG Pipeline - Powered by LlamaIndex, Google Gemini & Next.js</p>
+            <p>LegalynX - Powered by GPT 4.1 mini</p>
             <p className="mt-1">
-              Upload a PDF document to get started with intelligent document analysis
+              Your powerful assistant for legal documents
             </p>
+            <span className='text-sm text-gray-600 text-center'>
+              System Developers: <a href="https://github.com/dazedmind" className='text-blue-600'>John Allen Valeña</a> & <a href="https://github.com/" className='text-blue-600'>Kristhia Lastra</a>
+            </span>
           </div>
+         
         </div>
+
       </footer>
     </div>
   );

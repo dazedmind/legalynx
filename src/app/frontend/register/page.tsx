@@ -94,11 +94,11 @@ function Register() {
         </header>
 
         <main className='flex flex-col md:flex-row  w-full'>
-            <div className='flex flex-col items-center md:items-start md:ml-60 w-full md:w-1/2 px-0 md:px-10 py-16 justify-center gap-2'>
-                <h1 className='text-4xl font-bold font-serif'>Sign Up</h1>
-                <p className='text-gray-600 mb-4'>Create your account</p>
+        <div className='flex flex-col items-center md:items-start mx-0  md:ml-60 w-full md:w-1/2 px-10 py-18 justify-center gap-2 '>
+        <h1 className='text-4xl font-bold font-serif'>Sign Up</h1>
+                <p className='text-gray-600 mb-4'>Create your account to get started</p>
 
-                <div className='flex flex-col items-start justify-center gap-4 w-2/3'>
+                <div className='flex flex-col items-start justify-center gap-4 w-full md:not-first:w-2/3'>
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
                         <p className='text-sm text-gray-600'>Email address</p>
                         <Input

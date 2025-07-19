@@ -107,7 +107,7 @@ export default function NavBar() {
     }, [user, profile, loading, error]);
 
     return (
-        <div className="px-8 py-4">
+        <div className="px-0 md:px-8 py-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-1">
                     <Image src={logo} alt="LegalynX" width={60} height={60} />
