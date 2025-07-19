@@ -10,7 +10,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  isPaidUser: boolean;
+  subscriptionStatus: string;
   login: (token: string, user: User) => void;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
@@ -78,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     isAuthenticated: !!user && authUtils.isAuthenticated(),
     isLoading,
-    isPaidUser: user?.isPaidUser || false,
+    subscriptionStatus: user?.subscription_status || "BASIC",
     login,
     logout,
     updateUser

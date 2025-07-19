@@ -17,7 +17,7 @@ export default function ProtectedRoute({
   requiresPaid = false,
   fallback 
 }: ProtectedRouteProps) {
-  const { isAuthenticated, isPaidUser, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, subscriptionStatus } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -27,12 +27,12 @@ export default function ProtectedRoute({
         return;
       }
 
-      if (requiresPaid && !isPaidUser) {
+      if (requiresPaid && subscriptionStatus === "BASIC") {
         router.push('/frontend/upgrade'); // Or show upgrade modal
         return;
       }
     }
-  }, [isAuthenticated, isPaidUser, isLoading, router, requiresPaid]);
+  }, [isAuthenticated, subscriptionStatus, isLoading, router, requiresPaid]);
 
   // Show loading spinner while checking auth
   if (isLoading) {
@@ -49,7 +49,7 @@ export default function ProtectedRoute({
   }
 
   // Show fallback if paid required but user is not paid
-  if (requiresPaid && !isPaidUser) {
+  if (requiresPaid && subscriptionStatus === "BASIC") {
     return (
       <div className="text-center p-8">
         <h2 className="text-2xl font-bold mb-4">Premium Feature</h2>
