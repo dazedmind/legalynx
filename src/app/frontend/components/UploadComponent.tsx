@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/context/AuthContext';
 import { toast } from 'sonner';
 import { authUtils } from '@/lib/auth';
 import BlurText from './reactbits/BlurText';
+import SplitText from './reactbits/SplitText';
 
 interface UploadPageProps {
   onUploadSuccess: (response: UploadResponse) => void;
@@ -214,8 +215,14 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
                 <BlurText
                     text="To get started, upload a PDF document below"
                     className='font-serif text-2xl font-bold text-gray-900'
-                    delay={100}
+                    delay={50}
                 />
+                {/* <SplitText
+                    text="To get started, upload a PDF document below"
+                    className='font-serif text-2xl font-bold text-gray-900'
+                    delay={20}
+                /> */}
+                {/* <h1 className='font-serif text-2xl font-bold text-gray-900'>To get started, upload a PDF document below</h1> */}
             </div>
             {/* Upload Area */}
             <div
@@ -263,26 +270,29 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
             </div>
 
             {/* Upload Button */}
-            <button
-                onClick={handleUpload}
-                disabled={!file || isUploading}
-                className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
-                    !file || isUploading
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
-                }`}
-            >
-                {isUploading ? (
-                    <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        {uploadStatus === 'processing' ? statusMessage : 'Uploading...'}
-                    </div>
-                ) : (
-                    'Upload File'
-                )}
-            </button>
-   
-            <div className="mt-4 p-4 flex gap-4 items-center bg-yellow-100 border-dashed border-2 border-yellow rounded-md text-neutral-800 text-sm">
+            {file && (
+                <button
+                    onClick={handleUpload}
+                    disabled={!file || isUploading}
+                    className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
+                        !file || isUploading
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+                    }`}
+                >
+                    {isUploading ? (
+                        <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            {uploadStatus === 'processing' ? statusMessage : 'Uploading...'}
+                        </div>
+                    ) : (
+                        'Upload File'
+                    )}
+                </button>
+            )}
+ 
+                
+            <div className="mt-4 p-4 flex gap-4 items-center bg-neutral-50 border-dashed border-2 border-neutral-300 rounded-md text-neutral-800 text-sm">
                 <MessageSquareDashed className="w-10 h-10 mt-0.5 flex-shrink-0" />
                 <span className="flex flex-col">
                     <p className="font-medium">Session Only Mode</p>

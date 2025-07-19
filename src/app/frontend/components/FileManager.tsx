@@ -23,6 +23,7 @@ import { apiService, handleApiError } from '../lib/api';
 import { useAuth } from '@/lib/context/AuthContext';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { GoInfo } from 'react-icons/go';
 
 interface DocumentInfo {
   id: string;
@@ -197,14 +198,14 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ isOpen, document, onClose }) => {
     <div className="fixed inset-0 z-50 bg-black/20 flex items-center justify-center">
       <div className="bg-white rounded-lg w-2xl h-10/11 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-2 border-b">
+        <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
             <h3 className="font-semibold text-lg">{document.originalName}</h3>
           </div>
           <div className="flex items-center gap-2">
 
-            <Button size="sm" variant="outline" onClick={onClose}>
+            <Button size="sm" variant="outline" onClick={onClose} className='cursor-pointer'>
               <X className="w-4 h-4" />
             </Button>
           </div>
@@ -248,7 +249,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ isOpen, document, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t bg-gray-50">
+        <div className="p-4 border-t bg-gray-50 rounded-b-lg">
           <div className="flex justify-between items-center text-sm text-gray-600">
             <div>
               Size: {(document.size / 1024 / 1024).toFixed(2)} MB
@@ -275,13 +276,11 @@ const FileDetailsModal: React.FC<FileDetailsModalProps> = ({ isOpen, document, o
   if (!isOpen || !document) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg w-full max-w-2xl mx-4">
-        <div className="flex items-center justify-between p-6 border-b">
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+      <div className="bg-white rounded-lg w-full max-w-lg mx-4">
+        <div className="flex items-center gap-2  p-6 border-b">
+          <GoInfo className='w-5 h-5 text-blue-600' />
           <h3 className="text-xl font-semibold">File Details</h3>
-          <Button size="sm" variant="outline" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
         </div>
         
         <div className="p-6 space-y-4">
@@ -341,8 +340,8 @@ const FileDetailsModal: React.FC<FileDetailsModalProps> = ({ isOpen, document, o
           )}
         </div>
         
-        <div className="p-6 border-t bg-gray-50 flex justify-end">
-          <Button onClick={onClose}>Close</Button>
+        <div className="p-4 border-t rounded-lg bg-gray-50 flex justify-end">
+          <Button onClick={onClose} className='cursor-pointer'>Close</Button>
         </div>
       </div>
     </div>

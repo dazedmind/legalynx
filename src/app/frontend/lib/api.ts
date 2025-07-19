@@ -4,7 +4,7 @@ import { authUtils } from '@/lib/auth';
 
 // API base URLs
 const MAIN_API_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-const RAG_API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'; // Your existing RAG system
+const RAG_API_BASE_URL = 'http://localhost:8000'; // Your existing RAG system
 
 // Main API instance (for database operations)
 export const mainApi = axios.create({

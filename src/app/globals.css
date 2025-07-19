@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+
 /* @custom-variant dark (&:is(.dark *)); */
 
 :root {
@@ -157,6 +158,7 @@
       /* For browsers that support mask-image */
       mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
       -webkit-mask-image: linear-gradient(to bottom, black 20%, transparent 80%);
+      font-family: 'Manrope', sans-serif;
     }
   }
   body {

@@ -1,16 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { User, Shield, FileCog, CreditCard, LogOut } from 'lucide-react';
-import { apiService, handleApiError, profileService, SystemStatus, UploadResponse } from '../lib/api';
+import React, { useState } from 'react';
+import { CircleUser, Shield, FileCog, CreditCard, LogOut, Lock, FolderCog } from 'lucide-react';
+import { SystemStatus } from '../lib/api';
 import NavBar from '../components/NavBar';
-import { GoArchive } from 'react-icons/go';
 import FileSettings from './FileSettings'
 import ProfileSettings from './ProfileSettings'
 import SubscriptionPage from './SubscriptionPage'
 import SecuritySettings from './SecuritySettings'
+import PrivacySecuritySettings from './PrivacySecuritySettings'
 
-type ActiveTab = 'profile' | 'file_settings' | 'security_settings' | 'subscription';
+type ActiveTab = 'profile' | 'file_settings' | 'security_log' | 'security_settings' | 'subscription';
 
 export default function Home() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
@@ -49,7 +49,7 @@ export default function Home() {
                 : 'text-gray-700 hover:bg-gray-200'
             }`}
           >
-            <User className="w-5 h-5" />
+            <CircleUser className="w-6 h-6" strokeWidth={1.5} />
             Profile Settings
           </button>
 
@@ -61,8 +61,20 @@ export default function Home() {
                 : 'text-gray-700 hover:bg-gray-200'
             }`}
           >
-            <FileCog className="w-6 h-6" />
+            <FolderCog className="w-6 h-6" strokeWidth={1.5} />
             File Settings
+          </button>
+
+          <button
+            onClick={() => handleTabClick('security_log')}
+            className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+              activeTab === 'security_log'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <Shield className="w-6 h-6" strokeWidth={1.5} />
+            Security Log
           </button>
 
           <button
@@ -73,9 +85,10 @@ export default function Home() {
                 : 'text-gray-700 hover:bg-gray-200'
             }`}
           >
-            <Shield className="w-6 h-6" />
-            Security
+            <Lock className="w-6 h-6" strokeWidth={1.5} />
+            Privacy & Security
           </button>
+
 
           <button
             onClick={() => handleTabClick('subscription')}
@@ -85,13 +98,13 @@ export default function Home() {
                 : 'text-gray-700 hover:bg-gray-200'
             }`}
           >
-            <CreditCard className="w-6 h-6" />
+            <CreditCard className="w-6 h-6" strokeWidth={1.5} />
             Subscription
           </button>
           <div className="mt-auto space-y-3">
             <button
               onClick={logout}
-              className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg text-orange-600 hover:bg-orange-50 border border-orange-200 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg text-red-600 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
               Sign out
@@ -100,16 +113,19 @@ export default function Home() {
         </aside>
         
         {/* Main Content Area */}
-        <section className="flex-1 flex flex-col justify-between overflow-y-auto">
-          <div>
+        <section className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
             {activeTab === 'profile' && 
             <ProfileSettings />}
 
             {activeTab === 'file_settings' && 
             <FileSettings />}
 
-            {activeTab === 'security_settings' && 
+            {activeTab === 'security_log' && 
             <SecuritySettings />}
+
+            {activeTab === 'security_settings' && 
+            <PrivacySecuritySettings />}
 
             {activeTab === 'subscription' && 
             <SubscriptionPage />}

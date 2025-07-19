@@ -59,7 +59,7 @@ export default function SessionLoader({
   const stageInfo = getStageInfo();
 
   return (
-    <div className="h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 p-8">
+    <div className="h-full flex flex-col items-center justify-center p-8">
       <div className="max-w-md w-full text-center">
         
         {/* Animated Icon */}
@@ -68,7 +68,6 @@ export default function SessionLoader({
             <div className="animate-pulse">
               {stageInfo.icon}
             </div>
-            {/* Spinning ring around icon */}
           </div>
         </div>
 

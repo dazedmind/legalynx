@@ -323,40 +323,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 
           {/* Control Buttons */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Zoom Controls */}
-            <div className="flex items-center gap-1 px-2 py-1 bg-white rounded border">
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                onClick={handleZoomOut} 
-                disabled={zoom <= 25}
-                className="h-8 w-8 p-0"
-              >
-                <ZoomOut className="w-4 h-4" />
-              </Button>
-              <span className="text-sm font-medium min-w-[50px] text-center">
-                {zoom}%
-              </span>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                onClick={handleZoomIn} 
-                disabled={zoom >= 300}
-                className="h-8 w-8 p-0"
-              >
-                <ZoomIn className="w-4 h-4" />
-              </Button>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                onClick={handleZoomReset}
-                className="h-8 w-8 p-0"
-                title="Reset zoom"
-              >
-                <Home className="w-4 h-4" />
-              </Button>
-            </div>
-
+       
             {/* Action Controls */}
             <div className="flex items-center gap-1">
               <Button 
@@ -419,7 +386,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                 size="sm" 
                 variant="outline" 
                 onClick={onClose}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </Button>

@@ -57,7 +57,7 @@ function ProfileSettings() {
             <p className='text-sm text-gray-500'>Manage your profile information and settings.</p>
         </span>
     
-        <section className='flex flex-row space-x-30 px-10 h-full overflow-y-auto'>
+        <section className='flex flex-row space-x-50 px-10 h-full overflow-y-auto'>
          
             <div>
                 {/* <h2 className='text-lg font-bold'>Profile Information</h2> */}
@@ -126,7 +126,7 @@ function ProfileSettings() {
             </div>   
 
             <div className='flex flex-col justify-between'>
-                <div className='p-4'>
+                <div className='flex flex-col items-center gap-4'>
                     <Image 
                     src={avatar} 
                     alt="Profile" 
@@ -134,6 +134,11 @@ function ProfileSettings() {
                     height={100} 
                     className='w-30 h-30 rounded-full'
                     />
+                    <span>
+                        <p className='text-sm text-blue-500'>Set your profile picture</p>
+                        <p className='text-xs text-gray-500'>JPG, PNG, or GIF, max 1MB</p>
+                    </span>
+                   
                 </div>
                 <div className='flex flex-col justify-end'>
                     <button onClick={handleSaveProfile} className='w-fit mt-5 p-2 border bg-gradient-to-bl from-blue-500 to-blue-800 text-white rounded-md text-sm cursor-pointer'>

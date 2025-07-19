@@ -2,19 +2,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FileText, AlertCircle, Plus, ArrowUp, Zap, Cloud, Download } from 'lucide-react';
+import { FileText, AlertCircle, Plus, ArrowUp, Cloud } from 'lucide-react';
 import { apiService, handleApiError, AnalysisResponse, RerankDemo, UploadResponse } from '../lib/api';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
-import { GoDownload } from 'react-icons/go';
-import UploadPage from './UploadComponent';
 import { useRAGCache } from '@/lib/ragCacheService';
 import ConfirmationModal from './ConfirmationModal';
 import { ChatContainer } from './ChatContainer';
 import SessionLoader from './SessionLoader'; // Import the new loader
-import { DownloadCloud, CloudCheck, AudioLines } from 'lucide-react';
-import Link from 'next/link';
+import { CloudCheck, AudioLines } from 'lucide-react';
+import { ModalType } from './ConfirmationModal';
 
 interface ChatMessage {
   id: string;
@@ -51,7 +49,6 @@ interface CombinedComponentProps {
   onUploadSuccess: (response: UploadResponse) => void;
   onSessionDelete?: (sessionId: string) => void;
   selectedSessionId?: string;
-  resetToUpload?: boolean;
   handleNewChat?: () => void;
 }
 
@@ -63,7 +60,6 @@ export default function ChatViewer({
   onUploadSuccess, 
   onSessionDelete,
   selectedSessionId, 
-  resetToUpload,
   handleNewChat
 }: CombinedComponentProps) {
   const { isAuthenticated, user } = useAuth();
@@ -79,7 +75,6 @@ export default function ChatViewer({
   const [documentExists, setDocumentExists] = useState(true);
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
-  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [savedSessions, setSavedSessions] = useState<SavedChatSession[]>([]);
 
   // ✅ NEW: Loading stage tracking
@@ -97,21 +92,19 @@ export default function ChatViewer({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaveTimestamp, setLastSaveTimestamp] = useState(Date.now());
 
-  // RAG cache status display
-  const [showCacheStats, setShowCacheStats] = useState(false);
-
   // Modal state for confirmation
   const [confirmationModalConfig, setConfirmationModalConfig] = useState<{
     header: string;
     message: string;
     trueButton: string;
     falseButton: string;
+    type: string;
     onConfirm: () => void;
   } | null>(null);
 
   // Handler to open confirmation modal
   const openConfirmationModal = (
-    config: { header: string; message: string; trueButton: string; falseButton: string; },
+    config: { header: string; message: string; trueButton: string; falseButton: string; type: string; },
     onConfirm: () => void
   ) => {
     setConfirmationModalConfig({ ...config, onConfirm });
@@ -868,14 +861,6 @@ export default function ChatViewer({
     }
   };
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
   // Get cache status for current document
   const getCacheStatus = () => {
     if (!currentDocument) return null;
@@ -990,7 +975,6 @@ export default function ChatViewer({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Rest of your existing ChatViewer JSX remains the same... */}
       {/* Fixed Document Header */}
       <div className="flex-shrink-0 bg-white p-4">
         {currentDocument ? (
@@ -1035,6 +1019,7 @@ export default function ChatViewer({
                       message: 'Save this document to your account for permanent access across all your devices. The document will be securely stored in cloud storage.',
                       trueButton: 'Save File',
                       falseButton: 'Cancel',
+                      type: ModalType.SAVE,
                     },
                     handleSaveFile
                   )}
@@ -1060,6 +1045,7 @@ export default function ChatViewer({
                     message: 'You have unsaved changes. Are you sure you want to discard all files and start a new chat?',
                     trueButton: 'Discard Files',
                     falseButton: 'Cancel',
+                    type: ModalType.DANGER,
                   },
                   async () => {
                     if (currentSessionId) {
@@ -1071,7 +1057,7 @@ export default function ChatViewer({
                     }
                   }
                 ) : () => {if (handleNewChat) {handleNewChat()}}}
-                className="flex items-center cursor-pointer p-2 px-3 text-sm bg-gradient-to-bl from-yellow to-yellow-600 text-white rounded-lg hover:bg-blue-500 transition-all duration-300"
+                className="flex items-center cursor-pointer p-2 px-3 text-sm bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-lg"
               >
                 <Plus className="w-3 h-3 mr-1" />
                 New Chat
@@ -1083,30 +1069,6 @@ export default function ChatViewer({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {!currentDocument ? (
-          <div className="flex-1 flex flex-col justify-center p-8 max-w-2xl mx-auto w-full">
-            <UploadPage onUploadSuccess={(response: UploadResponse) => {
-              const documentInfo = {
-                id: response.documentId,
-                filename: response.filename,
-                originalName: response.originalName || response.filename,
-                size: response.size || 0,
-                uploadedAt: response.uploadedAt || new Date().toISOString(),
-                pages: response.pages_processed,
-                status: response.status,
-                databaseId: response.documentId
-              };
-              
-              setCurrentDocument(documentInfo);
-              setDocumentExists(true);
-              
-              onUploadSuccess(response);
-              
-              toast.success('Document uploaded and ready to chat!');
-            }} />
-          </div>
-        ) : (
-          <>
             {!documentExists && (
               <div className="flex-shrink-0 bg-red-50 border-b border-red-200 p-4">
                 <div className="flex items-center text-red-700">
@@ -1133,20 +1095,23 @@ export default function ChatViewer({
                   <div className="flex-1">
                     <textarea
                       value={query}
+                      onKeyDown={handleKeyPress}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder="Ask a question about the uploaded document..."
                       rows={2}
-                      className="w-full px-3 py-2 h-16 border border-gray-300 rounded-md focus:outline-none resize-none"
+                      className="w-full px-3 py-2 h-24 border border-gray-300 rounded-xl  focus:outline-none resize-none"
                     />
                   </div>
                   <button
                     // onClick={() => {handleQuery()}}
                     // disabled={isQuerying || !query.trim() || !documentExists}
+                    title="Voice Chat with Lynx AI"
                     className="flex items-center absolute right-18 top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-gradient-to-tl from-yellow to-yellow-600 text-white hover:bg-blue-700 h-fit"
                   >
                     <AudioLines className="w-6 h-6"/>
                   </button>
                   <button
+                    
                     onClick={() => {handleQuery()}}
                     disabled={isQuerying || !query.trim() || !documentExists}
                     className="flex items-center absolute group right-5 top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed h-fit"
@@ -1156,8 +1121,7 @@ export default function ChatViewer({
                 </div>
               )}
             </div>
-          </>
-        )}
+          
 
         {/* Confirmation Modal */}
         {confirmationModalConfig && (
@@ -1170,6 +1134,7 @@ export default function ChatViewer({
               message: confirmationModalConfig.message,
               trueButton: confirmationModalConfig.trueButton,
               falseButton: confirmationModalConfig.falseButton,
+              type: confirmationModalConfig.type,
             }}
           />
         )}

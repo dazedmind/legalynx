@@ -20,6 +20,7 @@ export interface UserProfile {
       try {
         console.log('🔍 ProfileService: Fetching profile...');
         const response = await mainApi.get<UserProfile>('/backend/api/profile');
+
         console.log('✅ ProfileService: Success:', response.data);
         return response.data;
       } catch (error) {

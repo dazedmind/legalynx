@@ -8,7 +8,7 @@ interface UploadPageProps {
 
 function UploadPage({ onUploadSuccess }: UploadPageProps) {
   return (
-    <div className="flex-1 flex flex-col justify-center p-8 max-w-2xl mx-auto my-12 w-full">
+    <div className="flex-1 flex flex-col justify-center p-8 max-w-2xl mx-auto my-18 w-full">
         <UploadComponent onUploadSuccess={response => {
           onUploadSuccess(response);
         }} />

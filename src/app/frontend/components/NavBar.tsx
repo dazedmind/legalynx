@@ -93,7 +93,6 @@ export default function NavBar() {
         }
         if (profile?.email) return profile.email[0]?.toUpperCase() || '';
         if (user?.email) return user.email[0]?.toUpperCase() || '';
-        return 'U';
     };
 
     // Debug: Log current state

@@ -6,11 +6,11 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  emailVerified: boolean;
+  email_verified: boolean;
   status: string;
-  isPaidUser: boolean;
-  profilePicture?: string;
-  jobTitle?: string;
+  subscription_status: string;
+  profile_picture?: string;
+  job_title?: string;
 }
 
 export const AUTH_COOKIE_NAME = 'legalynx_token';
@@ -68,7 +68,7 @@ export const authUtils = {
   // Check if user is paid
   isPaidUser: (): boolean => {
     const user = authUtils.getUser();
-    return user?.isPaidUser || false;
+    return user?.subscription_status === 'PREMIUM' || false;
   },
 
   // Clear authentication

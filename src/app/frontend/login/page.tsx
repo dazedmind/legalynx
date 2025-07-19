@@ -68,7 +68,7 @@ function Login() {
         </header>
 
         <main className='flex flex-col md:flex-row  w-full'>
-            <div className='flex flex-col items-center md:items-start mx-0  md:ml-60 w-full md:w-1/2 px-10 py-20 justify-center gap-2 '>
+            <div className='flex flex-col items-center md:items-start mx-0  md:ml-60 w-full md:w-1/2 px-10 py-20 my-10 justify-center gap-2 '>
                 <h1 className='text-4xl font-bold font-serif'>Sign In</h1>
                 <p className='text-gray-600 mb-4'>Welcome back to LegalynX</p>
 

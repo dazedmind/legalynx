@@ -10,7 +10,7 @@ import { GoArchive, GoComment, GoFile, GoFileDirectory, GoHistory } from "react-
 import NavBar from '../components/NavBar';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '@/lib/context/AuthContext';
-import { Plus } from 'lucide-react';
+import { LogOut, Plus } from 'lucide-react';
 import UploadPage from '../components/UploadPage';
 
 type ActiveTab = 'chat' | 'documents' | 'chat_history' | 'upload';
@@ -203,8 +203,9 @@ export default function Home() {
           <div className="mt-auto space-y-3">
             <button
               onClick={logout}
-              className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg text-orange-600 hover:bg-orange-50 border border-orange-200 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg text-red-600 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
             >
+              <LogOut className="w-4 h-4" />
               Sign out
             </button>
           </div>
@@ -225,7 +226,6 @@ export default function Home() {
                 isSystemReady={!!isSystemReady} 
                 onUploadSuccess={handleUploadSuccess}
                 selectedSessionId={currentSessionId || ''} 
-                resetToUpload={resetChatViewer} // ✅ Add this prop
                 handleNewChat={handleNewChat}
               />
             )}
