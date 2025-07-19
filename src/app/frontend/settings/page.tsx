@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CircleUser, Shield, FileCog, CreditCard, LogOut, Lock, FolderCog } from 'lucide-react';
+import { CircleUser, Shield, FileCog, CreditCard, LogOut, Lock, FolderCog, Menu, X } from 'lucide-react';
 import { SystemStatus } from '../lib/api';
 import NavBar from '../components/NavBar';
 import FileSettings from './FileSettings'
@@ -21,14 +21,29 @@ export default function Home() {
   } | null>(null);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('profile');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const handleTabClick = (tab: ActiveTab) => {
     setActiveTab(tab);
+    // Close mobile sidebar when a tab is selected
+    setIsMobileSidebarOpen(false);
   };
 
   const logout = () => {
     console.log('logout');
   };
+
+  const toggleMobileSidebar = () => {
+    setIsMobileSidebarOpen(!isMobileSidebarOpen);
+  };
+
+  const menuItems = [
+    { id: 'profile', label: 'Profile Settings', icon: CircleUser },
+    { id: 'file_settings', label: 'File Settings', icon: FolderCog },
+    { id: 'security_log', label: 'Security Log', icon: Shield },
+    { id: 'security_settings', label: 'Privacy & Security', icon: Lock },
+    { id: 'subscription', label: 'Subscription', icon: CreditCard },
+  ];
 
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col overflow-hidden">
@@ -38,69 +53,58 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="flex bg-white flex-1 overflow-hidden">
+      <main className="flex bg-white flex-1 overflow-hidden relative">
+        {/* Mobile Menu Button */}
+ 
+
+        {/* Mobile Overlay */}
+        {isMobileSidebarOpen && (
+          <div 
+            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
-        <aside className="w-1/5 bg-neutral-100 p-6 gap-2 flex flex-col flex-shrink-0">
-          <button
-            onClick={() => handleTabClick('profile')}
-            className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
-              activeTab === 'profile'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <CircleUser className="w-6 h-6" strokeWidth={1.5} />
-            Profile Settings
-          </button>
+        <aside className={`
+          lg:w-1/5 lg:relative lg:translate-x-0 lg:shadow-none
+          fixed top-0 left-0 h-full w-80 bg-neutral-100 p-6 gap-2 flex flex-col flex-shrink-0 z-40 shadow-2xl
+          transform transition-transform duration-300 ease-in-out
+          ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}>
+          {/* Mobile Header */}
+          <div className="lg:hidden flex items-center justify-between mb-6 pt-4">
+            <h2 className="text-lg font-semibold text-gray-800">Settings</h2>
+            <button
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="p-1 rounded-lg hover:bg-gray-200"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
 
-          <button
-            onClick={() => handleTabClick('file_settings')}
-            className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
-              activeTab === 'file_settings'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <FolderCog className="w-6 h-6" strokeWidth={1.5} />
-            File Settings
-          </button>
+          {/* Menu Items */}
+          <div className="space-y-2">
+            {menuItems.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleTabClick(item.id as ActiveTab)}
+                  className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                    activeTab === item.id
+                      ? 'bg-blue-100 text-blue-700 font-semibold'
+                      : 'text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <IconComponent className="w-6 h-6" strokeWidth={1.5} />
+                  <span className="text-sm lg:text-base">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
 
-          <button
-            onClick={() => handleTabClick('security_log')}
-            className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
-              activeTab === 'security_log'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <Shield className="w-6 h-6" strokeWidth={1.5} />
-            Security Log
-          </button>
-
-          <button
-            onClick={() => handleTabClick('security_settings')}
-            className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
-              activeTab === 'security_settings'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <Lock className="w-6 h-6" strokeWidth={1.5} />
-            Privacy & Security
-          </button>
-
-
-          <button
-            onClick={() => handleTabClick('subscription')}
-            className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
-              activeTab === 'subscription'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <CreditCard className="w-6 h-6" strokeWidth={1.5} />
-            Subscription
-          </button>
+          {/* Logout Button */}
           <div className="mt-auto space-y-3">
             <button
               onClick={logout}
@@ -113,24 +117,31 @@ export default function Home() {
         </aside>
         
         {/* Main Content Area */}
-        <section className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto">
-            {activeTab === 'profile' && 
-            <ProfileSettings />}
-
-            {activeTab === 'file_settings' && 
-            <FileSettings />}
-
-            {activeTab === 'security_log' && 
-            <SecuritySettings />}
-
-            {activeTab === 'security_settings' && 
-            <PrivacySecuritySettings />}
-
-            {activeTab === 'subscription' && 
-            <SubscriptionPage />}
+        <section className="flex-1 flex flex-col overflow-hidden lg:ml-0">
+          {/* Mobile Content Header - Shows active tab */}
+          <div className="lg:hidden bg-white border-b px-4 py-3 flex items-center gap-3">
+            <button
+              onClick={toggleMobileSidebar}
+              className="lg:hidden bg-white ounded-lg p-2 border"
+            >
+              {isMobileSidebarOpen ? (
+                <X className="w-6 h-6 text-gray-600" />
+              ) : (
+                <Menu className="w-6 h-6 text-gray-600" />
+              )}
+            </button>
+            <h1 className="text-lg font-semibold text-gray-800">
+              {menuItems.find(item => item.id === activeTab)?.label}
+            </h1>
           </div>
-              
+
+          <div className="flex-1 overflow-y-auto p-2">
+            {activeTab === 'profile' && <ProfileSettings />}
+            {activeTab === 'file_settings' && <FileSettings />}
+            {activeTab === 'security_log' && <SecuritySettings />}
+            {activeTab === 'security_settings' && <PrivacySecuritySettings />}
+            {activeTab === 'subscription' && <SubscriptionPage />}
+          </div>
         </section>
       </main>
     </div>

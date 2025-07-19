@@ -1,4 +1,4 @@
-// Updated Home page to handle session selection
+// Updated Home page with collapsible mobile sidebar
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -10,7 +10,7 @@ import { GoArchive, GoComment, GoFile, GoFileDirectory, GoHistory } from "react-
 import NavBar from '../components/NavBar';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '@/lib/context/AuthContext';
-import { LogOut, Plus } from 'lucide-react';
+import { LogOut, Plus, Menu, X } from 'lucide-react';
 import UploadPage from '../components/UploadPage';
 
 type ActiveTab = 'chat' | 'documents' | 'chat_history' | 'upload';
@@ -20,10 +20,10 @@ export default function Home() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null); // Add this
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false); // Mobile sidebar state
   const { user, logout } = useAuth();
-  const [resetChatViewer, setResetChatViewer] = useState(false); // Add this
-
+  const [resetChatViewer, setResetChatViewer] = useState(false);
 
   // Clear uploaded files and reset system on page load
   useEffect(() => {
@@ -39,6 +39,18 @@ export default function Home() {
     clearUploadedFiles();
   }, []);
 
+  // Close sidebar when clicking outside on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const loadSystemStatus = async () => {
     setIsLoadingStatus(true);
     try {
@@ -52,26 +64,21 @@ export default function Home() {
     }
   };
 
-    // ✅ NEW: Handle document deletion from FileManager
-    const handleDocumentDeleted = async (deletedDocId: string) => {
-      // If the deleted document was the current one, reset everything
-      if (deletedDocId === currentDocumentId) {
-        setCurrentDocumentId(null);
-        setCurrentSessionId(null);
-        
-        // Switch back to upload tab
-        setActiveTab('upload');
-        
-        // Reset system status
-        try {
-          await apiService.resetSystem();
-          await loadSystemStatus();
-        } catch (error) {
-          console.error('Failed to reset system after document deletion:', error);
-        }
+  const handleDocumentDeleted = async (deletedDocId: string) => {
+    if (deletedDocId === currentDocumentId) {
+      setCurrentDocumentId(null);
+      setCurrentSessionId(null);
+      setActiveTab('upload');
+      
+      try {
+        await apiService.resetSystem();
+        await loadSystemStatus();
+      } catch (error) {
+        console.error('Failed to reset system after document deletion:', error);
       }
-    };
-    // ✅ UPDATED: Pass the new handler to FileManager
+    }
+  };
+
   const handleDocumentSelect = async (docId: string) => {
     setCurrentDocumentId(docId);
     
@@ -82,6 +89,7 @@ export default function Home() {
       
       if (selectedDoc) {
         setActiveTab('chat');
+        setIsMobileSidebarOpen(false); // Close sidebar on mobile after selection
       }
     }
   };
@@ -90,19 +98,12 @@ export default function Home() {
     console.log('📤 Upload success in Home component:', response);
     
     if (response && response.documentId) {
-      // Set the document ID for the newly uploaded document
       setCurrentDocumentId(response.documentId);
-      
-      // Clear any existing session since this is a new document
       setCurrentSessionId(null);
-      
-      // Always switch to chat tab after successful upload
       setActiveTab('chat');
-      
       console.log('🔄 Switched to chat tab for document:', response.documentId);
     }
     
-    // Load system status after upload
     setTimeout(() => {
       loadSystemStatus();
     }, 1000);
@@ -110,19 +111,20 @@ export default function Home() {
 
   const handleNewChat = () => {
     setActiveTab('upload');
-    // Clear current session when starting new chat
     setCurrentSessionId(null);
     setCurrentDocumentId(null);
+    setIsMobileSidebarOpen(false); // Close sidebar on mobile
   };
 
   const handleTabClick = (tab: ActiveTab) => {
     setActiveTab(tab);
+    setIsMobileSidebarOpen(false); // Close sidebar on mobile after tab selection
   };
 
-  // Add this new handler for session selection
   const handleSessionSelect = async (sessionId: string) => {
     setCurrentSessionId(sessionId);
     setActiveTab('chat');
+    setIsMobileSidebarOpen(false); // Close sidebar on mobile
   };
 
   const handleSystemReset = async () => {
@@ -133,123 +135,151 @@ export default function Home() {
     try {
       await apiService.resetSystem();
       setCurrentDocumentId(null);
-      setCurrentSessionId(null); // Also clear session
-      
-
+      setCurrentSessionId(null);
       loadSystemStatus();
     } catch (error) {
+      // Handle error
     }
-
   };
+
+  const toggleMobileSidebar = () => {
+    setIsMobileSidebarOpen(!isMobileSidebarOpen);
+  };
+
+  const menuItems = [
+    { id: 'chat_history', label: 'Chat History', icon: GoArchive },
+    { id: 'documents', label: 'My Documents', icon: GoFileDirectory },
+  ];
 
   const isSystemReady = systemStatus?.pdf_loaded && systemStatus?.index_ready;
 
-
   return (
     <ProtectedRoute>
-    <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b flex-shrink-0">
-        <NavBar />
-      </header>
+      <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b flex-shrink-0">
+              <NavBar />
+        </header>
 
-      {/* Main Content */}
-      <main className="flex bg-white flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-1/5 bg-neutral-100 p-6 flex flex-col border-r border-gray-200 flex-shrink-0">
-          {/* Navigation Buttons */}
-   
-          <div className="space-y-2 mb-8">
-            {/* <button
-              onClick={() => handleTabClick('chat')}
-              className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
-                activeTab === 'chat'
-                  ? 'bg-blue-100 text-blue-700 font-semibold'
-                  : 'text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <GoComment className="w-5 h-5" />
-              Chat with Lynx AI
-              {isSystemReady && (
-                <span className="ml-auto w-2 h-2 bg-green-500 rounded-full"></span>
-              )}
-            </button> */}
+        {/* Main Content */}
+        <main className="flex bg-white flex-1 overflow-hidden relative">
+          {/* Mobile Overlay */}
+          {isMobileSidebarOpen && (
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            />
+          )}
 
+          {/* Sidebar */}
+          <aside className={`
+            fixed md:relative inset-y-0 left-0 z-50 md:z-0
+            w-64 md:w-1/5 bg-neutral-100 p-4 md:p-6 
+            flex flex-col border-r border-gray-200 flex-shrink-0
+            transform transition-transform duration-300 ease-in-out
+            ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          `}>
+            {/* Mobile Close Button */}
             <button
-              onClick={() => handleTabClick('chat_history')}
-              className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
-                activeTab === 'chat_history' || activeTab === 'chat'
-                  ? 'bg-blue-100 text-blue-700 font-semibold'
-                  : 'text-gray-700 hover:bg-gray-200'
-              }`}
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="md:hidden self-end mb-4 p-2 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              <GoArchive className="w-5 h-5" />
-              Chat History
+              <X className="w-5 h-5" />
             </button>
 
-            <button
-              onClick={() => handleTabClick('documents')}
-              className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
-                activeTab === 'documents'
-                  ? 'bg-blue-100 text-blue-700 font-semibold'
-                  : 'text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <GoFileDirectory className="w-5 h-5" />
-              My Documents
-            </button>
-          </div>
+            {/* Navigation Buttons */}
+            <div className="space-y-2 mb-8">
+              <button
+                onClick={() => handleTabClick('chat_history')}
+                className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                  activeTab === 'chat_history' || activeTab === 'chat'
+                    ? 'bg-blue-100 text-blue-700 font-semibold'
+                    : 'text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <GoArchive className="w-5 h-5 flex-shrink-0" />
+                <span className="truncate">Chat History</span>
+              </button>
 
-          <div className="mt-auto space-y-3">
-            <button
-              onClick={logout}
-              className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg text-red-600 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign out
-            </button>
-          </div>
-        </aside>
+              <button
+                onClick={() => handleTabClick('documents')}
+                className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                  activeTab === 'documents'
+                    ? 'bg-blue-100 text-blue-700 font-semibold'
+                    : 'text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <GoFileDirectory className="w-5 h-5 flex-shrink-0" />
+                <span className="truncate">My Documents</span>
+              </button>
+            </div>
+
+            <div className="mt-auto space-y-3">
+              <button
+                onClick={logout}
+                className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg text-red-600 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Sign out</span>
+              </button>
+            </div>
+          </aside>
         
-        {/* Main Content Area */}
-        <section className="flex-1 flex flex-col overflow-hidden">
-          {/* Tab Content */}
-          <div className="flex-1 overflow-hidden">
-            {activeTab === 'upload' && (
-              <UploadPage 
-                onUploadSuccess={handleUploadSuccess}
-              />
-            )}
-            
-            {activeTab === 'chat' && (
-              <ChatViewer 
-                isSystemReady={!!isSystemReady} 
-                onUploadSuccess={handleUploadSuccess}
-                selectedSessionId={currentSessionId || ''} 
-                handleNewChat={handleNewChat}
-              />
-            )}
-
-            {activeTab === 'documents' && (
-              <FileManager 
-                onDocumentSelect={handleDocumentSelect}
-                onDocumentDeleted={handleDocumentDeleted} // ✅ Add this prop
-                currentDocumentId={currentDocumentId || ''}
-              />
-            )}
-
-            {activeTab === 'chat_history' && (
-              <ChatHistory 
-                onDocumentSelect={handleDocumentSelect}
-                onSessionSelect={handleSessionSelect}
-                currentDocumentId={currentDocumentId || ''}
-                handleNewChat={handleNewChat}
-              />
-            )}
+          {/* Main Content Area */}
+          <section className="flex-1 flex flex-col overflow-hidden">
+          <div className="lg:hidden bg-white border-b px-4 py-3 flex items-center gap-3">
+            <button
+              onClick={toggleMobileSidebar}
+              className="lg:hidden bg-white ounded-lg p-2 border"
+            >
+              {isMobileSidebarOpen ? (
+                <X className="w-6 h-6 text-gray-600" />
+              ) : (
+                <Menu className="w-6 h-6 text-gray-600" />
+              )}
+            </button>
+            <h1 className="text-lg font-semibold text-gray-800">
+              {menuItems.find(item => item.id === activeTab)?.label}
+            </h1>
           </div>
-        </section>
-      </main>
-    </div>
+
+            {/* Tab Content */}
+            <div className="flex-1 overflow-hidden">
+              {activeTab === 'upload' && (
+                <UploadPage 
+                  onUploadSuccess={handleUploadSuccess}
+                />
+              )}
+              
+              {activeTab === 'chat' && (
+                <ChatViewer 
+                  isSystemReady={!!isSystemReady} 
+                  onUploadSuccess={handleUploadSuccess}
+                  selectedSessionId={currentSessionId || ''} 
+                  handleNewChat={handleNewChat}
+                />
+              )}
+
+              {activeTab === 'documents' && (
+                <FileManager 
+                  onDocumentSelect={handleDocumentSelect}
+                  onDocumentDeleted={handleDocumentDeleted}
+                  currentDocumentId={currentDocumentId || ''}
+                />
+              )}
+
+              {activeTab === 'chat_history' && (
+                <ChatHistory 
+                  onDocumentSelect={handleDocumentSelect}
+                  onSessionSelect={handleSessionSelect}
+                  currentDocumentId={currentDocumentId || ''}
+                  handleNewChat={handleNewChat}
+                />
+              )}
+            </div>
+          </section>
+        </main>
+      </div>
     </ProtectedRoute>
   );
 }

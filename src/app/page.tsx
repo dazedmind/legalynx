@@ -20,10 +20,10 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className='flex items-center my-30 justify-between gap-2'>
+        <div className='flex flex-col md:flex-row items-start mx-10 md:items-center my-30 justify-between gap-10'>
           <span className='flex flex-col items-start justify-center gap-2'>
-            <BlurText text="LegalynX" className='text-6xl font-bold font-serif' />
-            <p className='text-2xl text-gray-600'>Linking you to legal clarity</p>
+            <BlurText text="LegalynX" className='text-5xl md:text-6xl font-bold font-serif' />
+            <p className='text-xl md:text-2xl text-gray-600'>Linking you to legal clarity</p>
             <Link href="/frontend/pricing">
               <Button className='cursor-pointer hover:brightness-110 transition-all duration-300'>Get Started</Button>
             </Link>
@@ -43,7 +43,7 @@ export default function Home() {
 
 
         {/* Features Info */}
-        <div className="mt-8">
+        <div className="my-10">
           <h3 className="text-4xl font-bold text-gray-800 mb-6 text-center">Features</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 ">
             <div className="text-center border-2 border-gray-200 rounded-lg p-6 bg-white">

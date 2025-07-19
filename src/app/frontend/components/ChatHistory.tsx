@@ -261,11 +261,11 @@ export default function SavedChatHistory({
           <button
             onClick={() => handleNewChat?.()}
             disabled={isLoading}
-            className="flex items-center px-3 py-2 text-sm bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-md hover:bg-blue-200 disabled:opacity-50 cursor-pointer"
+            className="md:flex items-center px-3 py-2 gap-2 text-sm bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-md hover:bg-blue-200 disabled:opacity-50 cursor-pointer"
             title="Add a new chat"
           >
-            <MessageSquarePlus className="w-4 h-4 mr-2" />
-            New Chat
+            <MessageSquarePlus className="w-4 h-4" />
+            <span className="hidden md:block">New Chat</span>
           </button>
        
         </span>
@@ -328,7 +328,7 @@ export default function SavedChatHistory({
                         <FileText className="w-4 h-4 mr-1" />
                         <span className="truncate">{session.documentName}</span>
                       </div>
-                      <div className="flex items-center">
+                      <div className="hidden md:flex items-center">
                         <MessageSquare className="w-4 h-4 mr-1" />
                         <span>{session.messageCount} messages</span>
                       </div>

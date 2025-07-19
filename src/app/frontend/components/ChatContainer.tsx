@@ -93,17 +93,11 @@ export function ChatContainer({
         key={message.id}
         className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'}`}
       >
-        <div className={`flex ${isUser ? 'flex-row-reverse' : 'flex-row'} items-start gap-3 max-w-[85%]`}>
+        <div className={`flex ${isUser ? '' : 'flex-row'} items-start gap-3 max-w-[85%]`}>
           
           {/* Avatar */}
-          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-            isUser 
-              ? '' 
-              : 'bg-gray-700 text-white'
-          }`}>
-            {isUser ? (
-              null
-            ) : (
+          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${message.type === "ASSISTANT" ? 'bg-gray-700 text-white' : ''}`}>
+            {message.type === "ASSISTANT" &&(
               <Bot className="w-4 h-4" />
             )}
           </div>

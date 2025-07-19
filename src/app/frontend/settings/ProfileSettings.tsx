@@ -57,10 +57,9 @@ function ProfileSettings() {
             <p className='text-sm text-gray-500'>Manage your profile information and settings.</p>
         </span>
     
-        <section className='flex flex-row space-x-50 px-10 h-full overflow-y-auto'>
+        <section className='flex flex-col-reverse md:flex-row space-x-50 px-2 md:px-10 h-full overflow-y-auto overflow-x-hidden'>
          
             <div>
-                {/* <h2 className='text-lg font-bold'>Profile Information</h2> */}
                 <InputField 
                     label="Name" 
                     type="text" 

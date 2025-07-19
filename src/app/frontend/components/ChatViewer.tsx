@@ -993,18 +993,20 @@ export default function ChatViewer({
                 </div>
                 <p className={`text-sm ${documentExists ? 'text-gray-600' : 'text-red-600'}`}>
                   {documentExists ? (
-                    <>
-                      {currentDocument.pages} pages • Document loaded
+                    <span className="flex items-center gap-2">
+                      <span className="hidden md:block">
+                        {currentDocument.pages} pages • Document loaded
+                      </span>
                       {currentSessionId && currentDocument.status === 'INDEXED' ? (
-                        <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full font-medium">
+                        <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full font-medium">
                           Session Saved
                         </span>
                       ):(
-                        <span className="ml-2 px-2 py-1 text-xs bg-neutral-100 text-neutral-800 border-neutral-300 border-dashed border-2 rounded-full font-medium">
+                        <span className="px-2 py-1 text-xs bg-neutral-100 text-neutral-800 border-neutral-300 border-dashed border-2 rounded-full font-medium">
                           Temporary Session
                         </span>
                       )}
-                    </>
+                    </span>
                   ) : (
                     'Document no longer available. Please upload a new document.'
                   )}
@@ -1057,10 +1059,10 @@ export default function ChatViewer({
                     }
                   }
                 ) : () => {if (handleNewChat) {handleNewChat()}}}
-                className="flex items-center cursor-pointer p-2 px-3 text-sm bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-lg"
+                className="flex items-center cursor-pointer p-2 px-3 gap-1 text-sm bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-lg"
               >
-                <Plus className="w-3 h-3 mr-1" />
-                New Chat
+                <Plus className="w-4 h-4" />
+                <span className="hidden md:block">New Chat</span>
               </button>
             </div>
           </div>  
