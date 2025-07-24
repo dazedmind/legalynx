@@ -13,6 +13,7 @@ import { ChatContainer } from './ChatContainer';
 import SessionLoader from './SessionLoader'; // Import the new loader
 import { CloudCheck, AudioLines } from 'lucide-react';
 import { ModalType } from './ConfirmationModal';
+import VoiceChatComponent from './VoiceChatComponent';
 
 interface ChatMessage {
   id: string;
@@ -50,6 +51,7 @@ interface CombinedComponentProps {
   onSessionDelete?: (sessionId: string) => void;
   selectedSessionId?: string;
   handleNewChat?: () => void;
+  handleVoiceChat?: () => void;
 }
 
 // Add loading stage type
@@ -60,7 +62,8 @@ export default function ChatViewer({
   onUploadSuccess, 
   onSessionDelete,
   selectedSessionId, 
-  handleNewChat
+  handleNewChat,
+  handleVoiceChat
 }: CombinedComponentProps) {
   const { isAuthenticated, user } = useAuth();
   const ragCache = useRAGCache();
@@ -76,6 +79,7 @@ export default function ChatViewer({
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [savedSessions, setSavedSessions] = useState<SavedChatSession[]>([]);
+  const [isVoiceChat, setIsVoiceChat] = useState(false);
 
   // ✅ NEW: Loading stage tracking
   const [loadingStage, setLoadingStage] = useState<LoadingStage>('loading_session');
@@ -158,7 +162,7 @@ export default function ChatViewer({
     }
   }, [chatHistory, currentSessionId, documentExists]);
 
-  const getAuthHeaders = (): HeadersInit => {
+  const getAuthHeaders = (): Record<string, string> => {
     const token = authUtils.getToken();
     const headers: HeadersInit = {
       'Content-Type': 'application/json'
@@ -331,7 +335,7 @@ export default function ChatViewer({
         
         const formattedMessages: ChatMessage[] = sessionData.messages.map((msg: any) => ({
           id: msg.id,
-          type: msg.role,
+          type: msg.role?.toUpperCase() as 'USER' | 'ASSISTANT',
           content: msg.content,
           createdAt: new Date(msg.createdAt), 
           sourceCount: msg.tokensUsed
@@ -447,7 +451,7 @@ export default function ChatViewer({
             const messages = await messagesResponse.json();
             const formattedMessages = messages.map((msg: any) => ({
               id: msg.id,
-              type: msg.role,
+              type: msg.role?.toUpperCase() as 'USER' | 'ASSISTANT',
               content: msg.content,
               createdAt: new Date(msg.createdAt || msg.timestamp)
             }));
@@ -497,6 +501,7 @@ export default function ChatViewer({
           const messages = response.messages || [];
           const formattedMessages = messages.map((msg: any) => ({
             ...msg,
+            type: msg.role?.toUpperCase() as 'USER' | 'ASSISTANT',
             createdAt: new Date(msg.createdAt || msg.timestamp)
           }));
           setChatHistory(formattedMessages);
@@ -752,7 +757,7 @@ export default function ChatViewer({
       setChatHistory(prev => prev.filter(msg => msg.id !== messageId));
       
       // Re-run the query
-      const result = await apiService.queryDocuments(userMessage.content);
+      const result = await apiService.queryDocuments(userMessage.content + "Be more specific and detailed in your response.");
       
       await addMessage({
         type: 'ASSISTANT',
@@ -860,6 +865,12 @@ export default function ChatViewer({
       handleQuery();
     }
   };
+
+  const handleManualInput = () => {
+    loadOrCreateSession();
+    setChatHistory([]);
+    setIsVoiceChat(false);
+  }
 
   // Get cache status for current document
   const getCacheStatus = () => {
@@ -1043,9 +1054,9 @@ export default function ChatViewer({
               <button 
                 onClick={currentDocument.status === 'TEMPORARY' ? () => openConfirmationModal(
                   {
-                    header: 'Unsaved Changes',
+                    header: 'Unsaved Files and Session',
                     message: 'You have unsaved changes. Are you sure you want to discard all files and start a new chat?',
-                    trueButton: 'Discard Files',
+                    trueButton: 'Discard All',
                     falseButton: 'Cancel',
                     type: ModalType.DANGER,
                   },
@@ -1068,7 +1079,18 @@ export default function ChatViewer({
           </div>  
         ) : null}
       </div>
-
+      {isVoiceChat && (
+        <VoiceChatComponent
+          isSystemReady={isSystemReady}
+          getAuthHeaders={getAuthHeaders}
+          checkDocumentExists={checkDocumentExists}
+          handleDocumentDeleted={handleDocumentDeleted}
+          selectedSessionId={selectedSessionId}
+          onSessionCreated={handleNewChat}
+          handleManualInput={handleManualInput}
+          toast={toast}
+        />
+      )}
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
             {!documentExists && (
@@ -1105,7 +1127,7 @@ export default function ChatViewer({
                     />
                   </div>
                   <button
-                    // onClick={() => {handleQuery()}}
+                    onClick={() => {setIsVoiceChat(true)}}
                     // disabled={isQuerying || !query.trim() || !documentExists}
                     title="Voice Chat with Lynx AI"
                     className="flex items-center absolute right-18 top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-gradient-to-tl from-yellow to-yellow-600 text-white hover:bg-blue-700 h-fit"

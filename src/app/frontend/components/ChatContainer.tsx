@@ -87,6 +87,15 @@ export function ChatContainer({
   const renderMessage = (message: ChatMessage) => {
     const isUser = message.type === 'USER';
     const isAssistant = message.type === 'ASSISTANT';
+    
+    // Debug logging to help identify the issue
+    console.log('Rendering message:', {
+      id: message.id,
+      type: message.type,
+      isUser,
+      isAssistant,
+      content: message.content.substring(0, 50)
+    });
 
     return (
       <div

@@ -5,6 +5,10 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add the backend directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -78,7 +82,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     
     Args:
         file: PDF file to upload
-        groq_api_key: Groq API key for LLM
+        google_api_key: Google API key for LLM
     """
     global rag_system, current_pdf_path
     
@@ -253,7 +257,7 @@ def main():
     """
     Main function to run the FastAPI application.
     """
-    print("🚀 Starting RAG Pipeline API with Groq...")
+    print("🚀 Starting RAG Pipeline API with Google...")
     print("📁 Upload a PDF file to get started!")
     
     uvicorn.run(

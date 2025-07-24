@@ -2,7 +2,7 @@ import os
 from typing import List
 from llama_index.core import VectorStoreIndex, Settings
 from llama_index.core.schema import TextNode
-from llama_index.llms.groq import Groq
+from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from rag_pipeline.config import MODEL_CONFIG, SYSTEM_PROMPT
 
@@ -17,9 +17,9 @@ class EmbeddingManager:
         Initialize the embedding manager with LLM and embedding models.
         
         Args:
-            groq_api_key: Groq API key for LLM
+            google_api_key: Google API key for LLM
         """
-        self.groq_api_key = os.getenv("GROQ_API_KEY")
+        self.google_api_key = os.getenv("GOOGLE_API_KEY")
         self.embed_model = None
         self.llm = None
         self._setup_models()
@@ -37,34 +37,31 @@ class EmbeddingManager:
         print(f"✅ Embedding model loaded: {MODEL_CONFIG['embedding_model']}")
         
         # Validate API key
-        if not self.groq_api_key:
-            raise ValueError("❌ GROQ_API_KEY not found! Please set GROQ_API_KEY environment variable.")
+        if not self.google_api_key:
+            raise ValueError("❌ GOOGLE_API_KEY not found! Please set GOOGLE_API_KEY environment variable.")
         
-        if not self.groq_api_key.startswith('gsk_'):
-            raise ValueError(f"❌ Invalid Groq API key format. Expected 'gsk_...', got: {self.groq_api_key[:10]}...")
-
-        print(f"🔑 Using Groq API key: {self.groq_api_key[:20]}...")
+        # print(f"🔑 Using Google API key: {self.google_api_key[:20]}...")
         
-        # Initialize the Groq LLM
+        # Initialize the Google LLM
         try:
-            print("🔄 Initializing Groq LLM...")
-            self.llm = Groq(
+            print("🔄 Initializing Google LLM...")
+            self.llm = GoogleGenAI(
                 model=MODEL_CONFIG["llm_model"],
-                api_key=self.groq_api_key
+                api_key=self.google_api_key
             )
             
             # Test the LLM with a simple call
-            print("🧪 Testing Groq LLM connection...")
+            print("🧪 Testing Google LLM connection...")
             test_response = self.llm.complete("Hello")
             print(f"✅ LLM test successful: {str(test_response)[:50]}...")
             
         except Exception as e:
             print(f"❌ LLM initialization failed: {e}")
-            print(f"   API key used: {self.groq_api_key[:20]}...")
+            # print(f"   API key used: {self.google_api_key[:20]}...")
             print(f"   Model: {MODEL_CONFIG['llm_model']}")
             raise
         
-        print(f"✅ Initialized LLM: {MODEL_CONFIG['llm_model']} (Groq)")
+        print(f"✅ Initialized LLM: {MODEL_CONFIG['llm_model']} (Google)")
     
     def get_embedding_model(self):
         """
@@ -201,7 +198,7 @@ def create_index_from_documents(documents, pdf_path: str) -> tuple:
     Args:
         documents: List of Document objects
         pdf_path: Path to the source PDF
-        groq_api_key: Groq API key for LLM
+        google_api_key: Google API key for LLM
         
     Returns:
         tuple: (VectorStoreIndex, EmbeddingManager)
@@ -209,7 +206,7 @@ def create_index_from_documents(documents, pdf_path: str) -> tuple:
     from rag_pipeline.chunking import multi_granularity_chunking
     
     print(f"🔄 Creating index from documents...")
-    api_key = os.getenv('GROQ_API_KEY')
+    api_key = os.getenv('GOOGLE_API_KEY')
     
     # Initialize embedding manager
     embedding_manager = EmbeddingManager()

@@ -12,8 +12,7 @@ rag_config = {
 
 # Model configurations
 MODEL_CONFIG = {
-    # "llm_model": "models/gemini-2.0-flash",
-    "llm_model": "llama3-8b-8192",  # Groq model
+    "llm_model": "models/gemini-2.0-flash",
     "embedding_model": "BAAI/bge-small-en-v1.5",
     "rerank_model": "cross-encoder/ms-marco-MiniLM-L-12-v2",
     "max_output_tokens": 1024

@@ -10,10 +10,10 @@ import { GoArchive, GoComment, GoFile, GoFileDirectory, GoHistory } from "react-
 import NavBar from '../components/NavBar';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '@/lib/context/AuthContext';
-import { LogOut, Plus, Menu, X } from 'lucide-react';
+import { LogOut, Plus, Menu, X, Mic } from 'lucide-react';
 import UploadPage from '../components/UploadPage';
 
-type ActiveTab = 'chat' | 'documents' | 'chat_history' | 'upload';
+type ActiveTab = 'chat' | 'documents' | 'chat_history' | 'upload' | 'voice_chat';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('upload');
@@ -113,6 +113,11 @@ export default function Home() {
     setActiveTab('upload');
     setCurrentSessionId(null);
     setCurrentDocumentId(null);
+    setIsMobileSidebarOpen(false); // Close sidebar on mobile
+  };
+
+  const handleVoiceChat = () => {
+    setActiveTab('voice_chat');
     setIsMobileSidebarOpen(false); // Close sidebar on mobile
   };
 
@@ -226,6 +231,7 @@ export default function Home() {
                 <GoFileDirectory className="w-5 h-5 flex-shrink-0" />
                 <span className="truncate">My Documents</span>
               </button>
+
             </div>
 
             <div className="mt-auto space-y-3">
@@ -255,6 +261,7 @@ export default function Home() {
                   onUploadSuccess={handleUploadSuccess}
                   selectedSessionId={currentSessionId || ''} 
                   handleNewChat={handleNewChat}
+                  handleVoiceChat={handleVoiceChat}
                 />
               )}
 
