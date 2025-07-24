@@ -1,3 +1,13 @@
+## [0.1.4] - 2025-07-19
+**NEW**
+- Added Settings Page
+- Voice Mode: Users can now use voice to interact with Lynx AI
+- Uses Gemini Flash Model for better response
+
+**FIXED**
+- UI/UX responsiveness on mobile or small screen size
+
+
 ## [0.1.3] - 2025-07-17
 - Added PDF Viewer on File Manager
 
