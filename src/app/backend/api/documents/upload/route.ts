@@ -107,7 +107,6 @@ function cutToUploadsOnly(fullPath: string): string {
   return idx !== -1 ? fullPath.slice(idx).replace(/\//g, '\\') : fullPath;
 }
 
-// Update your existing POST function
 export async function POST(request: NextRequest) {
   try {
     const user = await getUserFromToken(request);
@@ -115,6 +114,9 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    
+    // ✅ NEW: Check if intelligent filename was provided by frontend
+    const intelligentFilename = formData.get('intelligent_filename') as string;
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -130,29 +132,42 @@ export async function POST(request: NextRequest) {
 
     console.log('📄 Processing file:', file.name);
 
-    // Get user token for RAG backend
-    const userToken = request.headers.get('authorization')?.replace('Bearer ', '') || '';
+    let finalFilename = file.name; // Default to original filename
+    let pageCount = null;
 
-    // NEW: Try to get intelligent filename from RAG backend
-    let ragResponse = null;
-    let intelligentFilename = null;
-    
-    console.log('🧠 Attempting intelligent naming via RAG backend...');
-    ragResponse = await processWithRAGBackend(file, userToken);
-    
-    if (ragResponse && ragResponse.filename !== ragResponse.original_filename) {
-      intelligentFilename = ragResponse.filename;
-      console.log('✅ Got intelligent filename:', intelligentFilename);
+    // ✅ FIXED: Use intelligent filename if provided by frontend (from RAG response)
+    if (intelligentFilename && intelligentFilename.trim()) {
+      finalFilename = intelligentFilename;
+      console.log('✅ Using intelligent filename from RAG system:', finalFilename);
     } else {
-      console.log('ℹ️ Using original filename');
+      // Fallback: Try to get intelligent filename from RAG backend
+      console.log('🧠 No intelligent filename provided, attempting RAG backend communication...');
+      
+      try {
+        const userToken = request.headers.get('authorization')?.replace('Bearer ', '') || '';
+        const ragResponse = await processWithRAGBackend(file, userToken);
+        
+        if (ragResponse && ragResponse.filename !== ragResponse.original_filename) {
+          finalFilename = ragResponse.filename;
+          pageCount = ragResponse.pages_processed || null;
+          console.log('✅ Got intelligent filename from RAG backend:', finalFilename);
+        } else {
+          console.log('ℹ️ RAG backend returned original filename');
+        }
+      } catch (ragError) {
+        console.log('RAG backend failed, proceeding with original naming');
+        console.error('RAG communication error:', ragError);
+      }
     }
 
     // Save file with intelligent name if available
     const { filePath, fileName, cutFilePath } = await saveFileToDisk(
       file, 
       user.id, 
-      intelligentFilename
+      finalFilename
     );
+
+    console.log('📁 Using final filename:', fileName);
 
     // Create document record
     const document = await prisma.document.create({
@@ -163,7 +178,7 @@ export async function POST(request: NextRequest) {
         file_size: file.size,
         mime_type: file.type,
         status: 'TEMPORARY',
-        page_count: ragResponse?.document_count || null,
+        page_count: pageCount,
         owner_id: user.id
       }
     });
@@ -181,40 +196,23 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // 🔥 FIX: Return the exact structure that ChatViewer expects
+    // ✅ FIXED: Return the exact structure that ChatViewer expects
     return NextResponse.json({
-      // ✅ Use the exact property names ChatViewer expects
       documentId: document.id,
-      fileName: document.file_name,
-      originalFileName: document.original_file_name, 
+      fileName: document.file_name,           // This should now be the intelligent filename
+      originalFileName: document.original_file_name,
       fileSize: document.file_size,
-      pageCount: document.page_count || 1,  // ✅ Ensure never null
+      pageCount: document.page_count,
       status: document.status,
-      uploadedAt: document.uploaded_at.toISOString(),
-      
-      // ✅ Add these fields that ChatViewer needs
-      databaseId: document.id,  // For compatibility
-      mimeType: document.mime_type,
-      
-      // Additional info
-      intelligentNaming: {
-        applied: ragResponse?.naming_applied || 'original',
-        ragBackendAvailable: ragResponse !== null,
-        conversionPerformed: ragResponse?.conversion_performed || false
-      }
+      uploadedAt: document.uploaded_at,
+      mimeType: document.mime_type
     });
+
   } catch (error) {
     console.error('❌ Upload error:', error);
-    
-    if (error instanceof Error) {
-      if (error.message === 'No token provided') {
-        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-      }
-      if (error.message === 'User not found') {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
-    }
-    
-    return NextResponse.json({ error: 'Failed to upload document' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

@@ -194,39 +194,42 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
       }
     }
   };
+// ✅ NEW: Modified database save function that accepts the RAG filename
+const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: string): Promise<any> => {
+  if (!isAuthenticated || !user) {
+    console.log("👤 User not authenticated, skipping database save");
+    return null;
+  }
 
-  const saveDocumentToDatabase = async (file: File): Promise<any> => {
-    if (!isAuthenticated || !user) {
-      console.log("👤 User not authenticated, skipping database save");
-      return null;
+  try {
+    console.log("💾 Saving to database with RAG filename:", ragFilename);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    // ✅ CRITICAL: Pass the RAG filename to the backend
+    formData.append("intelligent_filename", ragFilename);
+
+    const response = await fetch("/backend/api/documents/upload", {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: formData,
+    });
+
+    if (response.ok) {
+      const savedDocument = await response.json();
+      console.log("✅ Document saved to database with RAG filename:", savedDocument);
+      return savedDocument;
+    } else {
+      const errorData = await response.json();
+      console.error("❌ Database save failed:", errorData);
+      throw new Error(errorData.error || "Failed to save to database");
     }
-
-    try {
-      console.log("💾 Saving to database for authenticated user...");
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/backend/api/documents/upload", {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: formData,
-      });
-
-      if (response.ok) {
-        const savedDocument = await response.json();
-        console.log("✅ Document saved to database:", savedDocument);
-        return savedDocument;
-      } else {
-        const errorData = await response.json();
-        console.error("❌ Database save failed:", errorData);
-        throw new Error(errorData.error || "Failed to save to database");
-      }
-    } catch (error) {
-      console.error("❌ Database save error:", error);
-      throw error;
-    }
-  };
+  } catch (error) {
+    console.error("❌ Database save error:", error);
+    throw error;
+  }
+};
 
   const uploadToRagSystem = async (file: File): Promise<any> => {
     try {
@@ -362,56 +365,41 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
       setStatusMessage("Please select a file first");
       return;
     }
-
+  
     if (!userSettings) {
       setUploadStatus("error");
       setStatusMessage("User settings not loaded. Please try again.");
       return;
     }
-
-    // Check if required fields are available for naming formats that need them
-    if (userSettings.file_naming_format !== "ORIGINAL") {
-      if (!userSettings.title?.trim() || !userSettings.client_name?.trim()) {
-        setUploadStatus("error");
-        setStatusMessage(
-          `Your file naming is set to "${getNamingFormatLabel(
-            userSettings.file_naming_format
-          )}" but title or client name is missing in your settings. Please update your settings or the file will use the original name.`
-        );
-        setWarning(
-          "File will be uploaded with original name due to missing settings."
-        );
-      }
-    }
-
+  
     setIsUploading(true);
     setUploadStatus("processing");
     setStatusMessage("Starting ultra-fast processing...");
-
+  
     const startTime = Date.now();
-
+  
     try {
       let documentInfo: any = null;
       let ragResponse: any = null;
-
+  
       if (isAuthenticated && user) {
-        // For authenticated users: Save to database first, then RAG system
-        console.log("👤 Authenticated user - hybrid upload with ultra-fast processing");
-
+        // ✅ NEW WORKFLOW: RAG processing FIRST, then database save
+        console.log("👤 Authenticated user - RAG-first workflow with ultra-fast processing");
+  
         try {
-          // Step 1: Save to database
-          setStatusMessage("Saving to your account...");
-          documentInfo = await saveDocumentToDatabase(file);
-
-          // Step 2: Upload to ULTRA-FAST RAG system
+          // Step 1: Upload to ULTRA-FAST RAG system FIRST
           setStatusMessage("Processing with ultra-fast AI system...");
           ragResponse = await uploadToRagSystem(file);
-
+          
+          // Step 2: Save to database using the filename from RAG response
+          setStatusMessage("Saving to your account...");
+          documentInfo = await saveDocumentToDatabaseWithFilename(file, ragResponse.filename);
+  
           // Calculate and display performance
           const processingTime = (Date.now() - startTime) / 1000;
           const estimatedOldTime = 300; // 5 minutes
           const speedup = estimatedOldTime / processingTime;
-
+  
           // Enhanced success messages with performance info
           let successMessage = `Document processed in ${processingTime.toFixed(1)}s (${speedup.toFixed(1)}x faster)!`;
           if (ragResponse?.conversion_performed) {
@@ -420,7 +408,7 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
           if (ragResponse?.filename !== ragResponse?.original_filename) {
             successMessage += `\nRenamed: ${ragResponse.original_filename} → ${ragResponse.filename}`;
           }
-
+  
           // Check for security feedback
           if (ragResponse?.security_status === "sanitized") {
             toast.warning("Document content was sanitized for security reasons");
@@ -429,151 +417,109 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
             setStatusMessage(successMessage);
             toast.success(`Ultra-fast processing complete! ${speedup.toFixed(1)}x faster`);
           }
-
+  
           setUploadStatus("success");
         } catch (error) {
-          console.error("Hybrid upload failed:", error);
-
+          console.error("RAG-first workflow failed:", error);
+  
           // Handle security errors specifically
           if (isSecurityError(error)) {
             setUploadStatus("error");
             setStatusMessage(getSecurityErrorMessage(error));
-
-            // Provide specific feedback for different security error types
-            switch (error.type) {
-              case "rate_limit":
-                toast.error("Upload limit reached. Please wait before uploading again.");
-                break;
-              case "malicious_content":
-                toast.error("Upload blocked: Document contains suspicious content.");
-                break;
-              case "integrity_check":
-                toast.error("Upload failed: Document verification failed. Please try again.");
-                break;
-              default:
-                toast.error("Security error: " + error.message);
-            }
-            return; // Don't fallback for security errors
+            // Don't fallback for security errors
+            return;
           }
-
-          // For non-security errors, try fallback to RAG only
-          console.log("Trying RAG fallback after database error:", error);
+  
+          // For non-security errors, try fallback to RAG only (no database save)
+          console.log("Trying RAG-only fallback after database error:", error);
           try {
-            setStatusMessage("Saving to account failed, processing with ultra-fast system...");
+            setStatusMessage("Account save failed, processing for session only...");
             ragResponse = await uploadToRagSystem(file);
-
+  
             const processingTime = (Date.now() - startTime) / 1000;
             const speedup = 300 / processingTime;
-
-            // Enhanced fallback success message
+  
             let fallbackMessage = `Document processed in ${processingTime.toFixed(1)}s (${speedup.toFixed(1)}x faster) for this session only`;
             if (ragResponse?.conversion_performed) {
               fallbackMessage += " (DOCX converted to PDF)";
             }
-
-            // Check for security feedback in fallback
+  
             if (ragResponse?.security_status === "sanitized") {
               toast.warning("Document processed but content was sanitized for security");
             } else {
               toast.warning(`Ultra-fast processing complete! Not saved to account.`);
             }
-
+  
             setUploadStatus("success");
             setStatusMessage(fallbackMessage);
           } catch (fallbackError) {
-            // Handle security errors in fallback
             if (isSecurityError(fallbackError)) {
               setUploadStatus("error");
               setStatusMessage(getSecurityErrorMessage(fallbackError));
-              toast.error(getSecurityErrorMessage(fallbackError));
               return;
             }
-
-            // Re-throw non-security errors
             throw fallbackError;
           }
         }
       } else {
         // For non-authenticated users: Ultra-fast RAG system only
         console.log("👥 Non-authenticated user - ultra-fast RAG processing only");
-
-        try {
-          setStatusMessage("Processing with ultra-fast AI system...");
-          ragResponse = await uploadToRagSystem(file);
-
-          const processingTime = (Date.now() - startTime) / 1000;
-          const speedup = 300 / processingTime;
-
-          // Enhanced success message for non-authenticated users
-          let sessionMessage = `Document processed in ${processingTime.toFixed(1)}s (${speedup.toFixed(1)}x faster) for this session only`;
-          if (ragResponse?.conversion_performed) {
-            sessionMessage += " (DOCX converted to PDF)";
-          }
-
-          // Check for security feedback
-          if (ragResponse?.security_status === "sanitized") {
-            toast.warning("Document processed but some content was sanitized for security");
-            setStatusMessage("Document processed for this session (content sanitized)");
-          } else {
-            toast.success(`Ultra-fast processing complete! ${speedup.toFixed(1)}x faster`);
-            setStatusMessage(sessionMessage);
-          }
-
-          setUploadStatus("success");
-        } catch (error) {
-          // Handle security errors for non-authenticated users
-          if (isSecurityError(error)) {
-            setUploadStatus("error");
-            setStatusMessage(getSecurityErrorMessage(error));
-
-            switch (error.type) {
-              case "rate_limit":
-                toast.error("Upload limit reached. Please wait before uploading again.");
-                break;
-              case "malicious_content":
-                toast.error("Upload blocked: Document contains suspicious content.");
-                break;
-              case "integrity_check":
-                toast.error("Upload failed: Document verification failed. Please try again.");
-                break;
-              default:
-                toast.error("Security error: " + error.message);
-            }
-            return;
-          }
-
-          // Re-throw non-security errors
-          throw error;
+  
+        setStatusMessage("Processing with ultra-fast AI system...");
+        ragResponse = await uploadToRagSystem(file);
+  
+        const processingTime = (Date.now() - startTime) / 1000;
+        const speedup = 300 / processingTime;
+  
+        let sessionMessage = `Document processed in ${processingTime.toFixed(1)}s (${speedup.toFixed(1)}x faster) for this session only`;
+        if (ragResponse?.conversion_performed) {
+          sessionMessage += " (DOCX converted to PDF)";
         }
+  
+        if (ragResponse?.security_status === "sanitized") {
+          toast.warning("Document processed but some content was sanitized for security");
+          setStatusMessage("Document processed for this session (content sanitized)");
+        } else {
+          toast.success(`Ultra-fast processing complete! ${speedup.toFixed(1)}x faster`);
+          setStatusMessage(sessionMessage);
+        }
+  
+        setUploadStatus("success");
       }
-
-      // Enhanced response for parent component
+  
+      // ✅ FIXED: Use the correct filename from RAG response
       const uploadResponse: UploadResponse = {
         documentId: documentInfo?.documentId || documentInfo?.id || Date.now().toString(),
-        fileName: ragResponse?.filename || file.name,
-        originalFileName: ragResponse?.original_filename || file.name,
-        fileSize: file.size,
+        filename: ragResponse?.filename || file.name,                    // Use RAG filename
+        originalName: ragResponse?.original_filename || file.name,       // Use RAG original filename
+        size: file.size,
         uploadedAt: documentInfo?.uploadedAt || new Date().toISOString(),
-        pageCount: ragResponse?.page_count || ragResponse?.document_count || 1,
+        pages_processed: ragResponse?.pages_processed || 1,
         status: documentInfo ? "TEMPORARY" : "TEMPORARY",
         securityStatus: ragResponse?.security_status || "verified",
         mimeType: ragResponse?.mime_type || (file.name.toLowerCase().endsWith(".docx") ? "docx" : "pdf"),
         conversionPerformed: ragResponse?.conversion_performed || false,
+        
       };
-
-      // Save to localStorage for immediate access
+  
+      // ✅ FIXED: Save to localStorage with correct field names from RAG response
       const storageKey = isAuthenticated && user?.id ? `uploaded_documents_${user.id}` : "uploaded_documents";
-
+  
       const existingDocs = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      existingDocs.push({
+      const documentForStorage = {
+        // Use field names that ChatViewer expects with RAG response data
         id: uploadResponse.documentId,
-        fileName: uploadResponse.fileName,         
-        originalFileName: uploadResponse.originalFileName,
-        fileSize: uploadResponse.fileSize,
-        pageCount: uploadResponse.pageCount,
+        fileName: ragResponse?.filename || file.name,                    // Use RAG filename
+        originalFileName: ragResponse?.original_filename || file.name,   // Use RAG original filename  
+        original_file_name: ragResponse?.original_filename || file.name, // Backward compatibility
+        fileSize: uploadResponse.size,
+        file_size: uploadResponse.size,                                  // Backward compatibility  
+        pageCount: uploadResponse.pages_processed,
+        page_count: uploadResponse.pages_processed,                      // Backward compatibility
         status: uploadResponse.status,
         uploadedAt: uploadResponse.uploadedAt,
-
+        uploaded_at: uploadResponse.uploadedAt,                          // Backward compatibility
+        
         // Additional properties for compatibility
         databaseId: documentInfo?.documentId || documentInfo?.id,
         processingTime: ragResponse?.processing_time,
@@ -581,11 +527,14 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
         mimeType: uploadResponse.mimeType,
         securityStatus: uploadResponse.securityStatus,
         conversionPerformed: uploadResponse.conversionPerformed,
-      });
+      };
+  
+      existingDocs.push(documentForStorage);
       localStorage.setItem(storageKey, JSON.stringify(existingDocs));
+  
       // Call success callback
       onUploadSuccess(uploadResponse);
-
+  
       // Reset form
       setFile(null);
       if (fileInputRef.current) {
@@ -593,7 +542,7 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
       }
     } catch (error) {
       console.error("❌ Upload failed completely:", error);
-
+  
       // Handle security errors at the top level
       if (isSecurityError(error)) {
         setUploadStatus("error");
@@ -607,7 +556,7 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
         } else if (errorMessage.includes("extractable text")) {
           errorMessage = "Document does not contain extractable text. Please ensure it's not a scanned document.";
         }
-
+  
         setUploadStatus("error");
         setStatusMessage(errorMessage);
         toast.error("Upload failed: " + errorMessage);
@@ -616,6 +565,8 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
       setIsUploading(false);
     }
   };
+
+
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();

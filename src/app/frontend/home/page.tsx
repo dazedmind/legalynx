@@ -94,19 +94,61 @@ export default function Home() {
     }
   };
 
+  // ✅ COMPLETE UPLOAD HANDLER - This handles the upload and triggers document detection
   const handleUploadSuccess = (response: UploadResponse) => {
-    console.log('📤 Upload success in Home component:', response);
+    console.log('🎉 MAIN COMPONENT - Upload success:', response);
     
-    if (response && response.documentId) {
-      setCurrentDocumentId(response.documentId);
-      setCurrentSessionId(null);
-      setActiveTab('chat');
-      console.log('🔄 Switched to chat tab for document:', response.documentId);
-    }
+    // Create document info with proper field mapping
+    const documentInfo = {
+      id: response.documentId,
+      fileName: response.filename,
+      originalFileName: response.originalName,
+      fileSize: response.size,
+      uploadedAt: response.uploadedAt,
+      pageCount: response.pages_processed,
+      status: response.status || 'TEMPORARY',
+      databaseId: response.documentId
+    };
     
-    setTimeout(() => {
-      loadSystemStatus();
-    }, 1000);
+    // ✅ FIXED: Add the missing localStorage logic and tab switching
+    // Store in localStorage with correct field names for ChatViewer
+    const storageKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+    
+    const existingDocs = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    
+    // Remove any existing document with same ID and add new one at the beginning
+    const filteredDocs = existingDocs.filter((doc: any) => doc.id !== documentInfo.id);
+    
+    // Add the new document with all required fields for ChatViewer compatibility
+    const documentForStorage = {
+      id: documentInfo.id,
+      fileName: response.filename,
+      originalFileName: response.originalName,
+      original_file_name: response.originalName, // Backward compatibility
+      fileSize: response.size,
+      file_size: response.size, // Backward compatibility
+      pageCount: response.pages_processed,
+      page_count: response.pages_processed, // Backward compatibility
+      status: response.status || 'TEMPORARY',
+      uploadedAt: response.uploadedAt,
+      uploaded_at: response.uploadedAt, // Backward compatibility
+      databaseId: response.documentId,
+      mimeType: response.mimeType,
+      securityStatus: response.securityStatus,
+      conversionPerformed: response.conversionPerformed,
+    };
+    
+    filteredDocs.unshift(documentForStorage);
+    localStorage.setItem(storageKey, JSON.stringify(filteredDocs));
+    
+    console.log('📄 Document stored in localStorage:', documentForStorage);
+    
+    // Set current document ID and switch to chat view
+    setCurrentDocumentId(response.documentId || '');
+    setActiveTab('chat');
+    setIsMobileSidebarOpen(false); // Close mobile sidebar
+    
+    console.log('🔄 Switched to chat tab with document ID:', response.documentId);
   };
 
   const handleNewChat = () => {
@@ -156,7 +198,7 @@ export default function Home() {
     { id: 'documents', label: 'My Documents', icon: GoFileDirectory },
   ];
 
-  const isSystemReady = systemStatus?.pdfLoaded && systemStatus?.indexReady;
+  const isSystemReady = systemStatus?.pdf_loaded && systemStatus?.index_ready;
 
   return (
     <ProtectedRoute>
@@ -262,7 +304,6 @@ export default function Home() {
                   selectedSessionId={currentSessionId || ''} 
                   handleNewChat={handleNewChat}
                   handleVoiceChat={handleVoiceChat}
-                  currentDocumentId={currentDocumentId || ''}
                 />
               )}
 

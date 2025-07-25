@@ -24,10 +24,12 @@ async function getUserFromToken(request: NextRequest) {
     return user;
 }
 
-// Helper function to upload document to S3 with correct method signature
+// Fixed /backend/api/documents/save-document/route.ts
+
+// Helper function to upload document to S3 with FIXED field access
 async function saveDocumentToS3(document: any): Promise<any> {
   try {
-    console.log(`☁️ Uploading document to S3: ${document.originalFileName}`);
+    console.log(`☁️ Uploading document to S3: ${document.original_file_name}`);
     
     // Check if temporary file still exists
     if (!document.file_path || !fs.existsSync(document.file_path)) {
@@ -35,7 +37,9 @@ async function saveDocumentToS3(document: any): Promise<any> {
     }
     
     const buffer = fs.readFileSync(document.file_path);
-    const fileName = document.originalFileName;
+    
+    // ✅ FIXED: Use correct field name from database
+    const fileName = document.original_file_name; // NOT document.originalFileName
     const contentType = document.mime_type || 'application/pdf';
     
     // Clean up the file name - remove special characters and limit length
@@ -45,7 +49,8 @@ async function saveDocumentToS3(document: any): Promise<any> {
       .substring(0, 100); // Limit to 100 characters
     
     // Create a proper S3 key structure for documents/ folder
-    const s3Key = `documents/${document.owner_id}/${cleanFileName}`;
+    const timestamp = Date.now();
+    const s3Key = `documents/${document.owner_id}/${timestamp}_${cleanFileName}`;
     
     console.log(`📁 S3 Key: ${s3Key}`);
     console.log(`🪣 Target Bucket: legalynx`);
@@ -56,13 +61,13 @@ async function saveDocumentToS3(document: any): Promise<any> {
         // Method 1: Try the uploadFile method with proper parameters
         if (typeof S3Service.uploadFile === 'function') {
           console.log('🔄 Attempting S3Service.uploadFile...');
-          try {
-            // Most S3 services expect (key, buffer, contentType) or (key, filePath, options)
-            s3Result = await S3Service.uploadFile(buffer, s3Key, contentType, document.owner_id);
-          } catch (error) {
-            console.log('🔄 Retry with file path...');
-            s3Result = await S3Service.uploadFile(document.file_path, s3Key, contentType, document.owner_id);
-          }
+          s3Result = await S3Service.uploadFile(
+            buffer, 
+            cleanFileName, 
+            contentType, 
+            document.owner_id,
+            'documents'
+          );
         }
         // Method 2: Try upload method
         else if (typeof (S3Service as any).upload === 'function') {
@@ -83,19 +88,6 @@ async function saveDocumentToS3(document: any): Promise<any> {
             ContentType: contentType,
             Bucket: 'legalynx'
           });
-        }
-        // Method 4: Direct AWS SDK v3 style
-        else if (typeof (S3Service as any).send === 'function') {
-          console.log('🔄 Attempting AWS SDK v3 style...');
-          // Import PutObjectCommand if using AWS SDK v3
-          const { PutObjectCommand } = await import('@aws-sdk/client-s3');
-          const command = new PutObjectCommand({
-            Bucket: 'legalynx',
-            Key: s3Key,
-            Body: buffer,
-            ContentType: contentType
-          });
-          s3Result = await (S3Service as any).send(command);
         }
         else {
           throw new Error('No compatible S3 upload method found in S3Service');
@@ -125,7 +117,7 @@ async function saveDocumentToS3(document: any): Promise<any> {
         file_name: normalizedResult.key,
         file_path: normalizedResult.url,
         s3_key: normalizedResult.key,
-        s3_bucket: 'legalynx', // Explicitly set the bucket name
+        s3_bucket: 'legalynx',
         status: 'INDEXED',
         s3_uploaded_at: new Date(),
         updated_at: new Date()
@@ -153,8 +145,9 @@ export async function POST(request: NextRequest) {
         const user = await getUserFromToken(request);
         const body = await request.json();
         
-        // Validate required fields
-        const { documentId, title } = body;
+        // ✅ FIXED: Accept both field names for compatibility
+        const documentId = body.documentId || body.document_id;
+        const title = body.title;
         
         if (!documentId) {
             return NextResponse.json({ 
@@ -203,7 +196,7 @@ export async function POST(request: NextRequest) {
 
         console.log(`✅ Document saved successfully: ${savedDocument.id} (status: ${savedDocument.status})`);
 
-        // Return the updated document with correct field names for frontend
+        // ✅ FIXED: Return the updated document with correct field names for frontend
         return NextResponse.json({
             id: savedDocument.id,
             fileName: savedDocument.file_name,

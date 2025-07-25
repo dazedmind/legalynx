@@ -328,7 +328,7 @@ export default function SavedChatHistory({
                     <div className="flex items-center text-sm text-gray-600 space-x-4">
                       <div className="flex items-center">
                         <FileText className="w-4 h-4 mr-1" />
-                        <span className="truncate">{session.documentName}</span>
+                        <span className="truncate">{session.fileName}</span>
                       </div>
                     </div>
                   </div>
