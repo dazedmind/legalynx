@@ -47,7 +47,28 @@ export async function POST(req: Request) {
           password: verificationToken.key,
           name: '',
           email_verified: true,
-          status: 'ACTIVE'
+          status: 'ACTIVE',
+          subscription: {
+            create: {
+              plan_type: 'BASIC',
+              created_at: new Date(),
+              billing_date: new Date(),
+              days_remaining: 30,
+              token_limit: 1000,
+              is_active: true,
+              auto_renew: true
+            }
+          },
+          profile_picture: '',
+          job_title: '',
+          user_settings: {
+            create: {
+              theme: 'light',
+              language: 'en',
+            }
+          },
+          created_at: new Date(),
+          last_login_at: new Date()
         }
       });
     } else {

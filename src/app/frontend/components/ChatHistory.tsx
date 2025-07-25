@@ -19,15 +19,16 @@ interface SavedChatSession {
   title: string;
   documentId: string;
   documentName: string;
+  fileName: string;
   messageCount: number;
   lastMessage?: string;
   createdAt: Date;
   updatedAt: Date;
   document: {
     id: string;
-    originalName: string;
-    size: number;
-    pages: number;
+    originalFileName: string;
+    fileSize: number;
+    pageCount: number;
     status: string;
   };
 }
@@ -109,15 +110,16 @@ export default function SavedChatHistory({
         title: session.title || `Chat with ${session.documentName}`,
         documentId: session.documentId,
         documentName: session.documentName,
+        fileName: session.document.fileName,
         messageCount: session.messages?.length || 0,
         lastMessage: session.lastMessage || session.messages?.[0]?.content || null,
         createdAt: new Date(session.createdAt),
         updatedAt: new Date(session.updatedAt),
         document: {
           id: session.documentId,
-          originalName: session.documentName,
-          size: session.document?.size || 0,
-          pages: session.document?.pages || 0,
+          originalFileName: session.documentName,
+          fileSize: session.document?.fileSize || 0,
+          pageCount: session.document?.pageCount || 0,
           status: session.document.status
         }
       }));
@@ -326,11 +328,7 @@ export default function SavedChatHistory({
                     <div className="flex items-center text-sm text-gray-600 space-x-4">
                       <div className="flex items-center">
                         <FileText className="w-4 h-4 mr-1" />
-                        <span className="truncate">{session.documentName}</span>
-                      </div>
-                      <div className="hidden md:flex items-center">
-                        <MessageSquare className="w-4 h-4 mr-1" />
-                        <span>{session.messageCount} messages</span>
+                        <span className="truncate">{session.fileName}</span>
                       </div>
                     </div>
                   </div>
@@ -383,11 +381,11 @@ export default function SavedChatHistory({
                       <Calendar className="w-3 h-3 mr-1" />
                       <span>{formatDate(session.updatedAt)}</span>
                     </div>
-                    {session.document.size > 0 && (
-                      <span>{formatFileSize(session.document.size)}</span>
+                    {session.document.fileSize > 0 && (
+                      <span>{formatFileSize(session.document.fileSize)}</span>
                     )}
-                    {session.document.pages > 0 && (
-                      <span>{session.document.pages} pages</span>
+                    {session.document.pageCount > 0 && (
+                      <span>{session.document.pageCount} pages</span>
                     )}
                   </div>
                  

@@ -127,15 +127,63 @@ exports.Prisma.UserScalarFieldEnum = {
   password: 'password',
   job_title: 'job_title',
   profile_picture: 'profile_picture',
-  subscription_status: 'subscription_status',
-  two_factor_enabled: 'two_factor_enabled',
-  two_factor_secret: 'two_factor_secret',
-  ai_personality: 'ai_personality',
   status: 'status',
   email_verified: 'email_verified',
   created_at: 'created_at',
   updated_at: 'updated_at',
   last_login_at: 'last_login_at'
+};
+
+exports.Prisma.SubscriptionScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  tokens_used: 'tokens_used',
+  token_limit: 'token_limit',
+  billing_date: 'billing_date',
+  days_remaining: 'days_remaining',
+  plan_type: 'plan_type',
+  price: 'price',
+  currency: 'currency',
+  is_active: 'is_active',
+  auto_renew: 'auto_renew',
+  payment_method: 'payment_method',
+  last_four_digits: 'last_four_digits',
+  payment_provider: 'payment_provider',
+  external_subscription_id: 'external_subscription_id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  cancelled_at: 'cancelled_at'
+};
+
+exports.Prisma.UserSettingsScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  ai_personality: 'ai_personality',
+  voice_enabled: 'voice_enabled',
+  preferred_voice: 'preferred_voice',
+  auto_rename_files: 'auto_rename_files',
+  file_naming_format: 'file_naming_format',
+  file_naming_title: 'file_naming_title',
+  file_client_name: 'file_client_name',
+  file_retention_days: 'file_retention_days',
+  auto_delete_files: 'auto_delete_files',
+  max_file_size_mb: 'max_file_size_mb',
+  two_factor_enabled: 'two_factor_enabled',
+  two_factor_secret: 'two_factor_secret',
+  login_notifications: 'login_notifications',
+  security_alerts: 'security_alerts',
+  data_sharing_consent: 'data_sharing_consent',
+  analytics_consent: 'analytics_consent',
+  marketing_emails: 'marketing_emails',
+  theme: 'theme',
+  language: 'language',
+  timezone: 'timezone',
+  date_format: 'date_format',
+  email_notifications: 'email_notifications',
+  push_notifications: 'push_notifications',
+  last_settings_update: 'last_settings_update',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
 };
 
 exports.Prisma.DocumentScalarFieldEnum = {
@@ -250,16 +298,22 @@ exports.Prisma.JsonNullValueFilter = {
   JsonNull: Prisma.JsonNull,
   AnyNull: Prisma.AnyNull
 };
+exports.UserStatus = exports.$Enums.UserStatus = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  SUSPENDED: 'SUSPENDED'
+};
+
 exports.SubscriptionStatus = exports.$Enums.SubscriptionStatus = {
   BASIC: 'BASIC',
   STANDARD: 'STANDARD',
   PREMIUM: 'PREMIUM'
 };
 
-exports.UserStatus = exports.$Enums.UserStatus = {
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
-  SUSPENDED: 'SUSPENDED'
+exports.FileNamingFormat = exports.$Enums.FileNamingFormat = {
+  ORIGINAL: 'ORIGINAL',
+  ADD_TIMESTAMP: 'ADD_TIMESTAMP',
+  SEQUENTIAL_NUMBERING: 'SEQUENTIAL_NUMBERING'
 };
 
 exports.DocumentStatus = exports.$Enums.DocumentStatus = {
@@ -299,6 +353,8 @@ exports.TokenType = exports.$Enums.TokenType = {
 
 exports.Prisma.ModelName = {
   User: 'User',
+  Subscription: 'Subscription',
+  UserSettings: 'UserSettings',
   Document: 'Document',
   ChatSession: 'ChatSession',
   ChatMessage: 'ChatMessage',

@@ -27,42 +27,55 @@ mainApi.interceptors.request.use((config) => {
   return config;
 });
 
+// Add auth token to RAG API requests for security features
+ragApi.interceptors.request.use((config) => {
+  const token = authUtils.getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // Types for API responses
 export interface SystemStatus {
   status: string;
-  pdf_loaded: boolean;
-  index_ready: boolean;
-  pdf_name?: string;
+  pdfLoaded: boolean;
+  indexReady: boolean;
+  pdfName?: string;
 }
 
 export interface QueryResponse {
   query: string;
   response: string;
-  source_count: number;
+  sourceCount: number;
+  securityStatus?: string; // Added for security feedback
 }
 
 export interface UploadResponse {
   documentId?: string;
-  filename: string;
-  originalName?: string;
-  size?: number;
+  fileName?: string;
+  originalFileName?: string;
+  fileSize?: number;
   uploadedAt?: string;
-  pages_processed: number;
+  pageCount?: number;
   message?: string;
   status?: string;
+  securityStatus?: string;
+  mimeType: string;
+  conversionPerformed: boolean;
 }
 
 export interface Document {
   id: string;
-  filename: string;
-  originalName: string;
-  size: number;
+  fileName: string;
+  originalFileName: string;
+  fileSize: number;
   mimeType: string;
   status: string;
-  pageCount?: number;
+  pageCount: number;
   uploadedAt: string;
   chatSessionsCount: number;
-  lastChatAt?: number;
+  lastChatAt: number;
 }
 
 export interface ChatSession {
@@ -89,10 +102,10 @@ export interface ChatSessionDetail {
   sessionId: string;
   title: string;
   document: {
-    id: string;
-    name: string;
-    size: number;
-    pages?: number;
+    documentId: string;
+    fileName: string;
+    fileSize: number;
+    pageCount: number;
   };
   messages: ChatMessage[];
 }
@@ -100,33 +113,83 @@ export interface ChatSessionDetail {
 export interface AnalysisResponse {
   query: string;
   response: string;
-  num_source_nodes: number;
-  source_analysis: Array<{
+  numSourceNodes: number;
+  sourceAnalysis: Array<{
     rank: number;
     score: number;
-    page_number: string | number;
-    chunk_type: string;
-    content_length: number;
-    content_preview: string;
-    full_content?: string;
+    pageNumber: string | number;
+    chunkType: string;
+    contentLength: number;
+    contentPreview: string;
+    fullContent?: string;
   }>;
 }
 
 export interface PresetQueries {
-  preset_queries: Record<string, string>;
+  presetQueries: Record<string, string>;
 }
 
 export interface RerankDemo {
   query: string;
   results: Array<{
-    Stage: string;
-    Rank: number;
-    Score: number;
-    Content: string;
-    Page: string | number;
-    Chunk_Type: string;
+    stage: string;
+    rank: number;
+    score: number;
+    content: string;
+    page: string | number;
+    chunkType: string;
   }>;
 }
+
+// Security-specific types
+export interface SecurityError extends Error {
+  statusCode: number;
+  type: 'rate_limit' | 'malicious_content' | 'integrity_check' | 'injection';
+}
+
+export interface SecurityStatus {
+  rateLimits: {
+    uploadsRemaining: number;
+    queriesRemaining: number;
+  };
+  status: string;
+}
+
+// Security API functions
+export const getSecurityStatus = async (): Promise<SecurityStatus> => {
+  try {
+    const response = await ragApi.get<SecurityStatus>('/security-status');
+    return response.data;
+  } catch (error) {
+    // Return default status if security endpoint not available
+    return {
+      rateLimits: {
+        uploadsRemaining: 10,
+        queriesRemaining: 100
+      },
+      status: 'unknown'
+    };
+  }
+};
+
+// Enhanced error handling for security
+const handleSecurityError = (error: any): SecurityError => {
+  const securityError = new Error(error.response?.data?.detail || error.message) as SecurityError;
+  securityError.statusCode = error.response?.status || 500;
+  
+  // Classify error type for better UX
+  if (error.response?.status === 429) {
+    securityError.type = 'rate_limit';
+  } else if (error.response?.data?.detail?.includes('malicious')) {
+    securityError.type = 'malicious_content';
+  } else if (error.response?.data?.detail?.includes('integrity')) {
+    securityError.type = 'integrity_check';
+  } else if (error.response?.data?.detail?.includes('injection')) {
+    securityError.type = 'injection';
+  }
+  
+  return securityError;
+};
 
 // API functions
 export const apiService = {
@@ -229,7 +292,7 @@ export const apiService = {
     }
   },
 
-  // RAG System Endpoints (Existing)
+  // RAG System Endpoints (Enhanced with Security)
   async getStatus(): Promise<SystemStatus> {
     try {
       const response = await ragApi.get<SystemStatus>('/status');
@@ -239,36 +302,44 @@ export const apiService = {
       console.warn('RAG system not available, returning default status');
       return {
         status: 'offline',
-        pdf_loaded: false,
-        index_ready: false
+        pdfLoaded: false,
+        indexReady: false
       };
     }
   },
 
   async uploadPdf(file: File, googleApiKey?: string): Promise<UploadResponse> {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const params = new URLSearchParams();
-    if (googleApiKey) {
-      params.append('google_api_key', googleApiKey);
-    }
-
-    const response = await ragApi.post<UploadResponse>(
-      `/upload-pdf?${params.toString()}`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const params = new URLSearchParams();
+      if (googleApiKey) {
+        params.append('google_api_key', googleApiKey);
       }
-    );
-    return response.data;
+
+      const response = await ragApi.post<UploadResponse>(
+        `/upload-pdf?${params.toString()}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw handleSecurityError(error);
+    }
   },
 
   async queryDocuments(query: string): Promise<QueryResponse> {
-    const response = await ragApi.post<QueryResponse>('/query', { query });
-    return response.data;
+    try {
+      const response = await ragApi.post<QueryResponse>('/query', { query });
+      return response.data;
+    } catch (error) {
+      throw handleSecurityError(error);
+    }
   },
 
   async analyzeQuery(query: string, showContent: boolean = true): Promise<AnalysisResponse> {
@@ -283,27 +354,6 @@ export const apiService = {
     }
   },
 
-  async getPresetQueries(): Promise<PresetQueries> {
-    try {
-      const response = await ragApi.get<PresetQueries>('/preset-queries');
-      return response.data;
-    } catch (error) {
-      // Return default preset queries if RAG system not available
-      return {
-        preset_queries: {
-          "What is this document about?": "What is this document about?",
-          "Summarize the main points": "Summarize the main points",
-          "What are the key details?": "What are the key details?",
-        }
-      };
-    }
-  },
-
-  async rerankDemo(query: string): Promise<RerankDemo> {
-    const response = await ragApi.post<RerankDemo>('/rerank-demo', { query });
-    return response.data;
-  },
-
   async resetSystem(): Promise<{ message: string }> {
     try {
       const response = await ragApi.delete<{ message: string }>('/reset');
@@ -313,39 +363,71 @@ export const apiService = {
     }
   },
 
-  async healthCheck(): Promise<{ status: string; system_ready: boolean; pdf_loaded: boolean }> {
+  async healthCheck(): Promise<{ status: string; systemReady: boolean; pdfLoaded: boolean }> {
     try {
       const response = await ragApi.get('/health');
       return response.data;
     } catch (error) {
       return {
         status: 'offline',
-        system_ready: false,
-        pdf_loaded: false
+        systemReady: false,
+        pdfLoaded: false
       };
     }
   },
 
-  // Hybrid functions that work with both systems
+  // Enhanced upload function with security error handling
   async uploadAndProcess(file: File): Promise<UploadResponse> {
-    // First upload to RAG system for processing
-    const ragResponse = await this.uploadPdf(file);
-    
-    // If user is authenticated, also save to database
     try {
-      if (authUtils.isAuthenticated()) {
-        await this.uploadDocument(file);
+      // First upload to RAG system for processing (now with security)
+      const ragResponse = await this.uploadPdf(file);
+      
+      // If user is authenticated, also save to database
+      try {
+        if (authUtils.isAuthenticated()) {
+          await this.uploadDocument(file);
+        }
+      } catch (error) {
+        console.warn('Failed to save to database, but RAG processing succeeded');
       }
+      
+      return ragResponse;
     } catch (error) {
-      console.warn('Failed to save to database, but RAG processing succeeded');
+      // Re-throw security errors with proper typing
+      if (error instanceof Error && 'statusCode' in error) {
+        throw error as SecurityError;
+      }
+      throw new Error('Upload failed');
     }
-    
-    return ragResponse;
+  },
+
+  // Security-specific methods
+  async getSecurityStatus(): Promise<SecurityStatus> {
+    return getSecurityStatus();
   }
 };
 
-// Error handler for API calls
+// Enhanced error handler for API calls with security support
 export const handleApiError = (error: any): string => {
+  // Handle security-specific errors
+  if (error instanceof Error && 'statusCode' in error) {
+    const securityError = error as SecurityError;
+    
+    switch (securityError.type) {
+      case 'rate_limit':
+        return 'Rate limit exceeded. Please wait before making another request.';
+      case 'malicious_content':
+        return 'Upload blocked: The content appears suspicious or malicious.';
+      case 'integrity_check':
+        return 'Upload failed: Document integrity verification failed.';
+      case 'injection':
+        return 'Query blocked: Please rephrase your question using normal language.';
+      default:
+        return securityError.message;
+    }
+  }
+
+  // Handle regular API errors
   if (error.response?.data?.error) {
     return error.response.data.error;
   }
@@ -358,9 +440,7 @@ export const handleApiError = (error: any): string => {
   return 'An unexpected error occurred';
 };
 
-// Add this to your existing src/app/frontend/lib/api.ts file
-
-// Profile API functions
+// Profile API functions (unchanged)
 export const profileService = {
   // Get user profile
   async getProfile(): Promise<UserProfile> {
@@ -405,19 +485,29 @@ export const profileService = {
   }
 };
 
-// Add these types to your existing types or create src/app/frontend/types/profile.ts
 export interface UserProfile {
   id: string;
   email: string;
   name: string;
   email_verified: boolean;
   status: 'ACTIVE' | 'SUSPENDED' | 'PENDING';
-  subscription_status: 'BASIC' | 'STANDARD' | 'PREMIUM';
   profile_picture?: string;
   job_title?: string;
   created_at: string;
   last_login_at?: string;
-  
+  subscription: {
+    plan_type: 'BASIC' | 'STANDARD' | 'PREMIUM';
+    is_active: boolean;
+    tokens_used: number;
+    token_limit: number;
+    days_remaining: number;
+    billing_date: string;
+    auto_renew: boolean;
+    price: number;
+    currency: string;
+    created_at: string;
+  }
+
   stats: {
     document_count: number;
     chat_session_count: number;
@@ -469,3 +559,24 @@ export interface SecurityLog {
     email: string;
   }
 }
+
+// Utility function to check if an error is a security error
+export const isSecurityError = (error: any): error is SecurityError => {
+  return error instanceof Error && 'statusCode' in error && 'type' in error;
+};
+
+// Utility function to get user-friendly security error message
+export const getSecurityErrorMessage = (error: SecurityError): string => {
+  switch (error.type) {
+    case 'rate_limit':
+      return 'You\'ve reached your rate limit. Please wait a moment before trying again.';
+    case 'malicious_content':
+      return 'The uploaded content appears to contain suspicious elements and was blocked for security.';
+    case 'integrity_check':
+      return 'Document verification failed. Please try uploading the file again.';
+    case 'injection':
+      return 'Your query contains potentially harmful content. Please rephrase using normal language.';
+    default:
+      return error.message || 'A security error occurred.';
+  }
+};

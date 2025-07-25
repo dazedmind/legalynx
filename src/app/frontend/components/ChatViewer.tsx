@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FileText, AlertCircle, Plus, ArrowUp, Cloud } from 'lucide-react';
-import { apiService, handleApiError, AnalysisResponse, RerankDemo, UploadResponse } from '../lib/api';
+import { apiService, handleApiError, UploadResponse, isSecurityError, getSecurityErrorMessage } from '../lib/api';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
@@ -22,8 +22,6 @@ interface ChatMessage {
   createdAt: Date;
   query?: string;
   sourceCount?: number;
-  analysis?: AnalysisResponse;
-  rerankData?: RerankDemo;
 }
 
 interface ChatSession {
@@ -52,6 +50,7 @@ interface CombinedComponentProps {
   selectedSessionId?: string;
   handleNewChat?: () => void;
   handleVoiceChat?: () => void;
+  currentDocumentId?: string;
 }
 
 // Add loading stage type
@@ -63,7 +62,8 @@ export default function ChatViewer({
   onSessionDelete,
   selectedSessionId, 
   handleNewChat,
-  handleVoiceChat
+  handleVoiceChat,
+  currentDocumentId
 }: CombinedComponentProps) {
   const { isAuthenticated, user } = useAuth();
   const ragCache = useRAGCache();
@@ -95,6 +95,7 @@ export default function ChatViewer({
   const [error, setError] = useState<string>('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaveTimestamp, setLastSaveTimestamp] = useState(Date.now());
+  const [uploadCompleted, setUploadCompleted] = useState(false);
 
   // Modal state for confirmation
   const [confirmationModalConfig, setConfirmationModalConfig] = useState<{
@@ -122,12 +123,39 @@ export default function ChatViewer({
     setConfirmationModalConfig(null);
   };
 
+ // ✅ MODIFIED: Enhanced useEffect for document loading
   useEffect(() => {
-    // Only load document on system ready, not during reset or if already have document
-    if (isSystemReady && currentDocument === null && !isResetting) {
+    console.log('🔍 Document loading effect:', {
+      isSystemReady,
+      currentDocument: currentDocument !== null,
+      isResetting,
+      user: !!user,
+      uploadCompleted
+    });
+    
+    // Load document when:
+    // 1. System is ready AND we don't have a document AND not resetting
+    // 2. OR when upload was completed (uploadCompleted flag)
+    if ((isSystemReady && currentDocument === null && !isResetting) || uploadCompleted) {
+      console.log('📄 Loading current document...');
+      loadCurrentDocument();
+      
+      // Reset upload completed flag after loading
+      if (uploadCompleted) {
+        setUploadCompleted(false);
+      }
+    }
+  }, [isSystemReady, user, isResetting, currentDocument, uploadCompleted]);
+
+  useEffect(() => {
+    console.log('🔍 Upload success effect triggered');
+    
+    // Trigger document loading after successful upload
+    if (isSystemReady && !isResetting) {
+      console.log('📄 Triggering loadCurrentDocument after upload success');
       loadCurrentDocument();
     }
-  }, [isSystemReady, user, isResetting]);
+  }, []); // Run on mount and after uploads
 
   // Enhanced useEffect for session loading with cache awareness
   useEffect(() => {
@@ -190,64 +218,110 @@ export default function ChatViewer({
   };
 
   const loadCurrentDocument = async () => {
+    console.log('🔍 LOAD DOCUMENT STARTING:', {
+      isResetting,
+      hasCurrentDocument: currentDocument !== null,
+      isAuthenticated,
+      userId: user?.id
+    });
+    
     // Don't load document if we're in a reset state or already have a document
-    if (isResetting || currentDocument !== null) {
-      console.log('🚫 Skipping document load - resetting or document exists');
+    if (isResetting) {
+      console.log('🚫 Skipping document load - currently resetting');
       return;
     }
     
     try {
       if (isAuthenticated && user) {
+        console.log('👤 Checking API for documents...');
         const response = await fetch('/backend/api/documents', {
           headers: getAuthHeaders()
         });
         
         if (response.ok) {
           const data = await response.json();
+          console.log('📄 API documents response:', data);
+          
           if (data.documents && data.documents.length > 0) {
             const mostRecent = data.documents[0];
+            console.log('📄 Most recent from API:', mostRecent);
+            
             const exists = await checkDocumentExists(mostRecent.id);
+            console.log('📄 Document exists check:', exists);
             
             if (exists && !isResetting) { // Double-check reset flag
               const documentInfo = {
                 id: mostRecent.id,
-                filename: mostRecent.filename,
-                originalName: mostRecent.originalName,
-                size: mostRecent.size,
+                fileName: mostRecent.fileName,
+                originalFileName: mostRecent.originalFileName,
+                fileSize: mostRecent.fileSize,
                 uploadedAt: mostRecent.uploadedAt,
-                pages: mostRecent.pageCount,
+                pageCount: mostRecent.pageCount,
                 status: mostRecent.status,
                 databaseId: mostRecent.id
               };
               
-              console.log('📄 Loading document from API:', documentInfo.originalName);
+              console.log('✅ Loading document from API:', documentInfo.originalFileName);
               setCurrentDocument(documentInfo);
               setDocumentExists(true);
               return;
             } else {
-              console.log('Most recent document no longer exists or resetting, clearing state');
+              console.log('❌ Most recent document no longer exists or resetting, clearing state');
               setDocumentExists(false);
             }
+          } else {
+            console.log('📄 No documents found in API');
           }
+        } else {
+          console.log('❌ API request failed:', response.status);
         }
       }
       
-      // Only check localStorage if we don't have a document and not resetting
-      if (!currentDocument && !isResetting) {
-        const storageKey = isAuthenticated && user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
-        const savedDocs = localStorage.getItem(storageKey);
-        if (savedDocs) {
-          const docs = JSON.parse(savedDocs);
-          if (docs.length > 0 && !isResetting) { // Check reset flag again
-            const sortedDocs = docs.sort((a: any, b: any) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
-            console.log('📄 Loading document from localStorage:', sortedDocs[0].originalName);
-            setCurrentDocument(sortedDocs[0]);
-            setDocumentExists(true);
-          }
+      // Check localStorage for both authenticated and non-authenticated users
+      console.log('💿 Checking localStorage...');
+      const storageKey = isAuthenticated && user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+      console.log('💿 Storage key:', storageKey);
+      
+      const savedDocs = localStorage.getItem(storageKey);
+      console.log('💿 Raw localStorage data:', savedDocs);
+      
+      if (savedDocs) {
+        const docs = JSON.parse(savedDocs);
+        console.log('💿 Parsed docs:', docs);
+        
+        if (docs.length > 0 && !isResetting) { // Check reset flag again
+          const sortedDocs = docs.sort((a: any, b: any) => {
+            const timeA = new Date(a.uploadedAt || a.uploaded_at || 0).getTime();
+            const timeB = new Date(b.uploadedAt || b.uploaded_at || 0).getTime();
+            return timeB - timeA;
+          });
+          
+          const mostRecentDoc = sortedDocs[0];
+          console.log('💿 Most recent from localStorage:', mostRecentDoc);
+          
+          // Create document info with proper field mapping
+          const documentInfo = {
+            id: mostRecentDoc.id || mostRecentDoc.documentId,
+            fileName: mostRecentDoc.fileName || mostRecentDoc.filename,
+            originalFileName: mostRecentDoc.originalFileName || mostRecentDoc.original_file_name || mostRecentDoc.originalName,
+            fileSize: mostRecentDoc.fileSize || mostRecentDoc.file_size || mostRecentDoc.size,
+            uploadedAt: mostRecentDoc.uploadedAt || mostRecentDoc.uploaded_at,
+            pageCount: mostRecentDoc.pageCount || mostRecentDoc.page_count || mostRecentDoc.pages_processed,
+            status: mostRecentDoc.status || 'TEMPORARY',
+            databaseId: mostRecentDoc.databaseId || mostRecentDoc.id
+          };
+          
+          console.log('✅ Final document info from localStorage:', documentInfo);
+          setCurrentDocument(documentInfo);
+          setDocumentExists(true);
+        } else {
+          console.log('💿 No documents in localStorage or resetting');
         }
+      } else {
+        console.log('💿 No localStorage data found');
       }
     } catch (error) {
-      console.error('Failed to load current document:', error);
+      console.error('❌ Failed to load current document:', error);
       setDocumentExists(false);
     }
   };
@@ -304,9 +378,10 @@ export default function ChatViewer({
         
         const documentInfo = {
           id: sessionData.document.id,
-          originalName: sessionData.document.name,
-          size: sessionData.document.size,
-          pages: sessionData.document.pages,
+          fileName: sessionData.document.fileName,
+          originalFileName: sessionData.document.originalFileName,
+          fileSize: sessionData.document.fileSize,
+          pageCount: sessionData.document.pageCount,
           status: sessionData.document.status,
           uploadedAt: new Date().toISOString(),
           databaseId: sessionData.document.id
@@ -318,7 +393,7 @@ export default function ChatViewer({
         setLoadingStage('loading_rag');
         try {
           console.log('📤 Loading PDF into RAG system...');
-          await loadPdfIntoRagSystemCached(sessionData.document.id, documentInfo.originalName);
+          await loadPdfIntoRagSystemCached(sessionData.document.id, documentInfo.originalFileName);
         } catch (pdfError) {
           console.error('❌ Failed to load PDF:', pdfError);
           
@@ -337,8 +412,8 @@ export default function ChatViewer({
           id: msg.id,
           type: msg.role?.toUpperCase() as 'USER' | 'ASSISTANT',
           content: msg.content,
-          createdAt: new Date(msg.createdAt), 
-          sourceCount: msg.tokensUsed
+          created_at: new Date(msg.created_at), 
+          source_count: msg.tokens_used
         }));
         
         setChatHistory(formattedMessages);
@@ -453,7 +528,7 @@ export default function ChatViewer({
               id: msg.id,
               type: msg.role?.toUpperCase() as 'USER' | 'ASSISTANT',
               content: msg.content,
-              createdAt: new Date(msg.createdAt || msg.timestamp)
+              created_at: new Date(msg.created_at || msg.timestamp)
             }));
             setChatHistory(formattedMessages);
           }
@@ -468,108 +543,184 @@ export default function ChatViewer({
     }
   };
 
-  const loadOrCreateSession = async () => {
-    if (!user || !currentDocument || isCreatingSession || !documentExists) return;
-  
-    try {
-      setIsCreatingSession(true);
-      const documentId = currentDocument.databaseId || currentDocument.id;
-      
-      const exists = await checkDocumentExists(documentId);
-      if (!exists) {
-        console.log('Document no longer exists, cannot create session');
-        setDocumentExists(false);
-        handleDocumentDeleted();
-        return;
+  const addMessage = async (message: Omit<ChatMessage, 'id' | 'createdAt'>) => {
+    if (!documentExists) {
+      console.warn('Cannot add message - document does not exist');
+      return;
+    }
+
+    const newMessage: ChatMessage = {
+      ...message,
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date()
+    };
+
+    setChatHistory(prev => [...prev, newMessage]);
+    setHasUnsavedChanges(true);
+
+    if (currentSessionId && typeof currentSessionId === 'string' && currentSessionId.trim() !== '') {
+      try {
+        console.log('Saving message to database:', newMessage.content.substring(0, 50));
+        const response = await fetch('/backend/api/chat-messages', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            id: newMessage.id,
+            sessionId: currentSessionId,
+            role: newMessage.type.toUpperCase(),
+            content: newMessage.content,
+            createdAt: newMessage.createdAt.toISOString(),
+            tokensUsed: 0
+          })
+        });
+
+        if (response.ok) {
+          const savedMessage = await response.json();
+          console.log('Message saved successfully:', savedMessage.messageId || savedMessage.id);
+        } else if (response.status === 404) {
+          console.log('Session not found, document may have been deleted');
+          setDocumentExists(false);
+          handleDocumentDeleted();
+        } else {
+          const errorData = await response.json();
+          console.error('Failed to save message:', errorData);
+        }
+      } catch (error) {
+        console.error('Failed to save message to database:', error);
       }
+    } else {
+      console.warn('Cannot save message - invalid session ID:', currentSessionId);
+    }
+  };
+
+// ✅ IMPROVED: Better session loading/creation workflow
+const loadOrCreateSession = async () => {
+  if (!user || !currentDocument || isCreatingSession || !documentExists) return;
+
+  try {
+    setIsCreatingSession(true);
+    const documentId = currentDocument.databaseId || currentDocument.id;
+    
+    console.log('🔍 Looking for existing session for document:', documentId);
+    
+    // Check if document still exists
+    const exists = await checkDocumentExists(documentId);
+    if (!exists) {
+      console.log('❌ Document no longer exists');
+      setDocumentExists(false);
+      handleDocumentDeleted();
+      return;
+    }
+    
+    // Try to find existing session
+    const response = await fetch(
+      `/backend/api/chat-sessions/find?userId=${user.id}&documentId=${documentId}`,
+      { headers: getAuthHeaders() }
+    );
+    
+    if (response.ok) {
+      // Existing session found
+      const session = await response.json();
+      console.log('✅ Found existing session:', session.id);
+      setCurrentSessionId(session.id);
       
-      const response = await fetch(
-        `/backend/api/chat-sessions/find?userId=${user.id}&documentId=${documentId}`,
-        { headers: getAuthHeaders() }
-      );
-      
-      if (response.ok) {
-        const session = await response.json();
-        setCurrentSessionId(session.id);
-        
+      // Load existing messages
+      try {
         const messagesResponse = await fetch(
           `/backend/api/chat/${session.id}/messages`,
           { headers: getAuthHeaders() }
         );
+        
         if (messagesResponse.ok) {
-          const response = await messagesResponse.json();
-          const messages = response.messages || [];
+          const messagesData = await messagesResponse.json();
+          const messages = messagesData.messages || [];
+          
+          // Transform messages to match frontend format
           const formattedMessages = messages.map((msg: any) => ({
-            ...msg,
-            type: msg.role?.toUpperCase() as 'USER' | 'ASSISTANT',
-            createdAt: new Date(msg.createdAt || msg.timestamp)
+            id: msg.id,
+            type: msg.role.toLowerCase(), // Convert from DATABASE: USER/ASSISTANT -> FRONTEND: user/assistant
+            content: msg.content,
+            createdAt: new Date(msg.createdAt || msg.created_at),
+            sourceNodes: msg.sourceNodes || msg.source_nodes,
+            tokensUsed: msg.tokensUsed || msg.tokens_used
           }));
+          
           setChatHistory(formattedMessages);
+          console.log(`📚 Loaded ${formattedMessages.length} existing messages`);
         }
-      } else if (response.status === 404) {
-        await createNewSession(documentId);
-      } else {
-        console.log('Error loading/creating session, document may be deleted');
-        handleDocumentDeleted();
+      } catch (messageError) {
+        console.error('Failed to load messages:', messageError);
       }
-    } catch (error) {
-      console.error('Failed to load or create session:', error);
+      
+    } else if (response.status === 404) {
+      // No existing session - this is fine, we'll create one when first message is sent
+      console.log('📝 No existing session found - will create when first message is sent');
+      setCurrentSessionId(null);
+      setChatHistory([]);
+      
+    } else {
+      console.error('Error checking for session:', await response.text());
+      handleDocumentDeleted();
+    }
+    
+  } catch (error) {
+    console.error('Failed to load or create session:', error);
+    setDocumentExists(false);
+    handleDocumentDeleted();
+  } finally {
+    setIsCreatingSession(false);
+  }
+};
+  
+const createNewSession = async (documentId?: string) => {
+  if (!user || !currentDocument || isCreatingSession || !documentExists) return;
+  
+  if (!currentDocument.databaseId) {
+    toast.error('Document is not saved to your account');
+    return;
+  }
+  
+  try {
+    setIsCreatingSession(true);
+    const useDocumentId = documentId || currentDocument.databaseId || currentDocument.id;
+    
+    const exists = await checkDocumentExists(useDocumentId);
+    if (!exists) {
       setDocumentExists(false);
       handleDocumentDeleted();
-    } finally {
-      setIsCreatingSession(false);
-    }
-  };
-  
-  const createNewSession = async (documentId?: string) => {
-    if (!user || !currentDocument || isCreatingSession || !documentExists) return;
-    
-    if (!currentDocument.databaseId) {
-      toast.error('Document is not saved to your account');
       return;
     }
     
-    try {
-      setIsCreatingSession(true);
-      const useDocumentId = documentId || currentDocument.databaseId || currentDocument.id;
-      
-      const exists = await checkDocumentExists(useDocumentId);
-      if (!exists) {
-        setDocumentExists(false);
-        handleDocumentDeleted();
-        return;
-      }
-      
-      const response = await fetch('/backend/api/chat-sessions', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          userId: user.id,
-          documentId: useDocumentId,
-          title: `Chat with ${currentDocument.originalName}`,
-          isSaved: false
-        })
-      });
+    const response = await fetch('/backend/api/chat-sessions', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        userId: user.id,
+        documentId: useDocumentId,
+        title: `Chat with ${currentDocument.originalName}`,
+        isSaved: false
+      })
+    });
 
-      if (response.ok) {
-        const session = await response.json();
-        setCurrentSessionId(session.id);
-        setChatHistory([]);
-        console.log('New chat session created:', session.id);
-      } else if (response.status === 404) {
-        setDocumentExists(false);
-        handleDocumentDeleted();
-      } else {
-        throw new Error('Failed to create session');
-      }
-    } catch (error) {
-      console.error('Failed to create session:', error);
+    if (response.ok) {
+      const session = await response.json();
+      setCurrentSessionId(session.id);
+      setChatHistory([]);
+      console.log('New chat session created:', session.id);
+    } else if (response.status === 404) {
       setDocumentExists(false);
       handleDocumentDeleted();
-    } finally {
-      setIsCreatingSession(false);
+    } else {
+      throw new Error('Failed to create session');
     }
-  };
+  } catch (error) {
+    console.error('Failed to create session:', error);
+    setDocumentExists(false);
+    handleDocumentDeleted();
+  } finally {
+    setIsCreatingSession(false);
+  }
+};
 
   const saveSessionToDatabase = async () => {
     if (!currentSessionId || !user || chatHistory.length === 0 || !documentExists) {
@@ -639,55 +790,6 @@ export default function ChatViewer({
     }
   };
 
-  const addMessage = async (message: Omit<ChatMessage, 'id' | 'createdAt'>) => {
-    if (!documentExists) {
-      console.warn('Cannot add message - document does not exist');
-      return;
-    }
-
-    const newMessage: ChatMessage = {
-      ...message,
-      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date()
-    };
-
-    setChatHistory(prev => [...prev, newMessage]);
-    setHasUnsavedChanges(true);
-
-    if (currentSessionId && typeof currentSessionId === 'string' && currentSessionId.trim() !== '') {
-      try {
-        console.log('Saving message to database:', newMessage.content.substring(0, 50));
-        const response = await fetch('/backend/api/chat-messages', {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            id: newMessage.id,
-            sessionId: currentSessionId,
-            role: newMessage.type.toUpperCase(),
-            content: newMessage.content,
-            createdAt: newMessage.createdAt.toISOString(),
-            tokensUsed: 0
-          })
-        });
-
-        if (response.ok) {
-          const savedMessage = await response.json();
-          console.log('Message saved successfully:', savedMessage.messageId || savedMessage.id);
-        } else if (response.status === 404) {
-          console.log('Session not found, document may have been deleted');
-          setDocumentExists(false);
-          handleDocumentDeleted();
-        } else {
-          const errorData = await response.json();
-          console.error('Failed to save message:', errorData);
-        }
-      } catch (error) {
-        console.error('Failed to save message to database:', error);
-      }
-    } else {
-      console.warn('Cannot save message - invalid session ID:', currentSessionId);
-    }
-  };
 
   const handleMessageAction = (action: string, messageId: string, content?: string) => {
     switch (action) {
@@ -796,7 +898,9 @@ export default function ChatViewer({
       originalName: '',
       size: 0,
       uploadedAt: '',
-      pages_processed: 0
+      pages_processed: 0,
+      mimeType: '',
+      conversionPerformed: false
     });
   };
 
@@ -804,32 +908,32 @@ export default function ChatViewer({
     const currentQuery = queryText || query;
     
     if (!currentQuery.trim()) {
-      setError('Please enter a query');
-      return;
+        setError('Please enter a query');
+        return;
     }
 
     if (!documentExists) {
-      setError('Document no longer exists. Cannot process queries.');
-      return;
+        setError('Document no longer exists. Cannot process queries.');
+        return;
     }
 
     if (!currentSessionId && user && currentDocument) {
-      if (isCreatingSession) {
-        toast.info('Creating session, please wait...');
-        return;
-      }
-      await createNewSession();
-      
-      if (!currentSessionId) {
-        setError('Failed to create chat session');
-        return;
-      }
+        if (isCreatingSession) {
+            toast.info('Creating session, please wait...');
+            return;
+        }
+        await createNewSession();
+        
+        if (!currentSessionId) {
+            setError('Failed to create chat session');
+            return;
+        }
     }
 
     await addMessage({
-      type: 'USER',
-      content: currentQuery,
-      query: currentQuery
+        type: 'USER',
+        content: currentQuery,
+        query: currentQuery
     });
 
     setIsQuerying(true);
@@ -837,27 +941,77 @@ export default function ChatViewer({
     setQuery('');
 
     try {
-      const result = await apiService.queryDocuments(currentQuery);
-      
-      await addMessage({
-        type: 'ASSISTANT',
-        content: result.response,
-        query: currentQuery,
-        sourceCount: result.source_count
-      });
+        const result = await apiService.queryDocuments(currentQuery);
+        
+        // Check for security feedback
+        let assistantMessage = result.response;
+        let securityNotice = '';
+        
+        if (result.securityStatus === 'sanitized') {
+            securityNotice = '\n\n⚠️ Note: Your query was modified for security reasons.';
+            toast.warning('Your query was modified for security reasons');
+        }
+        
+        await addMessage({
+            type: 'ASSISTANT',
+            content: assistantMessage + securityNotice,
+            query: currentQuery,
+              sourceCount: result.source_count
+        });
+        
     } catch (error) {
-      const errorMessage = handleApiError(error);
-      setError(errorMessage);
-      
-      await addMessage({
-        type: 'ASSISTANT',
-        content: `Sorry, I encountered an error: ${errorMessage}`,
-        query: currentQuery
-      });
+        console.error('Query error:', error);
+        
+        // Handle security errors specifically
+        if (isSecurityError(error)) {
+            const securityErrorMessage = getSecurityErrorMessage(error);
+            setError(securityErrorMessage);
+            
+            let userFriendlyMessage = '';
+            let assistantResponse = '';
+            
+            switch (error.type) {
+                case 'rate_limit':
+                    userFriendlyMessage = 'Query limit reached. Please wait before asking another question.';
+                    assistantResponse = '⏱️ I\'m temporarily unavailable due to rate limiting. Please wait a moment before asking your next question.';
+                    toast.error('Query rate limit exceeded');
+                    break;
+                    
+                case 'injection':
+                    userFriendlyMessage = 'Query blocked: Please rephrase your question using normal language.';
+                    assistantResponse = '🛡️ I detected potentially harmful content in your query. Please rephrase your question using normal, conversational language and I\'ll be happy to help.';
+                    toast.warning('Query was blocked for security reasons');
+                    break;
+                    
+                default:
+                    userFriendlyMessage = securityErrorMessage;
+                    assistantResponse = `🔒 Security Error: ${securityErrorMessage}`;
+                    toast.error('Security error occurred');
+            }
+            
+            await addMessage({
+                type: 'ASSISTANT',
+                content: assistantResponse,
+                query: currentQuery
+            });
+            
+        } else {
+            // Handle regular API errors
+            const errorMessage = handleApiError(error);
+            setError(errorMessage);
+            
+            await addMessage({
+                type: 'ASSISTANT',
+                content: `❌ Sorry, I encountered an error: ${errorMessage}`,
+                query: currentQuery
+            });
+            
+            toast.error('Query failed: ' + errorMessage);
+        }
     } finally {
-      setIsQuerying(false);
+        setIsQuerying(false);
     }
-  };
+};
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -887,7 +1041,7 @@ export default function ChatViewer({
       toast.error('No document to save, user not authenticated, or document no longer exists');
       return;
     }
-
+  
     const documentStatus = currentDocument.status;
     
     console.log('📄 Document status check:', {
@@ -896,19 +1050,19 @@ export default function ChatViewer({
       documentStatus: documentStatus,
       exists: documentExists
     });
-
+  
     if (documentStatus === 'INDEXED') {
       toast.info('Document is already saved to your account');
       return;
     }
-
+  
     const savableStatuses = ['TEMPORARY', 'READY', 'UPLOADED'];
-
+  
     if (!savableStatuses.includes(documentStatus)) {
       toast.error(`Cannot save document with status: ${currentDocument.status}. Only temporary documents can be saved.`);
       return;
     }
-
+  
     try {
       setIsSaving(true);
       
@@ -919,6 +1073,7 @@ export default function ChatViewer({
         return;
       }
       
+      // ✅ FIXED: Send both field name variants for compatibility
       const response = await fetch('/backend/api/documents/save-document', {
         method: 'POST',
         headers: {
@@ -926,11 +1081,12 @@ export default function ChatViewer({
           Authorization: `Bearer ${authUtils.getToken()}`,
         },
         body: JSON.stringify({
-          document_id: currentDocument.id,
-          title: currentDocument.originalName || 'Untitled',
+          documentId: currentDocument.id,        // Frontend field name
+          document_id: currentDocument.id,       // Backend field name
+          title: currentDocument.originalFileName || currentDocument.fileName || 'Untitled',
         }),
       });
-
+  
       if (!response.ok) {
         if (response.status === 404) {
           setDocumentExists(false);
@@ -941,9 +1097,12 @@ export default function ChatViewer({
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to save document');
       }
-
+  
       const savedDocumentInfo = await response.json();
       
+      console.log('✅ Document saved successfully:', savedDocumentInfo);
+      
+      // Update current document with the saved information
       setCurrentDocument({
         ...currentDocument,
         status: 'INDEXED',
@@ -998,7 +1157,7 @@ export default function ChatViewer({
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className={`text-sm md:text-base font-semibold ${documentExists ? 'text-gray-900' : 'text-gray-500'}`}>
-                    {currentDocument.originalName}
+                    {currentDocument.fileName}
                     {!documentExists && ' (Document Deleted)'}
                   </h3>
                 </div>
@@ -1006,7 +1165,7 @@ export default function ChatViewer({
                   {documentExists ? (
                     <span className="flex items-center gap-2">
                       <span className="hidden md:block">
-                        {currentDocument.pages} pages • Document loaded
+                        {currentDocument.pageCount} pages • Document loaded
                       </span>
                       {currentSessionId && currentDocument.status === 'INDEXED' ? (
                         <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full font-medium">

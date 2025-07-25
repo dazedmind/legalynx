@@ -13,25 +13,37 @@ export async function GET(req: Request) {
   }
 
   try {
-    // Verify the JWT token
     const payload: any = jwt.verify(token, SECRET_KEY!);
     console.log("JWT Payload:", payload);
 
-    // Find the user by ID (your login route creates 'userId' in the payload)
     const user = await prisma.user.findUnique({
-      where: { id: payload.userId }, // This matches your login route
+      where: { id: payload.userId },
       select: {
         id: true,
         email: true,
         name: true,
-        email_verified: true,
+        email_verified: true, // This will automatically map from email_verified
         status: true,
-        subscription_status: true,
-        profile_picture: true,
-        job_title: true,
-        created_at: true,
-        last_login_at: true,
-        // Don't select password for security
+        profile_picture: true, // This will automatically map from profile_picture
+        job_title: true, // This will automatically map from job_title
+        created_at: true, // This will automatically map from created_at
+        last_login_at: true, // This will automatically map from last_login_at
+        
+        // Only include subscription if the model exists
+        subscription: {
+          select: {
+            plan_type: true, // This will automatically map from plan_type
+            is_active: true, // This will automatically map from is_active
+            tokens_used: true, // This will automatically map from tokens_used
+            token_limit: true, // This will automatically map from token_limit
+            days_remaining: true, // This will automatically map from days_remaining
+            billing_date: true, // This will automatically map from billing_date
+            auto_renew: true, // This will automatically map from auto_renew
+            price: true,
+            currency: true,
+            created_at: true, // This will automatically map from created_at
+          }
+        }
       }
     });
 
@@ -39,13 +51,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Simple response - just return the user data as-is
-    await prisma.$disconnect();
+    console.log("User found:", user);
     return NextResponse.json(user);
 
   } catch (err) {
-    console.error("Error verifying token:", err);
-    await prisma.$disconnect();
+    console.error("Error verifying token or fetching user:", err);
     return NextResponse.json(
       { error: "Invalid or expired token" },
       { status: 403 }
@@ -80,7 +90,7 @@ export async function PATCH(req: Request) {
         name: true,
         email_verified: true,
         status: true,
-        subscription_status: true,
+        subscription: true,
         profile_picture: true,
         job_title: true,
         created_at: true,

@@ -16,7 +16,8 @@ function ProfileSettings() {
     const [newPassword, setNewPassword] = useState('')
     const [confirmNewPassword, setConfirmNewPassword] = useState('')
     const [isLoading, setIsLoading] = useState(true)
-
+    const [changes, setChanges] = useState(false)
+    
     const formData = {
         name: name,
         email: email,
@@ -40,6 +41,7 @@ function ProfileSettings() {
         return <LoaderComponent />
     }
 
+    
     const handleSaveProfile = async () => {
         try {
             const response = await profileService.updateProfile(formData)
@@ -67,7 +69,10 @@ function ProfileSettings() {
                     name="name" 
                     className="w-auto p-2 border border-gray-300 rounded-md text-sm" 
                     placeholder='Enter your name'
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                        setName(e.target.value)
+                        setChanges(true)
+                    }}
                     value={name}
                 />
                 <InputField 
@@ -77,7 +82,10 @@ function ProfileSettings() {
                     name="email" 
                     className="w-auto p-2 border border-gray-300 rounded-md text-sm" 
                     placeholder='Enter your email'
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                        setEmail(e.target.value)
+                        setChanges(true)
+                    }}
                     value={email}
                 />
                 <InputField 
@@ -87,7 +95,10 @@ function ProfileSettings() {
                     name="job_title" 
                     className="w-auto p-2 border border-gray-300 rounded-md text-sm" 
                     placeholder='Lawyer, Paralegal, etc.'
-                    onChange={(e) => setJobTitle(e.target.value)}
+                    onChange={(e) => {
+                        setJobTitle(e.target.value)
+                        setChanges(true)
+                    }}
                     value={jobTitle}
                 />
                 <InputField 
@@ -97,7 +108,10 @@ function ProfileSettings() {
                     name="current_password" 
                     className="w-auto p-2 border border-gray-300 rounded-md text-sm" 
                     placeholder='Enter your current password'
-                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    onChange={(e) => {
+                        setCurrentPassword(e.target.value)
+                        setChanges(true)
+                    }}
                     value={currentPassword}
                 />
                 <InputField 
@@ -107,7 +121,10 @@ function ProfileSettings() {
                     name="new_password" 
                     className="w-auto p-2 border border-gray-300 rounded-md text-sm" 
                     placeholder='Enter new password'
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    onChange={(e) => {
+                        setNewPassword(e.target.value)
+                        setChanges(true)
+                    }}
                     value={newPassword}
                 />
             
@@ -118,16 +135,21 @@ function ProfileSettings() {
                     name="confirm_new_password" 
                     className="w-auto p-2 border border-gray-300 rounded-md text-sm" 
                     placeholder='Confirm new password'
-                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    onChange={(e) => {
+                        setConfirmNewPassword(e.target.value)
+                        setChanges(true)
+                    }}
                     value={confirmNewPassword}
                 />
 
-                <button onClick={handleSaveProfile} className='block md:hidden w-fit p-2 m-2 border bg-gradient-to-bl from-blue-500 to-blue-800 text-white rounded-md text-sm cursor-pointer'>
-                    <span className='flex items-center gap-2'>
-                        <Save className='w-4 h-4' />
-                        Save Changes
-                    </span>
-                </button>
+                {changes && (
+                    <button onClick={handleSaveProfile} className='block md:hidden w-fit p-2 m-2 border bg-gradient-to-bl from-blue-500 to-blue-800 text-white rounded-md text-sm cursor-pointer'>
+                        <span className='flex items-center gap-2'>
+                            <Save className='w-4 h-4' />
+                            Save Changes
+                        </span>
+                    </button>
+                )}
             </div>   
 
             <div className='flex flex-col justify-between'>
@@ -146,12 +168,14 @@ function ProfileSettings() {
                    
                 </div>
                 <div className='flex flex-col justify-end'>
-                    <button onClick={handleSaveProfile} className='hidden md:block w-fit mt-5 p-2 border bg-gradient-to-bl from-blue-500 to-blue-800 text-white rounded-md text-sm cursor-pointer'>
-                        <span className='flex items-center gap-2'>
-                            <Save className='w-4 h-4' />
-                            Save Changes
-                        </span>
-                    </button>
+                    {changes && (
+                        <button onClick={handleSaveProfile} className='hidden md:block w-fit mt-5 p-2 border bg-gradient-to-bl from-blue-500 to-blue-800 text-white rounded-md text-sm cursor-pointer'>
+                            <span className='flex items-center gap-2'>
+                                <Save className='w-4 h-4' />
+                                Save Changes
+                            </span>
+                        </button>
+                    )}
                 </div>
             </div>
         </section>
