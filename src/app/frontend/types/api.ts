@@ -4,6 +4,8 @@ export interface UploadResponse {
     originalName: string;
     size: number;
     uploadedAt: string;
+    mime_type: string;
+    conversion_performed: boolean;
   }
   
   export interface QueryResponse {

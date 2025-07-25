@@ -72,9 +72,9 @@ export async function GET(
     // Format the response
     const formattedDocument = {
       id: document.id,
-      filename: document.file_name,
-      originalName: document.original_file_name,
-      size: document.file_size,
+      fileName: document.file_name,
+      originalFileName: document.original_file_name,
+      fileSize: document.file_size,
       mimeType: document.mime_type,
       status: document.status.toLowerCase(),
       pageCount: document.page_count,
@@ -160,7 +160,8 @@ export async function DELETE(
       message: 'Document deleted successfully',
       deletedDocument: {
         id: document.id,
-        name: document.original_file_name
+        fileName: document.file_name,
+        originalFileName: document.original_file_name
       }
     });
 

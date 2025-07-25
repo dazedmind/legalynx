@@ -19,6 +19,16 @@ export type PrismaPromise<T> = $Public.PrismaPromise<T>
  */
 export type User = $Result.DefaultSelection<Prisma.$UserPayload>
 /**
+ * Model Subscription
+ * 
+ */
+export type Subscription = $Result.DefaultSelection<Prisma.$SubscriptionPayload>
+/**
+ * Model UserSettings
+ * 
+ */
+export type UserSettings = $Result.DefaultSelection<Prisma.$UserSettingsPayload>
+/**
  * Model Document
  * 
  */
@@ -104,6 +114,15 @@ export const MessageRole: {
 export type MessageRole = (typeof MessageRole)[keyof typeof MessageRole]
 
 
+export const FileNamingFormat: {
+  ORIGINAL: 'ORIGINAL',
+  ADD_TIMESTAMP: 'ADD_TIMESTAMP',
+  SEQUENTIAL_NUMBERING: 'SEQUENTIAL_NUMBERING'
+};
+
+export type FileNamingFormat = (typeof FileNamingFormat)[keyof typeof FileNamingFormat]
+
+
 export const SecurityAction: {
   LOGIN: 'LOGIN',
   LOGOUT: 'LOGOUT',
@@ -143,6 +162,10 @@ export const DocumentStatus: typeof $Enums.DocumentStatus
 export type MessageRole = $Enums.MessageRole
 
 export const MessageRole: typeof $Enums.MessageRole
+
+export type FileNamingFormat = $Enums.FileNamingFormat
+
+export const FileNamingFormat: typeof $Enums.FileNamingFormat
 
 export type SecurityAction = $Enums.SecurityAction
 
@@ -282,6 +305,26 @@ export class PrismaClient<
     * ```
     */
   get user(): Prisma.UserDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.subscription`: Exposes CRUD operations for the **Subscription** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Subscriptions
+    * const subscriptions = await prisma.subscription.findMany()
+    * ```
+    */
+  get subscription(): Prisma.SubscriptionDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.userSettings`: Exposes CRUD operations for the **UserSettings** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more UserSettings
+    * const userSettings = await prisma.userSettings.findMany()
+    * ```
+    */
+  get userSettings(): Prisma.UserSettingsDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.document`: Exposes CRUD operations for the **Document** model.
@@ -793,6 +836,8 @@ export namespace Prisma {
 
   export const ModelName: {
     User: 'User',
+    Subscription: 'Subscription',
+    UserSettings: 'UserSettings',
     Document: 'Document',
     ChatSession: 'ChatSession',
     ChatMessage: 'ChatMessage',
@@ -818,7 +863,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "document" | "chatSession" | "chatMessage" | "securityLog" | "verificationToken" | "account" | "session"
+      modelProps: "user" | "subscription" | "userSettings" | "document" | "chatSession" | "chatMessage" | "securityLog" | "verificationToken" | "account" | "session"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -893,6 +938,154 @@ export namespace Prisma {
           count: {
             args: Prisma.UserCountArgs<ExtArgs>
             result: $Utils.Optional<UserCountAggregateOutputType> | number
+          }
+        }
+      }
+      Subscription: {
+        payload: Prisma.$SubscriptionPayload<ExtArgs>
+        fields: Prisma.SubscriptionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SubscriptionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SubscriptionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SubscriptionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SubscriptionPayload>
+          }
+          findFirst: {
+            args: Prisma.SubscriptionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SubscriptionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SubscriptionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SubscriptionPayload>
+          }
+          findMany: {
+            args: Prisma.SubscriptionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SubscriptionPayload>[]
+          }
+          create: {
+            args: Prisma.SubscriptionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SubscriptionPayload>
+          }
+          createMany: {
+            args: Prisma.SubscriptionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.SubscriptionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SubscriptionPayload>[]
+          }
+          delete: {
+            args: Prisma.SubscriptionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SubscriptionPayload>
+          }
+          update: {
+            args: Prisma.SubscriptionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SubscriptionPayload>
+          }
+          deleteMany: {
+            args: Prisma.SubscriptionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SubscriptionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.SubscriptionUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SubscriptionPayload>[]
+          }
+          upsert: {
+            args: Prisma.SubscriptionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SubscriptionPayload>
+          }
+          aggregate: {
+            args: Prisma.SubscriptionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSubscription>
+          }
+          groupBy: {
+            args: Prisma.SubscriptionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SubscriptionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SubscriptionCountArgs<ExtArgs>
+            result: $Utils.Optional<SubscriptionCountAggregateOutputType> | number
+          }
+        }
+      }
+      UserSettings: {
+        payload: Prisma.$UserSettingsPayload<ExtArgs>
+        fields: Prisma.UserSettingsFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.UserSettingsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserSettingsPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.UserSettingsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserSettingsPayload>
+          }
+          findFirst: {
+            args: Prisma.UserSettingsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserSettingsPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.UserSettingsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserSettingsPayload>
+          }
+          findMany: {
+            args: Prisma.UserSettingsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserSettingsPayload>[]
+          }
+          create: {
+            args: Prisma.UserSettingsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserSettingsPayload>
+          }
+          createMany: {
+            args: Prisma.UserSettingsCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.UserSettingsCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserSettingsPayload>[]
+          }
+          delete: {
+            args: Prisma.UserSettingsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserSettingsPayload>
+          }
+          update: {
+            args: Prisma.UserSettingsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserSettingsPayload>
+          }
+          deleteMany: {
+            args: Prisma.UserSettingsDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.UserSettingsUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.UserSettingsUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserSettingsPayload>[]
+          }
+          upsert: {
+            args: Prisma.UserSettingsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserSettingsPayload>
+          }
+          aggregate: {
+            args: Prisma.UserSettingsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateUserSettings>
+          }
+          groupBy: {
+            args: Prisma.UserSettingsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<UserSettingsGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.UserSettingsCountArgs<ExtArgs>
+            result: $Utils.Optional<UserSettingsCountAggregateOutputType> | number
           }
         }
       }
@@ -1499,6 +1692,8 @@ export namespace Prisma {
   }
   export type GlobalOmitConfig = {
     user?: UserOmit
+    subscription?: SubscriptionOmit
+    userSettings?: UserSettingsOmit
     document?: DocumentOmit
     chatSession?: ChatSessionOmit
     chatMessage?: ChatMessageOmit
@@ -1754,10 +1949,6 @@ export namespace Prisma {
     password: string | null
     job_title: string | null
     profile_picture: string | null
-    subscription_status: $Enums.SubscriptionStatus | null
-    two_factor_enabled: boolean | null
-    two_factor_secret: string | null
-    ai_personality: string | null
     status: $Enums.UserStatus | null
     email_verified: boolean | null
     created_at: Date | null
@@ -1772,10 +1963,6 @@ export namespace Prisma {
     password: string | null
     job_title: string | null
     profile_picture: string | null
-    subscription_status: $Enums.SubscriptionStatus | null
-    two_factor_enabled: boolean | null
-    two_factor_secret: string | null
-    ai_personality: string | null
     status: $Enums.UserStatus | null
     email_verified: boolean | null
     created_at: Date | null
@@ -1790,10 +1977,6 @@ export namespace Prisma {
     password: number
     job_title: number
     profile_picture: number
-    subscription_status: number
-    two_factor_enabled: number
-    two_factor_secret: number
-    ai_personality: number
     status: number
     email_verified: number
     created_at: number
@@ -1810,10 +1993,6 @@ export namespace Prisma {
     password?: true
     job_title?: true
     profile_picture?: true
-    subscription_status?: true
-    two_factor_enabled?: true
-    two_factor_secret?: true
-    ai_personality?: true
     status?: true
     email_verified?: true
     created_at?: true
@@ -1828,10 +2007,6 @@ export namespace Prisma {
     password?: true
     job_title?: true
     profile_picture?: true
-    subscription_status?: true
-    two_factor_enabled?: true
-    two_factor_secret?: true
-    ai_personality?: true
     status?: true
     email_verified?: true
     created_at?: true
@@ -1846,10 +2021,6 @@ export namespace Prisma {
     password?: true
     job_title?: true
     profile_picture?: true
-    subscription_status?: true
-    two_factor_enabled?: true
-    two_factor_secret?: true
-    ai_personality?: true
     status?: true
     email_verified?: true
     created_at?: true
@@ -1937,10 +2108,6 @@ export namespace Prisma {
     password: string
     job_title: string | null
     profile_picture: string | null
-    subscription_status: $Enums.SubscriptionStatus
-    two_factor_enabled: boolean
-    two_factor_secret: string | null
-    ai_personality: string | null
     status: $Enums.UserStatus
     email_verified: boolean
     created_at: Date
@@ -1972,10 +2139,6 @@ export namespace Prisma {
     password?: boolean
     job_title?: boolean
     profile_picture?: boolean
-    subscription_status?: boolean
-    two_factor_enabled?: boolean
-    two_factor_secret?: boolean
-    ai_personality?: boolean
     status?: boolean
     email_verified?: boolean
     created_at?: boolean
@@ -1987,6 +2150,8 @@ export namespace Prisma {
     accounts?: boolean | User$accountsArgs<ExtArgs>
     sessions?: boolean | User$sessionsArgs<ExtArgs>
     verification_tokens?: boolean | User$verification_tokensArgs<ExtArgs>
+    subscription?: boolean | User$subscriptionArgs<ExtArgs>
+    user_settings?: boolean | User$user_settingsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -1997,10 +2162,6 @@ export namespace Prisma {
     password?: boolean
     job_title?: boolean
     profile_picture?: boolean
-    subscription_status?: boolean
-    two_factor_enabled?: boolean
-    two_factor_secret?: boolean
-    ai_personality?: boolean
     status?: boolean
     email_verified?: boolean
     created_at?: boolean
@@ -2015,10 +2176,6 @@ export namespace Prisma {
     password?: boolean
     job_title?: boolean
     profile_picture?: boolean
-    subscription_status?: boolean
-    two_factor_enabled?: boolean
-    two_factor_secret?: boolean
-    ai_personality?: boolean
     status?: boolean
     email_verified?: boolean
     created_at?: boolean
@@ -2033,10 +2190,6 @@ export namespace Prisma {
     password?: boolean
     job_title?: boolean
     profile_picture?: boolean
-    subscription_status?: boolean
-    two_factor_enabled?: boolean
-    two_factor_secret?: boolean
-    ai_personality?: boolean
     status?: boolean
     email_verified?: boolean
     created_at?: boolean
@@ -2044,7 +2197,7 @@ export namespace Prisma {
     last_login_at?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "password" | "job_title" | "profile_picture" | "subscription_status" | "two_factor_enabled" | "two_factor_secret" | "ai_personality" | "status" | "email_verified" | "created_at" | "updated_at" | "last_login_at", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "password" | "job_title" | "profile_picture" | "status" | "email_verified" | "created_at" | "updated_at" | "last_login_at", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     documents?: boolean | User$documentsArgs<ExtArgs>
     chat_sessions?: boolean | User$chat_sessionsArgs<ExtArgs>
@@ -2052,6 +2205,8 @@ export namespace Prisma {
     accounts?: boolean | User$accountsArgs<ExtArgs>
     sessions?: boolean | User$sessionsArgs<ExtArgs>
     verification_tokens?: boolean | User$verification_tokensArgs<ExtArgs>
+    subscription?: boolean | User$subscriptionArgs<ExtArgs>
+    user_settings?: boolean | User$user_settingsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -2066,6 +2221,8 @@ export namespace Prisma {
       accounts: Prisma.$AccountPayload<ExtArgs>[]
       sessions: Prisma.$SessionPayload<ExtArgs>[]
       verification_tokens: Prisma.$VerificationTokenPayload<ExtArgs>[]
+      subscription: Prisma.$SubscriptionPayload<ExtArgs> | null
+      user_settings: Prisma.$UserSettingsPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -2074,10 +2231,6 @@ export namespace Prisma {
       password: string
       job_title: string | null
       profile_picture: string | null
-      subscription_status: $Enums.SubscriptionStatus
-      two_factor_enabled: boolean
-      two_factor_secret: string | null
-      ai_personality: string | null
       status: $Enums.UserStatus
       email_verified: boolean
       created_at: Date
@@ -2483,6 +2636,8 @@ export namespace Prisma {
     accounts<T extends User$accountsArgs<ExtArgs> = {}>(args?: Subset<T, User$accountsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     sessions<T extends User$sessionsArgs<ExtArgs> = {}>(args?: Subset<T, User$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     verification_tokens<T extends User$verification_tokensArgs<ExtArgs> = {}>(args?: Subset<T, User$verification_tokensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    subscription<T extends User$subscriptionArgs<ExtArgs> = {}>(args?: Subset<T, User$subscriptionArgs<ExtArgs>>): Prisma__SubscriptionClient<$Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    user_settings<T extends User$user_settingsArgs<ExtArgs> = {}>(args?: Subset<T, User$user_settingsArgs<ExtArgs>>): Prisma__UserSettingsClient<$Result.GetResult<Prisma.$UserSettingsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2518,10 +2673,6 @@ export namespace Prisma {
     readonly password: FieldRef<"User", 'String'>
     readonly job_title: FieldRef<"User", 'String'>
     readonly profile_picture: FieldRef<"User", 'String'>
-    readonly subscription_status: FieldRef<"User", 'SubscriptionStatus'>
-    readonly two_factor_enabled: FieldRef<"User", 'Boolean'>
-    readonly two_factor_secret: FieldRef<"User", 'String'>
-    readonly ai_personality: FieldRef<"User", 'String'>
     readonly status: FieldRef<"User", 'UserStatus'>
     readonly email_verified: FieldRef<"User", 'Boolean'>
     readonly created_at: FieldRef<"User", 'DateTime'>
@@ -3059,6 +3210,44 @@ export namespace Prisma {
   }
 
   /**
+   * User.subscription
+   */
+  export type User$subscriptionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Subscription
+     */
+    select?: SubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Subscription
+     */
+    omit?: SubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SubscriptionInclude<ExtArgs> | null
+    where?: SubscriptionWhereInput
+  }
+
+  /**
+   * User.user_settings
+   */
+  export type User$user_settingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserSettings
+     */
+    select?: UserSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserSettings
+     */
+    omit?: UserSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserSettingsInclude<ExtArgs> | null
+    where?: UserSettingsWhereInput
+  }
+
+  /**
    * User without action
    */
   export type UserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3074,6 +3263,2674 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: UserInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model Subscription
+   */
+
+  export type AggregateSubscription = {
+    _count: SubscriptionCountAggregateOutputType | null
+    _avg: SubscriptionAvgAggregateOutputType | null
+    _sum: SubscriptionSumAggregateOutputType | null
+    _min: SubscriptionMinAggregateOutputType | null
+    _max: SubscriptionMaxAggregateOutputType | null
+  }
+
+  export type SubscriptionAvgAggregateOutputType = {
+    tokens_used: number | null
+    token_limit: number | null
+    days_remaining: number | null
+    price: number | null
+  }
+
+  export type SubscriptionSumAggregateOutputType = {
+    tokens_used: number | null
+    token_limit: number | null
+    days_remaining: number | null
+    price: number | null
+  }
+
+  export type SubscriptionMinAggregateOutputType = {
+    id: string | null
+    user_id: string | null
+    tokens_used: number | null
+    token_limit: number | null
+    billing_date: Date | null
+    days_remaining: number | null
+    plan_type: $Enums.SubscriptionStatus | null
+    price: number | null
+    currency: string | null
+    is_active: boolean | null
+    auto_renew: boolean | null
+    payment_method: string | null
+    last_four_digits: string | null
+    payment_provider: string | null
+    external_subscription_id: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    cancelled_at: Date | null
+  }
+
+  export type SubscriptionMaxAggregateOutputType = {
+    id: string | null
+    user_id: string | null
+    tokens_used: number | null
+    token_limit: number | null
+    billing_date: Date | null
+    days_remaining: number | null
+    plan_type: $Enums.SubscriptionStatus | null
+    price: number | null
+    currency: string | null
+    is_active: boolean | null
+    auto_renew: boolean | null
+    payment_method: string | null
+    last_four_digits: string | null
+    payment_provider: string | null
+    external_subscription_id: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    cancelled_at: Date | null
+  }
+
+  export type SubscriptionCountAggregateOutputType = {
+    id: number
+    user_id: number
+    tokens_used: number
+    token_limit: number
+    billing_date: number
+    days_remaining: number
+    plan_type: number
+    price: number
+    currency: number
+    is_active: number
+    auto_renew: number
+    payment_method: number
+    last_four_digits: number
+    payment_provider: number
+    external_subscription_id: number
+    created_at: number
+    updated_at: number
+    cancelled_at: number
+    _all: number
+  }
+
+
+  export type SubscriptionAvgAggregateInputType = {
+    tokens_used?: true
+    token_limit?: true
+    days_remaining?: true
+    price?: true
+  }
+
+  export type SubscriptionSumAggregateInputType = {
+    tokens_used?: true
+    token_limit?: true
+    days_remaining?: true
+    price?: true
+  }
+
+  export type SubscriptionMinAggregateInputType = {
+    id?: true
+    user_id?: true
+    tokens_used?: true
+    token_limit?: true
+    billing_date?: true
+    days_remaining?: true
+    plan_type?: true
+    price?: true
+    currency?: true
+    is_active?: true
+    auto_renew?: true
+    payment_method?: true
+    last_four_digits?: true
+    payment_provider?: true
+    external_subscription_id?: true
+    created_at?: true
+    updated_at?: true
+    cancelled_at?: true
+  }
+
+  export type SubscriptionMaxAggregateInputType = {
+    id?: true
+    user_id?: true
+    tokens_used?: true
+    token_limit?: true
+    billing_date?: true
+    days_remaining?: true
+    plan_type?: true
+    price?: true
+    currency?: true
+    is_active?: true
+    auto_renew?: true
+    payment_method?: true
+    last_four_digits?: true
+    payment_provider?: true
+    external_subscription_id?: true
+    created_at?: true
+    updated_at?: true
+    cancelled_at?: true
+  }
+
+  export type SubscriptionCountAggregateInputType = {
+    id?: true
+    user_id?: true
+    tokens_used?: true
+    token_limit?: true
+    billing_date?: true
+    days_remaining?: true
+    plan_type?: true
+    price?: true
+    currency?: true
+    is_active?: true
+    auto_renew?: true
+    payment_method?: true
+    last_four_digits?: true
+    payment_provider?: true
+    external_subscription_id?: true
+    created_at?: true
+    updated_at?: true
+    cancelled_at?: true
+    _all?: true
+  }
+
+  export type SubscriptionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Subscription to aggregate.
+     */
+    where?: SubscriptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Subscriptions to fetch.
+     */
+    orderBy?: SubscriptionOrderByWithRelationInput | SubscriptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SubscriptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Subscriptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Subscriptions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Subscriptions
+    **/
+    _count?: true | SubscriptionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SubscriptionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SubscriptionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SubscriptionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SubscriptionMaxAggregateInputType
+  }
+
+  export type GetSubscriptionAggregateType<T extends SubscriptionAggregateArgs> = {
+        [P in keyof T & keyof AggregateSubscription]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSubscription[P]>
+      : GetScalarType<T[P], AggregateSubscription[P]>
+  }
+
+
+
+
+  export type SubscriptionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SubscriptionWhereInput
+    orderBy?: SubscriptionOrderByWithAggregationInput | SubscriptionOrderByWithAggregationInput[]
+    by: SubscriptionScalarFieldEnum[] | SubscriptionScalarFieldEnum
+    having?: SubscriptionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SubscriptionCountAggregateInputType | true
+    _avg?: SubscriptionAvgAggregateInputType
+    _sum?: SubscriptionSumAggregateInputType
+    _min?: SubscriptionMinAggregateInputType
+    _max?: SubscriptionMaxAggregateInputType
+  }
+
+  export type SubscriptionGroupByOutputType = {
+    id: string
+    user_id: string
+    tokens_used: number
+    token_limit: number
+    billing_date: Date
+    days_remaining: number
+    plan_type: $Enums.SubscriptionStatus
+    price: number | null
+    currency: string
+    is_active: boolean
+    auto_renew: boolean
+    payment_method: string | null
+    last_four_digits: string | null
+    payment_provider: string | null
+    external_subscription_id: string | null
+    created_at: Date
+    updated_at: Date
+    cancelled_at: Date | null
+    _count: SubscriptionCountAggregateOutputType | null
+    _avg: SubscriptionAvgAggregateOutputType | null
+    _sum: SubscriptionSumAggregateOutputType | null
+    _min: SubscriptionMinAggregateOutputType | null
+    _max: SubscriptionMaxAggregateOutputType | null
+  }
+
+  type GetSubscriptionGroupByPayload<T extends SubscriptionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SubscriptionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SubscriptionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SubscriptionGroupByOutputType[P]>
+            : GetScalarType<T[P], SubscriptionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SubscriptionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    user_id?: boolean
+    tokens_used?: boolean
+    token_limit?: boolean
+    billing_date?: boolean
+    days_remaining?: boolean
+    plan_type?: boolean
+    price?: boolean
+    currency?: boolean
+    is_active?: boolean
+    auto_renew?: boolean
+    payment_method?: boolean
+    last_four_digits?: boolean
+    payment_provider?: boolean
+    external_subscription_id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    cancelled_at?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["subscription"]>
+
+  export type SubscriptionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    user_id?: boolean
+    tokens_used?: boolean
+    token_limit?: boolean
+    billing_date?: boolean
+    days_remaining?: boolean
+    plan_type?: boolean
+    price?: boolean
+    currency?: boolean
+    is_active?: boolean
+    auto_renew?: boolean
+    payment_method?: boolean
+    last_four_digits?: boolean
+    payment_provider?: boolean
+    external_subscription_id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    cancelled_at?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["subscription"]>
+
+  export type SubscriptionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    user_id?: boolean
+    tokens_used?: boolean
+    token_limit?: boolean
+    billing_date?: boolean
+    days_remaining?: boolean
+    plan_type?: boolean
+    price?: boolean
+    currency?: boolean
+    is_active?: boolean
+    auto_renew?: boolean
+    payment_method?: boolean
+    last_four_digits?: boolean
+    payment_provider?: boolean
+    external_subscription_id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    cancelled_at?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["subscription"]>
+
+  export type SubscriptionSelectScalar = {
+    id?: boolean
+    user_id?: boolean
+    tokens_used?: boolean
+    token_limit?: boolean
+    billing_date?: boolean
+    days_remaining?: boolean
+    plan_type?: boolean
+    price?: boolean
+    currency?: boolean
+    is_active?: boolean
+    auto_renew?: boolean
+    payment_method?: boolean
+    last_four_digits?: boolean
+    payment_provider?: boolean
+    external_subscription_id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    cancelled_at?: boolean
+  }
+
+  export type SubscriptionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "user_id" | "tokens_used" | "token_limit" | "billing_date" | "days_remaining" | "plan_type" | "price" | "currency" | "is_active" | "auto_renew" | "payment_method" | "last_four_digits" | "payment_provider" | "external_subscription_id" | "created_at" | "updated_at" | "cancelled_at", ExtArgs["result"]["subscription"]>
+  export type SubscriptionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type SubscriptionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type SubscriptionIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $SubscriptionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Subscription"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      user_id: string
+      tokens_used: number
+      token_limit: number
+      billing_date: Date
+      days_remaining: number
+      plan_type: $Enums.SubscriptionStatus
+      price: number | null
+      currency: string
+      is_active: boolean
+      auto_renew: boolean
+      payment_method: string | null
+      last_four_digits: string | null
+      payment_provider: string | null
+      external_subscription_id: string | null
+      created_at: Date
+      updated_at: Date
+      cancelled_at: Date | null
+    }, ExtArgs["result"]["subscription"]>
+    composites: {}
+  }
+
+  type SubscriptionGetPayload<S extends boolean | null | undefined | SubscriptionDefaultArgs> = $Result.GetResult<Prisma.$SubscriptionPayload, S>
+
+  type SubscriptionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SubscriptionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SubscriptionCountAggregateInputType | true
+    }
+
+  export interface SubscriptionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Subscription'], meta: { name: 'Subscription' } }
+    /**
+     * Find zero or one Subscription that matches the filter.
+     * @param {SubscriptionFindUniqueArgs} args - Arguments to find a Subscription
+     * @example
+     * // Get one Subscription
+     * const subscription = await prisma.subscription.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SubscriptionFindUniqueArgs>(args: SelectSubset<T, SubscriptionFindUniqueArgs<ExtArgs>>): Prisma__SubscriptionClient<$Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Subscription that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SubscriptionFindUniqueOrThrowArgs} args - Arguments to find a Subscription
+     * @example
+     * // Get one Subscription
+     * const subscription = await prisma.subscription.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SubscriptionFindUniqueOrThrowArgs>(args: SelectSubset<T, SubscriptionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SubscriptionClient<$Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Subscription that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SubscriptionFindFirstArgs} args - Arguments to find a Subscription
+     * @example
+     * // Get one Subscription
+     * const subscription = await prisma.subscription.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SubscriptionFindFirstArgs>(args?: SelectSubset<T, SubscriptionFindFirstArgs<ExtArgs>>): Prisma__SubscriptionClient<$Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Subscription that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SubscriptionFindFirstOrThrowArgs} args - Arguments to find a Subscription
+     * @example
+     * // Get one Subscription
+     * const subscription = await prisma.subscription.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SubscriptionFindFirstOrThrowArgs>(args?: SelectSubset<T, SubscriptionFindFirstOrThrowArgs<ExtArgs>>): Prisma__SubscriptionClient<$Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Subscriptions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SubscriptionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Subscriptions
+     * const subscriptions = await prisma.subscription.findMany()
+     * 
+     * // Get first 10 Subscriptions
+     * const subscriptions = await prisma.subscription.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const subscriptionWithIdOnly = await prisma.subscription.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SubscriptionFindManyArgs>(args?: SelectSubset<T, SubscriptionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Subscription.
+     * @param {SubscriptionCreateArgs} args - Arguments to create a Subscription.
+     * @example
+     * // Create one Subscription
+     * const Subscription = await prisma.subscription.create({
+     *   data: {
+     *     // ... data to create a Subscription
+     *   }
+     * })
+     * 
+     */
+    create<T extends SubscriptionCreateArgs>(args: SelectSubset<T, SubscriptionCreateArgs<ExtArgs>>): Prisma__SubscriptionClient<$Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Subscriptions.
+     * @param {SubscriptionCreateManyArgs} args - Arguments to create many Subscriptions.
+     * @example
+     * // Create many Subscriptions
+     * const subscription = await prisma.subscription.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SubscriptionCreateManyArgs>(args?: SelectSubset<T, SubscriptionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Subscriptions and returns the data saved in the database.
+     * @param {SubscriptionCreateManyAndReturnArgs} args - Arguments to create many Subscriptions.
+     * @example
+     * // Create many Subscriptions
+     * const subscription = await prisma.subscription.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Subscriptions and only return the `id`
+     * const subscriptionWithIdOnly = await prisma.subscription.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends SubscriptionCreateManyAndReturnArgs>(args?: SelectSubset<T, SubscriptionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a Subscription.
+     * @param {SubscriptionDeleteArgs} args - Arguments to delete one Subscription.
+     * @example
+     * // Delete one Subscription
+     * const Subscription = await prisma.subscription.delete({
+     *   where: {
+     *     // ... filter to delete one Subscription
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SubscriptionDeleteArgs>(args: SelectSubset<T, SubscriptionDeleteArgs<ExtArgs>>): Prisma__SubscriptionClient<$Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Subscription.
+     * @param {SubscriptionUpdateArgs} args - Arguments to update one Subscription.
+     * @example
+     * // Update one Subscription
+     * const subscription = await prisma.subscription.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SubscriptionUpdateArgs>(args: SelectSubset<T, SubscriptionUpdateArgs<ExtArgs>>): Prisma__SubscriptionClient<$Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Subscriptions.
+     * @param {SubscriptionDeleteManyArgs} args - Arguments to filter Subscriptions to delete.
+     * @example
+     * // Delete a few Subscriptions
+     * const { count } = await prisma.subscription.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SubscriptionDeleteManyArgs>(args?: SelectSubset<T, SubscriptionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Subscriptions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SubscriptionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Subscriptions
+     * const subscription = await prisma.subscription.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SubscriptionUpdateManyArgs>(args: SelectSubset<T, SubscriptionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Subscriptions and returns the data updated in the database.
+     * @param {SubscriptionUpdateManyAndReturnArgs} args - Arguments to update many Subscriptions.
+     * @example
+     * // Update many Subscriptions
+     * const subscription = await prisma.subscription.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more Subscriptions and only return the `id`
+     * const subscriptionWithIdOnly = await prisma.subscription.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends SubscriptionUpdateManyAndReturnArgs>(args: SelectSubset<T, SubscriptionUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one Subscription.
+     * @param {SubscriptionUpsertArgs} args - Arguments to update or create a Subscription.
+     * @example
+     * // Update or create a Subscription
+     * const subscription = await prisma.subscription.upsert({
+     *   create: {
+     *     // ... data to create a Subscription
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Subscription we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SubscriptionUpsertArgs>(args: SelectSubset<T, SubscriptionUpsertArgs<ExtArgs>>): Prisma__SubscriptionClient<$Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Subscriptions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SubscriptionCountArgs} args - Arguments to filter Subscriptions to count.
+     * @example
+     * // Count the number of Subscriptions
+     * const count = await prisma.subscription.count({
+     *   where: {
+     *     // ... the filter for the Subscriptions we want to count
+     *   }
+     * })
+    **/
+    count<T extends SubscriptionCountArgs>(
+      args?: Subset<T, SubscriptionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SubscriptionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Subscription.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SubscriptionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SubscriptionAggregateArgs>(args: Subset<T, SubscriptionAggregateArgs>): Prisma.PrismaPromise<GetSubscriptionAggregateType<T>>
+
+    /**
+     * Group by Subscription.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SubscriptionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SubscriptionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SubscriptionGroupByArgs['orderBy'] }
+        : { orderBy?: SubscriptionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SubscriptionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSubscriptionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Subscription model
+   */
+  readonly fields: SubscriptionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Subscription.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SubscriptionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Subscription model
+   */
+  interface SubscriptionFieldRefs {
+    readonly id: FieldRef<"Subscription", 'String'>
+    readonly user_id: FieldRef<"Subscription", 'String'>
+    readonly tokens_used: FieldRef<"Subscription", 'Int'>
+    readonly token_limit: FieldRef<"Subscription", 'Int'>
+    readonly billing_date: FieldRef<"Subscription", 'DateTime'>
+    readonly days_remaining: FieldRef<"Subscription", 'Int'>
+    readonly plan_type: FieldRef<"Subscription", 'SubscriptionStatus'>
+    readonly price: FieldRef<"Subscription", 'Float'>
+    readonly currency: FieldRef<"Subscription", 'String'>
+    readonly is_active: FieldRef<"Subscription", 'Boolean'>
+    readonly auto_renew: FieldRef<"Subscription", 'Boolean'>
+    readonly payment_method: FieldRef<"Subscription", 'String'>
+    readonly last_four_digits: FieldRef<"Subscription", 'String'>
+    readonly payment_provider: FieldRef<"Subscription", 'String'>
+    readonly external_subscription_id: FieldRef<"Subscription", 'String'>
+    readonly created_at: FieldRef<"Subscription", 'DateTime'>
+    readonly updated_at: FieldRef<"Subscription", 'DateTime'>
+    readonly cancelled_at: FieldRef<"Subscription", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Subscription findUnique
+   */
+  export type SubscriptionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Subscription
+     */
+    select?: SubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Subscription
+     */
+    omit?: SubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which Subscription to fetch.
+     */
+    where: SubscriptionWhereUniqueInput
+  }
+
+  /**
+   * Subscription findUniqueOrThrow
+   */
+  export type SubscriptionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Subscription
+     */
+    select?: SubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Subscription
+     */
+    omit?: SubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which Subscription to fetch.
+     */
+    where: SubscriptionWhereUniqueInput
+  }
+
+  /**
+   * Subscription findFirst
+   */
+  export type SubscriptionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Subscription
+     */
+    select?: SubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Subscription
+     */
+    omit?: SubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which Subscription to fetch.
+     */
+    where?: SubscriptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Subscriptions to fetch.
+     */
+    orderBy?: SubscriptionOrderByWithRelationInput | SubscriptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Subscriptions.
+     */
+    cursor?: SubscriptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Subscriptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Subscriptions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Subscriptions.
+     */
+    distinct?: SubscriptionScalarFieldEnum | SubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * Subscription findFirstOrThrow
+   */
+  export type SubscriptionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Subscription
+     */
+    select?: SubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Subscription
+     */
+    omit?: SubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which Subscription to fetch.
+     */
+    where?: SubscriptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Subscriptions to fetch.
+     */
+    orderBy?: SubscriptionOrderByWithRelationInput | SubscriptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Subscriptions.
+     */
+    cursor?: SubscriptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Subscriptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Subscriptions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Subscriptions.
+     */
+    distinct?: SubscriptionScalarFieldEnum | SubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * Subscription findMany
+   */
+  export type SubscriptionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Subscription
+     */
+    select?: SubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Subscription
+     */
+    omit?: SubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which Subscriptions to fetch.
+     */
+    where?: SubscriptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Subscriptions to fetch.
+     */
+    orderBy?: SubscriptionOrderByWithRelationInput | SubscriptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Subscriptions.
+     */
+    cursor?: SubscriptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Subscriptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Subscriptions.
+     */
+    skip?: number
+    distinct?: SubscriptionScalarFieldEnum | SubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * Subscription create
+   */
+  export type SubscriptionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Subscription
+     */
+    select?: SubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Subscription
+     */
+    omit?: SubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SubscriptionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Subscription.
+     */
+    data: XOR<SubscriptionCreateInput, SubscriptionUncheckedCreateInput>
+  }
+
+  /**
+   * Subscription createMany
+   */
+  export type SubscriptionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Subscriptions.
+     */
+    data: SubscriptionCreateManyInput | SubscriptionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Subscription createManyAndReturn
+   */
+  export type SubscriptionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Subscription
+     */
+    select?: SubscriptionSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Subscription
+     */
+    omit?: SubscriptionOmit<ExtArgs> | null
+    /**
+     * The data used to create many Subscriptions.
+     */
+    data: SubscriptionCreateManyInput | SubscriptionCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SubscriptionIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * Subscription update
+   */
+  export type SubscriptionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Subscription
+     */
+    select?: SubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Subscription
+     */
+    omit?: SubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SubscriptionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Subscription.
+     */
+    data: XOR<SubscriptionUpdateInput, SubscriptionUncheckedUpdateInput>
+    /**
+     * Choose, which Subscription to update.
+     */
+    where: SubscriptionWhereUniqueInput
+  }
+
+  /**
+   * Subscription updateMany
+   */
+  export type SubscriptionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Subscriptions.
+     */
+    data: XOR<SubscriptionUpdateManyMutationInput, SubscriptionUncheckedUpdateManyInput>
+    /**
+     * Filter which Subscriptions to update
+     */
+    where?: SubscriptionWhereInput
+    /**
+     * Limit how many Subscriptions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Subscription updateManyAndReturn
+   */
+  export type SubscriptionUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Subscription
+     */
+    select?: SubscriptionSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Subscription
+     */
+    omit?: SubscriptionOmit<ExtArgs> | null
+    /**
+     * The data used to update Subscriptions.
+     */
+    data: XOR<SubscriptionUpdateManyMutationInput, SubscriptionUncheckedUpdateManyInput>
+    /**
+     * Filter which Subscriptions to update
+     */
+    where?: SubscriptionWhereInput
+    /**
+     * Limit how many Subscriptions to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SubscriptionIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * Subscription upsert
+   */
+  export type SubscriptionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Subscription
+     */
+    select?: SubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Subscription
+     */
+    omit?: SubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SubscriptionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Subscription to update in case it exists.
+     */
+    where: SubscriptionWhereUniqueInput
+    /**
+     * In case the Subscription found by the `where` argument doesn't exist, create a new Subscription with this data.
+     */
+    create: XOR<SubscriptionCreateInput, SubscriptionUncheckedCreateInput>
+    /**
+     * In case the Subscription was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SubscriptionUpdateInput, SubscriptionUncheckedUpdateInput>
+  }
+
+  /**
+   * Subscription delete
+   */
+  export type SubscriptionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Subscription
+     */
+    select?: SubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Subscription
+     */
+    omit?: SubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter which Subscription to delete.
+     */
+    where: SubscriptionWhereUniqueInput
+  }
+
+  /**
+   * Subscription deleteMany
+   */
+  export type SubscriptionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Subscriptions to delete
+     */
+    where?: SubscriptionWhereInput
+    /**
+     * Limit how many Subscriptions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Subscription without action
+   */
+  export type SubscriptionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Subscription
+     */
+    select?: SubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Subscription
+     */
+    omit?: SubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SubscriptionInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model UserSettings
+   */
+
+  export type AggregateUserSettings = {
+    _count: UserSettingsCountAggregateOutputType | null
+    _avg: UserSettingsAvgAggregateOutputType | null
+    _sum: UserSettingsSumAggregateOutputType | null
+    _min: UserSettingsMinAggregateOutputType | null
+    _max: UserSettingsMaxAggregateOutputType | null
+  }
+
+  export type UserSettingsAvgAggregateOutputType = {
+    file_retention_days: number | null
+    max_file_size_mb: number | null
+  }
+
+  export type UserSettingsSumAggregateOutputType = {
+    file_retention_days: number | null
+    max_file_size_mb: number | null
+  }
+
+  export type UserSettingsMinAggregateOutputType = {
+    id: string | null
+    user_id: string | null
+    ai_personality: string | null
+    voice_enabled: boolean | null
+    preferred_voice: string | null
+    auto_rename_files: boolean | null
+    file_naming_format: $Enums.FileNamingFormat | null
+    file_naming_title: string | null
+    file_client_name: string | null
+    file_retention_days: number | null
+    auto_delete_files: boolean | null
+    max_file_size_mb: number | null
+    two_factor_enabled: boolean | null
+    two_factor_secret: string | null
+    login_notifications: boolean | null
+    security_alerts: boolean | null
+    data_sharing_consent: boolean | null
+    analytics_consent: boolean | null
+    marketing_emails: boolean | null
+    theme: string | null
+    language: string | null
+    timezone: string | null
+    date_format: string | null
+    email_notifications: boolean | null
+    push_notifications: boolean | null
+    last_settings_update: Date | null
+    created_at: Date | null
+    updated_at: Date | null
+  }
+
+  export type UserSettingsMaxAggregateOutputType = {
+    id: string | null
+    user_id: string | null
+    ai_personality: string | null
+    voice_enabled: boolean | null
+    preferred_voice: string | null
+    auto_rename_files: boolean | null
+    file_naming_format: $Enums.FileNamingFormat | null
+    file_naming_title: string | null
+    file_client_name: string | null
+    file_retention_days: number | null
+    auto_delete_files: boolean | null
+    max_file_size_mb: number | null
+    two_factor_enabled: boolean | null
+    two_factor_secret: string | null
+    login_notifications: boolean | null
+    security_alerts: boolean | null
+    data_sharing_consent: boolean | null
+    analytics_consent: boolean | null
+    marketing_emails: boolean | null
+    theme: string | null
+    language: string | null
+    timezone: string | null
+    date_format: string | null
+    email_notifications: boolean | null
+    push_notifications: boolean | null
+    last_settings_update: Date | null
+    created_at: Date | null
+    updated_at: Date | null
+  }
+
+  export type UserSettingsCountAggregateOutputType = {
+    id: number
+    user_id: number
+    ai_personality: number
+    voice_enabled: number
+    preferred_voice: number
+    auto_rename_files: number
+    file_naming_format: number
+    file_naming_title: number
+    file_client_name: number
+    file_retention_days: number
+    auto_delete_files: number
+    max_file_size_mb: number
+    two_factor_enabled: number
+    two_factor_secret: number
+    login_notifications: number
+    security_alerts: number
+    data_sharing_consent: number
+    analytics_consent: number
+    marketing_emails: number
+    theme: number
+    language: number
+    timezone: number
+    date_format: number
+    email_notifications: number
+    push_notifications: number
+    last_settings_update: number
+    created_at: number
+    updated_at: number
+    _all: number
+  }
+
+
+  export type UserSettingsAvgAggregateInputType = {
+    file_retention_days?: true
+    max_file_size_mb?: true
+  }
+
+  export type UserSettingsSumAggregateInputType = {
+    file_retention_days?: true
+    max_file_size_mb?: true
+  }
+
+  export type UserSettingsMinAggregateInputType = {
+    id?: true
+    user_id?: true
+    ai_personality?: true
+    voice_enabled?: true
+    preferred_voice?: true
+    auto_rename_files?: true
+    file_naming_format?: true
+    file_naming_title?: true
+    file_client_name?: true
+    file_retention_days?: true
+    auto_delete_files?: true
+    max_file_size_mb?: true
+    two_factor_enabled?: true
+    two_factor_secret?: true
+    login_notifications?: true
+    security_alerts?: true
+    data_sharing_consent?: true
+    analytics_consent?: true
+    marketing_emails?: true
+    theme?: true
+    language?: true
+    timezone?: true
+    date_format?: true
+    email_notifications?: true
+    push_notifications?: true
+    last_settings_update?: true
+    created_at?: true
+    updated_at?: true
+  }
+
+  export type UserSettingsMaxAggregateInputType = {
+    id?: true
+    user_id?: true
+    ai_personality?: true
+    voice_enabled?: true
+    preferred_voice?: true
+    auto_rename_files?: true
+    file_naming_format?: true
+    file_naming_title?: true
+    file_client_name?: true
+    file_retention_days?: true
+    auto_delete_files?: true
+    max_file_size_mb?: true
+    two_factor_enabled?: true
+    two_factor_secret?: true
+    login_notifications?: true
+    security_alerts?: true
+    data_sharing_consent?: true
+    analytics_consent?: true
+    marketing_emails?: true
+    theme?: true
+    language?: true
+    timezone?: true
+    date_format?: true
+    email_notifications?: true
+    push_notifications?: true
+    last_settings_update?: true
+    created_at?: true
+    updated_at?: true
+  }
+
+  export type UserSettingsCountAggregateInputType = {
+    id?: true
+    user_id?: true
+    ai_personality?: true
+    voice_enabled?: true
+    preferred_voice?: true
+    auto_rename_files?: true
+    file_naming_format?: true
+    file_naming_title?: true
+    file_client_name?: true
+    file_retention_days?: true
+    auto_delete_files?: true
+    max_file_size_mb?: true
+    two_factor_enabled?: true
+    two_factor_secret?: true
+    login_notifications?: true
+    security_alerts?: true
+    data_sharing_consent?: true
+    analytics_consent?: true
+    marketing_emails?: true
+    theme?: true
+    language?: true
+    timezone?: true
+    date_format?: true
+    email_notifications?: true
+    push_notifications?: true
+    last_settings_update?: true
+    created_at?: true
+    updated_at?: true
+    _all?: true
+  }
+
+  export type UserSettingsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which UserSettings to aggregate.
+     */
+    where?: UserSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserSettings to fetch.
+     */
+    orderBy?: UserSettingsOrderByWithRelationInput | UserSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: UserSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned UserSettings
+    **/
+    _count?: true | UserSettingsCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: UserSettingsAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: UserSettingsSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: UserSettingsMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: UserSettingsMaxAggregateInputType
+  }
+
+  export type GetUserSettingsAggregateType<T extends UserSettingsAggregateArgs> = {
+        [P in keyof T & keyof AggregateUserSettings]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateUserSettings[P]>
+      : GetScalarType<T[P], AggregateUserSettings[P]>
+  }
+
+
+
+
+  export type UserSettingsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: UserSettingsWhereInput
+    orderBy?: UserSettingsOrderByWithAggregationInput | UserSettingsOrderByWithAggregationInput[]
+    by: UserSettingsScalarFieldEnum[] | UserSettingsScalarFieldEnum
+    having?: UserSettingsScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: UserSettingsCountAggregateInputType | true
+    _avg?: UserSettingsAvgAggregateInputType
+    _sum?: UserSettingsSumAggregateInputType
+    _min?: UserSettingsMinAggregateInputType
+    _max?: UserSettingsMaxAggregateInputType
+  }
+
+  export type UserSettingsGroupByOutputType = {
+    id: string
+    user_id: string
+    ai_personality: string | null
+    voice_enabled: boolean
+    preferred_voice: string | null
+    auto_rename_files: boolean
+    file_naming_format: $Enums.FileNamingFormat
+    file_naming_title: string | null
+    file_client_name: string | null
+    file_retention_days: number | null
+    auto_delete_files: boolean
+    max_file_size_mb: number
+    two_factor_enabled: boolean
+    two_factor_secret: string | null
+    login_notifications: boolean
+    security_alerts: boolean
+    data_sharing_consent: boolean
+    analytics_consent: boolean
+    marketing_emails: boolean
+    theme: string
+    language: string
+    timezone: string
+    date_format: string
+    email_notifications: boolean
+    push_notifications: boolean
+    last_settings_update: Date
+    created_at: Date
+    updated_at: Date
+    _count: UserSettingsCountAggregateOutputType | null
+    _avg: UserSettingsAvgAggregateOutputType | null
+    _sum: UserSettingsSumAggregateOutputType | null
+    _min: UserSettingsMinAggregateOutputType | null
+    _max: UserSettingsMaxAggregateOutputType | null
+  }
+
+  type GetUserSettingsGroupByPayload<T extends UserSettingsGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<UserSettingsGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof UserSettingsGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], UserSettingsGroupByOutputType[P]>
+            : GetScalarType<T[P], UserSettingsGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type UserSettingsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    user_id?: boolean
+    ai_personality?: boolean
+    voice_enabled?: boolean
+    preferred_voice?: boolean
+    auto_rename_files?: boolean
+    file_naming_format?: boolean
+    file_naming_title?: boolean
+    file_client_name?: boolean
+    file_retention_days?: boolean
+    auto_delete_files?: boolean
+    max_file_size_mb?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: boolean
+    login_notifications?: boolean
+    security_alerts?: boolean
+    data_sharing_consent?: boolean
+    analytics_consent?: boolean
+    marketing_emails?: boolean
+    theme?: boolean
+    language?: boolean
+    timezone?: boolean
+    date_format?: boolean
+    email_notifications?: boolean
+    push_notifications?: boolean
+    last_settings_update?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["userSettings"]>
+
+  export type UserSettingsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    user_id?: boolean
+    ai_personality?: boolean
+    voice_enabled?: boolean
+    preferred_voice?: boolean
+    auto_rename_files?: boolean
+    file_naming_format?: boolean
+    file_naming_title?: boolean
+    file_client_name?: boolean
+    file_retention_days?: boolean
+    auto_delete_files?: boolean
+    max_file_size_mb?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: boolean
+    login_notifications?: boolean
+    security_alerts?: boolean
+    data_sharing_consent?: boolean
+    analytics_consent?: boolean
+    marketing_emails?: boolean
+    theme?: boolean
+    language?: boolean
+    timezone?: boolean
+    date_format?: boolean
+    email_notifications?: boolean
+    push_notifications?: boolean
+    last_settings_update?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["userSettings"]>
+
+  export type UserSettingsSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    user_id?: boolean
+    ai_personality?: boolean
+    voice_enabled?: boolean
+    preferred_voice?: boolean
+    auto_rename_files?: boolean
+    file_naming_format?: boolean
+    file_naming_title?: boolean
+    file_client_name?: boolean
+    file_retention_days?: boolean
+    auto_delete_files?: boolean
+    max_file_size_mb?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: boolean
+    login_notifications?: boolean
+    security_alerts?: boolean
+    data_sharing_consent?: boolean
+    analytics_consent?: boolean
+    marketing_emails?: boolean
+    theme?: boolean
+    language?: boolean
+    timezone?: boolean
+    date_format?: boolean
+    email_notifications?: boolean
+    push_notifications?: boolean
+    last_settings_update?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["userSettings"]>
+
+  export type UserSettingsSelectScalar = {
+    id?: boolean
+    user_id?: boolean
+    ai_personality?: boolean
+    voice_enabled?: boolean
+    preferred_voice?: boolean
+    auto_rename_files?: boolean
+    file_naming_format?: boolean
+    file_naming_title?: boolean
+    file_client_name?: boolean
+    file_retention_days?: boolean
+    auto_delete_files?: boolean
+    max_file_size_mb?: boolean
+    two_factor_enabled?: boolean
+    two_factor_secret?: boolean
+    login_notifications?: boolean
+    security_alerts?: boolean
+    data_sharing_consent?: boolean
+    analytics_consent?: boolean
+    marketing_emails?: boolean
+    theme?: boolean
+    language?: boolean
+    timezone?: boolean
+    date_format?: boolean
+    email_notifications?: boolean
+    push_notifications?: boolean
+    last_settings_update?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+  }
+
+  export type UserSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "user_id" | "ai_personality" | "voice_enabled" | "preferred_voice" | "auto_rename_files" | "file_naming_format" | "file_naming_title" | "file_client_name" | "file_retention_days" | "auto_delete_files" | "max_file_size_mb" | "two_factor_enabled" | "two_factor_secret" | "login_notifications" | "security_alerts" | "data_sharing_consent" | "analytics_consent" | "marketing_emails" | "theme" | "language" | "timezone" | "date_format" | "email_notifications" | "push_notifications" | "last_settings_update" | "created_at" | "updated_at", ExtArgs["result"]["userSettings"]>
+  export type UserSettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type UserSettingsIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type UserSettingsIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $UserSettingsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "UserSettings"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      user_id: string
+      ai_personality: string | null
+      voice_enabled: boolean
+      preferred_voice: string | null
+      auto_rename_files: boolean
+      file_naming_format: $Enums.FileNamingFormat
+      file_naming_title: string | null
+      file_client_name: string | null
+      file_retention_days: number | null
+      auto_delete_files: boolean
+      max_file_size_mb: number
+      two_factor_enabled: boolean
+      two_factor_secret: string | null
+      login_notifications: boolean
+      security_alerts: boolean
+      data_sharing_consent: boolean
+      analytics_consent: boolean
+      marketing_emails: boolean
+      theme: string
+      language: string
+      timezone: string
+      date_format: string
+      email_notifications: boolean
+      push_notifications: boolean
+      last_settings_update: Date
+      created_at: Date
+      updated_at: Date
+    }, ExtArgs["result"]["userSettings"]>
+    composites: {}
+  }
+
+  type UserSettingsGetPayload<S extends boolean | null | undefined | UserSettingsDefaultArgs> = $Result.GetResult<Prisma.$UserSettingsPayload, S>
+
+  type UserSettingsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<UserSettingsFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: UserSettingsCountAggregateInputType | true
+    }
+
+  export interface UserSettingsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['UserSettings'], meta: { name: 'UserSettings' } }
+    /**
+     * Find zero or one UserSettings that matches the filter.
+     * @param {UserSettingsFindUniqueArgs} args - Arguments to find a UserSettings
+     * @example
+     * // Get one UserSettings
+     * const userSettings = await prisma.userSettings.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends UserSettingsFindUniqueArgs>(args: SelectSubset<T, UserSettingsFindUniqueArgs<ExtArgs>>): Prisma__UserSettingsClient<$Result.GetResult<Prisma.$UserSettingsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one UserSettings that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {UserSettingsFindUniqueOrThrowArgs} args - Arguments to find a UserSettings
+     * @example
+     * // Get one UserSettings
+     * const userSettings = await prisma.userSettings.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends UserSettingsFindUniqueOrThrowArgs>(args: SelectSubset<T, UserSettingsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__UserSettingsClient<$Result.GetResult<Prisma.$UserSettingsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first UserSettings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserSettingsFindFirstArgs} args - Arguments to find a UserSettings
+     * @example
+     * // Get one UserSettings
+     * const userSettings = await prisma.userSettings.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends UserSettingsFindFirstArgs>(args?: SelectSubset<T, UserSettingsFindFirstArgs<ExtArgs>>): Prisma__UserSettingsClient<$Result.GetResult<Prisma.$UserSettingsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first UserSettings that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserSettingsFindFirstOrThrowArgs} args - Arguments to find a UserSettings
+     * @example
+     * // Get one UserSettings
+     * const userSettings = await prisma.userSettings.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends UserSettingsFindFirstOrThrowArgs>(args?: SelectSubset<T, UserSettingsFindFirstOrThrowArgs<ExtArgs>>): Prisma__UserSettingsClient<$Result.GetResult<Prisma.$UserSettingsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more UserSettings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserSettingsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all UserSettings
+     * const userSettings = await prisma.userSettings.findMany()
+     * 
+     * // Get first 10 UserSettings
+     * const userSettings = await prisma.userSettings.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const userSettingsWithIdOnly = await prisma.userSettings.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends UserSettingsFindManyArgs>(args?: SelectSubset<T, UserSettingsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserSettingsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a UserSettings.
+     * @param {UserSettingsCreateArgs} args - Arguments to create a UserSettings.
+     * @example
+     * // Create one UserSettings
+     * const UserSettings = await prisma.userSettings.create({
+     *   data: {
+     *     // ... data to create a UserSettings
+     *   }
+     * })
+     * 
+     */
+    create<T extends UserSettingsCreateArgs>(args: SelectSubset<T, UserSettingsCreateArgs<ExtArgs>>): Prisma__UserSettingsClient<$Result.GetResult<Prisma.$UserSettingsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many UserSettings.
+     * @param {UserSettingsCreateManyArgs} args - Arguments to create many UserSettings.
+     * @example
+     * // Create many UserSettings
+     * const userSettings = await prisma.userSettings.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends UserSettingsCreateManyArgs>(args?: SelectSubset<T, UserSettingsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many UserSettings and returns the data saved in the database.
+     * @param {UserSettingsCreateManyAndReturnArgs} args - Arguments to create many UserSettings.
+     * @example
+     * // Create many UserSettings
+     * const userSettings = await prisma.userSettings.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many UserSettings and only return the `id`
+     * const userSettingsWithIdOnly = await prisma.userSettings.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends UserSettingsCreateManyAndReturnArgs>(args?: SelectSubset<T, UserSettingsCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserSettingsPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a UserSettings.
+     * @param {UserSettingsDeleteArgs} args - Arguments to delete one UserSettings.
+     * @example
+     * // Delete one UserSettings
+     * const UserSettings = await prisma.userSettings.delete({
+     *   where: {
+     *     // ... filter to delete one UserSettings
+     *   }
+     * })
+     * 
+     */
+    delete<T extends UserSettingsDeleteArgs>(args: SelectSubset<T, UserSettingsDeleteArgs<ExtArgs>>): Prisma__UserSettingsClient<$Result.GetResult<Prisma.$UserSettingsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one UserSettings.
+     * @param {UserSettingsUpdateArgs} args - Arguments to update one UserSettings.
+     * @example
+     * // Update one UserSettings
+     * const userSettings = await prisma.userSettings.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends UserSettingsUpdateArgs>(args: SelectSubset<T, UserSettingsUpdateArgs<ExtArgs>>): Prisma__UserSettingsClient<$Result.GetResult<Prisma.$UserSettingsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more UserSettings.
+     * @param {UserSettingsDeleteManyArgs} args - Arguments to filter UserSettings to delete.
+     * @example
+     * // Delete a few UserSettings
+     * const { count } = await prisma.userSettings.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends UserSettingsDeleteManyArgs>(args?: SelectSubset<T, UserSettingsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more UserSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserSettingsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many UserSettings
+     * const userSettings = await prisma.userSettings.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends UserSettingsUpdateManyArgs>(args: SelectSubset<T, UserSettingsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more UserSettings and returns the data updated in the database.
+     * @param {UserSettingsUpdateManyAndReturnArgs} args - Arguments to update many UserSettings.
+     * @example
+     * // Update many UserSettings
+     * const userSettings = await prisma.userSettings.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more UserSettings and only return the `id`
+     * const userSettingsWithIdOnly = await prisma.userSettings.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends UserSettingsUpdateManyAndReturnArgs>(args: SelectSubset<T, UserSettingsUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserSettingsPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one UserSettings.
+     * @param {UserSettingsUpsertArgs} args - Arguments to update or create a UserSettings.
+     * @example
+     * // Update or create a UserSettings
+     * const userSettings = await prisma.userSettings.upsert({
+     *   create: {
+     *     // ... data to create a UserSettings
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the UserSettings we want to update
+     *   }
+     * })
+     */
+    upsert<T extends UserSettingsUpsertArgs>(args: SelectSubset<T, UserSettingsUpsertArgs<ExtArgs>>): Prisma__UserSettingsClient<$Result.GetResult<Prisma.$UserSettingsPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of UserSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserSettingsCountArgs} args - Arguments to filter UserSettings to count.
+     * @example
+     * // Count the number of UserSettings
+     * const count = await prisma.userSettings.count({
+     *   where: {
+     *     // ... the filter for the UserSettings we want to count
+     *   }
+     * })
+    **/
+    count<T extends UserSettingsCountArgs>(
+      args?: Subset<T, UserSettingsCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], UserSettingsCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a UserSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserSettingsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends UserSettingsAggregateArgs>(args: Subset<T, UserSettingsAggregateArgs>): Prisma.PrismaPromise<GetUserSettingsAggregateType<T>>
+
+    /**
+     * Group by UserSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserSettingsGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends UserSettingsGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: UserSettingsGroupByArgs['orderBy'] }
+        : { orderBy?: UserSettingsGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, UserSettingsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetUserSettingsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the UserSettings model
+   */
+  readonly fields: UserSettingsFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for UserSettings.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__UserSettingsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the UserSettings model
+   */
+  interface UserSettingsFieldRefs {
+    readonly id: FieldRef<"UserSettings", 'String'>
+    readonly user_id: FieldRef<"UserSettings", 'String'>
+    readonly ai_personality: FieldRef<"UserSettings", 'String'>
+    readonly voice_enabled: FieldRef<"UserSettings", 'Boolean'>
+    readonly preferred_voice: FieldRef<"UserSettings", 'String'>
+    readonly auto_rename_files: FieldRef<"UserSettings", 'Boolean'>
+    readonly file_naming_format: FieldRef<"UserSettings", 'FileNamingFormat'>
+    readonly file_naming_title: FieldRef<"UserSettings", 'String'>
+    readonly file_client_name: FieldRef<"UserSettings", 'String'>
+    readonly file_retention_days: FieldRef<"UserSettings", 'Int'>
+    readonly auto_delete_files: FieldRef<"UserSettings", 'Boolean'>
+    readonly max_file_size_mb: FieldRef<"UserSettings", 'Int'>
+    readonly two_factor_enabled: FieldRef<"UserSettings", 'Boolean'>
+    readonly two_factor_secret: FieldRef<"UserSettings", 'String'>
+    readonly login_notifications: FieldRef<"UserSettings", 'Boolean'>
+    readonly security_alerts: FieldRef<"UserSettings", 'Boolean'>
+    readonly data_sharing_consent: FieldRef<"UserSettings", 'Boolean'>
+    readonly analytics_consent: FieldRef<"UserSettings", 'Boolean'>
+    readonly marketing_emails: FieldRef<"UserSettings", 'Boolean'>
+    readonly theme: FieldRef<"UserSettings", 'String'>
+    readonly language: FieldRef<"UserSettings", 'String'>
+    readonly timezone: FieldRef<"UserSettings", 'String'>
+    readonly date_format: FieldRef<"UserSettings", 'String'>
+    readonly email_notifications: FieldRef<"UserSettings", 'Boolean'>
+    readonly push_notifications: FieldRef<"UserSettings", 'Boolean'>
+    readonly last_settings_update: FieldRef<"UserSettings", 'DateTime'>
+    readonly created_at: FieldRef<"UserSettings", 'DateTime'>
+    readonly updated_at: FieldRef<"UserSettings", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * UserSettings findUnique
+   */
+  export type UserSettingsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserSettings
+     */
+    select?: UserSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserSettings
+     */
+    omit?: UserSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which UserSettings to fetch.
+     */
+    where: UserSettingsWhereUniqueInput
+  }
+
+  /**
+   * UserSettings findUniqueOrThrow
+   */
+  export type UserSettingsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserSettings
+     */
+    select?: UserSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserSettings
+     */
+    omit?: UserSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which UserSettings to fetch.
+     */
+    where: UserSettingsWhereUniqueInput
+  }
+
+  /**
+   * UserSettings findFirst
+   */
+  export type UserSettingsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserSettings
+     */
+    select?: UserSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserSettings
+     */
+    omit?: UserSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which UserSettings to fetch.
+     */
+    where?: UserSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserSettings to fetch.
+     */
+    orderBy?: UserSettingsOrderByWithRelationInput | UserSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for UserSettings.
+     */
+    cursor?: UserSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UserSettings.
+     */
+    distinct?: UserSettingsScalarFieldEnum | UserSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * UserSettings findFirstOrThrow
+   */
+  export type UserSettingsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserSettings
+     */
+    select?: UserSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserSettings
+     */
+    omit?: UserSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which UserSettings to fetch.
+     */
+    where?: UserSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserSettings to fetch.
+     */
+    orderBy?: UserSettingsOrderByWithRelationInput | UserSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for UserSettings.
+     */
+    cursor?: UserSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UserSettings.
+     */
+    distinct?: UserSettingsScalarFieldEnum | UserSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * UserSettings findMany
+   */
+  export type UserSettingsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserSettings
+     */
+    select?: UserSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserSettings
+     */
+    omit?: UserSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which UserSettings to fetch.
+     */
+    where?: UserSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserSettings to fetch.
+     */
+    orderBy?: UserSettingsOrderByWithRelationInput | UserSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing UserSettings.
+     */
+    cursor?: UserSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserSettings.
+     */
+    skip?: number
+    distinct?: UserSettingsScalarFieldEnum | UserSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * UserSettings create
+   */
+  export type UserSettingsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserSettings
+     */
+    select?: UserSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserSettings
+     */
+    omit?: UserSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserSettingsInclude<ExtArgs> | null
+    /**
+     * The data needed to create a UserSettings.
+     */
+    data: XOR<UserSettingsCreateInput, UserSettingsUncheckedCreateInput>
+  }
+
+  /**
+   * UserSettings createMany
+   */
+  export type UserSettingsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many UserSettings.
+     */
+    data: UserSettingsCreateManyInput | UserSettingsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * UserSettings createManyAndReturn
+   */
+  export type UserSettingsCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserSettings
+     */
+    select?: UserSettingsSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserSettings
+     */
+    omit?: UserSettingsOmit<ExtArgs> | null
+    /**
+     * The data used to create many UserSettings.
+     */
+    data: UserSettingsCreateManyInput | UserSettingsCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserSettingsIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * UserSettings update
+   */
+  export type UserSettingsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserSettings
+     */
+    select?: UserSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserSettings
+     */
+    omit?: UserSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserSettingsInclude<ExtArgs> | null
+    /**
+     * The data needed to update a UserSettings.
+     */
+    data: XOR<UserSettingsUpdateInput, UserSettingsUncheckedUpdateInput>
+    /**
+     * Choose, which UserSettings to update.
+     */
+    where: UserSettingsWhereUniqueInput
+  }
+
+  /**
+   * UserSettings updateMany
+   */
+  export type UserSettingsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update UserSettings.
+     */
+    data: XOR<UserSettingsUpdateManyMutationInput, UserSettingsUncheckedUpdateManyInput>
+    /**
+     * Filter which UserSettings to update
+     */
+    where?: UserSettingsWhereInput
+    /**
+     * Limit how many UserSettings to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * UserSettings updateManyAndReturn
+   */
+  export type UserSettingsUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserSettings
+     */
+    select?: UserSettingsSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserSettings
+     */
+    omit?: UserSettingsOmit<ExtArgs> | null
+    /**
+     * The data used to update UserSettings.
+     */
+    data: XOR<UserSettingsUpdateManyMutationInput, UserSettingsUncheckedUpdateManyInput>
+    /**
+     * Filter which UserSettings to update
+     */
+    where?: UserSettingsWhereInput
+    /**
+     * Limit how many UserSettings to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserSettingsIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * UserSettings upsert
+   */
+  export type UserSettingsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserSettings
+     */
+    select?: UserSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserSettings
+     */
+    omit?: UserSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserSettingsInclude<ExtArgs> | null
+    /**
+     * The filter to search for the UserSettings to update in case it exists.
+     */
+    where: UserSettingsWhereUniqueInput
+    /**
+     * In case the UserSettings found by the `where` argument doesn't exist, create a new UserSettings with this data.
+     */
+    create: XOR<UserSettingsCreateInput, UserSettingsUncheckedCreateInput>
+    /**
+     * In case the UserSettings was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<UserSettingsUpdateInput, UserSettingsUncheckedUpdateInput>
+  }
+
+  /**
+   * UserSettings delete
+   */
+  export type UserSettingsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserSettings
+     */
+    select?: UserSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserSettings
+     */
+    omit?: UserSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserSettingsInclude<ExtArgs> | null
+    /**
+     * Filter which UserSettings to delete.
+     */
+    where: UserSettingsWhereUniqueInput
+  }
+
+  /**
+   * UserSettings deleteMany
+   */
+  export type UserSettingsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which UserSettings to delete
+     */
+    where?: UserSettingsWhereInput
+    /**
+     * Limit how many UserSettings to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * UserSettings without action
+   */
+  export type UserSettingsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserSettings
+     */
+    select?: UserSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserSettings
+     */
+    omit?: UserSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserSettingsInclude<ExtArgs> | null
   }
 
 
@@ -11096,10 +13953,6 @@ export namespace Prisma {
     password: 'password',
     job_title: 'job_title',
     profile_picture: 'profile_picture',
-    subscription_status: 'subscription_status',
-    two_factor_enabled: 'two_factor_enabled',
-    two_factor_secret: 'two_factor_secret',
-    ai_personality: 'ai_personality',
     status: 'status',
     email_verified: 'email_verified',
     created_at: 'created_at',
@@ -11108,6 +13961,64 @@ export namespace Prisma {
   };
 
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+  export const SubscriptionScalarFieldEnum: {
+    id: 'id',
+    user_id: 'user_id',
+    tokens_used: 'tokens_used',
+    token_limit: 'token_limit',
+    billing_date: 'billing_date',
+    days_remaining: 'days_remaining',
+    plan_type: 'plan_type',
+    price: 'price',
+    currency: 'currency',
+    is_active: 'is_active',
+    auto_renew: 'auto_renew',
+    payment_method: 'payment_method',
+    last_four_digits: 'last_four_digits',
+    payment_provider: 'payment_provider',
+    external_subscription_id: 'external_subscription_id',
+    created_at: 'created_at',
+    updated_at: 'updated_at',
+    cancelled_at: 'cancelled_at'
+  };
+
+  export type SubscriptionScalarFieldEnum = (typeof SubscriptionScalarFieldEnum)[keyof typeof SubscriptionScalarFieldEnum]
+
+
+  export const UserSettingsScalarFieldEnum: {
+    id: 'id',
+    user_id: 'user_id',
+    ai_personality: 'ai_personality',
+    voice_enabled: 'voice_enabled',
+    preferred_voice: 'preferred_voice',
+    auto_rename_files: 'auto_rename_files',
+    file_naming_format: 'file_naming_format',
+    file_naming_title: 'file_naming_title',
+    file_client_name: 'file_client_name',
+    file_retention_days: 'file_retention_days',
+    auto_delete_files: 'auto_delete_files',
+    max_file_size_mb: 'max_file_size_mb',
+    two_factor_enabled: 'two_factor_enabled',
+    two_factor_secret: 'two_factor_secret',
+    login_notifications: 'login_notifications',
+    security_alerts: 'security_alerts',
+    data_sharing_consent: 'data_sharing_consent',
+    analytics_consent: 'analytics_consent',
+    marketing_emails: 'marketing_emails',
+    theme: 'theme',
+    language: 'language',
+    timezone: 'timezone',
+    date_format: 'date_format',
+    email_notifications: 'email_notifications',
+    push_notifications: 'push_notifications',
+    last_settings_update: 'last_settings_update',
+    created_at: 'created_at',
+    updated_at: 'updated_at'
+  };
+
+  export type UserSettingsScalarFieldEnum = (typeof UserSettingsScalarFieldEnum)[keyof typeof UserSettingsScalarFieldEnum]
 
 
   export const DocumentScalarFieldEnum: {
@@ -11279,27 +14190,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'SubscriptionStatus'
-   */
-  export type EnumSubscriptionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SubscriptionStatus'>
-    
-
-
-  /**
-   * Reference to a field of type 'SubscriptionStatus[]'
-   */
-  export type ListEnumSubscriptionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SubscriptionStatus[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'Boolean'
-   */
-  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
-
-
-  /**
    * Reference to a field of type 'UserStatus'
    */
   export type EnumUserStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserStatus'>
@@ -11310,6 +14200,13 @@ export namespace Prisma {
    * Reference to a field of type 'UserStatus[]'
    */
   export type ListEnumUserStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Boolean'
+   */
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -11338,6 +14235,48 @@ export namespace Prisma {
    * Reference to a field of type 'Int[]'
    */
   export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'SubscriptionStatus'
+   */
+  export type EnumSubscriptionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SubscriptionStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'SubscriptionStatus[]'
+   */
+  export type ListEnumSubscriptionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SubscriptionStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Float'
+   */
+  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+  /**
+   * Reference to a field of type 'Float[]'
+   */
+  export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'FileNamingFormat'
+   */
+  export type EnumFileNamingFormatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FileNamingFormat'>
+    
+
+
+  /**
+   * Reference to a field of type 'FileNamingFormat[]'
+   */
+  export type ListEnumFileNamingFormatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FileNamingFormat[]'>
     
 
 
@@ -11409,20 +14348,6 @@ export namespace Prisma {
    */
   export type ListEnumTokenTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TokenType[]'>
     
-
-
-  /**
-   * Reference to a field of type 'Float'
-   */
-  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
-    
-
-
-  /**
-   * Reference to a field of type 'Float[]'
-   */
-  export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
-    
   /**
    * Deep Input Types
    */
@@ -11438,10 +14363,6 @@ export namespace Prisma {
     password?: StringFilter<"User"> | string
     job_title?: StringNullableFilter<"User"> | string | null
     profile_picture?: StringNullableFilter<"User"> | string | null
-    subscription_status?: EnumSubscriptionStatusFilter<"User"> | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFilter<"User"> | boolean
-    two_factor_secret?: StringNullableFilter<"User"> | string | null
-    ai_personality?: StringNullableFilter<"User"> | string | null
     status?: EnumUserStatusFilter<"User"> | $Enums.UserStatus
     email_verified?: BoolFilter<"User"> | boolean
     created_at?: DateTimeFilter<"User"> | Date | string
@@ -11453,6 +14374,8 @@ export namespace Prisma {
     accounts?: AccountListRelationFilter
     sessions?: SessionListRelationFilter
     verification_tokens?: VerificationTokenListRelationFilter
+    subscription?: XOR<SubscriptionNullableScalarRelationFilter, SubscriptionWhereInput> | null
+    user_settings?: XOR<UserSettingsNullableScalarRelationFilter, UserSettingsWhereInput> | null
   }
 
   export type UserOrderByWithRelationInput = {
@@ -11462,10 +14385,6 @@ export namespace Prisma {
     password?: SortOrder
     job_title?: SortOrderInput | SortOrder
     profile_picture?: SortOrderInput | SortOrder
-    subscription_status?: SortOrder
-    two_factor_enabled?: SortOrder
-    two_factor_secret?: SortOrderInput | SortOrder
-    ai_personality?: SortOrderInput | SortOrder
     status?: SortOrder
     email_verified?: SortOrder
     created_at?: SortOrder
@@ -11477,6 +14396,8 @@ export namespace Prisma {
     accounts?: AccountOrderByRelationAggregateInput
     sessions?: SessionOrderByRelationAggregateInput
     verification_tokens?: VerificationTokenOrderByRelationAggregateInput
+    subscription?: SubscriptionOrderByWithRelationInput
+    user_settings?: UserSettingsOrderByWithRelationInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -11489,10 +14410,6 @@ export namespace Prisma {
     password?: StringFilter<"User"> | string
     job_title?: StringNullableFilter<"User"> | string | null
     profile_picture?: StringNullableFilter<"User"> | string | null
-    subscription_status?: EnumSubscriptionStatusFilter<"User"> | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFilter<"User"> | boolean
-    two_factor_secret?: StringNullableFilter<"User"> | string | null
-    ai_personality?: StringNullableFilter<"User"> | string | null
     status?: EnumUserStatusFilter<"User"> | $Enums.UserStatus
     email_verified?: BoolFilter<"User"> | boolean
     created_at?: DateTimeFilter<"User"> | Date | string
@@ -11504,6 +14421,8 @@ export namespace Prisma {
     accounts?: AccountListRelationFilter
     sessions?: SessionListRelationFilter
     verification_tokens?: VerificationTokenListRelationFilter
+    subscription?: XOR<SubscriptionNullableScalarRelationFilter, SubscriptionWhereInput> | null
+    user_settings?: XOR<UserSettingsNullableScalarRelationFilter, UserSettingsWhereInput> | null
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -11513,10 +14432,6 @@ export namespace Prisma {
     password?: SortOrder
     job_title?: SortOrderInput | SortOrder
     profile_picture?: SortOrderInput | SortOrder
-    subscription_status?: SortOrder
-    two_factor_enabled?: SortOrder
-    two_factor_secret?: SortOrderInput | SortOrder
-    ai_personality?: SortOrderInput | SortOrder
     status?: SortOrder
     email_verified?: SortOrder
     created_at?: SortOrder
@@ -11537,15 +14452,305 @@ export namespace Prisma {
     password?: StringWithAggregatesFilter<"User"> | string
     job_title?: StringNullableWithAggregatesFilter<"User"> | string | null
     profile_picture?: StringNullableWithAggregatesFilter<"User"> | string | null
-    subscription_status?: EnumSubscriptionStatusWithAggregatesFilter<"User"> | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolWithAggregatesFilter<"User"> | boolean
-    two_factor_secret?: StringNullableWithAggregatesFilter<"User"> | string | null
-    ai_personality?: StringNullableWithAggregatesFilter<"User"> | string | null
     status?: EnumUserStatusWithAggregatesFilter<"User"> | $Enums.UserStatus
     email_verified?: BoolWithAggregatesFilter<"User"> | boolean
     created_at?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updated_at?: DateTimeWithAggregatesFilter<"User"> | Date | string
     last_login_at?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
+  }
+
+  export type SubscriptionWhereInput = {
+    AND?: SubscriptionWhereInput | SubscriptionWhereInput[]
+    OR?: SubscriptionWhereInput[]
+    NOT?: SubscriptionWhereInput | SubscriptionWhereInput[]
+    id?: StringFilter<"Subscription"> | string
+    user_id?: StringFilter<"Subscription"> | string
+    tokens_used?: IntFilter<"Subscription"> | number
+    token_limit?: IntFilter<"Subscription"> | number
+    billing_date?: DateTimeFilter<"Subscription"> | Date | string
+    days_remaining?: IntFilter<"Subscription"> | number
+    plan_type?: EnumSubscriptionStatusFilter<"Subscription"> | $Enums.SubscriptionStatus
+    price?: FloatNullableFilter<"Subscription"> | number | null
+    currency?: StringFilter<"Subscription"> | string
+    is_active?: BoolFilter<"Subscription"> | boolean
+    auto_renew?: BoolFilter<"Subscription"> | boolean
+    payment_method?: StringNullableFilter<"Subscription"> | string | null
+    last_four_digits?: StringNullableFilter<"Subscription"> | string | null
+    payment_provider?: StringNullableFilter<"Subscription"> | string | null
+    external_subscription_id?: StringNullableFilter<"Subscription"> | string | null
+    created_at?: DateTimeFilter<"Subscription"> | Date | string
+    updated_at?: DateTimeFilter<"Subscription"> | Date | string
+    cancelled_at?: DateTimeNullableFilter<"Subscription"> | Date | string | null
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type SubscriptionOrderByWithRelationInput = {
+    id?: SortOrder
+    user_id?: SortOrder
+    tokens_used?: SortOrder
+    token_limit?: SortOrder
+    billing_date?: SortOrder
+    days_remaining?: SortOrder
+    plan_type?: SortOrder
+    price?: SortOrderInput | SortOrder
+    currency?: SortOrder
+    is_active?: SortOrder
+    auto_renew?: SortOrder
+    payment_method?: SortOrderInput | SortOrder
+    last_four_digits?: SortOrderInput | SortOrder
+    payment_provider?: SortOrderInput | SortOrder
+    external_subscription_id?: SortOrderInput | SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    cancelled_at?: SortOrderInput | SortOrder
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type SubscriptionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    user_id?: string
+    AND?: SubscriptionWhereInput | SubscriptionWhereInput[]
+    OR?: SubscriptionWhereInput[]
+    NOT?: SubscriptionWhereInput | SubscriptionWhereInput[]
+    tokens_used?: IntFilter<"Subscription"> | number
+    token_limit?: IntFilter<"Subscription"> | number
+    billing_date?: DateTimeFilter<"Subscription"> | Date | string
+    days_remaining?: IntFilter<"Subscription"> | number
+    plan_type?: EnumSubscriptionStatusFilter<"Subscription"> | $Enums.SubscriptionStatus
+    price?: FloatNullableFilter<"Subscription"> | number | null
+    currency?: StringFilter<"Subscription"> | string
+    is_active?: BoolFilter<"Subscription"> | boolean
+    auto_renew?: BoolFilter<"Subscription"> | boolean
+    payment_method?: StringNullableFilter<"Subscription"> | string | null
+    last_four_digits?: StringNullableFilter<"Subscription"> | string | null
+    payment_provider?: StringNullableFilter<"Subscription"> | string | null
+    external_subscription_id?: StringNullableFilter<"Subscription"> | string | null
+    created_at?: DateTimeFilter<"Subscription"> | Date | string
+    updated_at?: DateTimeFilter<"Subscription"> | Date | string
+    cancelled_at?: DateTimeNullableFilter<"Subscription"> | Date | string | null
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id" | "user_id">
+
+  export type SubscriptionOrderByWithAggregationInput = {
+    id?: SortOrder
+    user_id?: SortOrder
+    tokens_used?: SortOrder
+    token_limit?: SortOrder
+    billing_date?: SortOrder
+    days_remaining?: SortOrder
+    plan_type?: SortOrder
+    price?: SortOrderInput | SortOrder
+    currency?: SortOrder
+    is_active?: SortOrder
+    auto_renew?: SortOrder
+    payment_method?: SortOrderInput | SortOrder
+    last_four_digits?: SortOrderInput | SortOrder
+    payment_provider?: SortOrderInput | SortOrder
+    external_subscription_id?: SortOrderInput | SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    cancelled_at?: SortOrderInput | SortOrder
+    _count?: SubscriptionCountOrderByAggregateInput
+    _avg?: SubscriptionAvgOrderByAggregateInput
+    _max?: SubscriptionMaxOrderByAggregateInput
+    _min?: SubscriptionMinOrderByAggregateInput
+    _sum?: SubscriptionSumOrderByAggregateInput
+  }
+
+  export type SubscriptionScalarWhereWithAggregatesInput = {
+    AND?: SubscriptionScalarWhereWithAggregatesInput | SubscriptionScalarWhereWithAggregatesInput[]
+    OR?: SubscriptionScalarWhereWithAggregatesInput[]
+    NOT?: SubscriptionScalarWhereWithAggregatesInput | SubscriptionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Subscription"> | string
+    user_id?: StringWithAggregatesFilter<"Subscription"> | string
+    tokens_used?: IntWithAggregatesFilter<"Subscription"> | number
+    token_limit?: IntWithAggregatesFilter<"Subscription"> | number
+    billing_date?: DateTimeWithAggregatesFilter<"Subscription"> | Date | string
+    days_remaining?: IntWithAggregatesFilter<"Subscription"> | number
+    plan_type?: EnumSubscriptionStatusWithAggregatesFilter<"Subscription"> | $Enums.SubscriptionStatus
+    price?: FloatNullableWithAggregatesFilter<"Subscription"> | number | null
+    currency?: StringWithAggregatesFilter<"Subscription"> | string
+    is_active?: BoolWithAggregatesFilter<"Subscription"> | boolean
+    auto_renew?: BoolWithAggregatesFilter<"Subscription"> | boolean
+    payment_method?: StringNullableWithAggregatesFilter<"Subscription"> | string | null
+    last_four_digits?: StringNullableWithAggregatesFilter<"Subscription"> | string | null
+    payment_provider?: StringNullableWithAggregatesFilter<"Subscription"> | string | null
+    external_subscription_id?: StringNullableWithAggregatesFilter<"Subscription"> | string | null
+    created_at?: DateTimeWithAggregatesFilter<"Subscription"> | Date | string
+    updated_at?: DateTimeWithAggregatesFilter<"Subscription"> | Date | string
+    cancelled_at?: DateTimeNullableWithAggregatesFilter<"Subscription"> | Date | string | null
+  }
+
+  export type UserSettingsWhereInput = {
+    AND?: UserSettingsWhereInput | UserSettingsWhereInput[]
+    OR?: UserSettingsWhereInput[]
+    NOT?: UserSettingsWhereInput | UserSettingsWhereInput[]
+    id?: StringFilter<"UserSettings"> | string
+    user_id?: StringFilter<"UserSettings"> | string
+    ai_personality?: StringNullableFilter<"UserSettings"> | string | null
+    voice_enabled?: BoolFilter<"UserSettings"> | boolean
+    preferred_voice?: StringNullableFilter<"UserSettings"> | string | null
+    auto_rename_files?: BoolFilter<"UserSettings"> | boolean
+    file_naming_format?: EnumFileNamingFormatFilter<"UserSettings"> | $Enums.FileNamingFormat
+    file_naming_title?: StringNullableFilter<"UserSettings"> | string | null
+    file_client_name?: StringNullableFilter<"UserSettings"> | string | null
+    file_retention_days?: IntNullableFilter<"UserSettings"> | number | null
+    auto_delete_files?: BoolFilter<"UserSettings"> | boolean
+    max_file_size_mb?: IntFilter<"UserSettings"> | number
+    two_factor_enabled?: BoolFilter<"UserSettings"> | boolean
+    two_factor_secret?: StringNullableFilter<"UserSettings"> | string | null
+    login_notifications?: BoolFilter<"UserSettings"> | boolean
+    security_alerts?: BoolFilter<"UserSettings"> | boolean
+    data_sharing_consent?: BoolFilter<"UserSettings"> | boolean
+    analytics_consent?: BoolFilter<"UserSettings"> | boolean
+    marketing_emails?: BoolFilter<"UserSettings"> | boolean
+    theme?: StringFilter<"UserSettings"> | string
+    language?: StringFilter<"UserSettings"> | string
+    timezone?: StringFilter<"UserSettings"> | string
+    date_format?: StringFilter<"UserSettings"> | string
+    email_notifications?: BoolFilter<"UserSettings"> | boolean
+    push_notifications?: BoolFilter<"UserSettings"> | boolean
+    last_settings_update?: DateTimeFilter<"UserSettings"> | Date | string
+    created_at?: DateTimeFilter<"UserSettings"> | Date | string
+    updated_at?: DateTimeFilter<"UserSettings"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type UserSettingsOrderByWithRelationInput = {
+    id?: SortOrder
+    user_id?: SortOrder
+    ai_personality?: SortOrderInput | SortOrder
+    voice_enabled?: SortOrder
+    preferred_voice?: SortOrderInput | SortOrder
+    auto_rename_files?: SortOrder
+    file_naming_format?: SortOrder
+    file_naming_title?: SortOrderInput | SortOrder
+    file_client_name?: SortOrderInput | SortOrder
+    file_retention_days?: SortOrderInput | SortOrder
+    auto_delete_files?: SortOrder
+    max_file_size_mb?: SortOrder
+    two_factor_enabled?: SortOrder
+    two_factor_secret?: SortOrderInput | SortOrder
+    login_notifications?: SortOrder
+    security_alerts?: SortOrder
+    data_sharing_consent?: SortOrder
+    analytics_consent?: SortOrder
+    marketing_emails?: SortOrder
+    theme?: SortOrder
+    language?: SortOrder
+    timezone?: SortOrder
+    date_format?: SortOrder
+    email_notifications?: SortOrder
+    push_notifications?: SortOrder
+    last_settings_update?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type UserSettingsWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    user_id?: string
+    AND?: UserSettingsWhereInput | UserSettingsWhereInput[]
+    OR?: UserSettingsWhereInput[]
+    NOT?: UserSettingsWhereInput | UserSettingsWhereInput[]
+    ai_personality?: StringNullableFilter<"UserSettings"> | string | null
+    voice_enabled?: BoolFilter<"UserSettings"> | boolean
+    preferred_voice?: StringNullableFilter<"UserSettings"> | string | null
+    auto_rename_files?: BoolFilter<"UserSettings"> | boolean
+    file_naming_format?: EnumFileNamingFormatFilter<"UserSettings"> | $Enums.FileNamingFormat
+    file_naming_title?: StringNullableFilter<"UserSettings"> | string | null
+    file_client_name?: StringNullableFilter<"UserSettings"> | string | null
+    file_retention_days?: IntNullableFilter<"UserSettings"> | number | null
+    auto_delete_files?: BoolFilter<"UserSettings"> | boolean
+    max_file_size_mb?: IntFilter<"UserSettings"> | number
+    two_factor_enabled?: BoolFilter<"UserSettings"> | boolean
+    two_factor_secret?: StringNullableFilter<"UserSettings"> | string | null
+    login_notifications?: BoolFilter<"UserSettings"> | boolean
+    security_alerts?: BoolFilter<"UserSettings"> | boolean
+    data_sharing_consent?: BoolFilter<"UserSettings"> | boolean
+    analytics_consent?: BoolFilter<"UserSettings"> | boolean
+    marketing_emails?: BoolFilter<"UserSettings"> | boolean
+    theme?: StringFilter<"UserSettings"> | string
+    language?: StringFilter<"UserSettings"> | string
+    timezone?: StringFilter<"UserSettings"> | string
+    date_format?: StringFilter<"UserSettings"> | string
+    email_notifications?: BoolFilter<"UserSettings"> | boolean
+    push_notifications?: BoolFilter<"UserSettings"> | boolean
+    last_settings_update?: DateTimeFilter<"UserSettings"> | Date | string
+    created_at?: DateTimeFilter<"UserSettings"> | Date | string
+    updated_at?: DateTimeFilter<"UserSettings"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id" | "user_id">
+
+  export type UserSettingsOrderByWithAggregationInput = {
+    id?: SortOrder
+    user_id?: SortOrder
+    ai_personality?: SortOrderInput | SortOrder
+    voice_enabled?: SortOrder
+    preferred_voice?: SortOrderInput | SortOrder
+    auto_rename_files?: SortOrder
+    file_naming_format?: SortOrder
+    file_naming_title?: SortOrderInput | SortOrder
+    file_client_name?: SortOrderInput | SortOrder
+    file_retention_days?: SortOrderInput | SortOrder
+    auto_delete_files?: SortOrder
+    max_file_size_mb?: SortOrder
+    two_factor_enabled?: SortOrder
+    two_factor_secret?: SortOrderInput | SortOrder
+    login_notifications?: SortOrder
+    security_alerts?: SortOrder
+    data_sharing_consent?: SortOrder
+    analytics_consent?: SortOrder
+    marketing_emails?: SortOrder
+    theme?: SortOrder
+    language?: SortOrder
+    timezone?: SortOrder
+    date_format?: SortOrder
+    email_notifications?: SortOrder
+    push_notifications?: SortOrder
+    last_settings_update?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    _count?: UserSettingsCountOrderByAggregateInput
+    _avg?: UserSettingsAvgOrderByAggregateInput
+    _max?: UserSettingsMaxOrderByAggregateInput
+    _min?: UserSettingsMinOrderByAggregateInput
+    _sum?: UserSettingsSumOrderByAggregateInput
+  }
+
+  export type UserSettingsScalarWhereWithAggregatesInput = {
+    AND?: UserSettingsScalarWhereWithAggregatesInput | UserSettingsScalarWhereWithAggregatesInput[]
+    OR?: UserSettingsScalarWhereWithAggregatesInput[]
+    NOT?: UserSettingsScalarWhereWithAggregatesInput | UserSettingsScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"UserSettings"> | string
+    user_id?: StringWithAggregatesFilter<"UserSettings"> | string
+    ai_personality?: StringNullableWithAggregatesFilter<"UserSettings"> | string | null
+    voice_enabled?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    preferred_voice?: StringNullableWithAggregatesFilter<"UserSettings"> | string | null
+    auto_rename_files?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    file_naming_format?: EnumFileNamingFormatWithAggregatesFilter<"UserSettings"> | $Enums.FileNamingFormat
+    file_naming_title?: StringNullableWithAggregatesFilter<"UserSettings"> | string | null
+    file_client_name?: StringNullableWithAggregatesFilter<"UserSettings"> | string | null
+    file_retention_days?: IntNullableWithAggregatesFilter<"UserSettings"> | number | null
+    auto_delete_files?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    max_file_size_mb?: IntWithAggregatesFilter<"UserSettings"> | number
+    two_factor_enabled?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    two_factor_secret?: StringNullableWithAggregatesFilter<"UserSettings"> | string | null
+    login_notifications?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    security_alerts?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    data_sharing_consent?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    analytics_consent?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    marketing_emails?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    theme?: StringWithAggregatesFilter<"UserSettings"> | string
+    language?: StringWithAggregatesFilter<"UserSettings"> | string
+    timezone?: StringWithAggregatesFilter<"UserSettings"> | string
+    date_format?: StringWithAggregatesFilter<"UserSettings"> | string
+    email_notifications?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    push_notifications?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    last_settings_update?: DateTimeWithAggregatesFilter<"UserSettings"> | Date | string
+    created_at?: DateTimeWithAggregatesFilter<"UserSettings"> | Date | string
+    updated_at?: DateTimeWithAggregatesFilter<"UserSettings"> | Date | string
   }
 
   export type DocumentWhereInput = {
@@ -12111,10 +15316,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -12126,6 +15327,8 @@ export namespace Prisma {
     accounts?: AccountCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
     verification_tokens?: VerificationTokenCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsCreateNestedOneWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -12135,10 +15338,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -12150,6 +15349,8 @@ export namespace Prisma {
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     verification_tokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionUncheckedCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsUncheckedCreateNestedOneWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -12159,10 +15360,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -12174,6 +15371,8 @@ export namespace Prisma {
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
     verification_tokens?: VerificationTokenUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUpdateOneWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -12183,10 +15382,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -12198,6 +15393,8 @@ export namespace Prisma {
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     verification_tokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUncheckedUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUncheckedUpdateOneWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -12207,10 +15404,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -12225,10 +15418,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -12243,15 +15432,373 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SubscriptionCreateInput = {
+    id?: string
+    tokens_used?: number
+    token_limit: number
+    billing_date: Date | string
+    days_remaining: number
+    plan_type?: $Enums.SubscriptionStatus
+    price?: number | null
+    currency?: string
+    is_active?: boolean
+    auto_renew?: boolean
+    payment_method?: string | null
+    last_four_digits?: string | null
+    payment_provider?: string | null
+    external_subscription_id?: string | null
+    created_at?: Date | string
+    updated_at?: Date | string
+    cancelled_at?: Date | string | null
+    user: UserCreateNestedOneWithoutSubscriptionInput
+  }
+
+  export type SubscriptionUncheckedCreateInput = {
+    id?: string
+    user_id: string
+    tokens_used?: number
+    token_limit: number
+    billing_date: Date | string
+    days_remaining: number
+    plan_type?: $Enums.SubscriptionStatus
+    price?: number | null
+    currency?: string
+    is_active?: boolean
+    auto_renew?: boolean
+    payment_method?: string | null
+    last_four_digits?: string | null
+    payment_provider?: string | null
+    external_subscription_id?: string | null
+    created_at?: Date | string
+    updated_at?: Date | string
+    cancelled_at?: Date | string | null
+  }
+
+  export type SubscriptionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokens_used?: IntFieldUpdateOperationsInput | number
+    token_limit?: IntFieldUpdateOperationsInput | number
+    billing_date?: DateTimeFieldUpdateOperationsInput | Date | string
+    days_remaining?: IntFieldUpdateOperationsInput | number
+    plan_type?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+    price?: NullableFloatFieldUpdateOperationsInput | number | null
+    currency?: StringFieldUpdateOperationsInput | string
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    auto_renew?: BoolFieldUpdateOperationsInput | boolean
+    payment_method?: NullableStringFieldUpdateOperationsInput | string | null
+    last_four_digits?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_provider?: NullableStringFieldUpdateOperationsInput | string | null
+    external_subscription_id?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    cancelled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    user?: UserUpdateOneRequiredWithoutSubscriptionNestedInput
+  }
+
+  export type SubscriptionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    user_id?: StringFieldUpdateOperationsInput | string
+    tokens_used?: IntFieldUpdateOperationsInput | number
+    token_limit?: IntFieldUpdateOperationsInput | number
+    billing_date?: DateTimeFieldUpdateOperationsInput | Date | string
+    days_remaining?: IntFieldUpdateOperationsInput | number
+    plan_type?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+    price?: NullableFloatFieldUpdateOperationsInput | number | null
+    currency?: StringFieldUpdateOperationsInput | string
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    auto_renew?: BoolFieldUpdateOperationsInput | boolean
+    payment_method?: NullableStringFieldUpdateOperationsInput | string | null
+    last_four_digits?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_provider?: NullableStringFieldUpdateOperationsInput | string | null
+    external_subscription_id?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    cancelled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SubscriptionCreateManyInput = {
+    id?: string
+    user_id: string
+    tokens_used?: number
+    token_limit: number
+    billing_date: Date | string
+    days_remaining: number
+    plan_type?: $Enums.SubscriptionStatus
+    price?: number | null
+    currency?: string
+    is_active?: boolean
+    auto_renew?: boolean
+    payment_method?: string | null
+    last_four_digits?: string | null
+    payment_provider?: string | null
+    external_subscription_id?: string | null
+    created_at?: Date | string
+    updated_at?: Date | string
+    cancelled_at?: Date | string | null
+  }
+
+  export type SubscriptionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokens_used?: IntFieldUpdateOperationsInput | number
+    token_limit?: IntFieldUpdateOperationsInput | number
+    billing_date?: DateTimeFieldUpdateOperationsInput | Date | string
+    days_remaining?: IntFieldUpdateOperationsInput | number
+    plan_type?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+    price?: NullableFloatFieldUpdateOperationsInput | number | null
+    currency?: StringFieldUpdateOperationsInput | string
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    auto_renew?: BoolFieldUpdateOperationsInput | boolean
+    payment_method?: NullableStringFieldUpdateOperationsInput | string | null
+    last_four_digits?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_provider?: NullableStringFieldUpdateOperationsInput | string | null
+    external_subscription_id?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    cancelled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SubscriptionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    user_id?: StringFieldUpdateOperationsInput | string
+    tokens_used?: IntFieldUpdateOperationsInput | number
+    token_limit?: IntFieldUpdateOperationsInput | number
+    billing_date?: DateTimeFieldUpdateOperationsInput | Date | string
+    days_remaining?: IntFieldUpdateOperationsInput | number
+    plan_type?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+    price?: NullableFloatFieldUpdateOperationsInput | number | null
+    currency?: StringFieldUpdateOperationsInput | string
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    auto_renew?: BoolFieldUpdateOperationsInput | boolean
+    payment_method?: NullableStringFieldUpdateOperationsInput | string | null
+    last_four_digits?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_provider?: NullableStringFieldUpdateOperationsInput | string | null
+    external_subscription_id?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    cancelled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type UserSettingsCreateInput = {
+    id?: string
+    ai_personality?: string | null
+    voice_enabled?: boolean
+    preferred_voice?: string | null
+    auto_rename_files?: boolean
+    file_naming_format?: $Enums.FileNamingFormat
+    file_naming_title?: string | null
+    file_client_name?: string | null
+    file_retention_days?: number | null
+    auto_delete_files?: boolean
+    max_file_size_mb?: number
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    login_notifications?: boolean
+    security_alerts?: boolean
+    data_sharing_consent?: boolean
+    analytics_consent?: boolean
+    marketing_emails?: boolean
+    theme?: string
+    language?: string
+    timezone?: string
+    date_format?: string
+    email_notifications?: boolean
+    push_notifications?: boolean
+    last_settings_update?: Date | string
+    created_at?: Date | string
+    updated_at?: Date | string
+    user: UserCreateNestedOneWithoutUser_settingsInput
+  }
+
+  export type UserSettingsUncheckedCreateInput = {
+    id?: string
+    user_id: string
+    ai_personality?: string | null
+    voice_enabled?: boolean
+    preferred_voice?: string | null
+    auto_rename_files?: boolean
+    file_naming_format?: $Enums.FileNamingFormat
+    file_naming_title?: string | null
+    file_client_name?: string | null
+    file_retention_days?: number | null
+    auto_delete_files?: boolean
+    max_file_size_mb?: number
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    login_notifications?: boolean
+    security_alerts?: boolean
+    data_sharing_consent?: boolean
+    analytics_consent?: boolean
+    marketing_emails?: boolean
+    theme?: string
+    language?: string
+    timezone?: string
+    date_format?: string
+    email_notifications?: boolean
+    push_notifications?: boolean
+    last_settings_update?: Date | string
+    created_at?: Date | string
+    updated_at?: Date | string
+  }
+
+  export type UserSettingsUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
+    voice_enabled?: BoolFieldUpdateOperationsInput | boolean
+    preferred_voice?: NullableStringFieldUpdateOperationsInput | string | null
+    auto_rename_files?: BoolFieldUpdateOperationsInput | boolean
+    file_naming_format?: EnumFileNamingFormatFieldUpdateOperationsInput | $Enums.FileNamingFormat
+    file_naming_title?: NullableStringFieldUpdateOperationsInput | string | null
+    file_client_name?: NullableStringFieldUpdateOperationsInput | string | null
+    file_retention_days?: NullableIntFieldUpdateOperationsInput | number | null
+    auto_delete_files?: BoolFieldUpdateOperationsInput | boolean
+    max_file_size_mb?: IntFieldUpdateOperationsInput | number
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    login_notifications?: BoolFieldUpdateOperationsInput | boolean
+    security_alerts?: BoolFieldUpdateOperationsInput | boolean
+    data_sharing_consent?: BoolFieldUpdateOperationsInput | boolean
+    analytics_consent?: BoolFieldUpdateOperationsInput | boolean
+    marketing_emails?: BoolFieldUpdateOperationsInput | boolean
+    theme?: StringFieldUpdateOperationsInput | string
+    language?: StringFieldUpdateOperationsInput | string
+    timezone?: StringFieldUpdateOperationsInput | string
+    date_format?: StringFieldUpdateOperationsInput | string
+    email_notifications?: BoolFieldUpdateOperationsInput | boolean
+    push_notifications?: BoolFieldUpdateOperationsInput | boolean
+    last_settings_update?: DateTimeFieldUpdateOperationsInput | Date | string
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutUser_settingsNestedInput
+  }
+
+  export type UserSettingsUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    user_id?: StringFieldUpdateOperationsInput | string
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
+    voice_enabled?: BoolFieldUpdateOperationsInput | boolean
+    preferred_voice?: NullableStringFieldUpdateOperationsInput | string | null
+    auto_rename_files?: BoolFieldUpdateOperationsInput | boolean
+    file_naming_format?: EnumFileNamingFormatFieldUpdateOperationsInput | $Enums.FileNamingFormat
+    file_naming_title?: NullableStringFieldUpdateOperationsInput | string | null
+    file_client_name?: NullableStringFieldUpdateOperationsInput | string | null
+    file_retention_days?: NullableIntFieldUpdateOperationsInput | number | null
+    auto_delete_files?: BoolFieldUpdateOperationsInput | boolean
+    max_file_size_mb?: IntFieldUpdateOperationsInput | number
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    login_notifications?: BoolFieldUpdateOperationsInput | boolean
+    security_alerts?: BoolFieldUpdateOperationsInput | boolean
+    data_sharing_consent?: BoolFieldUpdateOperationsInput | boolean
+    analytics_consent?: BoolFieldUpdateOperationsInput | boolean
+    marketing_emails?: BoolFieldUpdateOperationsInput | boolean
+    theme?: StringFieldUpdateOperationsInput | string
+    language?: StringFieldUpdateOperationsInput | string
+    timezone?: StringFieldUpdateOperationsInput | string
+    date_format?: StringFieldUpdateOperationsInput | string
+    email_notifications?: BoolFieldUpdateOperationsInput | boolean
+    push_notifications?: BoolFieldUpdateOperationsInput | boolean
+    last_settings_update?: DateTimeFieldUpdateOperationsInput | Date | string
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserSettingsCreateManyInput = {
+    id?: string
+    user_id: string
+    ai_personality?: string | null
+    voice_enabled?: boolean
+    preferred_voice?: string | null
+    auto_rename_files?: boolean
+    file_naming_format?: $Enums.FileNamingFormat
+    file_naming_title?: string | null
+    file_client_name?: string | null
+    file_retention_days?: number | null
+    auto_delete_files?: boolean
+    max_file_size_mb?: number
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    login_notifications?: boolean
+    security_alerts?: boolean
+    data_sharing_consent?: boolean
+    analytics_consent?: boolean
+    marketing_emails?: boolean
+    theme?: string
+    language?: string
+    timezone?: string
+    date_format?: string
+    email_notifications?: boolean
+    push_notifications?: boolean
+    last_settings_update?: Date | string
+    created_at?: Date | string
+    updated_at?: Date | string
+  }
+
+  export type UserSettingsUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
+    voice_enabled?: BoolFieldUpdateOperationsInput | boolean
+    preferred_voice?: NullableStringFieldUpdateOperationsInput | string | null
+    auto_rename_files?: BoolFieldUpdateOperationsInput | boolean
+    file_naming_format?: EnumFileNamingFormatFieldUpdateOperationsInput | $Enums.FileNamingFormat
+    file_naming_title?: NullableStringFieldUpdateOperationsInput | string | null
+    file_client_name?: NullableStringFieldUpdateOperationsInput | string | null
+    file_retention_days?: NullableIntFieldUpdateOperationsInput | number | null
+    auto_delete_files?: BoolFieldUpdateOperationsInput | boolean
+    max_file_size_mb?: IntFieldUpdateOperationsInput | number
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    login_notifications?: BoolFieldUpdateOperationsInput | boolean
+    security_alerts?: BoolFieldUpdateOperationsInput | boolean
+    data_sharing_consent?: BoolFieldUpdateOperationsInput | boolean
+    analytics_consent?: BoolFieldUpdateOperationsInput | boolean
+    marketing_emails?: BoolFieldUpdateOperationsInput | boolean
+    theme?: StringFieldUpdateOperationsInput | string
+    language?: StringFieldUpdateOperationsInput | string
+    timezone?: StringFieldUpdateOperationsInput | string
+    date_format?: StringFieldUpdateOperationsInput | string
+    email_notifications?: BoolFieldUpdateOperationsInput | boolean
+    push_notifications?: BoolFieldUpdateOperationsInput | boolean
+    last_settings_update?: DateTimeFieldUpdateOperationsInput | Date | string
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserSettingsUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    user_id?: StringFieldUpdateOperationsInput | string
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
+    voice_enabled?: BoolFieldUpdateOperationsInput | boolean
+    preferred_voice?: NullableStringFieldUpdateOperationsInput | string | null
+    auto_rename_files?: BoolFieldUpdateOperationsInput | boolean
+    file_naming_format?: EnumFileNamingFormatFieldUpdateOperationsInput | $Enums.FileNamingFormat
+    file_naming_title?: NullableStringFieldUpdateOperationsInput | string | null
+    file_client_name?: NullableStringFieldUpdateOperationsInput | string | null
+    file_retention_days?: NullableIntFieldUpdateOperationsInput | number | null
+    auto_delete_files?: BoolFieldUpdateOperationsInput | boolean
+    max_file_size_mb?: IntFieldUpdateOperationsInput | number
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    login_notifications?: BoolFieldUpdateOperationsInput | boolean
+    security_alerts?: BoolFieldUpdateOperationsInput | boolean
+    data_sharing_consent?: BoolFieldUpdateOperationsInput | boolean
+    analytics_consent?: BoolFieldUpdateOperationsInput | boolean
+    marketing_emails?: BoolFieldUpdateOperationsInput | boolean
+    theme?: StringFieldUpdateOperationsInput | string
+    language?: StringFieldUpdateOperationsInput | string
+    timezone?: StringFieldUpdateOperationsInput | string
+    date_format?: StringFieldUpdateOperationsInput | string
+    email_notifications?: BoolFieldUpdateOperationsInput | boolean
+    push_notifications?: BoolFieldUpdateOperationsInput | boolean
+    last_settings_update?: DateTimeFieldUpdateOperationsInput | Date | string
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DocumentCreateInput = {
@@ -12893,23 +16440,16 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
-  export type EnumSubscriptionStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.SubscriptionStatus | EnumSubscriptionStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumSubscriptionStatusFilter<$PrismaModel> | $Enums.SubscriptionStatus
-  }
-
-  export type BoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
-  }
-
   export type EnumUserStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.UserStatus | EnumUserStatusFieldRefInput<$PrismaModel>
     in?: $Enums.UserStatus[] | ListEnumUserStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.UserStatus[] | ListEnumUserStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumUserStatusFilter<$PrismaModel> | $Enums.UserStatus
+  }
+
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
   export type DateTimeFilter<$PrismaModel = never> = {
@@ -12970,6 +16510,16 @@ export namespace Prisma {
     none?: VerificationTokenWhereInput
   }
 
+  export type SubscriptionNullableScalarRelationFilter = {
+    is?: SubscriptionWhereInput | null
+    isNot?: SubscriptionWhereInput | null
+  }
+
+  export type UserSettingsNullableScalarRelationFilter = {
+    is?: UserSettingsWhereInput | null
+    isNot?: UserSettingsWhereInput | null
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -13006,10 +16556,6 @@ export namespace Prisma {
     password?: SortOrder
     job_title?: SortOrder
     profile_picture?: SortOrder
-    subscription_status?: SortOrder
-    two_factor_enabled?: SortOrder
-    two_factor_secret?: SortOrder
-    ai_personality?: SortOrder
     status?: SortOrder
     email_verified?: SortOrder
     created_at?: SortOrder
@@ -13024,10 +16570,6 @@ export namespace Prisma {
     password?: SortOrder
     job_title?: SortOrder
     profile_picture?: SortOrder
-    subscription_status?: SortOrder
-    two_factor_enabled?: SortOrder
-    two_factor_secret?: SortOrder
-    ai_personality?: SortOrder
     status?: SortOrder
     email_verified?: SortOrder
     created_at?: SortOrder
@@ -13042,10 +16584,6 @@ export namespace Prisma {
     password?: SortOrder
     job_title?: SortOrder
     profile_picture?: SortOrder
-    subscription_status?: SortOrder
-    two_factor_enabled?: SortOrder
-    two_factor_secret?: SortOrder
-    ai_personality?: SortOrder
     status?: SortOrder
     email_verified?: SortOrder
     created_at?: SortOrder
@@ -13089,24 +16627,6 @@ export namespace Prisma {
     _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
-  export type EnumSubscriptionStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.SubscriptionStatus | EnumSubscriptionStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumSubscriptionStatusWithAggregatesFilter<$PrismaModel> | $Enums.SubscriptionStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumSubscriptionStatusFilter<$PrismaModel>
-    _max?: NestedEnumSubscriptionStatusFilter<$PrismaModel>
-  }
-
-  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
-  }
-
   export type EnumUserStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.UserStatus | EnumUserStatusFieldRefInput<$PrismaModel>
     in?: $Enums.UserStatus[] | ListEnumUserStatusFieldRefInput<$PrismaModel>
@@ -13115,6 +16635,14 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumUserStatusFilter<$PrismaModel>
     _max?: NestedEnumUserStatusFilter<$PrismaModel>
+  }
+
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -13156,11 +16684,153 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
-  export type EnumDocumentStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.DocumentStatus | EnumDocumentStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.DocumentStatus[] | ListEnumDocumentStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.DocumentStatus[] | ListEnumDocumentStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumDocumentStatusFilter<$PrismaModel> | $Enums.DocumentStatus
+  export type EnumSubscriptionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.SubscriptionStatus | EnumSubscriptionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSubscriptionStatusFilter<$PrismaModel> | $Enums.SubscriptionStatus
+  }
+
+  export type FloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type UserScalarRelationFilter = {
+    is?: UserWhereInput
+    isNot?: UserWhereInput
+  }
+
+  export type SubscriptionCountOrderByAggregateInput = {
+    id?: SortOrder
+    user_id?: SortOrder
+    tokens_used?: SortOrder
+    token_limit?: SortOrder
+    billing_date?: SortOrder
+    days_remaining?: SortOrder
+    plan_type?: SortOrder
+    price?: SortOrder
+    currency?: SortOrder
+    is_active?: SortOrder
+    auto_renew?: SortOrder
+    payment_method?: SortOrder
+    last_four_digits?: SortOrder
+    payment_provider?: SortOrder
+    external_subscription_id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    cancelled_at?: SortOrder
+  }
+
+  export type SubscriptionAvgOrderByAggregateInput = {
+    tokens_used?: SortOrder
+    token_limit?: SortOrder
+    days_remaining?: SortOrder
+    price?: SortOrder
+  }
+
+  export type SubscriptionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    user_id?: SortOrder
+    tokens_used?: SortOrder
+    token_limit?: SortOrder
+    billing_date?: SortOrder
+    days_remaining?: SortOrder
+    plan_type?: SortOrder
+    price?: SortOrder
+    currency?: SortOrder
+    is_active?: SortOrder
+    auto_renew?: SortOrder
+    payment_method?: SortOrder
+    last_four_digits?: SortOrder
+    payment_provider?: SortOrder
+    external_subscription_id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    cancelled_at?: SortOrder
+  }
+
+  export type SubscriptionMinOrderByAggregateInput = {
+    id?: SortOrder
+    user_id?: SortOrder
+    tokens_used?: SortOrder
+    token_limit?: SortOrder
+    billing_date?: SortOrder
+    days_remaining?: SortOrder
+    plan_type?: SortOrder
+    price?: SortOrder
+    currency?: SortOrder
+    is_active?: SortOrder
+    auto_renew?: SortOrder
+    payment_method?: SortOrder
+    last_four_digits?: SortOrder
+    payment_provider?: SortOrder
+    external_subscription_id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    cancelled_at?: SortOrder
+  }
+
+  export type SubscriptionSumOrderByAggregateInput = {
+    tokens_used?: SortOrder
+    token_limit?: SortOrder
+    days_remaining?: SortOrder
+    price?: SortOrder
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type EnumSubscriptionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.SubscriptionStatus | EnumSubscriptionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSubscriptionStatusWithAggregatesFilter<$PrismaModel> | $Enums.SubscriptionStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumSubscriptionStatusFilter<$PrismaModel>
+    _max?: NestedEnumSubscriptionStatusFilter<$PrismaModel>
+  }
+
+  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+  }
+
+  export type EnumFileNamingFormatFilter<$PrismaModel = never> = {
+    equals?: $Enums.FileNamingFormat | EnumFileNamingFormatFieldRefInput<$PrismaModel>
+    in?: $Enums.FileNamingFormat[] | ListEnumFileNamingFormatFieldRefInput<$PrismaModel>
+    notIn?: $Enums.FileNamingFormat[] | ListEnumFileNamingFormatFieldRefInput<$PrismaModel>
+    not?: NestedEnumFileNamingFormatFilter<$PrismaModel> | $Enums.FileNamingFormat
   }
 
   export type IntNullableFilter<$PrismaModel = never> = {
@@ -13174,9 +16844,140 @@ export namespace Prisma {
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
-  export type UserScalarRelationFilter = {
-    is?: UserWhereInput
-    isNot?: UserWhereInput
+  export type UserSettingsCountOrderByAggregateInput = {
+    id?: SortOrder
+    user_id?: SortOrder
+    ai_personality?: SortOrder
+    voice_enabled?: SortOrder
+    preferred_voice?: SortOrder
+    auto_rename_files?: SortOrder
+    file_naming_format?: SortOrder
+    file_naming_title?: SortOrder
+    file_client_name?: SortOrder
+    file_retention_days?: SortOrder
+    auto_delete_files?: SortOrder
+    max_file_size_mb?: SortOrder
+    two_factor_enabled?: SortOrder
+    two_factor_secret?: SortOrder
+    login_notifications?: SortOrder
+    security_alerts?: SortOrder
+    data_sharing_consent?: SortOrder
+    analytics_consent?: SortOrder
+    marketing_emails?: SortOrder
+    theme?: SortOrder
+    language?: SortOrder
+    timezone?: SortOrder
+    date_format?: SortOrder
+    email_notifications?: SortOrder
+    push_notifications?: SortOrder
+    last_settings_update?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+  }
+
+  export type UserSettingsAvgOrderByAggregateInput = {
+    file_retention_days?: SortOrder
+    max_file_size_mb?: SortOrder
+  }
+
+  export type UserSettingsMaxOrderByAggregateInput = {
+    id?: SortOrder
+    user_id?: SortOrder
+    ai_personality?: SortOrder
+    voice_enabled?: SortOrder
+    preferred_voice?: SortOrder
+    auto_rename_files?: SortOrder
+    file_naming_format?: SortOrder
+    file_naming_title?: SortOrder
+    file_client_name?: SortOrder
+    file_retention_days?: SortOrder
+    auto_delete_files?: SortOrder
+    max_file_size_mb?: SortOrder
+    two_factor_enabled?: SortOrder
+    two_factor_secret?: SortOrder
+    login_notifications?: SortOrder
+    security_alerts?: SortOrder
+    data_sharing_consent?: SortOrder
+    analytics_consent?: SortOrder
+    marketing_emails?: SortOrder
+    theme?: SortOrder
+    language?: SortOrder
+    timezone?: SortOrder
+    date_format?: SortOrder
+    email_notifications?: SortOrder
+    push_notifications?: SortOrder
+    last_settings_update?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+  }
+
+  export type UserSettingsMinOrderByAggregateInput = {
+    id?: SortOrder
+    user_id?: SortOrder
+    ai_personality?: SortOrder
+    voice_enabled?: SortOrder
+    preferred_voice?: SortOrder
+    auto_rename_files?: SortOrder
+    file_naming_format?: SortOrder
+    file_naming_title?: SortOrder
+    file_client_name?: SortOrder
+    file_retention_days?: SortOrder
+    auto_delete_files?: SortOrder
+    max_file_size_mb?: SortOrder
+    two_factor_enabled?: SortOrder
+    two_factor_secret?: SortOrder
+    login_notifications?: SortOrder
+    security_alerts?: SortOrder
+    data_sharing_consent?: SortOrder
+    analytics_consent?: SortOrder
+    marketing_emails?: SortOrder
+    theme?: SortOrder
+    language?: SortOrder
+    timezone?: SortOrder
+    date_format?: SortOrder
+    email_notifications?: SortOrder
+    push_notifications?: SortOrder
+    last_settings_update?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+  }
+
+  export type UserSettingsSumOrderByAggregateInput = {
+    file_retention_days?: SortOrder
+    max_file_size_mb?: SortOrder
+  }
+
+  export type EnumFileNamingFormatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.FileNamingFormat | EnumFileNamingFormatFieldRefInput<$PrismaModel>
+    in?: $Enums.FileNamingFormat[] | ListEnumFileNamingFormatFieldRefInput<$PrismaModel>
+    notIn?: $Enums.FileNamingFormat[] | ListEnumFileNamingFormatFieldRefInput<$PrismaModel>
+    not?: NestedEnumFileNamingFormatWithAggregatesFilter<$PrismaModel> | $Enums.FileNamingFormat
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumFileNamingFormatFilter<$PrismaModel>
+    _max?: NestedEnumFileNamingFormatFilter<$PrismaModel>
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
+  export type EnumDocumentStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.DocumentStatus | EnumDocumentStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.DocumentStatus[] | ListEnumDocumentStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DocumentStatus[] | ListEnumDocumentStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumDocumentStatusFilter<$PrismaModel> | $Enums.DocumentStatus
   }
 
   export type DocumentCountOrderByAggregateInput = {
@@ -13246,22 +17047,6 @@ export namespace Prisma {
     page_count?: SortOrder
   }
 
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
-  }
-
   export type EnumDocumentStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.DocumentStatus | EnumDocumentStatusFieldRefInput<$PrismaModel>
     in?: $Enums.DocumentStatus[] | ListEnumDocumentStatusFieldRefInput<$PrismaModel>
@@ -13270,22 +17055,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumDocumentStatusFilter<$PrismaModel>
     _max?: NestedEnumDocumentStatusFilter<$PrismaModel>
-  }
-
-  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedIntNullableFilter<$PrismaModel>
-    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type DocumentScalarRelationFilter = {
@@ -13678,6 +17447,18 @@ export namespace Prisma {
     connect?: VerificationTokenWhereUniqueInput | VerificationTokenWhereUniqueInput[]
   }
 
+  export type SubscriptionCreateNestedOneWithoutUserInput = {
+    create?: XOR<SubscriptionCreateWithoutUserInput, SubscriptionUncheckedCreateWithoutUserInput>
+    connectOrCreate?: SubscriptionCreateOrConnectWithoutUserInput
+    connect?: SubscriptionWhereUniqueInput
+  }
+
+  export type UserSettingsCreateNestedOneWithoutUserInput = {
+    create?: XOR<UserSettingsCreateWithoutUserInput, UserSettingsUncheckedCreateWithoutUserInput>
+    connectOrCreate?: UserSettingsCreateOrConnectWithoutUserInput
+    connect?: UserSettingsWhereUniqueInput
+  }
+
   export type DocumentUncheckedCreateNestedManyWithoutOwnerInput = {
     create?: XOR<DocumentCreateWithoutOwnerInput, DocumentUncheckedCreateWithoutOwnerInput> | DocumentCreateWithoutOwnerInput[] | DocumentUncheckedCreateWithoutOwnerInput[]
     connectOrCreate?: DocumentCreateOrConnectWithoutOwnerInput | DocumentCreateOrConnectWithoutOwnerInput[]
@@ -13720,6 +17501,18 @@ export namespace Prisma {
     connect?: VerificationTokenWhereUniqueInput | VerificationTokenWhereUniqueInput[]
   }
 
+  export type SubscriptionUncheckedCreateNestedOneWithoutUserInput = {
+    create?: XOR<SubscriptionCreateWithoutUserInput, SubscriptionUncheckedCreateWithoutUserInput>
+    connectOrCreate?: SubscriptionCreateOrConnectWithoutUserInput
+    connect?: SubscriptionWhereUniqueInput
+  }
+
+  export type UserSettingsUncheckedCreateNestedOneWithoutUserInput = {
+    create?: XOR<UserSettingsCreateWithoutUserInput, UserSettingsUncheckedCreateWithoutUserInput>
+    connectOrCreate?: UserSettingsCreateOrConnectWithoutUserInput
+    connect?: UserSettingsWhereUniqueInput
+  }
+
   export type StringFieldUpdateOperationsInput = {
     set?: string
   }
@@ -13728,16 +17521,12 @@ export namespace Prisma {
     set?: string | null
   }
 
-  export type EnumSubscriptionStatusFieldUpdateOperationsInput = {
-    set?: $Enums.SubscriptionStatus
+  export type EnumUserStatusFieldUpdateOperationsInput = {
+    set?: $Enums.UserStatus
   }
 
   export type BoolFieldUpdateOperationsInput = {
     set?: boolean
-  }
-
-  export type EnumUserStatusFieldUpdateOperationsInput = {
-    set?: $Enums.UserStatus
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -13832,6 +17621,26 @@ export namespace Prisma {
     deleteMany?: VerificationTokenScalarWhereInput | VerificationTokenScalarWhereInput[]
   }
 
+  export type SubscriptionUpdateOneWithoutUserNestedInput = {
+    create?: XOR<SubscriptionCreateWithoutUserInput, SubscriptionUncheckedCreateWithoutUserInput>
+    connectOrCreate?: SubscriptionCreateOrConnectWithoutUserInput
+    upsert?: SubscriptionUpsertWithoutUserInput
+    disconnect?: SubscriptionWhereInput | boolean
+    delete?: SubscriptionWhereInput | boolean
+    connect?: SubscriptionWhereUniqueInput
+    update?: XOR<XOR<SubscriptionUpdateToOneWithWhereWithoutUserInput, SubscriptionUpdateWithoutUserInput>, SubscriptionUncheckedUpdateWithoutUserInput>
+  }
+
+  export type UserSettingsUpdateOneWithoutUserNestedInput = {
+    create?: XOR<UserSettingsCreateWithoutUserInput, UserSettingsUncheckedCreateWithoutUserInput>
+    connectOrCreate?: UserSettingsCreateOrConnectWithoutUserInput
+    upsert?: UserSettingsUpsertWithoutUserInput
+    disconnect?: UserSettingsWhereInput | boolean
+    delete?: UserSettingsWhereInput | boolean
+    connect?: UserSettingsWhereUniqueInput
+    update?: XOR<XOR<UserSettingsUpdateToOneWithWhereWithoutUserInput, UserSettingsUpdateWithoutUserInput>, UserSettingsUncheckedUpdateWithoutUserInput>
+  }
+
   export type DocumentUncheckedUpdateManyWithoutOwnerNestedInput = {
     create?: XOR<DocumentCreateWithoutOwnerInput, DocumentUncheckedCreateWithoutOwnerInput> | DocumentCreateWithoutOwnerInput[] | DocumentUncheckedCreateWithoutOwnerInput[]
     connectOrCreate?: DocumentCreateOrConnectWithoutOwnerInput | DocumentCreateOrConnectWithoutOwnerInput[]
@@ -13916,6 +17725,86 @@ export namespace Prisma {
     deleteMany?: VerificationTokenScalarWhereInput | VerificationTokenScalarWhereInput[]
   }
 
+  export type SubscriptionUncheckedUpdateOneWithoutUserNestedInput = {
+    create?: XOR<SubscriptionCreateWithoutUserInput, SubscriptionUncheckedCreateWithoutUserInput>
+    connectOrCreate?: SubscriptionCreateOrConnectWithoutUserInput
+    upsert?: SubscriptionUpsertWithoutUserInput
+    disconnect?: SubscriptionWhereInput | boolean
+    delete?: SubscriptionWhereInput | boolean
+    connect?: SubscriptionWhereUniqueInput
+    update?: XOR<XOR<SubscriptionUpdateToOneWithWhereWithoutUserInput, SubscriptionUpdateWithoutUserInput>, SubscriptionUncheckedUpdateWithoutUserInput>
+  }
+
+  export type UserSettingsUncheckedUpdateOneWithoutUserNestedInput = {
+    create?: XOR<UserSettingsCreateWithoutUserInput, UserSettingsUncheckedCreateWithoutUserInput>
+    connectOrCreate?: UserSettingsCreateOrConnectWithoutUserInput
+    upsert?: UserSettingsUpsertWithoutUserInput
+    disconnect?: UserSettingsWhereInput | boolean
+    delete?: UserSettingsWhereInput | boolean
+    connect?: UserSettingsWhereUniqueInput
+    update?: XOR<XOR<UserSettingsUpdateToOneWithWhereWithoutUserInput, UserSettingsUpdateWithoutUserInput>, UserSettingsUncheckedUpdateWithoutUserInput>
+  }
+
+  export type UserCreateNestedOneWithoutSubscriptionInput = {
+    create?: XOR<UserCreateWithoutSubscriptionInput, UserUncheckedCreateWithoutSubscriptionInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSubscriptionInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type EnumSubscriptionStatusFieldUpdateOperationsInput = {
+    set?: $Enums.SubscriptionStatus
+  }
+
+  export type NullableFloatFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type UserUpdateOneRequiredWithoutSubscriptionNestedInput = {
+    create?: XOR<UserCreateWithoutSubscriptionInput, UserUncheckedCreateWithoutSubscriptionInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSubscriptionInput
+    upsert?: UserUpsertWithoutSubscriptionInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSubscriptionInput, UserUpdateWithoutSubscriptionInput>, UserUncheckedUpdateWithoutSubscriptionInput>
+  }
+
+  export type UserCreateNestedOneWithoutUser_settingsInput = {
+    create?: XOR<UserCreateWithoutUser_settingsInput, UserUncheckedCreateWithoutUser_settingsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutUser_settingsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type EnumFileNamingFormatFieldUpdateOperationsInput = {
+    set?: $Enums.FileNamingFormat
+  }
+
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type UserUpdateOneRequiredWithoutUser_settingsNestedInput = {
+    create?: XOR<UserCreateWithoutUser_settingsInput, UserUncheckedCreateWithoutUser_settingsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutUser_settingsInput
+    upsert?: UserUpsertWithoutUser_settingsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutUser_settingsInput, UserUpdateWithoutUser_settingsInput>, UserUncheckedUpdateWithoutUser_settingsInput>
+  }
+
   export type UserCreateNestedOneWithoutDocumentsInput = {
     create?: XOR<UserCreateWithoutDocumentsInput, UserUncheckedCreateWithoutDocumentsInput>
     connectOrCreate?: UserCreateOrConnectWithoutDocumentsInput
@@ -13936,24 +17825,8 @@ export namespace Prisma {
     connect?: ChatSessionWhereUniqueInput | ChatSessionWhereUniqueInput[]
   }
 
-  export type IntFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
-  }
-
   export type EnumDocumentStatusFieldUpdateOperationsInput = {
     set?: $Enums.DocumentStatus
-  }
-
-  export type NullableIntFieldUpdateOperationsInput = {
-    set?: number | null
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
   }
 
   export type UserUpdateOneRequiredWithoutDocumentsNestedInput = {
@@ -14174,23 +18047,16 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
-  export type NestedEnumSubscriptionStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.SubscriptionStatus | EnumSubscriptionStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumSubscriptionStatusFilter<$PrismaModel> | $Enums.SubscriptionStatus
-  }
-
-  export type NestedBoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
-  }
-
   export type NestedEnumUserStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.UserStatus | EnumUserStatusFieldRefInput<$PrismaModel>
     in?: $Enums.UserStatus[] | ListEnumUserStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.UserStatus[] | ListEnumUserStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumUserStatusFilter<$PrismaModel> | $Enums.UserStatus
+  }
+
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
   export type NestedDateTimeFilter<$PrismaModel = never> = {
@@ -14271,24 +18137,6 @@ export namespace Prisma {
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
-  export type NestedEnumSubscriptionStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.SubscriptionStatus | EnumSubscriptionStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumSubscriptionStatusWithAggregatesFilter<$PrismaModel> | $Enums.SubscriptionStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumSubscriptionStatusFilter<$PrismaModel>
-    _max?: NestedEnumSubscriptionStatusFilter<$PrismaModel>
-  }
-
-  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
-  }
-
   export type NestedEnumUserStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.UserStatus | EnumUserStatusFieldRefInput<$PrismaModel>
     in?: $Enums.UserStatus[] | ListEnumUserStatusFieldRefInput<$PrismaModel>
@@ -14297,6 +18145,14 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumUserStatusFilter<$PrismaModel>
     _max?: NestedEnumUserStatusFilter<$PrismaModel>
+  }
+
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -14327,11 +18183,22 @@ export namespace Prisma {
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
-  export type NestedEnumDocumentStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.DocumentStatus | EnumDocumentStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.DocumentStatus[] | ListEnumDocumentStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.DocumentStatus[] | ListEnumDocumentStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumDocumentStatusFilter<$PrismaModel> | $Enums.DocumentStatus
+  export type NestedEnumSubscriptionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.SubscriptionStatus | EnumSubscriptionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSubscriptionStatusFilter<$PrismaModel> | $Enums.SubscriptionStatus
+  }
+
+  export type NestedFloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
   }
 
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
@@ -14361,14 +18228,47 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
-  export type NestedEnumDocumentStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.DocumentStatus | EnumDocumentStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.DocumentStatus[] | ListEnumDocumentStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.DocumentStatus[] | ListEnumDocumentStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumDocumentStatusWithAggregatesFilter<$PrismaModel> | $Enums.DocumentStatus
+  export type NestedEnumSubscriptionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.SubscriptionStatus | EnumSubscriptionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSubscriptionStatusWithAggregatesFilter<$PrismaModel> | $Enums.SubscriptionStatus
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumDocumentStatusFilter<$PrismaModel>
-    _max?: NestedEnumDocumentStatusFilter<$PrismaModel>
+    _min?: NestedEnumSubscriptionStatusFilter<$PrismaModel>
+    _max?: NestedEnumSubscriptionStatusFilter<$PrismaModel>
+  }
+
+  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumFileNamingFormatFilter<$PrismaModel = never> = {
+    equals?: $Enums.FileNamingFormat | EnumFileNamingFormatFieldRefInput<$PrismaModel>
+    in?: $Enums.FileNamingFormat[] | ListEnumFileNamingFormatFieldRefInput<$PrismaModel>
+    notIn?: $Enums.FileNamingFormat[] | ListEnumFileNamingFormatFieldRefInput<$PrismaModel>
+    not?: NestedEnumFileNamingFormatFilter<$PrismaModel> | $Enums.FileNamingFormat
+  }
+
+  export type NestedEnumFileNamingFormatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.FileNamingFormat | EnumFileNamingFormatFieldRefInput<$PrismaModel>
+    in?: $Enums.FileNamingFormat[] | ListEnumFileNamingFormatFieldRefInput<$PrismaModel>
+    notIn?: $Enums.FileNamingFormat[] | ListEnumFileNamingFormatFieldRefInput<$PrismaModel>
+    not?: NestedEnumFileNamingFormatWithAggregatesFilter<$PrismaModel> | $Enums.FileNamingFormat
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumFileNamingFormatFilter<$PrismaModel>
+    _max?: NestedEnumFileNamingFormatFilter<$PrismaModel>
   }
 
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -14387,15 +18287,21 @@ export namespace Prisma {
     _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
-  export type NestedFloatNullableFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  export type NestedEnumDocumentStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.DocumentStatus | EnumDocumentStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.DocumentStatus[] | ListEnumDocumentStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DocumentStatus[] | ListEnumDocumentStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumDocumentStatusFilter<$PrismaModel> | $Enums.DocumentStatus
+  }
+
+  export type NestedEnumDocumentStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DocumentStatus | EnumDocumentStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.DocumentStatus[] | ListEnumDocumentStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DocumentStatus[] | ListEnumDocumentStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumDocumentStatusWithAggregatesFilter<$PrismaModel> | $Enums.DocumentStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDocumentStatusFilter<$PrismaModel>
+    _max?: NestedEnumDocumentStatusFilter<$PrismaModel>
   }
 
   export type NestedEnumMessageRoleFilter<$PrismaModel = never> = {
@@ -14678,6 +18584,116 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type SubscriptionCreateWithoutUserInput = {
+    id?: string
+    tokens_used?: number
+    token_limit: number
+    billing_date: Date | string
+    days_remaining: number
+    plan_type?: $Enums.SubscriptionStatus
+    price?: number | null
+    currency?: string
+    is_active?: boolean
+    auto_renew?: boolean
+    payment_method?: string | null
+    last_four_digits?: string | null
+    payment_provider?: string | null
+    external_subscription_id?: string | null
+    created_at?: Date | string
+    updated_at?: Date | string
+    cancelled_at?: Date | string | null
+  }
+
+  export type SubscriptionUncheckedCreateWithoutUserInput = {
+    id?: string
+    tokens_used?: number
+    token_limit: number
+    billing_date: Date | string
+    days_remaining: number
+    plan_type?: $Enums.SubscriptionStatus
+    price?: number | null
+    currency?: string
+    is_active?: boolean
+    auto_renew?: boolean
+    payment_method?: string | null
+    last_four_digits?: string | null
+    payment_provider?: string | null
+    external_subscription_id?: string | null
+    created_at?: Date | string
+    updated_at?: Date | string
+    cancelled_at?: Date | string | null
+  }
+
+  export type SubscriptionCreateOrConnectWithoutUserInput = {
+    where: SubscriptionWhereUniqueInput
+    create: XOR<SubscriptionCreateWithoutUserInput, SubscriptionUncheckedCreateWithoutUserInput>
+  }
+
+  export type UserSettingsCreateWithoutUserInput = {
+    id?: string
+    ai_personality?: string | null
+    voice_enabled?: boolean
+    preferred_voice?: string | null
+    auto_rename_files?: boolean
+    file_naming_format?: $Enums.FileNamingFormat
+    file_naming_title?: string | null
+    file_client_name?: string | null
+    file_retention_days?: number | null
+    auto_delete_files?: boolean
+    max_file_size_mb?: number
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    login_notifications?: boolean
+    security_alerts?: boolean
+    data_sharing_consent?: boolean
+    analytics_consent?: boolean
+    marketing_emails?: boolean
+    theme?: string
+    language?: string
+    timezone?: string
+    date_format?: string
+    email_notifications?: boolean
+    push_notifications?: boolean
+    last_settings_update?: Date | string
+    created_at?: Date | string
+    updated_at?: Date | string
+  }
+
+  export type UserSettingsUncheckedCreateWithoutUserInput = {
+    id?: string
+    ai_personality?: string | null
+    voice_enabled?: boolean
+    preferred_voice?: string | null
+    auto_rename_files?: boolean
+    file_naming_format?: $Enums.FileNamingFormat
+    file_naming_title?: string | null
+    file_client_name?: string | null
+    file_retention_days?: number | null
+    auto_delete_files?: boolean
+    max_file_size_mb?: number
+    two_factor_enabled?: boolean
+    two_factor_secret?: string | null
+    login_notifications?: boolean
+    security_alerts?: boolean
+    data_sharing_consent?: boolean
+    analytics_consent?: boolean
+    marketing_emails?: boolean
+    theme?: string
+    language?: string
+    timezone?: string
+    date_format?: string
+    email_notifications?: boolean
+    push_notifications?: boolean
+    last_settings_update?: Date | string
+    created_at?: Date | string
+    updated_at?: Date | string
+  }
+
+  export type UserSettingsCreateOrConnectWithoutUserInput = {
+    where: UserSettingsWhereUniqueInput
+    create: XOR<UserSettingsCreateWithoutUserInput, UserSettingsUncheckedCreateWithoutUserInput>
+  }
+
   export type DocumentUpsertWithWhereUniqueWithoutOwnerInput = {
     where: DocumentWhereUniqueInput
     update: XOR<DocumentUpdateWithoutOwnerInput, DocumentUncheckedUpdateWithoutOwnerInput>
@@ -14869,6 +18885,328 @@ export namespace Prisma {
     created_at?: DateTimeFilter<"VerificationToken"> | Date | string
   }
 
+  export type SubscriptionUpsertWithoutUserInput = {
+    update: XOR<SubscriptionUpdateWithoutUserInput, SubscriptionUncheckedUpdateWithoutUserInput>
+    create: XOR<SubscriptionCreateWithoutUserInput, SubscriptionUncheckedCreateWithoutUserInput>
+    where?: SubscriptionWhereInput
+  }
+
+  export type SubscriptionUpdateToOneWithWhereWithoutUserInput = {
+    where?: SubscriptionWhereInput
+    data: XOR<SubscriptionUpdateWithoutUserInput, SubscriptionUncheckedUpdateWithoutUserInput>
+  }
+
+  export type SubscriptionUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokens_used?: IntFieldUpdateOperationsInput | number
+    token_limit?: IntFieldUpdateOperationsInput | number
+    billing_date?: DateTimeFieldUpdateOperationsInput | Date | string
+    days_remaining?: IntFieldUpdateOperationsInput | number
+    plan_type?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+    price?: NullableFloatFieldUpdateOperationsInput | number | null
+    currency?: StringFieldUpdateOperationsInput | string
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    auto_renew?: BoolFieldUpdateOperationsInput | boolean
+    payment_method?: NullableStringFieldUpdateOperationsInput | string | null
+    last_four_digits?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_provider?: NullableStringFieldUpdateOperationsInput | string | null
+    external_subscription_id?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    cancelled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SubscriptionUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokens_used?: IntFieldUpdateOperationsInput | number
+    token_limit?: IntFieldUpdateOperationsInput | number
+    billing_date?: DateTimeFieldUpdateOperationsInput | Date | string
+    days_remaining?: IntFieldUpdateOperationsInput | number
+    plan_type?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+    price?: NullableFloatFieldUpdateOperationsInput | number | null
+    currency?: StringFieldUpdateOperationsInput | string
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    auto_renew?: BoolFieldUpdateOperationsInput | boolean
+    payment_method?: NullableStringFieldUpdateOperationsInput | string | null
+    last_four_digits?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_provider?: NullableStringFieldUpdateOperationsInput | string | null
+    external_subscription_id?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    cancelled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type UserSettingsUpsertWithoutUserInput = {
+    update: XOR<UserSettingsUpdateWithoutUserInput, UserSettingsUncheckedUpdateWithoutUserInput>
+    create: XOR<UserSettingsCreateWithoutUserInput, UserSettingsUncheckedCreateWithoutUserInput>
+    where?: UserSettingsWhereInput
+  }
+
+  export type UserSettingsUpdateToOneWithWhereWithoutUserInput = {
+    where?: UserSettingsWhereInput
+    data: XOR<UserSettingsUpdateWithoutUserInput, UserSettingsUncheckedUpdateWithoutUserInput>
+  }
+
+  export type UserSettingsUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
+    voice_enabled?: BoolFieldUpdateOperationsInput | boolean
+    preferred_voice?: NullableStringFieldUpdateOperationsInput | string | null
+    auto_rename_files?: BoolFieldUpdateOperationsInput | boolean
+    file_naming_format?: EnumFileNamingFormatFieldUpdateOperationsInput | $Enums.FileNamingFormat
+    file_naming_title?: NullableStringFieldUpdateOperationsInput | string | null
+    file_client_name?: NullableStringFieldUpdateOperationsInput | string | null
+    file_retention_days?: NullableIntFieldUpdateOperationsInput | number | null
+    auto_delete_files?: BoolFieldUpdateOperationsInput | boolean
+    max_file_size_mb?: IntFieldUpdateOperationsInput | number
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    login_notifications?: BoolFieldUpdateOperationsInput | boolean
+    security_alerts?: BoolFieldUpdateOperationsInput | boolean
+    data_sharing_consent?: BoolFieldUpdateOperationsInput | boolean
+    analytics_consent?: BoolFieldUpdateOperationsInput | boolean
+    marketing_emails?: BoolFieldUpdateOperationsInput | boolean
+    theme?: StringFieldUpdateOperationsInput | string
+    language?: StringFieldUpdateOperationsInput | string
+    timezone?: StringFieldUpdateOperationsInput | string
+    date_format?: StringFieldUpdateOperationsInput | string
+    email_notifications?: BoolFieldUpdateOperationsInput | boolean
+    push_notifications?: BoolFieldUpdateOperationsInput | boolean
+    last_settings_update?: DateTimeFieldUpdateOperationsInput | Date | string
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserSettingsUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
+    voice_enabled?: BoolFieldUpdateOperationsInput | boolean
+    preferred_voice?: NullableStringFieldUpdateOperationsInput | string | null
+    auto_rename_files?: BoolFieldUpdateOperationsInput | boolean
+    file_naming_format?: EnumFileNamingFormatFieldUpdateOperationsInput | $Enums.FileNamingFormat
+    file_naming_title?: NullableStringFieldUpdateOperationsInput | string | null
+    file_client_name?: NullableStringFieldUpdateOperationsInput | string | null
+    file_retention_days?: NullableIntFieldUpdateOperationsInput | number | null
+    auto_delete_files?: BoolFieldUpdateOperationsInput | boolean
+    max_file_size_mb?: IntFieldUpdateOperationsInput | number
+    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    login_notifications?: BoolFieldUpdateOperationsInput | boolean
+    security_alerts?: BoolFieldUpdateOperationsInput | boolean
+    data_sharing_consent?: BoolFieldUpdateOperationsInput | boolean
+    analytics_consent?: BoolFieldUpdateOperationsInput | boolean
+    marketing_emails?: BoolFieldUpdateOperationsInput | boolean
+    theme?: StringFieldUpdateOperationsInput | string
+    language?: StringFieldUpdateOperationsInput | string
+    timezone?: StringFieldUpdateOperationsInput | string
+    date_format?: StringFieldUpdateOperationsInput | string
+    email_notifications?: BoolFieldUpdateOperationsInput | boolean
+    push_notifications?: BoolFieldUpdateOperationsInput | boolean
+    last_settings_update?: DateTimeFieldUpdateOperationsInput | Date | string
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserCreateWithoutSubscriptionInput = {
+    id?: string
+    name?: string | null
+    email: string
+    password: string
+    job_title?: string | null
+    profile_picture?: string | null
+    status?: $Enums.UserStatus
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
+    documents?: DocumentCreateNestedManyWithoutOwnerInput
+    chat_sessions?: ChatSessionCreateNestedManyWithoutUserInput
+    security_logs?: SecurityLogCreateNestedManyWithoutUserInput
+    accounts?: AccountCreateNestedManyWithoutUserInput
+    sessions?: SessionCreateNestedManyWithoutUserInput
+    verification_tokens?: VerificationTokenCreateNestedManyWithoutUserInput
+    user_settings?: UserSettingsCreateNestedOneWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutSubscriptionInput = {
+    id?: string
+    name?: string | null
+    email: string
+    password: string
+    job_title?: string | null
+    profile_picture?: string | null
+    status?: $Enums.UserStatus
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
+    documents?: DocumentUncheckedCreateNestedManyWithoutOwnerInput
+    chat_sessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    security_logs?: SecurityLogUncheckedCreateNestedManyWithoutUserInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    verification_tokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    user_settings?: UserSettingsUncheckedCreateNestedOneWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutSubscriptionInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutSubscriptionInput, UserUncheckedCreateWithoutSubscriptionInput>
+  }
+
+  export type UserUpsertWithoutSubscriptionInput = {
+    update: XOR<UserUpdateWithoutSubscriptionInput, UserUncheckedUpdateWithoutSubscriptionInput>
+    create: XOR<UserCreateWithoutSubscriptionInput, UserUncheckedCreateWithoutSubscriptionInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutSubscriptionInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutSubscriptionInput, UserUncheckedUpdateWithoutSubscriptionInput>
+  }
+
+  export type UserUpdateWithoutSubscriptionInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    documents?: DocumentUpdateManyWithoutOwnerNestedInput
+    chat_sessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    security_logs?: SecurityLogUpdateManyWithoutUserNestedInput
+    accounts?: AccountUpdateManyWithoutUserNestedInput
+    sessions?: SessionUpdateManyWithoutUserNestedInput
+    verification_tokens?: VerificationTokenUpdateManyWithoutUserNestedInput
+    user_settings?: UserSettingsUpdateOneWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutSubscriptionInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    documents?: DocumentUncheckedUpdateManyWithoutOwnerNestedInput
+    chat_sessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    security_logs?: SecurityLogUncheckedUpdateManyWithoutUserNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    verification_tokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    user_settings?: UserSettingsUncheckedUpdateOneWithoutUserNestedInput
+  }
+
+  export type UserCreateWithoutUser_settingsInput = {
+    id?: string
+    name?: string | null
+    email: string
+    password: string
+    job_title?: string | null
+    profile_picture?: string | null
+    status?: $Enums.UserStatus
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
+    documents?: DocumentCreateNestedManyWithoutOwnerInput
+    chat_sessions?: ChatSessionCreateNestedManyWithoutUserInput
+    security_logs?: SecurityLogCreateNestedManyWithoutUserInput
+    accounts?: AccountCreateNestedManyWithoutUserInput
+    sessions?: SessionCreateNestedManyWithoutUserInput
+    verification_tokens?: VerificationTokenCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionCreateNestedOneWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutUser_settingsInput = {
+    id?: string
+    name?: string | null
+    email: string
+    password: string
+    job_title?: string | null
+    profile_picture?: string | null
+    status?: $Enums.UserStatus
+    email_verified?: boolean
+    created_at?: Date | string
+    updated_at?: Date | string
+    last_login_at?: Date | string | null
+    documents?: DocumentUncheckedCreateNestedManyWithoutOwnerInput
+    chat_sessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    security_logs?: SecurityLogUncheckedCreateNestedManyWithoutUserInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    verification_tokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionUncheckedCreateNestedOneWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutUser_settingsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutUser_settingsInput, UserUncheckedCreateWithoutUser_settingsInput>
+  }
+
+  export type UserUpsertWithoutUser_settingsInput = {
+    update: XOR<UserUpdateWithoutUser_settingsInput, UserUncheckedUpdateWithoutUser_settingsInput>
+    create: XOR<UserCreateWithoutUser_settingsInput, UserUncheckedCreateWithoutUser_settingsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutUser_settingsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutUser_settingsInput, UserUncheckedUpdateWithoutUser_settingsInput>
+  }
+
+  export type UserUpdateWithoutUser_settingsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    documents?: DocumentUpdateManyWithoutOwnerNestedInput
+    chat_sessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    security_logs?: SecurityLogUpdateManyWithoutUserNestedInput
+    accounts?: AccountUpdateManyWithoutUserNestedInput
+    sessions?: SessionUpdateManyWithoutUserNestedInput
+    verification_tokens?: VerificationTokenUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUpdateOneWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutUser_settingsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    job_title?: NullableStringFieldUpdateOperationsInput | string | null
+    profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+    email_verified?: BoolFieldUpdateOperationsInput | boolean
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    last_login_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    documents?: DocumentUncheckedUpdateManyWithoutOwnerNestedInput
+    chat_sessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    security_logs?: SecurityLogUncheckedUpdateManyWithoutUserNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    verification_tokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUncheckedUpdateOneWithoutUserNestedInput
+  }
+
   export type UserCreateWithoutDocumentsInput = {
     id?: string
     name?: string | null
@@ -14876,10 +19214,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -14890,6 +19224,8 @@ export namespace Prisma {
     accounts?: AccountCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
     verification_tokens?: VerificationTokenCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsCreateNestedOneWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutDocumentsInput = {
@@ -14899,10 +19235,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -14913,6 +19245,8 @@ export namespace Prisma {
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     verification_tokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionUncheckedCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsUncheckedCreateNestedOneWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutDocumentsInput = {
@@ -14968,10 +19302,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14982,6 +19312,8 @@ export namespace Prisma {
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
     verification_tokens?: VerificationTokenUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUpdateOneWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDocumentsInput = {
@@ -14991,10 +19323,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15005,6 +19333,8 @@ export namespace Prisma {
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     verification_tokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUncheckedUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUncheckedUpdateOneWithoutUserNestedInput
   }
 
   export type ChatSessionUpsertWithWhereUniqueWithoutDocumentInput = {
@@ -15030,10 +19360,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -15044,6 +19370,8 @@ export namespace Prisma {
     accounts?: AccountCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
     verification_tokens?: VerificationTokenCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsCreateNestedOneWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutChat_sessionsInput = {
@@ -15053,10 +19381,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -15067,6 +19391,8 @@ export namespace Prisma {
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     verification_tokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionUncheckedCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsUncheckedCreateNestedOneWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutChat_sessionsInput = {
@@ -15163,10 +19489,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15177,6 +19499,8 @@ export namespace Prisma {
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
     verification_tokens?: VerificationTokenUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUpdateOneWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutChat_sessionsInput = {
@@ -15186,10 +19510,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15200,6 +19520,8 @@ export namespace Prisma {
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     verification_tokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUncheckedUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUncheckedUpdateOneWithoutUserNestedInput
   }
 
   export type DocumentUpsertWithoutChat_sessionsInput = {
@@ -15343,10 +19665,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -15357,6 +19675,8 @@ export namespace Prisma {
     accounts?: AccountCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
     verification_tokens?: VerificationTokenCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsCreateNestedOneWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSecurity_logsInput = {
@@ -15366,10 +19686,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -15380,6 +19696,8 @@ export namespace Prisma {
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     verification_tokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionUncheckedCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsUncheckedCreateNestedOneWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSecurity_logsInput = {
@@ -15405,10 +19723,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15419,6 +19733,8 @@ export namespace Prisma {
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
     verification_tokens?: VerificationTokenUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUpdateOneWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSecurity_logsInput = {
@@ -15428,10 +19744,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15442,6 +19754,8 @@ export namespace Prisma {
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     verification_tokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUncheckedUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUncheckedUpdateOneWithoutUserNestedInput
   }
 
   export type UserCreateWithoutVerification_tokensInput = {
@@ -15451,10 +19765,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -15465,6 +19775,8 @@ export namespace Prisma {
     security_logs?: SecurityLogCreateNestedManyWithoutUserInput
     accounts?: AccountCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsCreateNestedOneWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutVerification_tokensInput = {
@@ -15474,10 +19786,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -15488,6 +19796,8 @@ export namespace Prisma {
     security_logs?: SecurityLogUncheckedCreateNestedManyWithoutUserInput
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionUncheckedCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsUncheckedCreateNestedOneWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutVerification_tokensInput = {
@@ -15513,10 +19823,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15527,6 +19833,8 @@ export namespace Prisma {
     security_logs?: SecurityLogUpdateManyWithoutUserNestedInput
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUpdateOneWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutVerification_tokensInput = {
@@ -15536,10 +19844,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15550,6 +19854,8 @@ export namespace Prisma {
     security_logs?: SecurityLogUncheckedUpdateManyWithoutUserNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUncheckedUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUncheckedUpdateOneWithoutUserNestedInput
   }
 
   export type UserCreateWithoutAccountsInput = {
@@ -15559,10 +19865,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -15573,6 +19875,8 @@ export namespace Prisma {
     security_logs?: SecurityLogCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
     verification_tokens?: VerificationTokenCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsCreateNestedOneWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAccountsInput = {
@@ -15582,10 +19886,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -15596,6 +19896,8 @@ export namespace Prisma {
     security_logs?: SecurityLogUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     verification_tokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionUncheckedCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsUncheckedCreateNestedOneWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAccountsInput = {
@@ -15621,10 +19923,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15635,6 +19933,8 @@ export namespace Prisma {
     security_logs?: SecurityLogUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
     verification_tokens?: VerificationTokenUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUpdateOneWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -15644,10 +19944,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15658,6 +19954,8 @@ export namespace Prisma {
     security_logs?: SecurityLogUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     verification_tokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUncheckedUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUncheckedUpdateOneWithoutUserNestedInput
   }
 
   export type UserCreateWithoutSessionsInput = {
@@ -15667,10 +19965,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -15681,6 +19975,8 @@ export namespace Prisma {
     security_logs?: SecurityLogCreateNestedManyWithoutUserInput
     accounts?: AccountCreateNestedManyWithoutUserInput
     verification_tokens?: VerificationTokenCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsCreateNestedOneWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSessionsInput = {
@@ -15690,10 +19986,6 @@ export namespace Prisma {
     password: string
     job_title?: string | null
     profile_picture?: string | null
-    subscription_status?: $Enums.SubscriptionStatus
-    two_factor_enabled?: boolean
-    two_factor_secret?: string | null
-    ai_personality?: string | null
     status?: $Enums.UserStatus
     email_verified?: boolean
     created_at?: Date | string
@@ -15704,6 +19996,8 @@ export namespace Prisma {
     security_logs?: SecurityLogUncheckedCreateNestedManyWithoutUserInput
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     verification_tokens?: VerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    subscription?: SubscriptionUncheckedCreateNestedOneWithoutUserInput
+    user_settings?: UserSettingsUncheckedCreateNestedOneWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSessionsInput = {
@@ -15729,10 +20023,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15743,6 +20033,8 @@ export namespace Prisma {
     security_logs?: SecurityLogUpdateManyWithoutUserNestedInput
     accounts?: AccountUpdateManyWithoutUserNestedInput
     verification_tokens?: VerificationTokenUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUpdateOneWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -15752,10 +20044,6 @@ export namespace Prisma {
     password?: StringFieldUpdateOperationsInput | string
     job_title?: NullableStringFieldUpdateOperationsInput | string | null
     profile_picture?: NullableStringFieldUpdateOperationsInput | string | null
-    subscription_status?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
-    two_factor_enabled?: BoolFieldUpdateOperationsInput | boolean
-    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
-    ai_personality?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     email_verified?: BoolFieldUpdateOperationsInput | boolean
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15766,6 +20054,8 @@ export namespace Prisma {
     security_logs?: SecurityLogUncheckedUpdateManyWithoutUserNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     verification_tokens?: VerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    subscription?: SubscriptionUncheckedUpdateOneWithoutUserNestedInput
+    user_settings?: UserSettingsUncheckedUpdateOneWithoutUserNestedInput
   }
 
   export type DocumentCreateManyOwnerInput = {

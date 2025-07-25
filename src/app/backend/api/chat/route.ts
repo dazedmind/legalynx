@@ -133,11 +133,11 @@ export async function GET(request: NextRequest) {
       isSaved: session.is_saved,
       document: {
         id: session.document.id,
-        filename: session.document.file_name,
-        originalName: session.document.original_file_name,
+        fileName: session.document.file_name,
+        originalFileName: session.document.original_file_name,
         filePath: session.document.file_path, // ✅ Include file path
-        size: session.document.file_size,
-        pages: session.document.page_count,
+        fileSize: session.document.file_size,
+        pageCount: session.document.page_count,
         mimeType: session.document.mime_type,
         status: session.document.status
       }

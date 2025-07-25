@@ -27,7 +27,7 @@ async function getUserFromToken(request: NextRequest) {
 // Helper function to upload document to S3 with correct method signature
 async function saveDocumentToS3(document: any): Promise<any> {
   try {
-    console.log(`☁️ Uploading document to S3: ${document.original_file_name}`);
+    console.log(`☁️ Uploading document to S3: ${document.originalFileName}`);
     
     // Check if temporary file still exists
     if (!document.file_path || !fs.existsSync(document.file_path)) {
@@ -35,7 +35,7 @@ async function saveDocumentToS3(document: any): Promise<any> {
     }
     
     const buffer = fs.readFileSync(document.file_path);
-    const fileName = document.original_file_name;
+    const fileName = document.originalFileName;
     const contentType = document.mime_type || 'application/pdf';
     
     // Clean up the file name - remove special characters and limit length
@@ -45,8 +45,7 @@ async function saveDocumentToS3(document: any): Promise<any> {
       .substring(0, 100); // Limit to 100 characters
     
     // Create a proper S3 key structure for documents/ folder
-    const timestamp = Date.now();
-    const s3Key = `documents/${document.owner_id}/${timestamp}_${cleanFileName}`;
+    const s3Key = `documents/${document.owner_id}/${cleanFileName}`;
     
     console.log(`📁 S3 Key: ${s3Key}`);
     console.log(`🪣 Target Bucket: legalynx`);
@@ -155,20 +154,20 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         
         // Validate required fields
-        const { document_id, title } = body;
+        const { documentId, title } = body;
         
-        if (!document_id) {
+        if (!documentId) {
             return NextResponse.json({ 
                 error: 'Document ID is required' 
             }, { status: 400 });
         }
 
-        console.log(`💾 Saving document ${document_id} for user ${user.id}`);
+        console.log(`💾 Saving document ${documentId} for user ${user.id}`);
 
         // Find the document with TEMPORARY status
         const document = await prisma.document.findFirst({
             where: { 
-                id: document_id,
+                id: documentId,
                 owner_id: user.id,
                 status: 'TEMPORARY' // Only save documents that are temporary
             }
@@ -208,8 +207,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             id: savedDocument.id,
             fileName: savedDocument.file_name,
-            originalName: savedDocument.original_file_name,
-            size: savedDocument.file_size,
+            originalFileName: savedDocument.original_file_name,
+            fileSize: savedDocument.file_size,
             status: savedDocument.status,
             updatedAt: savedDocument.updated_at,
             s3Key: savedDocument.s3_key,
@@ -288,11 +287,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             id: document.id,
             fileName: document.file_name,
-            originalName: document.original_file_name,
+            originalFileName: document.original_file_name,
             status: document.status,
             updatedAt: document.updated_at,
             canSave: canSave && tempFileExists,
-            tempFileExists,
+            tempFileExists: tempFileExists,
             message: canSave 
                 ? (tempFileExists ? 'Document can be saved' : 'Temporary file expired, please re-upload')
                 : 'Document is already saved or cannot be saved'

@@ -156,7 +156,7 @@ export default function Home() {
     { id: 'documents', label: 'My Documents', icon: GoFileDirectory },
   ];
 
-  const isSystemReady = systemStatus?.pdf_loaded && systemStatus?.index_ready;
+  const isSystemReady = systemStatus?.pdfLoaded && systemStatus?.indexReady;
 
   return (
     <ProtectedRoute>
@@ -262,6 +262,7 @@ export default function Home() {
                   selectedSessionId={currentSessionId || ''} 
                   handleNewChat={handleNewChat}
                   handleVoiceChat={handleVoiceChat}
+                  currentDocumentId={currentDocumentId || ''}
                 />
               )}
 

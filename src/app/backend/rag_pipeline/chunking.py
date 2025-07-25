@@ -1,67 +1,85 @@
+# rag_pipeline/chunking.py - True Multi-Granularity Implementation
+
 from typing import List
 from llama_index.core import Document
 from llama_index.core.schema import TextNode
 from llama_index.core.text_splitter import SentenceSplitter
 from llama_index.core.node_parser import SimpleNodeParser
 from rag_pipeline.config import rag_config
-from utils.file_handler import is_scanned_pdf
 
-
-def multi_granularity_chunking(documents: List[Document], pdf_path: str, 
-                              text_threshold: int = 100) -> List[TextNode]:
+def multi_granularity_chunking(documents: List[Document], pdf_path: str, text_threshold: int = 100) -> List[TextNode]:
     """
-    Generate fine, coarse, and logical chunks with separate strategies for structured and scanned PDFs.
-    - Retains precise section titles for structured PDFs.
-    - Simplifies chunking for scanned PDFs to reduce noise.
+    Generate true multi-granularity chunks - same content at different chunk sizes.
+    Also includes the original hierarchical approach for backward compatibility.
+    
+    This creates:
+    1. Small chunks (256 tokens) - fine-grained context
+    2. Medium chunks (512 tokens) - balanced context  
+    3. Large chunks (1024 tokens) - broad context
+    4. Logical chunks - structural sections
     """
-    # Check if the document is scanned
-    is_scanned = is_scanned_pdf(pdf_path, text_threshold=text_threshold)
-
+    # Since we removed OCR, treat all documents as structured
+    is_scanned = False  # Always False since we don't support scanned PDFs
+    
     fine_nodes = []
     coarse_nodes = []
     logical_nodes = []
 
-    # Fine-grained chunking (sentence-level)
-    sentence_splitter = SentenceSplitter(
-        chunk_size=rag_config["fine_chunk_size"],
-        chunk_overlap=rag_config["fine_chunk_overlap"]
-    )
+    # =======================
+    # TRUE MULTI-GRANULARITY: Same content at different sizes
+    # =======================
     for i, doc in enumerate(documents):
-        nodes = sentence_splitter.get_nodes_from_documents([doc])
-        for node in nodes:
+        text = doc.text
+
+        # Create multiple chunk sizes of the SAME content
+        # Small chunks (256 tokens)
+        small_splitter = SentenceSplitter(
+            chunk_size=rag_config["fine_chunk_size"],
+            chunk_overlap=rag_config["fine_chunk_overlap"]
+        )
+        small_chunks = small_splitter.get_nodes_from_documents([doc])
+
+        # Medium chunks (512 tokens) - same content, larger context
+        medium_splitter = SentenceSplitter(
+            chunk_size=512,  # Between fine and coarse
+            chunk_overlap=50   # Proportional overlap
+        )
+        medium_chunks = medium_splitter.get_nodes_from_documents([doc])
+
+        # Large chunks (1024 tokens) - same content, largest context
+        large_splitter = SentenceSplitter(
+            chunk_size=rag_config["coarse_chunk_size"],
+            chunk_overlap=100  # Larger overlap for context preservation
+        )
+        large_chunks = large_splitter.get_nodes_from_documents([doc])
+
+        # Tag each chunk with granularity level and page info
+        for node in small_chunks:
             node.metadata["chunk_type"] = "fine"
+            node.metadata["granularity"] = "small"
             node.metadata["page_number"] = i + 1
-        fine_nodes.extend(nodes)
 
-    # Coarse-grained chunking (paragraph-level)
-    coarse_parser = SimpleNodeParser.from_defaults(
-        chunk_size=rag_config["coarse_chunk_size"]
-    )
-    for i, doc in enumerate(documents):
-        nodes = coarse_parser.get_nodes_from_documents([doc])
-        for node in nodes:
+        for node in medium_chunks:
+            node.metadata["chunk_type"] = "medium"  # New granularity level
+            node.metadata["granularity"] = "medium"
+            node.metadata["page_number"] = i + 1
+
+        for node in large_chunks:
             node.metadata["chunk_type"] = "coarse"
+            node.metadata["granularity"] = "large"
             node.metadata["page_number"] = i + 1
-        coarse_nodes.extend(nodes)
 
-    # Logical chunking (Structured PDFs)
-    if not is_scanned:
-        logical_nodes = _logical_chunking_structured(documents)
-    else:
-        logical_nodes = _logical_chunking_scanned(documents)
+        # Add to respective collections (keeping original structure)
+        fine_nodes.extend(small_chunks)
+        coarse_nodes.extend(large_chunks)
 
-    # Print summary for verification
-    print(f"✅ Final Chunk Counts - Fine: {len(fine_nodes)}, Coarse: {len(coarse_nodes)}, Logical: {len(logical_nodes)}")
+        # Add medium chunks to fine_nodes for retrieval (or create separate category)
+        fine_nodes.extend(medium_chunks)
 
-    return fine_nodes + coarse_nodes + logical_nodes
-
-
-def _logical_chunking_structured(documents: List[Document]) -> List[TextNode]:
-    """
-    Logical chunking for structured PDFs with section detection.
-    """
-    logical_nodes = []
-    
+    # =======================
+    # ORIGINAL HIERARCHICAL APPROACH: Different content types
+    # =======================
+    # Logical chunking for structured documents (enhanced for legal documents)
     for doc in documents:
         lines = doc.text.split("\n")
         current_chunk = []
@@ -71,18 +89,133 @@ def _logical_chunking_structured(documents: List[Document]) -> List[TextNode]:
         for line in lines:
             line_strip = line.strip()
 
-            # Detect known section headers
+            # Enhanced section detection for legal documents
             if any(anchor in line_strip.upper() for anchor in [
-                "TOTAL ESTIMATED MONTHLY PAYMENT",
-                "FEES WORKSHEET",
-                "ORIGINATION CHARGES",
-                "OTHER CHARGES"
+                # Contract sections
+                "TERMS AND CONDITIONS",
+                "SCOPE OF WORK", 
+                "PAYMENT TERMS",
+                "MATERIALS, COST, AND DISBURSEMENTS",
+                "INDEMNITY",
+                "LIABILITY",
+                "APPLICABLE LAWS",
+                "GOVERNING LAW",
+                "JURISDICTION",
+                "TERMINATION",
+                "CONFIDENTIALITY",
+                "INTELLECTUAL PROPERTY",
+                "WARRANTIES",
+                "FORCE MAJEURE",
+                "DISPUTE RESOLUTION",
+                "ARBITRATION",
+                "REMEDIES",
+                "OBLIGATIONS",
+                "REPRESENTATIONS",
+                "COVENANTS",
+                "DEFAULT",
+                "BREACH",
+                "SEVERABILITY",
+                "ENTIRE AGREEMENT",
+                "AMENDMENTS",
+                "NOTICES",
+                "ASSIGNMENT",
+                
+                # Additional legal document sections
+                "RECITALS",
+                "WHEREAS",
+                "NOW THEREFORE",
+                "DEFINITIONS",
+                "INTERPRETATION",
+                "CONSIDERATION",
+                "PERFORMANCE",
+                "DELIVERY",
+                "ACCEPTANCE",
+                "TITLE",
+                "RISK OF LOSS",
+                "INSURANCE",
+                "COMPLIANCE",
+                "REGULATORY",
+                "AUDIT",
+                "RECORDS",
+                "DISCLOSURE",
+                "NON-DISCLOSURE",
+                "PROPRIETARY",
+                "TRADE SECRETS",
+                "COPYRIGHT",
+                "PATENT",
+                "TRADEMARK",
+                "LICENSE",
+                "SUBLICENSE",
+                "ROYALTY",
+                "FEES",
+                "EXPENSES",
+                "COSTS",
+                "INVOICING",
+                "BILLING",
+                "COLLECTION",
+                "LATE PAYMENT",
+                "INTEREST",
+                "CURRENCY",
+                "TAXES",
+                "WITHHOLDING",
+                "FORCE MAJEURE",
+                "ACT OF GOD",
+                "IMPOSSIBILITY",
+                "FRUSTRATION",
+                "HARDSHIP",
+                "SUSPENSION",
+                "CANCELLATION",
+                "RESCISSION",
+                "MODIFICATION",
+                "WAIVER",
+                "CONSENT",
+                "APPROVAL",
+                "AUTHORIZATION",
+                "DELEGATION",
+                "SUBCONTRACTING",
+                "THIRD PARTIES",
+                "BENEFICIARIES",
+                "SUCCESSORS",
+                "ASSIGNS",
+                "HEIRS",
+                "EXECUTORS",
+                "ADMINISTRATORS",
+                "SURVIVAL",
+                "INTEGRATION",
+                "COUNTERPARTS",
+                "ELECTRONIC SIGNATURES",
+                "FACSIMILE",
+                "HEADINGS",
+                "CONSTRUCTION",
+                "INVALIDITY",
+                "ENFORCEABILITY",
+                "CHOICE OF LAW",
+                "VENUE",
+                "FORUM",
+                "SERVICE OF PROCESS",
+                "LIMITATION OF LIABILITY",
+                "CONSEQUENTIAL DAMAGES",
+                "PUNITIVE DAMAGES",
+                "LIQUIDATED DAMAGES",
+                "MITIGATION",
+                "CURE",
+                "NOTICE OF DEFAULT",
+                "OPPORTUNITY TO CURE",
+                "SPECIFIC PERFORMANCE",
+                "INJUNCTIVE RELIEF",
+                "ATTORNEY FEES",
+                "COSTS OF COLLECTION",
+                "PREVAILING PARTY"
             ]):
                 if current_chunk:
                     chunk_text = "\n".join(current_chunk)
                     logical_nodes.append(TextNode(
-                        text=chunk_text, 
-                        metadata={"section": section_title, "chunk_type": "logical"}
+                        text=chunk_text,
+                        metadata={
+                            "section": section_title,
+                            "chunk_type": "logical",
+                            "granularity": "structural"
+                        }
                     ))
                     current_chunk = []
 
@@ -95,8 +228,12 @@ def _logical_chunking_structured(documents: List[Document]) -> List[TextNode]:
                 if line_strip == "" and current_chunk:
                     chunk_text = "\n".join(current_chunk)
                     logical_nodes.append(TextNode(
-                        text=chunk_text, 
-                        metadata={"section": section_title, "chunk_type": "logical"}
+                        text=chunk_text,
+                        metadata={
+                            "section": section_title,
+                            "chunk_type": "logical",
+                            "granularity": "structural"
+                        }
                     ))
                     current_chunk = []
                     collecting = False
@@ -107,70 +244,46 @@ def _logical_chunking_structured(documents: List[Document]) -> List[TextNode]:
         if current_chunk:
             chunk_text = "\n".join(current_chunk)
             logical_nodes.append(TextNode(
-                text=chunk_text, 
-                metadata={"section": section_title, "chunk_type": "logical"}
+                text=chunk_text,
+                metadata={
+                    "section": section_title,
+                    "chunk_type": "logical",
+                    "granularity": "structural"
+                }
             ))
-    
-    return logical_nodes
 
+    # Print summary for verification
+    total_fine = len([n for n in fine_nodes if n.metadata.get("granularity") == "small"])
+    total_medium = len([n for n in fine_nodes if n.metadata.get("granularity") == "medium"])
+    total_coarse = len(coarse_nodes)
+    total_logical = len(logical_nodes)
 
-def _logical_chunking_scanned(documents: List[Document]) -> List[TextNode]:
-    """
-    Simplified logical chunking for scanned PDFs.
-    """
-    logical_nodes = []
-    
-    for doc in documents:
-        lines = doc.text.split("\n")
-        current_chunk = []
-        for line in lines:
-            line_strip = line.strip()
-            if line_strip:
-                current_chunk.append(line_strip)
-        
-        if current_chunk:
-            logical_nodes.append(TextNode(
-                text="\n".join(current_chunk),
-                metadata={"chunk_type": "logical"}
-            ))
-    
-    return logical_nodes
+    print(f"✅ True Multi-Granularity Chunks:")
+    print(f"   - Small (256): {total_fine}")
+    print(f"   - Medium (512): {total_medium}")
+    print(f"   - Large (1024): {total_coarse}")
+    print(f"   - Logical/Structural: {total_logical}")
+    print(f"   - Total: {len(fine_nodes + coarse_nodes + logical_nodes)}")
 
+    return fine_nodes + coarse_nodes + logical_nodes
 
 def create_semantic_chunks(documents: List[Document], chunk_size: int = 512, 
                           chunk_overlap: int = 50) -> List[TextNode]:
     """
     Create semantic chunks using sentence-based splitting.
+    Alternative chunking method for different use cases.
     """
     splitter = SentenceSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap
     )
     
-    all_nodes = []
+    nodes = []
     for doc in documents:
-        nodes = splitter.get_nodes_from_documents([doc])
-        for node in nodes:
+        doc_nodes = splitter.get_nodes_from_documents([doc])
+        for node in doc_nodes:
             node.metadata["chunk_type"] = "semantic"
-        all_nodes.extend(nodes)
+            node.metadata.update(doc.metadata)
+        nodes.extend(doc_nodes)
     
-    return all_nodes
-
-
-def create_page_level_chunks(documents: List[Document]) -> List[TextNode]:
-    """
-    Create page-level chunks for coarse-grained retrieval.
-    """
-    page_nodes = []
-    
-    for doc in documents:
-        node = TextNode(
-            text=doc.text,
-            metadata={
-                **doc.metadata,
-                "chunk_type": "page"
-            }
-        )
-        page_nodes.append(node)
-    
-    return page_nodes
+    return nodes

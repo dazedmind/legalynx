@@ -4,28 +4,30 @@ generator client {
   // output   = "../node_modules/.prisma/client"
 }
 
+// generator py {
+//   provider             = "prisma-client-py"
+//   recursive_type_depth = 5
+// }
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id                  String             @id @default(uuid())
-  name                String?
-  email               String             @unique
-  password            String
-  job_title           String?            @map("job_title")
-  profile_picture     String?            @map("profile_picture")
-  subscription_status SubscriptionStatus @default(BASIC) @map("subscription_status")
-  two_factor_enabled  Boolean            @default(false) @map("two_factor_enabled")
-  two_factor_secret   String?            @map("two_factor_secret")
-  ai_personality      String?            @map("ai_personality") @db.Text
-  status              UserStatus         @default(ACTIVE)
-  email_verified      Boolean            @default(false) @map("email_verified")
-  created_at          DateTime           @default(now()) @map("created_at")
-  updated_at          DateTime           @updatedAt @map("updated_at")
-  last_login_at       DateTime?          @map("last_login_at")
+  id              String     @id @default(uuid())
+  name            String?
+  email           String     @unique
+  password        String
+  job_title       String?    @map("job_title")
+  profile_picture String?    @map("profile_picture")
+  status          UserStatus @default(ACTIVE)
+  email_verified  Boolean    @default(false) @map("email_verified")
+  created_at      DateTime   @default(now()) @map("created_at")
+  updated_at      DateTime   @updatedAt @map("updated_at")
+  last_login_at   DateTime?  @map("last_login_at")
 
+  // Relationships
   documents           Document[]
   chat_sessions       ChatSession[]       @relation("UserChatSessions")
   security_logs       SecurityLog[]       @relation("UserSecurityLogs")
@@ -33,7 +35,97 @@ model User {
   sessions            Session[]
   verification_tokens VerificationToken[] @relation("UserVerificationTokens")
 
+  // One-to-one relationship with Subscription
+  subscription Subscription? @relation("UserSubscription")
+
+  // One-to-one relationship with UserSettings
+  user_settings UserSettings? @relation("UserUserSettings")
+
   @@map("users")
+}
+
+model Subscription {
+  id             String   @id @default(cuid())
+  user_id        String   @unique @map("user_id") // Make unique for one-to-one
+  tokens_used    Int      @default(0) @map("tokens_used")
+  token_limit    Int      @map("token_limit")
+  billing_date   DateTime @map("billing_date")
+  days_remaining Int      @map("days_remaining")
+
+  // Subscription details
+  plan_type  SubscriptionStatus @default(BASIC) @map("plan_type")
+  price      Float?             @map("price") // Monthly price
+  currency   String             @default("PHP") @map("currency")
+  is_active  Boolean            @default(true) @map("is_active")
+  auto_renew Boolean            @default(true) @map("auto_renew")
+
+  // Payment information
+  payment_method           String? @map("payment_method") // "card", "paypal", etc.
+  last_four_digits         String? @map("last_four_digits") // Last 4 digits of card
+  payment_provider         String? @map("payment_provider") // "stripe", "paypal", etc.
+  external_subscription_id String? @map("external_subscription_id") // Stripe/PayPal subscription ID
+
+  // Timestamps
+  created_at   DateTime  @default(now()) @map("created_at")
+  updated_at   DateTime  @updatedAt @map("updated_at")
+  cancelled_at DateTime? @map("cancelled_at")
+
+  // Relationship back to User
+  user User @relation("UserSubscription", fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model UserSettings {
+  id      String @id @default(cuid())
+  user_id String @unique @map("user_id") // Make unique for one-to-one
+
+  // AI & Chat Settings
+  ai_personality  String? @map("ai_personality") @db.Text
+  voice_enabled   Boolean @default(true) @map("voice_enabled")
+  preferred_voice String? @map("preferred_voice") // Voice selection for TTS
+
+  // File Management Settings
+  auto_rename_files   Boolean          @default(false) @map("auto_rename_files")
+  file_naming_format  FileNamingFormat @default(ORIGINAL) @map("file_naming_format")
+  file_naming_title   String?          @map("file_naming_title")
+  file_client_name    String?          @map("file_client_name")
+  file_retention_days Int?             @map("file_retention_days") // null = never delete, 7, 30, 60, 90
+  auto_delete_files   Boolean          @default(false) @map("auto_delete_files")
+  max_file_size_mb    Int              @default(50) @map("max_file_size_mb")
+
+  // Security Settings
+  two_factor_enabled  Boolean @default(false) @map("two_factor_enabled")
+  two_factor_secret   String? @map("two_factor_secret")
+  login_notifications Boolean @default(true) @map("login_notifications")
+  security_alerts     Boolean @default(true) @map("security_alerts")
+
+  // Privacy Settings
+  data_sharing_consent Boolean @default(false) @map("data_sharing_consent")
+  analytics_consent    Boolean @default(true) @map("analytics_consent")
+  marketing_emails     Boolean @default(false) @map("marketing_emails")
+
+  // UI/UX Preferences
+  theme       String @default("light") @map("theme") // "light", "dark", "auto"
+  language    String @default("en") @map("language")
+  timezone    String @default("UTC") @map("timezone")
+  date_format String @default("MM/DD/YYYY") @map("date_format")
+
+  // Notification Settings
+  email_notifications Boolean @default(true) @map("email_notifications")
+  push_notifications  Boolean @default(false) @map("push_notifications")
+
+  // Usage Tracking
+  last_settings_update DateTime @default(now()) @map("last_settings_update")
+
+  // Timestamps
+  created_at DateTime @default(now()) @map("created_at")
+  updated_at DateTime @updatedAt @map("updated_at")
+
+  // Relationship back to User
+  user User @relation("UserUserSettings", fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
 }
 
 model Document {
@@ -186,6 +278,12 @@ enum DocumentStatus {
 enum MessageRole {
   USER
   ASSISTANT
+}
+
+enum FileNamingFormat {
+  ORIGINAL
+  ADD_TIMESTAMP
+  SEQUENTIAL_NUMBERING
 }
 
 enum SecurityAction {

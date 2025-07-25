@@ -1,4 +1,3 @@
-// src/app/backend/api/documents/upload/route.ts - Fixed path handling
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
@@ -6,7 +5,35 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 
-// Helper function to get user from token
+// Just add this helper function to communicate with your FastAPI backend
+async function processWithRAGBackend(file: File, userToken: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const ragBackendUrl = 'http://localhost:8000'; // Your existing FastAPI URL
+  
+  try {
+    const response = await fetch(`${ragBackendUrl}/upload-pdf`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Authorization': `Bearer ${userToken}`,
+      },
+    });
+
+    if (response.ok) {
+      return await response.json();
+    } else {
+      console.warn('RAG backend failed, proceeding with original naming');
+      return null;
+    }
+  } catch (error) {
+    console.warn('RAG backend not available:', error);
+    return null;
+  }
+}
+
+// Your existing getUserFromToken function stays the same
 async function getUserFromToken(request: NextRequest) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '');
   if (!token) {
@@ -15,7 +42,10 @@ async function getUserFromToken(request: NextRequest) {
 
   const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
   const user = await prisma.user.findUnique({
-    where: { id: decoded.userId }
+    where: { id: decoded.userId },
+    include: {
+      user_settings: true // Include user settings
+    }
   });
 
   if (!user) {
@@ -25,60 +55,50 @@ async function getUserFromToken(request: NextRequest) {
   return user;
 }
 
-// Helper function to normalize path for storage (always use forward slashes)
-function normalizePathForStorage(filePath: string): string {
-  return filePath.replace(/\\/g, '/');
-}
-
-// Helper function to save file to disk
-async function saveFileToDisk(file: File, userId: string): Promise<{ filePath: string; fileName: string; cutFilePath: string }> {
-  // Create uploads directory structure: uploads/userId/
+// Update your existing saveFileToDisk function
+async function saveFileToDisk(
+  file: File, 
+  userId: string, 
+  intelligentName?: string
+): Promise<{ filePath: string; fileName: string; cutFilePath: string }> {
   const baseUploadDir = path.join(process.cwd(), 'uploads');
   const userUploadDir = path.join(baseUploadDir, userId);
   
-  // Create directories if they don't exist
   if (!fs.existsSync(baseUploadDir)) {
     fs.mkdirSync(baseUploadDir, { recursive: true });
-    console.log('📁 Created base upload directory:', baseUploadDir);
   }
   
   if (!fs.existsSync(userUploadDir)) {
     fs.mkdirSync(userUploadDir, { recursive: true });
-    console.log('📁 Created user upload directory:', userUploadDir);
   }
 
-  // Generate unique filename to avoid conflicts
-  const fileExtension = path.extname(file.name);
-  const baseName = path.basename(file.name, fileExtension);
-  const uniqueFileName = `${baseName}_${uuidv4()}${fileExtension}`;
-  const filePath = path.join(userUploadDir, uniqueFileName);
+  // Use intelligent name if provided, otherwise generate unique name
+  let finalFileName: string;
+  
+  if (intelligentName && intelligentName !== file.name) {
+    finalFileName = intelligentName;
+    console.log('🧠 Using intelligent filename:', finalFileName);
+  } else {
+    const fileExtension = path.extname(file.name);
+    const baseName = path.basename(file.name, fileExtension);
+    finalFileName = `${baseName}_${uuidv4()}${fileExtension}`;
+    console.log('📁 Using fallback filename:', finalFileName);
+  }
+  
+  const filePath = path.join(userUploadDir, finalFileName);
   const cutFilePath = cutToUploadsOnly(filePath);
-  // Create a storage path that's normalized for cross-platform compatibility
-  const storagePath = normalizePathForStorage(filePath);
   
-  console.log('💾 Saving file:');
-  console.log('  - Original name:', file.name);
-  console.log('  - Unique name:', uniqueFileName);
-  console.log('  - Full path:', filePath);
-  console.log('  - Storage path:', storagePath);
-  console.log('  - Cut file path:', cutFilePath);
-  
-  // Convert file to buffer and save
   const buffer = Buffer.from(await file.arrayBuffer());
   fs.writeFileSync(filePath, buffer);
   
-  // Verify file was saved
   if (!fs.existsSync(filePath)) {
     throw new Error('Failed to save file to disk');
   }
   
-  const savedFileSize = fs.statSync(filePath).size;
-  console.log('✅ File saved successfully. Size:', savedFileSize, 'bytes');
-  
   return { 
-    filePath: filePath, // Actual system path for immediate use
-    fileName: uniqueFileName,
-    cutFilePath: cutFilePath // Normalized path for database storage
+    filePath: filePath,
+    fileName: finalFileName,
+    cutFilePath: cutFilePath
   };
 }
 
@@ -87,13 +107,12 @@ function cutToUploadsOnly(fullPath: string): string {
   return idx !== -1 ? fullPath.slice(idx).replace(/\//g, '\\') : fullPath;
 }
 
+// Update your existing POST function
 export async function POST(request: NextRequest) {
   try {
-    // Get user from token
     const user = await getUserFromToken(request);
     console.log('👤 User authenticated:', user.email);
 
-    // Get form data
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -101,69 +120,91 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    if (file.type !== 'application/pdf') {
-      return NextResponse.json({ error: 'Only PDF files are allowed' }, { status: 400 });
+    // Support both PDF and DOCX
+    const supportedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!supportedTypes.includes(file.type)) {
+      return NextResponse.json({ 
+        error: 'Only PDF and DOCX files are allowed' 
+      }, { status: 400 });
     }
 
-    console.log('📄 Processing file:', file.name, 'Size:', file.size);
+    console.log('📄 Processing file:', file.name);
 
-    // Save file to disk
-    const { filePath, fileName, cutFilePath } = await saveFileToDisk(file, user.id);
+    // Get user token for RAG backend
+    const userToken = request.headers.get('authorization')?.replace('Bearer ', '') || '';
 
-    // Create document record in database with normalized storage path
+    // NEW: Try to get intelligent filename from RAG backend
+    let ragResponse = null;
+    let intelligentFilename = null;
+    
+    console.log('🧠 Attempting intelligent naming via RAG backend...');
+    ragResponse = await processWithRAGBackend(file, userToken);
+    
+    if (ragResponse && ragResponse.filename !== ragResponse.original_filename) {
+      intelligentFilename = ragResponse.filename;
+      console.log('✅ Got intelligent filename:', intelligentFilename);
+    } else {
+      console.log('ℹ️ Using original filename');
+    }
+
+    // Save file with intelligent name if available
+    const { filePath, fileName, cutFilePath } = await saveFileToDisk(
+      file, 
+      user.id, 
+      intelligentFilename
+    );
+
+    // Create document record
     const document = await prisma.document.create({
       data: {
         file_name: fileName,
         original_file_name: file.name,
-        file_path: cutFilePath, // ✅ Store normalized path
+        file_path: cutFilePath,
         file_size: file.size,
         mime_type: file.type,
-        status: 'UPLOADED', // Start with UPLOADED status
+        status: 'TEMPORARY',
+        page_count: ragResponse?.document_count || null,
         owner_id: user.id
       }
     });
 
-    console.log('📋 Document record created:');
-    console.log('  - ID:', document.id);
-    console.log('  - File path in DB:', document.file_path);
+    console.log('📋 Document created with intelligent naming');
 
     // Log security event
     await prisma.securityLog.create({
       data: {
         user_id: user.id,
         action: 'DOCUMENT_UPLOAD',
-        details: `Uploaded document: ${file.name}`,
-        ip_address: request.headers.get('x-forwarded-for') || 
-                  request.headers.get('x-real-ip') || 
-                  'unknown',
+        details: `Uploaded: ${file.name} → ${fileName}`,
+        ip_address: request.headers.get('x-forwarded-for') || 'unknown',
         user_agent: request.headers.get('user-agent') || 'unknown'
       }
     });
 
-    // TODO: Process the document with your RAG pipeline here
-    // For now, update status to indicate it's ready
-    await prisma.document.update({
-      where: { id: document.id },
-      data: { 
-        status: 'TEMPORARY', // Mark as ready for use
-        page_count: 1 // You'll get this from your RAG processing
+    // 🔥 FIX: Return the exact structure that ChatViewer expects
+    return NextResponse.json({
+      // ✅ Use the exact property names ChatViewer expects
+      documentId: document.id,
+      fileName: document.file_name,
+      originalFileName: document.original_file_name, 
+      fileSize: document.file_size,
+      pageCount: document.page_count || 1,  // ✅ Ensure never null
+      status: document.status,
+      uploadedAt: document.uploaded_at.toISOString(),
+      
+      // ✅ Add these fields that ChatViewer needs
+      databaseId: document.id,  // For compatibility
+      mimeType: document.mime_type,
+      
+      // Additional info
+      intelligentNaming: {
+        applied: ragResponse?.naming_applied || 'original',
+        ragBackendAvailable: ragResponse !== null,
+        conversionPerformed: ragResponse?.conversion_performed || false
       }
     });
-
-    console.log('✅ Document upload completed successfully');
-
-    return NextResponse.json({
-      documentId: document.id,
-      filename: document.file_name,
-      originalName: document.original_file_name,
-      size: document.file_size,
-      uploadedAt: document.uploaded_at.toISOString(),
-      pages_processed: document.page_count || 1,
-      status: 'TEMPORARY'
-    });
-
   } catch (error) {
-    console.error('❌ Document upload error:', error);
+    console.error('❌ Upload error:', error);
     
     if (error instanceof Error) {
       if (error.message === 'No token provided') {
@@ -174,9 +215,6 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    return NextResponse.json(
-      { error: 'Failed to upload document' }, 
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to upload document' }, { status: 500 });
   }
 }
