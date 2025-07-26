@@ -27,8 +27,8 @@ import { GoInfo } from 'react-icons/go';
 
 interface DocumentInfo {
   id: string;
-  filename: string;
-  originalName: string;
+  fileName: string;
+  originalFileName: string;
   size: number;
   uploadedAt: string;
   pages?: number;
@@ -201,7 +201,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ isOpen, document, onClose }) => {
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-lg">{document.originalName}</h3>
+            <h3 className="font-semibold text-lg">{document.originalFileName}</h3>
           </div>
           <div className="flex items-center gap-2">
 
@@ -242,7 +242,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ isOpen, document, onClose }) => {
                   transform: `rotate(${rotation}deg)`,
                   transformOrigin: 'center center'
                 }}
-                title={`PDF Viewer - ${document.originalName}`}
+                title={`PDF Viewer - ${document.originalFileName}`}
               />
             </div>
           )}
@@ -287,7 +287,7 @@ const FileDetailsModal: React.FC<FileDetailsModalProps> = ({ isOpen, document, o
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-500">File Name</label>
-              <p className="mt-1 text-sm text-gray-900">{document.originalName}</p>
+              <p className="mt-1 text-sm text-gray-900">{document.originalFileName}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-500">File Size</label>
@@ -426,14 +426,14 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
             .filter(doc => {
               const validStatuses = ['indexed', 'ready', 'processed'];
               const isValid = validStatuses.includes(doc.status?.toLowerCase() || '');
-              console.log(`Document ${doc.originalName}: status=${doc.status}, valid=${isValid}`);
+              console.log(`Document ${doc.originalFileName}: status=${doc.status}, valid=${isValid}`);
               return isValid;
             })
             .map(doc => ({
               id: doc.id,
-              filename: doc.filename,
-              originalName: doc.originalName,
-              size: doc.size,
+              fileName: doc.fileName,
+              originalFileName: doc.originalFileName,
+              size: doc.fileSize,
               uploadedAt: doc.uploadedAt,
               pages: doc.pageCount,
               status: doc.status?.toLowerCase() === 'indexed' ? 'indexed' : 'ready',
@@ -489,8 +489,8 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
 
     if (searchQuery.trim()) {
       filtered = filtered.filter(doc => 
-        doc.originalName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doc.filename.toLowerCase().includes(searchQuery.toLowerCase())
+        doc.originalFileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doc.fileName.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -504,8 +504,8 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
 
       switch (sortField) {
         case 'name':
-          aValue = a.originalName.toLowerCase();
-          bValue = b.originalName.toLowerCase();
+          aValue = a.originalFileName.toLowerCase();
+          bValue = b.originalFileName.toLowerCase();
           break;
         case 'size':
           aValue = a.size;
@@ -637,7 +637,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
     event?.stopPropagation();
     
     const doc = documents.find(d => d.id === docId);
-    if (!confirm(`Are you sure you want to delete "${doc?.originalName}"?`)) {
+    if (!confirm(`Are you sure you want to delete "${doc?.originalFileName}"?`)) {
       return;
     }
 
@@ -880,7 +880,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
                         <FileText className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{doc.originalName}</p>
+                        <p className="font-medium text-gray-900 truncate">{doc.fileName}</p>
                         <div className="flex items-center space-x-2 text-xs text-gray-500">
                           {doc.lastAccessed && (
                             <span className="flex items-center">
@@ -930,18 +930,16 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
                 {filteredDocuments.map((doc) => (
                   <div
                     key={doc.id}
-                    className={`border rounded-lg p-4 transition-all cursor-pointer hover:shadow-md ${
+                    className={`border rounded-lg p-5 transition-all cursor-pointer hover:shadow-md ${
                       selectedDocs.has(doc.id)
                         ? 'border-blue-500 bg-blue-50'
                         : currentDocumentId === doc.id
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-200 bg-white'
                     }`}
                     onClick={() => handleDocumentClick(doc)}
                     onContextMenu={(e) => handleRightClick(e, doc)}
                   >
                     {/* Header */}
-                    <div className="flex justify-between items-start mb-3">
+                    <div className="flex justify-between items-center mb-3">
                       <div className="flex items-center space-x-2">
                         <input
                           type="checkbox"
@@ -956,7 +954,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
                             setSelectedDocs(newSelected);
                           }}
                           onClick={(e) => e.stopPropagation()}
-                          className="rounded"
+                          className="rounded p-1"
                         />
                         {doc.starred && (
                           <Star className="w-4 h-4 text-yellow-500 fill-current" />
@@ -1037,11 +1035,11 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
 
                     {/* File Info */}
                     <div className="text-center">
-                      <h3 className="font-medium text-gray-900 truncate mb-1" title={doc.originalName}>
-                        {doc.originalName}
+                      <h3 className="font-medium text-gray-900 truncate mb-1" title={doc.fileName}>
+                        {doc.fileName}
                       </h3>
                       <div className="space-y-1 text-xs text-gray-500">
-                        <p>{formatFileSize(doc.size)} • {doc.pages || 'N/A'} pages</p>
+                        {/* <p>{formatFileSize(doc.size)} • {doc.pages || 'N/A'} pages</p> */}
                         <p>{formatDate(doc.uploadedAt)}</p>
                         {doc.chatSessionsCount !== undefined && doc.chatSessionsCount > 0 && (
                           <p className="text-blue-600">

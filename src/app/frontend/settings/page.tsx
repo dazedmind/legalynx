@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CircleUser, Shield, FileCog, CreditCard, LogOut, Lock, FolderCog, Menu, X } from 'lucide-react';
 import { SystemStatus } from '../lib/api';
 import NavBar from '../components/NavBar';
@@ -9,10 +9,13 @@ import ProfileSettings from './ProfileSettings'
 import SubscriptionPage from './SubscriptionPage'
 import SecuritySettings from './SecuritySettings'
 import PrivacySecuritySettings from './PrivacySecuritySettings'
+import { useSearchParams, useRouter } from 'next/navigation';
 
 type ActiveTab = 'profile' | 'file_settings' | 'security_log' | 'security_settings' | 'subscription';
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const [notification, setNotification] = useState<{
@@ -23,10 +26,29 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('profile');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
+  // Handle URL parameter for initial tab
+  useEffect(() => {
+    const tabParam = searchParams.get('tab') as ActiveTab;
+    if (tabParam && ['profile', 'file_settings', 'security_log', 'security_settings', 'subscription'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  // Update URL when component mounts if no tab parameter is present
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (!tabParam) {
+      // Set default tab in URL if none is specified
+      router.replace(`/frontend/settings?tab=profile`);
+    }
+  }, [searchParams, router]);
+
   const handleTabClick = (tab: ActiveTab) => {
     setActiveTab(tab);
     // Close mobile sidebar when a tab is selected
     setIsMobileSidebarOpen(false);
+    // Update URL to reflect current tab
+    router.push(`/frontend/settings?tab=${tab}`);
   };
 
   const logout = () => {
@@ -91,13 +113,16 @@ export default function Home() {
                 <button
                   key={item.id}
                   onClick={() => handleTabClick(item.id as ActiveTab)}
-                  className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                  className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-r-lg transition-colors ${
                     activeTab === item.id
                       ? 'bg-blue-100 text-blue-700 font-semibold'
                       : 'text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  <IconComponent className="w-6 h-6" strokeWidth={1.5} />
+                  {activeTab === item.id && (
+                    <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
+                  )}
+                  <IconComponent className={`${activeTab === item.id ? 'ml-2' : 'ml-0' } transition-all duration-300 w-6 h-6 flex-shrink-0`} strokeWidth={1.5} />
                   <span className="text-sm lg:text-base">{item.label}</span>
                 </button>
               );

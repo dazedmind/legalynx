@@ -21,17 +21,17 @@ interface ConfirmationModalProps {
 const getColor = (type: string) => {
   switch (type) {
     case ModalType.DANGER:
-      return 'bg-red-100/70 text-red-600';
+      return 'bg-red-100/70 text-red-600 hover:bg-red-300';
     case ModalType.WARNING:
-      return 'bg-yellow-100/70 text-yellow-600';
+      return 'bg-yellow-100/70 text-yellow-600 hover:bg-yellow-200';
     case ModalType.INFO:
-      return 'bg-blue-100/70 text-blue-600';
+      return 'bg-blue-100/70 text-blue-600 hover:bg-blue-300';
     case ModalType.SUCCESS:
-      return 'bg-green-100/70 text-green-600';
+      return 'bg-green-100/70 text-green-600 hover:bg-green-300';
     case ModalType.ERROR:
-      return 'bg-red-100/70 text-red-600';
+      return 'bg-red-100/70 text-red-600 hover:bg-red-300';
     case ModalType.SAVE:
-      return 'bg-blue-100/70 text-blue-600';
+      return 'bg-blue-100/70 text-blue-600 hover:bg-blue-300';
   }
 }
 
@@ -97,7 +97,6 @@ function ConfirmationModal({ isOpen, onClose, onSave, isSaving, documentName, mo
               </>
             ) : (
               <>
-                <Save className="w-4 h-4" />
                 {modal.trueButton}
               </>
             )}

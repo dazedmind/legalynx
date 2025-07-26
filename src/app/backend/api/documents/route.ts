@@ -1,9 +1,8 @@
-// src/app/backend/api/documents/route.ts
+// src/app/backend/api/documents/route.ts - FIXED VERSION
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import { S3Service } from '@/lib/s3';
-import { authUtils } from '@/lib/auth';
 
 // Helper function to get user from token
 async function getUserFromToken(request: NextRequest) {
@@ -14,9 +13,8 @@ async function getUserFromToken(request: NextRequest) {
 
   const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
   
-  // ✅ FIX: Use 'userId' from JWT payload, not 'user_id'
   const user = await prisma.user.findUnique({
-    where: { id: decoded.userId } // Changed from decoded.user_id to decoded.userId
+    where: { id: decoded.userId }
   });
 
   if (!user) {
@@ -44,25 +42,43 @@ export async function GET(request: NextRequest) {
       orderBy: { uploaded_at: 'desc' }
     });
 
+    // 🔥 FIX: Use the exact property names that ChatViewer expects
     const formattedDocuments = documents.map(doc => ({
       id: doc.id,
-      filename: doc.file_name,
-      originalName: doc.original_file_name,
-      size: doc.file_size,
-      mimeType: doc.mime_type,
+      
+      // ✅ FIXED: Use the exact property names ChatViewer expects
+      fileName: doc.file_name,
+      originalFileName: doc.original_file_name,
+      fileSize: doc.file_size,
+      pageCount: doc.page_count || 1,  // ✅ Ensure this is never null
       status: doc.status,
-      pageCount: doc.page_count,
       uploadedAt: doc.uploaded_at.toISOString(),
+      
+      // Additional fields for compatibility
+      mimeType: doc.mime_type,
+      databaseId: doc.id,  // ✅ Add this for ChatViewer compatibility
+      
+      // Chat session info
       chatSessionsCount: doc.chat_sessions.length,
       lastChatAt: doc.chat_sessions.length > 0 
         ? Math.max(...doc.chat_sessions.map(s => s.created_at.getTime()))
         : null
     }));
 
+    console.log('📄 Returning documents:', formattedDocuments.length);
+    console.log('📋 First document structure:', formattedDocuments[0] ? Object.keys(formattedDocuments[0]) : 'No documents');
+
     return NextResponse.json({ documents: formattedDocuments });
 
   } catch (error) {
     console.error('Get documents error:', error);
+    
+    if (error instanceof Error) {
+      if (error.message === 'No token provided' || error.message === 'User not found') {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
+    }
+    
     return NextResponse.json(
       { error: 'Failed to get documents' }, 
       { status: 500 }
@@ -70,7 +86,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Delete document
+// Delete document (keep your existing implementation)
 export async function DELETE(request: NextRequest) {
   try {
     const user = await getUserFromToken(request);
@@ -159,7 +175,8 @@ export async function DELETE(request: NextRequest) {
       message: 'Document deleted successfully',
       details: {
         documentId,
-        documentName: document.original_file_name,
+        documentName: document.file_name,
+        originalFileName: document.original_file_name,
         status: document.status,
         s3Deletion: s3DeletionResult,
         databaseDeleted: true

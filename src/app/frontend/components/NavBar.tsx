@@ -5,8 +5,7 @@ import avatar from '../img/user.png'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useAuth } from '@/lib/context/AuthContext'
-import { profileService } from '../lib/api'
-import { UserProfile } from '../types/profile'
+import { profileService, UserProfile } from '../lib/api'
 import { GoGift } from 'react-icons/go'
 import logo from '../img/legalynxlogo.png'
 
@@ -37,10 +36,10 @@ export default function NavBar() {
                 id: userProfile.id,
                 email: userProfile.email,
                 name: userProfile.name,
-                subscription_status: userProfile.subscription_status
+                subscription: userProfile.subscription?.plan_type,
             });
             
-            setProfile(userProfile);
+            setProfile(userProfile as UserProfile);
             setError(''); // Explicitly clear error on success
             
         } catch (error) {
@@ -76,9 +75,10 @@ export default function NavBar() {
     };
 
     const getSubscriptionStatus = () => {
-        if (profile?.subscription_status === 'PREMIUM') return 'Premium';
-        if (profile?.subscription_status === 'STANDARD') return 'Standard';
-        if (profile?.subscription_status === 'BASIC') return 'Basic';
+        if (profile?.subscription?.plan_type === 'PREMIUM') return 'PREMIUM';
+        if (profile?.subscription?.plan_type === 'STANDARD') return 'STANDARD';
+        if (profile?.subscription?.plan_type === 'BASIC') return 'BASIC';
+        return 'BASIC';
     };
 
     const getProfilePicture = () => {
@@ -164,7 +164,7 @@ export default function NavBar() {
                             
                             <DropdownMenuSeparator />
                      
-                            <Link href="/frontend/subscription" className='cursor-pointer'>
+                            <Link href="/frontend/settings?tab=subscription" className='cursor-pointer'>
                                 <DropdownMenuItem className='cursor-pointer p-2 px-3'>
                                     <GoGift className='w-4 h-4' />
                                     Manage Subscription

@@ -12,6 +12,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '@/lib/context/AuthContext';
 import { LogOut, Plus, Menu, X, Mic } from 'lucide-react';
 import UploadPage from '../components/UploadPage';
+  import ConfirmationModal, { ModalType } from '../components/ConfirmationModal';
 
 type ActiveTab = 'chat' | 'documents' | 'chat_history' | 'upload' | 'voice_chat';
 
@@ -24,6 +25,32 @@ export default function Home() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false); // Mobile sidebar state
   const { user, logout } = useAuth();
   const [resetChatViewer, setResetChatViewer] = useState(false);
+  
+   // Modal state for confirmation
+   const [confirmationModalConfig, setConfirmationModalConfig] = useState<{
+    header: string;
+    message: string;
+    trueButton: string;
+    falseButton: string;
+    type: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  // Handler to open confirmation modal
+  const openConfirmationModal = (
+    config: { header: string; message: string; trueButton: string; falseButton: string; type: string; },
+    onConfirm: () => void
+  ) => {
+    setConfirmationModalConfig({ ...config, onConfirm });
+  };
+
+    // Handler for modal action
+    const handleConfirmationModal = (shouldProceed: boolean) => {
+      if (shouldProceed && confirmationModalConfig?.onConfirm) {
+        confirmationModalConfig.onConfirm();
+      }
+      setConfirmationModalConfig(null);
+    };
 
   // Clear uploaded files and reset system on page load
   useEffect(() => {
@@ -95,18 +122,58 @@ export default function Home() {
   };
 
   const handleUploadSuccess = (response: UploadResponse) => {
-    console.log('📤 Upload success in Home component:', response);
+    console.log('🎉 MAIN COMPONENT - Upload success:', response);
     
-    if (response && response.documentId) {
-      setCurrentDocumentId(response.documentId);
-      setCurrentSessionId(null);
-      setActiveTab('chat');
-      console.log('🔄 Switched to chat tab for document:', response.documentId);
-    }
+    // ✅ FIXED: Add debug logging to see what we receive
+    console.log('📄 Response fields:', {
+      documentId: response.documentId,
+      fileName: response.fileName,
+      originalFileName: response.originalFileName,
+      fileSize: response.fileSize,
+      pageCount: response.pageCount,
+      pages_processed: response.pageCount, // Check if this exists
+      uploadedAt: response.uploadedAt,
+      status: response.status
+    });
     
-    setTimeout(() => {
-      loadSystemStatus();
-    }, 1000);
+    // Store in localStorage with correct field names for ChatViewer
+    const storageKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+    
+    const existingDocs = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    
+    // Remove any existing document with same ID
+    const filteredDocs = existingDocs.filter((doc: any) => doc.id !== response.documentId);
+    
+    // ✅ FIXED: Add the new document with correct field mapping from response
+    const documentForStorage = {
+      id: response.documentId,
+      fileName: response.fileName,
+      originalFileName: response.originalFileName,
+      original_file_name: response.originalFileName,         // Backward compatibility
+      fileSize: response.fileSize,
+      file_size: response.fileSize,                         // Backward compatibility
+      pageCount: response.pageCount || response.pageCount || 1, // ✅ FIXED: Handle both field names
+      page_count: response.pageCount || response.pageCount || 1, // ✅ FIXED: Handle both field names
+      status: response.status || 'TEMPORARY',
+      uploadedAt: response.uploadedAt,
+      uploaded_at: response.uploadedAt,                     // Backward compatibility
+      databaseId: response.documentId,
+      mimeType: response.mimeType,
+      securityStatus: response.securityStatus,
+      conversionPerformed: response.conversionPerformed,
+    };
+    
+    filteredDocs.unshift(documentForStorage);
+    localStorage.setItem(storageKey, JSON.stringify(filteredDocs));
+    
+    console.log('📄 Document stored in localStorage:', documentForStorage);
+    
+    // Set current document ID and switch to chat view
+    setCurrentDocumentId(response.documentId || '');
+    setActiveTab('chat');
+    setIsMobileSidebarOpen(false); // Close mobile sidebar
+    
+    console.log('🔄 Switched to chat tab with document ID:', response.documentId);
   };
 
   const handleNewChat = () => {
@@ -132,19 +199,19 @@ export default function Home() {
     setIsMobileSidebarOpen(false); // Close sidebar on mobile
   };
 
-  const handleSystemReset = async () => {
-    if (!confirm('Are you sure you want to reset the system? This will clear the current session but keep your saved documents.')) {
-      return;
-    }
-
-    try {
-      await apiService.resetSystem();
-      setCurrentDocumentId(null);
-      setCurrentSessionId(null);
-      loadSystemStatus();
-    } catch (error) {
-      // Handle error
-    }
+  const handleSignOut = () => {
+    openConfirmationModal(
+      {
+        header: 'Sign out',
+        message: 'Are you sure you want to sign out?',
+        trueButton: 'Sign out',
+        falseButton: 'Cancel',
+        type: ModalType.DANGER,
+      },
+      () => {
+        logout();
+      }
+    );
   };
 
   const toggleMobileSidebar = () => {
@@ -156,7 +223,7 @@ export default function Home() {
     { id: 'documents', label: 'My Documents', icon: GoFileDirectory },
   ];
 
-  const isSystemReady = systemStatus?.pdf_loaded && systemStatus?.index_ready;
+  const isSystemReady = systemStatus?.pdfLoaded && systemStatus?.indexReady;
 
   return (
     <ProtectedRoute>
@@ -210,25 +277,31 @@ export default function Home() {
             <div className="space-y-2 mb-8">
               <button
                 onClick={() => handleTabClick('chat_history')}
-                className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-r-lg transition-colors ${
                   activeTab === 'chat_history' || activeTab === 'chat'
                     ? 'bg-blue-100 text-blue-700 font-semibold'
                     : 'text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                <GoArchive className="w-5 h-5 flex-shrink-0" />
+                  {activeTab === 'chat_history' && (
+                    <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
+                  )}
+                <GoArchive className={`${activeTab === 'chat_history' ? 'ml-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} />
                 <span className="truncate">Chat History</span>
               </button>
 
               <button
                 onClick={() => handleTabClick('documents')}
-                className={`w-full cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-r-lg transition-colors ${
                   activeTab === 'documents'
                     ? 'bg-blue-100 text-blue-700 font-semibold'
                     : 'text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                <GoFileDirectory className="w-5 h-5 flex-shrink-0" />
+                {activeTab === 'documents' && (
+                    <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
+                  )}
+                <GoFileDirectory className={`${activeTab === 'documents' ? 'ml-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} />
                 <span className="truncate">My Documents</span>
               </button>
 
@@ -236,7 +309,7 @@ export default function Home() {
 
             <div className="mt-auto space-y-3">
               <button
-                onClick={logout}
+                onClick={handleSignOut}
                 className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg text-red-600 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4 flex-shrink-0" />
@@ -285,6 +358,18 @@ export default function Home() {
           </section>
         </main>
       </div>
+      <ConfirmationModal
+         isOpen={!!confirmationModalConfig}
+         onClose={() => setConfirmationModalConfig(null)}
+         onSave={handleConfirmationModal}
+         modal={{
+           header: confirmationModalConfig?.header || '',
+           message: confirmationModalConfig?.message || '',
+           trueButton: confirmationModalConfig?.trueButton || '',
+           falseButton: confirmationModalConfig?.falseButton || '',
+           type: confirmationModalConfig?.type || '',
+         }}
+      />
     </ProtectedRoute>
   );
 }

@@ -44,6 +44,7 @@ export async function GET(
       select: {
         id: true,
         status: true,
+        file_name: true,
         original_file_name: true
       }
     });
@@ -63,7 +64,8 @@ export async function GET(
       exists: true,
       id: document.id,
       status: document.status,
-      name: document.original_file_name
+      fileName: document.file_name,
+      originalFileName: document.original_file_name
     });
 
   } catch (error) {

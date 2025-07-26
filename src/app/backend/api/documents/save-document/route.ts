@@ -1,4 +1,4 @@
-// src/app/backend/api/documents/save-document/route.ts - Fixed S3 integration
+// src/app/backend/api/documents/save-document/route.ts - Fixed to use RAG filename
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
@@ -24,7 +24,7 @@ async function getUserFromToken(request: NextRequest) {
     return user;
 }
 
-// Helper function to upload document to S3 with correct method signature
+// ✅ FIXED: Helper function to upload document to S3 using RAG-generated filename
 async function saveDocumentToS3(document: any): Promise<any> {
   try {
     console.log(`☁️ Uploading document to S3: ${document.original_file_name}`);
@@ -35,21 +35,36 @@ async function saveDocumentToS3(document: any): Promise<any> {
     }
     
     const buffer = fs.readFileSync(document.file_path);
-    const fileName = document.original_file_name;
+    
+    // ✅ FIXED: Use RAG-generated filename (file_name) if available, fallback to original
+    const ragGeneratedFilename = document.file_name; // This is the RAG-generated filename
+    const originalFilename = document.original_file_name; // This is the user's original filename
+    
+    // Use RAG filename if it's different from original (meaning RAG processed it)
+    const preferredFilename = (ragGeneratedFilename && ragGeneratedFilename !== originalFilename) 
+      ? ragGeneratedFilename 
+      : originalFilename;
+    
+    console.log(`📝 Filename choice:`, {
+      original: originalFilename,
+      ragGenerated: ragGeneratedFilename,
+      preferred: preferredFilename
+    });
+    
     const contentType = document.mime_type || 'application/pdf';
     
-    // Clean up the file name - remove special characters and limit length
-    const cleanFileName = fileName
-      .replace(/[^a-zA-Z0-9.-]/g, '_') // Replace special chars with underscore
+    // Clean up the preferred filename - preserve the intelligent naming
+    const cleanFileName = preferredFilename
+      .replace(/[^a-zA-Z0-9.-_]/g, '_') // Replace special chars with underscore but keep underscores
       .replace(/_{2,}/g, '_') // Replace multiple underscores with single
-      .substring(0, 100); // Limit to 100 characters
+      .substring(0, 150); // Increase limit to preserve full intelligent names
     
-    // Create a proper S3 key structure for documents/ folder
-    const timestamp = Date.now();
-    const s3Key = `documents/${document.owner_id}/${timestamp}_${cleanFileName}`;
+    // ✅ FIXED: Create S3 key using user_id/filename structure to preserve RAG naming
+    const s3Key = `documents/${document.owner_id}/${cleanFileName}`;
     
     console.log(`📁 S3 Key: ${s3Key}`);
     console.log(`🪣 Target Bucket: legalynx`);
+    console.log(`🎯 Preserving RAG intelligent filename: ${cleanFileName}`);
     
     let s3Result: any;
     
@@ -57,13 +72,13 @@ async function saveDocumentToS3(document: any): Promise<any> {
         // Method 1: Try the uploadFile method with proper parameters
         if (typeof S3Service.uploadFile === 'function') {
           console.log('🔄 Attempting S3Service.uploadFile...');
-          try {
-            // Most S3 services expect (key, buffer, contentType) or (key, filePath, options)
-            s3Result = await S3Service.uploadFile(buffer, s3Key, contentType, document.owner_id);
-          } catch (error) {
-            console.log('🔄 Retry with file path...');
-            s3Result = await S3Service.uploadFile(document.file_path, s3Key, contentType, document.owner_id);
-          }
+          s3Result = await S3Service.uploadFile(
+            buffer, 
+            cleanFileName, 
+            contentType, 
+            document.owner_id,
+            'documents'
+          );
         }
         // Method 2: Try upload method
         else if (typeof (S3Service as any).upload === 'function') {
@@ -85,19 +100,6 @@ async function saveDocumentToS3(document: any): Promise<any> {
             Bucket: 'legalynx'
           });
         }
-        // Method 4: Direct AWS SDK v3 style
-        else if (typeof (S3Service as any).send === 'function') {
-          console.log('🔄 Attempting AWS SDK v3 style...');
-          // Import PutObjectCommand if using AWS SDK v3
-          const { PutObjectCommand } = await import('@aws-sdk/client-s3');
-          const command = new PutObjectCommand({
-            Bucket: 'legalynx',
-            Key: s3Key,
-            Body: buffer,
-            ContentType: contentType
-          });
-          s3Result = await (S3Service as any).send(command);
-        }
         else {
           throw new Error('No compatible S3 upload method found in S3Service');
         }
@@ -116,17 +118,18 @@ async function saveDocumentToS3(document: any): Promise<any> {
       size: buffer.length
     };
     
-    console.log(`✅ Document uploaded to S3:`, normalizedResult);
+    console.log(`✅ Document uploaded to S3 with RAG filename:`, normalizedResult);
     console.log(`📍 Final S3 Location: s3://legalynx/${s3Key}`);
     
-    // Update document record with S3 information
+    // ✅ FIXED: Update document record with S3 information but preserve RAG filename
     const updatedDocument = await prisma.document.update({
       where: { id: document.id },
       data: {
-        file_name: normalizedResult.key,
-        file_path: normalizedResult.url,
-        s3_key: normalizedResult.key,
-        s3_bucket: 'legalynx', // Explicitly set the bucket name
+        // Keep the original file_name (RAG-generated) for database consistency
+        file_name: ragGeneratedFilename || normalizedResult.key,
+        file_path: normalizedResult.url, // Update path to S3 URL
+        s3_key: normalizedResult.key,    // Store S3 key for reference
+        s3_bucket: 'legalynx',
         status: 'INDEXED',
         s3_uploaded_at: new Date(),
         updated_at: new Date()
@@ -154,21 +157,22 @@ export async function POST(request: NextRequest) {
         const user = await getUserFromToken(request);
         const body = await request.json();
         
-        // Validate required fields
-        const { document_id, title } = body;
+        // ✅ FIXED: Accept both field names for compatibility
+        const documentId = body.documentId || body.document_id;
+        const title = body.title;
         
-        if (!document_id) {
+        if (!documentId) {
             return NextResponse.json({ 
                 error: 'Document ID is required' 
             }, { status: 400 });
         }
 
-        console.log(`💾 Saving document ${document_id} for user ${user.id}`);
+        console.log(`💾 Saving document ${documentId} for user ${user.id}`);
 
         // Find the document with TEMPORARY status
         const document = await prisma.document.findFirst({
             where: { 
-                id: document_id,
+                id: documentId,
                 owner_id: user.id,
                 status: 'TEMPORARY' // Only save documents that are temporary
             }
@@ -180,7 +184,11 @@ export async function POST(request: NextRequest) {
             }, { status: 404 });
         }
 
-        console.log(`📄 Found document: ${document.original_file_name} (status: ${document.status})`);
+        console.log(`📄 Found document:`, {
+          original: document.original_file_name,
+          ragGenerated: document.file_name,
+          status: document.status
+        });
 
         // Upload to S3 and update status to INDEXED
         const savedDocument = await saveDocumentToS3(document);
@@ -191,7 +199,7 @@ export async function POST(request: NextRequest) {
                 data: {
                     user_id: user.id,
                     action: 'DOCUMENT_UPLOAD',
-                    details: `Saved document to cloud storage: ${document.original_file_name}`,
+                    details: `Saved document to cloud storage: ${document.original_file_name} → ${document.file_name}`,
                     ip_address: request.headers.get('x-forwarded-for') || 
                               request.headers.get('x-real-ip') || 
                               'unknown',
@@ -202,19 +210,24 @@ export async function POST(request: NextRequest) {
             console.warn('Failed to log security event (table may not exist):', logError);
         }
 
-        console.log(`✅ Document saved successfully: ${savedDocument.id} (status: ${savedDocument.status})`);
+        console.log(`✅ Document saved successfully with RAG filename preserved:`, {
+          id: savedDocument.id,
+          filename: savedDocument.file_name,
+          s3Key: savedDocument.s3_key,
+          status: savedDocument.status
+        });
 
-        // Return the updated document with correct field names for frontend
+        // ✅ FIXED: Return the updated document with correct field names for frontend
         return NextResponse.json({
             id: savedDocument.id,
-            fileName: savedDocument.file_name,
-            originalName: savedDocument.original_file_name,
-            size: savedDocument.file_size,
+            fileName: savedDocument.file_name,           // RAG-generated filename preserved
+            originalFileName: savedDocument.original_file_name,
+            fileSize: savedDocument.file_size,
             status: savedDocument.status,
             updatedAt: savedDocument.updated_at,
             s3Key: savedDocument.s3_key,
             s3Url: savedDocument.file_path,
-            message: 'Document saved to cloud storage successfully'
+            message: `Document saved to cloud storage with intelligent filename: ${savedDocument.file_name}`
         });
 
     } catch (error) {
@@ -287,14 +300,14 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             id: document.id,
-            fileName: document.file_name,
-            originalName: document.original_file_name,
+            fileName: document.file_name,           // RAG-generated filename
+            originalFileName: document.original_file_name,
             status: document.status,
             updatedAt: document.updated_at,
             canSave: canSave && tempFileExists,
-            tempFileExists,
+            tempFileExists: tempFileExists,
             message: canSave 
-                ? (tempFileExists ? 'Document can be saved' : 'Temporary file expired, please re-upload')
+                ? (tempFileExists ? `Document can be saved with intelligent filename: ${document.file_name}` : 'Temporary file expired, please re-upload')
                 : 'Document is already saved or cannot be saved'
         });
 

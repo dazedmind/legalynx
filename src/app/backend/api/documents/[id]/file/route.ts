@@ -245,6 +245,7 @@ export async function POST(
         id: true,
         s3_key: true,
         file_path: true,
+        file_name: true, // ← add this line
         original_file_name: true,
         status: true
       }
@@ -279,7 +280,8 @@ export async function POST(
 
       return NextResponse.json({
         downloadUrl: presignedUrl,
-        filename: document.original_file_name,
+        fileName: document.file_name,
+        originalFileName: document.original_file_name,
         expiresIn: 3600,
         expiresAt: new Date(Date.now() + 3600 * 1000).toISOString()
       });

@@ -78,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     isAuthenticated: !!user && authUtils.isAuthenticated(),
     isLoading,
-    subscriptionStatus: user?.subscription_status || "BASIC",
+    subscriptionStatus: user?.subscription?.plan_type || "BASIC",
     login,
     logout,
     updateUser

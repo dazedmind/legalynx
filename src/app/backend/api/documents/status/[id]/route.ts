@@ -176,8 +176,8 @@ export async function GET(
     const response = {
       document: {
         id: document.id,
-        originalName: document.original_file_name,
-        size: document.file_size,
+        originalFileName: document.original_file_name,
+        fileSize: document.file_size,
         status: document.status,
         pageCount: document.page_count,
         uploadedAt: document.uploaded_at,

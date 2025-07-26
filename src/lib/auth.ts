@@ -8,7 +8,16 @@ export interface User {
   name: string;
   email_verified: boolean;
   status: string;
-  subscription_status: string;
+  subscription: {
+    plan_type: string;
+    created_at: string;
+    billing_date: string;
+    days_remaining: number;
+    tokens_used: number;
+    token_limit: number;
+    is_active: boolean;
+    auto_renew: boolean;
+  };
   profile_picture?: string;
   job_title?: string;
 }
@@ -68,7 +77,7 @@ export const authUtils = {
   // Check if user is paid
   isPaidUser: (): boolean => {
     const user = authUtils.getUser();
-    return user?.subscription_status === 'PREMIUM' || false;
+    return user?.subscription.plan_type === 'PREMIUM' || false;
   },
 
   // Clear authentication

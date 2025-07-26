@@ -65,6 +65,12 @@ export async function GET(
       where: {
         id: documentId,
         owner_id: user.id
+      },
+      select: {
+        id: true,
+        s3_key: true,
+        file_name: true,
+        original_file_name: true
       }
     });
 
@@ -86,7 +92,8 @@ export async function GET(
       
       return NextResponse.json({
         downloadUrl: signedUrl,
-        filename: document.original_file_name,
+        fileName: document.file_name,
+        originalFileName: document.original_file_name,
         expiresIn: 3600
       });
     } else {
