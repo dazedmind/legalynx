@@ -1,8 +1,10 @@
 ## [0.1.5] - 2025-07-24
-- **IMPROVED**: RAG Anomaly Detection. Adds a layer of security for prompt injection, user behavior, and rate limiter for file uploads.
-- **ADDED**: File auto-rename feature.
-- **CODEBASE**: Database reference uses snake_case and Front-end types now uses camelCase for consistency.
-- **CODEBASE**: Removed unused react components
+**NEW**
+- RAG Anomaly Detection. Adds a layer of security for prompt injection, user behavior, and rate limiter for file uploads.
+- File auto-rename feature
+- Added animations on sidebar tab selection for enhanced user experience.
+- Optimized Rag Pipeline for faster document processing.
+- **Added `.docx` support**: Automatically converts `.docx` file into `.pdf` files. 
 
 ## [0.1.4] - 2025-07-19
 **NEW**
