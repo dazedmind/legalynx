@@ -93,6 +93,22 @@ class RAGCacheService {
   }
 
   /**
+   * Check if RAG system is available
+   */
+  private async checkRAGSystemAvailability(): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.RAG_BASE_URL}/health`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      });
+      return response.ok;
+    } catch (error) {
+      console.warn('RAG system not available:', error);
+      return false;
+    }
+  }
+
+  /**
    * Actual loading implementation
    */
   private async performDocumentLoad(
@@ -112,8 +128,16 @@ class RAGCacheService {
     this.saveCacheToStorage();
 
     try {
+      // Check if RAG system is available
+      const isAvailable = await this.checkRAGSystemAvailability();
+      if (!isAvailable) {
+        throw new Error('RAG system is not available. Please ensure the FastAPI backend is running on http://localhost:8000');
+      }
+
       // Check if RAG system already has this document
+      console.log(`🔍 Checking if document ${documentId} already exists in RAG system...`);
       const checkResponse = await fetch(`${this.RAG_BASE_URL}/check-document/${documentId}`);
+      
       if (checkResponse.ok) {
         const checkData = await checkResponse.json();
         if (checkData.exists) {
@@ -121,16 +145,24 @@ class RAGCacheService {
           this.markAsLoaded(documentId, filename, checkData.ragId);
           return;
         }
+      } else {
+        console.log(`⚠️ Document check failed (${checkResponse.status}), proceeding with upload`);
       }
 
       // Get file blob
+      console.log(`📁 Retrieving file blob for ${filename}...`);
       const fileBlob = await getFileBlob();
       console.log(`📁 File blob retrieved, size: ${fileBlob.size} bytes`);
+
+      if (fileBlob.size === 0) {
+        throw new Error('File blob is empty - document may have been deleted or corrupted');
+      }
 
       // Create File object
       const file = new File([fileBlob], filename, { type: 'application/pdf' });
 
       // Upload to RAG system
+      console.log(`📤 Uploading ${filename} to RAG system...`);
       const formData = new FormData();
       formData.append('file', file);
       formData.append('document_id', documentId); // Send document ID for tracking
@@ -141,7 +173,20 @@ class RAGCacheService {
       });
 
       if (!ragResponse.ok) {
-        const ragError = await ragResponse.text();
+        let ragError = 'Unknown error';
+        try {
+          const errorText = await ragResponse.text();
+          ragError = errorText;
+        } catch (parseError) {
+          ragError = `HTTP ${ragResponse.status}: ${ragResponse.statusText}`;
+        }
+        
+        console.error(`❌ RAG system upload failed:`, {
+          status: ragResponse.status,
+          statusText: ragResponse.statusText,
+          error: ragError
+        });
+        
         throw new Error(`RAG system error: ${ragError}`);
       }
 
@@ -154,13 +199,29 @@ class RAGCacheService {
     } catch (error) {
       console.error(`❌ Failed to load document ${filename}:`, error);
       
+      // Provide more specific error messages
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'RAG system is not available. Please ensure the backend service is running.';
+        } else if (error.message.includes('Not Found')) {
+          errorMessage = 'RAG system endpoint not found. Please check the backend configuration.';
+        } else if (error.message.includes('empty')) {
+          errorMessage = 'Document file is empty or corrupted. Please re-upload the document.';
+        } else if (error.message.includes('not available')) {
+          errorMessage = error.message; // Use the specific message from availability check
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       // Mark as error
       this.cache.set(documentId, {
         documentId,
         filename,
         lastLoaded: new Date(),
         status: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage
       });
       this.saveCacheToStorage();
       

@@ -94,44 +94,42 @@ export default function Home() {
     }
   };
 
-  // ✅ COMPLETE UPLOAD HANDLER - This handles the upload and triggers document detection
   const handleUploadSuccess = (response: UploadResponse) => {
     console.log('🎉 MAIN COMPONENT - Upload success:', response);
     
-    // Create document info with proper field mapping
-    const documentInfo = {
-      id: response.documentId,
-      fileName: response.filename,
-      originalFileName: response.originalName,
-      fileSize: response.size,
+    // ✅ FIXED: Add debug logging to see what we receive
+    console.log('📄 Response fields:', {
+      documentId: response.documentId,
+      fileName: response.fileName,
+      originalFileName: response.originalFileName,
+      fileSize: response.fileSize,
+      pageCount: response.pageCount,
+      pages_processed: response.pageCount, // Check if this exists
       uploadedAt: response.uploadedAt,
-      pageCount: response.pages_processed,
-      status: response.status || 'TEMPORARY',
-      databaseId: response.documentId
-    };
+      status: response.status
+    });
     
-    // ✅ FIXED: Add the missing localStorage logic and tab switching
     // Store in localStorage with correct field names for ChatViewer
     const storageKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
     
     const existingDocs = JSON.parse(localStorage.getItem(storageKey) || '[]');
     
-    // Remove any existing document with same ID and add new one at the beginning
-    const filteredDocs = existingDocs.filter((doc: any) => doc.id !== documentInfo.id);
+    // Remove any existing document with same ID
+    const filteredDocs = existingDocs.filter((doc: any) => doc.id !== response.documentId);
     
-    // Add the new document with all required fields for ChatViewer compatibility
+    // ✅ FIXED: Add the new document with correct field mapping from response
     const documentForStorage = {
-      id: documentInfo.id,
-      fileName: response.filename,
-      originalFileName: response.originalName,
-      original_file_name: response.originalName, // Backward compatibility
-      fileSize: response.size,
-      file_size: response.size, // Backward compatibility
-      pageCount: response.pages_processed,
-      page_count: response.pages_processed, // Backward compatibility
+      id: response.documentId,
+      fileName: response.fileName,
+      originalFileName: response.originalFileName,
+      original_file_name: response.originalFileName,         // Backward compatibility
+      fileSize: response.fileSize,
+      file_size: response.fileSize,                         // Backward compatibility
+      pageCount: response.pageCount || response.pageCount || 1, // ✅ FIXED: Handle both field names
+      page_count: response.pageCount || response.pageCount || 1, // ✅ FIXED: Handle both field names
       status: response.status || 'TEMPORARY',
       uploadedAt: response.uploadedAt,
-      uploaded_at: response.uploadedAt, // Backward compatibility
+      uploaded_at: response.uploadedAt,                     // Backward compatibility
       databaseId: response.documentId,
       mimeType: response.mimeType,
       securityStatus: response.securityStatus,
@@ -198,7 +196,7 @@ export default function Home() {
     { id: 'documents', label: 'My Documents', icon: GoFileDirectory },
   ];
 
-  const isSystemReady = systemStatus?.pdf_loaded && systemStatus?.index_ready;
+  const isSystemReady = systemStatus?.pdfLoaded && systemStatus?.indexReady;
 
   return (
     <ProtectedRoute>

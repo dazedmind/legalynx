@@ -551,6 +551,49 @@ async def get_performance_tips():
     }
 
 # ================================
+# COMPATIBILITY ENDPOINTS
+# ================================
+
+@app.post("/upload-pdf")
+async def upload_pdf_compatibility(
+    request: Request, 
+    file: UploadFile = File(...),
+):
+    """
+    Compatibility endpoint for /upload-pdf - redirects to ultra-fast endpoint
+    """
+    print(f"🔄 Compatibility endpoint called: /upload-pdf for {file.filename}")
+    
+    # Redirect to the ultra-fast endpoint
+    return await upload_document_ultra_fast(request, file)
+
+@app.get("/check-document/{document_id}")
+async def check_document_exists(document_id: str):
+    """
+    Check if a document exists in the RAG system
+    """
+    global rag_system, current_pdf_path
+    
+    print(f"🔍 Checking document existence: {document_id}")
+    
+    # For now, we'll check if any document is loaded
+    # In a more sophisticated system, you'd track individual documents
+    if rag_system is not None and current_pdf_path is not None:
+        return {
+            "exists": True,
+            "document_id": document_id,
+            "rag_id": document_id,  # For compatibility
+            "filename": os.path.basename(current_pdf_path) if current_pdf_path else None
+        }
+    else:
+        return {
+            "exists": False,
+            "document_id": document_id,
+            "rag_id": None,
+            "filename": None
+        }
+
+# ================================
 # MAIN FUNCTION
 # ================================
 
@@ -568,7 +611,7 @@ def main():
     print("🛡️ Security features: Rate limiting, Content scanning, Injection protection")
     
     uvicorn.run(
-        "optimized_main:app",
+        "main:app",
         host="0.0.0.0",
         port=8000,
         reload=False,  # Disable reload for production performance

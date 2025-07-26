@@ -44,3 +44,4 @@ next-env.d.ts
 /sample_docs/
 /uploads/
 test_groq.py
+/src/app/backend/sample_docs/

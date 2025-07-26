@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "fastapi": "fastapi dev src/app/backend/main.py",
+    "fastapi": "cd src/app/backend && python main.py",
+    "test-rag": "node test-rag-backend.js",
     "postinstall": "npx prisma generate --schema=./prisma/schema.prisma"
   },
   "dependencies": {

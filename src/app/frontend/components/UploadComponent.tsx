@@ -490,32 +490,31 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
       // ✅ FIXED: Use the correct filename from RAG response
       const uploadResponse: UploadResponse = {
         documentId: documentInfo?.documentId || documentInfo?.id || Date.now().toString(),
-        filename: ragResponse?.filename || file.name,                    // Use RAG filename
-        originalName: ragResponse?.original_filename || file.name,       // Use RAG original filename
-        size: file.size,
+        fileName: ragResponse?.filename || file.name,                    
+        originalFileName: ragResponse?.original_filename || file.name,   
+        fileSize: file.size,
         uploadedAt: documentInfo?.uploadedAt || new Date().toISOString(),
-        pages_processed: ragResponse?.pages_processed || 1,
+        pageCount: ragResponse?.pages_processed || 1,                    // ✅ FIXED: Use pages_processed
         status: documentInfo ? "TEMPORARY" : "TEMPORARY",
         securityStatus: ragResponse?.security_status || "verified",
         mimeType: ragResponse?.mime_type || (file.name.toLowerCase().endsWith(".docx") ? "docx" : "pdf"),
         conversionPerformed: ragResponse?.conversion_performed || false,
-        
       };
-  
+      
       // ✅ FIXED: Save to localStorage with correct field names from RAG response
       const storageKey = isAuthenticated && user?.id ? `uploaded_documents_${user.id}` : "uploaded_documents";
-  
+
       const existingDocs = JSON.parse(localStorage.getItem(storageKey) || "[]");
       const documentForStorage = {
         // Use field names that ChatViewer expects with RAG response data
         id: uploadResponse.documentId,
-        fileName: ragResponse?.filename || file.name,                    // Use RAG filename
-        originalFileName: ragResponse?.original_filename || file.name,   // Use RAG original filename  
+        fileName: ragResponse?.filename || file.name,                    
+        originalFileName: ragResponse?.original_filename || file.name,   
         original_file_name: ragResponse?.original_filename || file.name, // Backward compatibility
-        fileSize: uploadResponse.size,
-        file_size: uploadResponse.size,                                  // Backward compatibility  
-        pageCount: uploadResponse.pages_processed,
-        page_count: uploadResponse.pages_processed,                      // Backward compatibility
+        fileSize: uploadResponse.fileSize,
+        file_size: uploadResponse.fileSize,                              // Backward compatibility  
+        pageCount: ragResponse?.pages_processed || 1,                    // ✅ FIXED: Use pages_processed directly
+        page_count: ragResponse?.pages_processed || 1,                   // ✅ FIXED: Use pages_processed directly
         status: uploadResponse.status,
         uploadedAt: uploadResponse.uploadedAt,
         uploaded_at: uploadResponse.uploadedAt,                          // Backward compatibility
@@ -528,7 +527,7 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
         securityStatus: uploadResponse.securityStatus,
         conversionPerformed: uploadResponse.conversionPerformed,
       };
-  
+      
       existingDocs.push(documentForStorage);
       localStorage.setItem(storageKey, JSON.stringify(existingDocs));
   

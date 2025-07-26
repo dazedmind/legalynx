@@ -880,7 +880,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
                         <FileText className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{doc.originalFileName}</p>
+                        <p className="font-medium text-gray-900 truncate">{doc.fileName}</p>
                         <div className="flex items-center space-x-2 text-xs text-gray-500">
                           {doc.lastAccessed && (
                             <span className="flex items-center">
@@ -1037,8 +1037,8 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
 
                     {/* File Info */}
                     <div className="text-center">
-                      <h3 className="font-medium text-gray-900 truncate mb-1" title={doc.originalFileName}>
-                        {doc.originalFileName}
+                      <h3 className="font-medium text-gray-900 truncate mb-1" title={doc.fileName}>
+                        {doc.fileName}
                       </h3>
                       <div className="space-y-1 text-xs text-gray-500">
                         <p>{formatFileSize(doc.size)} • {doc.pages || 'N/A'} pages</p>
