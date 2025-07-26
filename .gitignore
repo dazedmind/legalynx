@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # ================================
 # DEPENDENCIES
 # ================================
@@ -67,6 +65,7 @@ next-env.d.ts
 # ================================
 # Generated Prisma client files (should not be committed)
 /generated/
+/generated/prisma/
 /src/generated/
 prisma/migrations/
 *.db
@@ -231,6 +230,13 @@ cython_debug/
 /sample_docs/
 /uploads/
 /src/app/backend/sample_docs/
+/src/app/backend/rag_pipeline/__pycache__/
+/src/app/backend/security/__pycache__/
+/src/app/backend/utils/__pycache__/
+/src/app/backend/__pycache__/
+/src/app/backend/api/__pycache__/
+/src/app/backend/optimized_rag_system.pyc
+/src/app/backend/main.pyc
 
 # Test files
 test_groq.py

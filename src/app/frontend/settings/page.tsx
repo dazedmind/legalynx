@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { CircleUser, Shield, FileCog, CreditCard, LogOut, Lock, FolderCog, Menu, X } from 'lucide-react';
 import { SystemStatus } from '../lib/api';
 import NavBar from '../components/NavBar';
@@ -13,7 +13,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 
 type ActiveTab = 'profile' | 'file_settings' | 'security_log' | 'security_settings' | 'subscription';
 
-export default function Home() {
+function SettingsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
@@ -170,5 +170,32 @@ export default function Home() {
         </section>
       </main>
     </div>
+  );
+}
+
+// Loading component for Suspense fallback
+function SettingsLoading() {
+  return (
+    <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col overflow-hidden">
+      <header className="bg-white shadow-sm border-b flex-shrink-0 px-6 md:px-0">
+        <NavBar />
+      </header>
+      <main className="flex bg-white flex-1 overflow-hidden relative">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading settings...</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<SettingsLoading />}>
+      <SettingsContent />
+    </Suspense>
   );
 }
