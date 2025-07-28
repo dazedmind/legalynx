@@ -1,8 +1,8 @@
-// ChatContainer.tsx - Fixed scroll and timestamp issues
+// ChatContainer.tsx - Updated with edit functionality for user messages
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import { Copy, ThumbsUp, ThumbsDown, RotateCcw, User, Bot } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Copy, ThumbsUp, ThumbsDown, RotateCcw, User, Bot, Edit, Check, X, Send, ArrowUp } from 'lucide-react';
 import { toast } from 'sonner';
 import TypingAnimation from './TypingAnimation';
 
@@ -31,6 +31,11 @@ export function ChatContainer({
 
   // Use ref for scroll container
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  
+  // State for editing messages
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editedContent, setEditedContent] = useState<string>('');
+  const [isRegenerating, setIsRegenerating] = useState<string | null>(null);
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
@@ -50,6 +55,47 @@ export function ChatContainer({
     } catch (error) {
       console.error('Failed to copy text:', error);
       toast.error('Failed to copy message');
+    }
+  };
+
+  const handleStartEdit = (message: ChatMessage) => {
+    setEditingMessageId(message.id);
+    setEditedContent(message.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditedContent('');
+  };
+
+  const handleSaveEdit = async (messageId: string) => {
+    if (!editedContent.trim()) {
+      toast.error('Message cannot be empty');
+      return;
+    }
+
+    if (editedContent === chatHistory.find(m => m.id === messageId)?.content) {
+      // No changes made
+      handleCancelEdit();
+      return;
+    }
+
+    setIsRegenerating(messageId);
+    
+    try {
+      // Call the onMessageAction with edit action
+      await onMessageAction('edit', messageId, editedContent.trim());
+      
+      // Reset editing state
+      setEditingMessageId(null);
+      setEditedContent('');
+      
+      toast.success('Message updated and response regenerated');
+    } catch (error) {
+      console.error('Failed to edit message:', error);
+      toast.error('Failed to update message');
+    } finally {
+      setIsRegenerating(null);
     }
   };
 
@@ -87,6 +133,8 @@ export function ChatContainer({
   const renderMessage = (message: ChatMessage) => {
     const isUser = message.type === 'USER';
     const isAssistant = message.type === 'ASSISTANT';
+    const isEditing = editingMessageId === message.id;
+    const isRegeneratingThis = isRegenerating === message.id;
     
     // Debug logging to help identify the issue
     console.log('Rendering message:', {
@@ -94,6 +142,7 @@ export function ChatContainer({
       type: message.type,
       isUser,
       isAssistant,
+      isEditing,
       content: message.content.substring(0, 50)
     });
 
@@ -120,28 +169,70 @@ export function ChatContainer({
                 isUser
                   ? 'bg-blue-600 text-white rounded-br-md'
                   : 'bg-white text-gray-900 border border-gray-200 rounded-bl-md shadow-sm'
-              }`}
+                } ${isEditing ? 'bg-blue/10 text-gray-900  rounded-bl-md w-120' : ''}
+              } ${isRegeneratingThis ? 'opacity-50' : ''}`}
             >
-              {/* Message Text */}
-              <div className="whitespace-pre-wrap break-words text-md leading-relaxed">
-                {message.content}
-              </div>
+              {/* Message Text or Edit Input */}
+              {isEditing ? (
+                <div className="w-full">
+                  <textarea
+                    value={editedContent}
+                    onChange={(e) => setEditedContent(e.target.value)}
+                    className="w-full text-gray-900 rounded-lg px-3 py-2 resize-none"
+                    rows={Math.max(2, editedContent.split('\n').length)}
+                    placeholder="Edit your message..."
+                    autoFocus
+                  />
+                  <div className="flex items-center gap-2 justify-end">
+                    <button
+                      onClick={handleCancelEdit}
+                      className="flex items-center gap-1 px-3 py-1 text-sm text-black hover:text-gray-800 transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => handleSaveEdit(message.id)}
+                      disabled={!editedContent.trim() || isRegeneratingThis}
+                      className="flex items-center gap-1 px-3 py-1 text-sm  text-white rounded-full bg-blue-600/60 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      {isRegeneratingThis ? 'Updating...' : 'Send'}
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="whitespace-pre-wrap break-words text-md leading-relaxed">
+                  {message.content}
+                </div>
+              )}
 
             </div>
 
             {/* Message Footer */}
-            <div className={`flex items-center gap-2 mt-1 text-xs text-gray-500 ${
-              isUser ? 'flex-row-reverse' : 'flex-row'
-            }`}>
-              
-              {/* Timestamp - Now always shows */}
-              <span>{formatTime(message.createdAt)}</span>
-              
-              {/* Action Buttons - Only for Assistant Messages */}
-              {isAssistant && (
+            {!isEditing && (
+              <div className={`flex items-center gap-2 mt-1 text-xs text-gray-500 ${
+                isUser ? 'flex-row-reverse' : 'flex-row'
+              }`}>
+                
+                {/* Timestamp - Now always shows */}
+                <span>{formatTime(message.createdAt)}</span>
+                
+                {/* Action Buttons */}
                 <div className="flex items-center gap-1">
                   
-                  {/* Copy Button */}
+                  {/* Edit Button - Only for User Messages */}
+                  {isUser && documentExists && (
+                    <button
+                      onClick={() => handleStartEdit(message)}
+                      disabled={isQuerying || isRegenerating !== null}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Edit message"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </button>
+                  )}
+
+                  {/* Copy Button - For all messages */}
                   <button
                     onClick={() => copyToClipboard(message.content, message.id)}
                     className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
@@ -150,35 +241,41 @@ export function ChatContainer({
                     <Copy className="w-3 h-3" />
                   </button>
 
-                  {/* Thumbs Up */}
-                  <button
-                    onClick={() => onMessageAction('thumbsUp', message.id)}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
-                    title="Good response"
-                  >
-                    <ThumbsUp className="w-3 h-3" />
-                  </button>
+                  {/* Assistant-only action buttons */}
+                  {isAssistant && (
+                    <>
+                      {/* Thumbs Up */}
+                      <button
+                        onClick={() => onMessageAction('thumbsUp', message.id)}
+                        className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                        title="Good response"
+                      >
+                        <ThumbsUp className="w-3 h-3" />
+                      </button>
 
-                  {/* Thumbs Down */}
-                  <button
-                    onClick={() => onMessageAction('thumbsDown', message.id)}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
-                    title="Poor response"
-                  >
-                    <ThumbsDown className="w-3 h-3" />
-                  </button>
+                      {/* Thumbs Down */}
+                      <button
+                        onClick={() => onMessageAction('thumbsDown', message.id)}
+                        className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                        title="Poor response"
+                      >
+                        <ThumbsDown className="w-3 h-3" />
+                      </button>
 
-                  {/* Regenerate */}
-                  <button
-                    onClick={() => onMessageAction('regenerate', message.id)}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
-                    title="Regenerate response"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                  </button>
+                      {/* Regenerate */}
+                      <button
+                        onClick={() => onMessageAction('regenerate', message.id)}
+                        disabled={isQuerying || isRegenerating !== null}
+                        className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Regenerate response"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                      </button>
+                    </>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

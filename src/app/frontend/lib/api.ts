@@ -580,3 +580,4 @@ export const getSecurityErrorMessage = (error: SecurityError): string => {
       return error.message || 'A security error occurred.';
   }
 };
+

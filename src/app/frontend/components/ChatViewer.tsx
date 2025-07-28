@@ -813,7 +813,7 @@ export default function ChatViewer({
     }
   };
 
-  const handleMessageAction = (action: string, messageId: string, content?: string) => {
+  const handleMessageAction = async (action: string, messageId: string, content?: string) => {
     switch (action) {
       case 'copy':
         toast.success('Message copied to clipboard');
@@ -830,8 +830,94 @@ export default function ChatViewer({
         console.log('Regenerating message:', messageId);
         handleRegenerateResponse(messageId);
         break;
+      case 'edit':
+        console.log('Editing message:', messageId);
+        await handleEditMessage(messageId, content || '');
+        break;
       default:
         break;
+    }
+  };
+
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    if (!newContent.trim()) {
+      toast.error('Message cannot be empty');
+      return;
+    }
+  
+    try {
+      setIsQuerying(true);
+      
+      // Find the message being edited
+      const messageIndex = chatHistory.findIndex(msg => msg.id === messageId);
+      if (messageIndex === -1) {
+        toast.error('Message not found');
+        return;
+      }
+  
+      const messageToEdit = chatHistory[messageIndex];
+      if (messageToEdit.type !== 'USER') {
+        toast.error('Only user messages can be edited');
+        return;
+      }
+  
+      // Update the message content in chat history
+      const updatedChatHistory = [...chatHistory];
+      updatedChatHistory[messageIndex] = {
+        ...messageToEdit,
+        content: newContent,
+        createdAt: new Date() // Update timestamp to show it was edited
+      };
+  
+      // Remove all messages after the edited message (including assistant responses)
+      const messagesToKeep = updatedChatHistory.slice(0, messageIndex + 1);
+      setChatHistory(messagesToKeep);
+  
+      // Update the message in the database if we have a session
+      if (currentSessionId && user && documentExists) {
+        try {
+          const response = await fetch(`/backend/api/chat-messages/${messageId}`, {
+            method: 'PATCH',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              content: newContent,
+              updatedAt: new Date().toISOString()
+            })
+          });
+  
+          if (!response.ok) {
+            console.warn('Failed to update message in database, but continuing with regeneration');
+          }
+        } catch (error) {
+          console.warn('Failed to update message in database:', error);
+          // Continue with regeneration even if database update fails
+        }
+      }
+  
+      // Generate new response based on the edited message
+      const result = await apiService.queryDocuments(newContent);
+      
+      // Add the new assistant response
+      await addMessage({
+        type: 'ASSISTANT',
+        content: result.response,
+        query: newContent,
+        sourceCount: result.sourceCount
+      });
+  
+      toast.success('Message updated and response regenerated');
+  
+    } catch (error) {
+      console.error('Edit message error:', error);
+      const errorMessage = handleApiError(error);
+      setError(errorMessage);
+      toast.error('Failed to regenerate response: ' + errorMessage);
+      
+      // In case of error, we might want to revert the chat history
+      // But for better UX, we'll keep the edited message and let user try again
+      
+    } finally {
+      setIsQuerying(false);
     }
   };
 
@@ -861,19 +947,33 @@ export default function ChatViewer({
   const handleRegenerateResponse = async (messageId: string) => {
     const messageIndex = chatHistory.findIndex(msg => msg.id === messageId);
     if (messageIndex === -1) return;
-
+  
     const assistantMessage = chatHistory[messageIndex];
     if (assistantMessage.type !== 'ASSISTANT') return;
-
+  
     const userMessage = chatHistory[messageIndex - 1];
     if (!userMessage || userMessage.type !== 'USER') return;
-
+  
     try {
       setIsQuerying(true);
       
+      // Remove the assistant message we're regenerating
       setChatHistory(prev => prev.filter(msg => msg.id !== messageId));
       
-      const result = await apiService.queryDocuments(userMessage.content + "Be more specific and detailed in your response.");
+      // Delete from database if we have session
+      if (currentSessionId && user && documentExists) {
+        try {
+          await fetch(`/backend/api/chat-messages/${messageId}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+          });
+        } catch (error) {
+          console.warn('Failed to delete message from database:', error);
+        }
+      }
+      
+      // Re-run the query with a slight modification to encourage different response
+      const result = await apiService.queryDocuments(userMessage.content + " (Please provide a more detailed response)");
       
       await addMessage({
         type: 'ASSISTANT',
@@ -1042,9 +1142,9 @@ export default function ChatViewer({
   };
 
   const handleManualInput = () => {
+    setIsVoiceChat(false);
     loadOrCreateSession();
     setChatHistory([]);
-    setIsVoiceChat(false);
   }
 
   // Get cache status for current document
@@ -1182,9 +1282,6 @@ export default function ChatViewer({
                 <p className={`text-sm ${documentExists ? 'text-gray-600' : 'text-red-600'}`}>
                   {documentExists ? (
                     <span className="flex items-center gap-2">
-                      <span className="hidden md:block">
-                        {currentDocument.pageCount} pages • Document loaded
-                      </span>
                       {currentSessionId && currentDocument.status === 'INDEXED' ? (
                         <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full font-medium">
                           Session Saved

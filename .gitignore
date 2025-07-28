@@ -237,6 +237,7 @@ cython_debug/
 /src/app/backend/api/__pycache__/
 /src/app/backend/optimized_rag_system.pyc
 /src/app/backend/main.pyc
+/public/uploads/
 
 # Test files
 test_groq.py

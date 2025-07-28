@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@import '@fontsource/fusion-pixel-10px-proportional-tc';
+
 
 /* @custom-variant dark (&:is(.dark *)); */
 
@@ -115,6 +117,7 @@
   --color-yellow: var(--yellow-secondary);
   --color-dark-blue: var(--blue-primary);
   --color-oxford-blue: #001427;
+  --font-display: 'Fusion Pixel 10px Proportional TC', sans-serif;
 }
 
 .dark {

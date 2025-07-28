@@ -4,6 +4,35 @@ const nextConfig = {
     appDir: true,
     serverExternalPackages: ['@prisma/client'],
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'legalynx.s3.ap-southeast-2.amazonaws.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.s3.*.amazonaws.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 's3.*.amazonaws.com',
+        port: '',
+        pathname: '/**',
+      },
+      // Add other domains you might need
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com', // For Google profile pictures
+        port: '',
+        pathname: '/**',
+      }
+    ],
+  },
   async headers() {
     return [
       {

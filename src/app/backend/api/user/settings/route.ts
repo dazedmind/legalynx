@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
         voice_enabled: true,
         file_retention_days: true,
         auto_delete_files: true,
-        max_file_size_mb: true,
         two_factor_enabled: true,
         two_factor_secret: true,
         login_notifications: true,
@@ -57,7 +56,6 @@ export async function GET(request: NextRequest) {
         last_settings_update: true,
         created_at: true,
         updated_at: true
-        // Removed 'user: true' - not needed since we already have the user
       }
     });
 
@@ -73,7 +71,6 @@ export async function GET(request: NextRequest) {
         fileClientName: null,
         fileRetentionDays: null,
         autoDeleteFiles: false,
-        maxFileSizeMb: 50,
         
         // AI & Chat Settings
         aiPersonality: null,
@@ -118,7 +115,6 @@ export async function GET(request: NextRequest) {
       fileClientName: userSettings.file_client_name,
       fileRetentionDays: userSettings.file_retention_days,
       autoDeleteFiles: userSettings.auto_delete_files,
-      maxFileSizeMb: userSettings.max_file_size_mb,
       
       // AI & Chat Settings
       aiPersonality: userSettings.ai_personality,
@@ -186,7 +182,6 @@ export async function PATCH(request: NextRequest) {
     if (body.fileClientName !== undefined) updateData.file_client_name = body.fileClientName;
     if (body.fileRetentionDays !== undefined) updateData.file_retention_days = body.fileRetentionDays;
     if (body.autoDeleteFiles !== undefined) updateData.auto_delete_files = body.autoDeleteFiles;
-    if (body.maxFileSizeMb !== undefined) updateData.max_file_size_mb = body.maxFileSizeMb;
     
     // AI & Chat Settings
     if (body.aiPersonality !== undefined) updateData.ai_personality = body.aiPersonality;
@@ -234,7 +229,6 @@ export async function PATCH(request: NextRequest) {
         voice_enabled: true,
         file_retention_days: true,
         auto_delete_files: true,
-        max_file_size_mb: true,
         two_factor_enabled: true,
         login_notifications: true,
         security_alerts: true,
@@ -264,7 +258,6 @@ export async function PATCH(request: NextRequest) {
         fileClientName: userSettings.file_client_name,
         fileRetentionDays: userSettings.file_retention_days,
         autoDeleteFiles: userSettings.auto_delete_files,
-        maxFileSizeMb: userSettings.max_file_size_mb,
         aiPersonality: userSettings.ai_personality,
         voiceEnabled: userSettings.voice_enabled,
         twoFactorEnabled: userSettings.two_factor_enabled,

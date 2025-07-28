@@ -388,11 +388,11 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
   
         try {
           // Step 1: Upload to ULTRA-FAST RAG system FIRST
-          setStatusMessage("Processing with ultra-fast AI system...");
+          setStatusMessage("Processing document...");
           ragResponse = await uploadToRagSystem(file);
           
           // Step 2: Save to database using the filename from RAG response
-          setStatusMessage("Saving to your account...");
+          setStatusMessage("Preparing document...");
           documentInfo = await saveDocumentToDatabaseWithFilename(file, ragResponse.filename);
   
           // Calculate and display performance
@@ -639,7 +639,7 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
 
           <p className="text-sm text-gray-500 mb-4">
             {file
-              ? `${(file.size / 1024 / 1024).toFixed(2)} MB • Ready for ultra-fast processing`
+              ? `${(file.size / 1024 / 1024).toFixed(2)} MB • Ready for processing`
               : "Drag and drop your document here, or click to browse"}
           </p>
 
@@ -663,7 +663,7 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
           {isUploading ? (
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-              {uploadStatus === "processing" ? statusMessage : "Processing with ultra-fast system..."}
+              {uploadStatus === "processing" ? statusMessage : "Processing document..."}
             </div>
           ) : loadingSettings ? (
             "Loading settings..."
@@ -677,10 +677,9 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
       <div className="mt-2 p-4 flex gap-4 items-center bg-neutral-50 border-dashed border-2 border-neutral-300 rounded-md text-neutral-800 text-sm">
         <MessageSquareDashed className="w-10 h-10 mt-0.5 flex-shrink-0" />
         <span className="flex flex-col">
-          <p className="font-medium">Ultra-Fast Session Mode</p>
+          <p className="font-medium">Temporary Session Mode</p>
           <p>
-            Documents are processed 10-20x faster with advanced optimizations. 
-            Files are processed for this session only unless you save them permanently.
+            Documents are processed for this session only unless you save them permanently.
           </p>
         </span>
       </div>

@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import React from 'react';
 
 const overlayStyle: React.CSSProperties = {
@@ -6,7 +7,7 @@ const overlayStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  marginTop: '10rem',
+  // marginTop: '10rem',
 //   background: 'rgba(255,255,255,0.7)', // Optional: semi-transparent background
   zIndex: 9999,
 };
@@ -22,13 +23,10 @@ const loaderStyle: React.CSSProperties = {
 
 const Loader: React.FC = () => (
   <div style={overlayStyle}>
-    <div className="loader" style={loaderStyle}>
-      <style>
-        {`
-        @keyframes l1 { to { transform: rotate(.5turn) } }
-        `}
-      </style>
-    </div>
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="w-8 h-8 animate-spin" />
+        <span className="ml-2">Loading settings...</span>
+      </div>
   </div>
 );
 

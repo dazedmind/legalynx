@@ -14,7 +14,7 @@ export default function NavBar() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string>('');
-
+    
     useEffect(() => {
         if (user) {
             loadProfile();
@@ -26,9 +26,9 @@ export default function NavBar() {
         
         try {
             setLoading(true);
-            setError(''); // Clear any previous errors
+            setError('');
             
-            console.log('🔄 NavBar: Starting profile load for user:', user.email);
+            console.log('🔄 NavBar: Loading profile for user:', user.email);
             
             const userProfile = await profileService.getProfile();
             
@@ -36,22 +36,16 @@ export default function NavBar() {
                 id: userProfile.id,
                 email: userProfile.email,
                 name: userProfile.name,
-                subscription: userProfile.subscription?.plan_type,
+                hasProfilePicture: !!userProfile.profile_picture
             });
             
             setProfile(userProfile as UserProfile);
-            setError(''); // Explicitly clear error on success
+            setError('');
             
         } catch (error) {
             console.error('❌ NavBar: Profile load failed:', error);
-            
-            // Set a specific error message
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             setError(errorMessage);
-            
-            // Don't set profile to null if we already have it - keep showing the cached data
-            // setProfile(null);
-            
         } finally {
             setLoading(false);
         }
@@ -63,11 +57,8 @@ export default function NavBar() {
         setError('');
     };
 
-    // Simple display name logic
     const getDisplayName = () => {
         if (loading) return 'Loading...';
-        
-        // Try profile first, then fallback to auth user, then default
         if (profile?.name) return profile.name;
         if (profile?.email) return profile.email.split('@')[0];
         if (user?.email) return user.email.split('@')[0];
@@ -81,11 +72,9 @@ export default function NavBar() {
         return 'BASIC';
     };
 
-    const getProfilePicture = () => {
-        return profile?.profile_picture || avatar;
-    };
-
     const getInitials = () => {
+        if (loading) return '...';
+        
         if (profile?.name) {
             const names = profile.name.trim().split(' ');
             if (names.length === 1) return names[0][0]?.toUpperCase() || '';
@@ -93,25 +82,85 @@ export default function NavBar() {
         }
         if (profile?.email) return profile.email[0]?.toUpperCase() || '';
         if (user?.email) return user.email[0]?.toUpperCase() || '';
+        return '?';
     };
 
-    // Debug: Log current state
-    useEffect(() => {
-        console.log('🔍 NavBar State:', {
-            hasUser: !!user,
-            hasProfile: !!profile,
-            loading,
-            error,
-            displayName: getDisplayName()
-        });
-    }, [user, profile, loading, error]);
+    // Check if the profile picture is a valid S3 URL for profile pictures
+    const isValidProfilePictureUrl = (url: string) => {
+        if (!url) return false;
+        // Only allow our specific S3 bucket URLs for profile pictures
+        const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME || 'legalynx';
+        const region = process.env.NEXT_PUBLIC_AWS_REGION || 'ap-southeast-2';
+        
+        const validPatterns = [
+            `https://${bucketName}.s3.${region}.amazonaws.com/profile-pictures/`,
+            `https://${bucketName}.s3.amazonaws.com/profile-pictures/`,
+            `https://s3.${region}.amazonaws.com/${bucketName}/profile-pictures/`
+        ];
+        
+        return validPatterns.some(pattern => url.startsWith(pattern));
+    };
+
+    const hasValidProfilePicture = () => {
+        return profile?.profile_picture && isValidProfilePictureUrl(profile.profile_picture);
+    };
+
+    const ProfileAvatar = ({ size = 40 }: { size?: number }) => {
+        if (loading) {
+            return (
+                <div 
+                    className='cursor-pointer rounded-full bg-gray-200 animate-pulse flex items-center justify-center'
+                    style={{ width: size, height: size }}
+                >
+                    <div 
+                        className='bg-gray-300 rounded-full'
+                        style={{ width: size * 0.6, height: size * 0.6 }}
+                    ></div>
+                </div>
+            );
+        }
+
+        if (hasValidProfilePicture()) {
+            return (
+                <Image 
+                    src={profile!.profile_picture!} 
+                    alt="Profile" 
+                    width={size} 
+                    height={size} 
+                    className='rounded-full cursor-pointer border border-gray-300' 
+                    unoptimized={false} // Let Next.js optimize since it's now a valid external URL
+                    onError={(e) => {
+                        // On error, hide the image element and show fallback
+                        console.log('Profile image failed to load, showing fallback');
+                        e.currentTarget.style.display = 'none';
+                        const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (fallback) {
+                            fallback.style.display = 'flex';
+                        }
+                    }}
+                />
+            );
+        }
+
+        return (
+            <div 
+                className='cursor-pointer rounded-full bg-gradient-to-bl from-blue-700 to-blue-300 flex items-center justify-center text-white font-medium'
+                style={{ 
+                    width: size, 
+                    height: size,
+                    fontSize: size < 30 ? '12px' : size < 40 ? '14px' : '18px'
+                }}
+            >
+                {getInitials()}
+            </div>
+        );
+    };
 
     return (
         <div className="px-0 md:px-8 py-2">
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-1">
                     <Image src={logo} alt="LegalynX" width={60} height={60} />
-
                     <div>
                         <Link href="/frontend/home">
                             <h1 className="text-2xl font-bold font-serif text-gray-900">LegalynX</h1>
@@ -121,45 +170,40 @@ export default function NavBar() {
                 
                 <div className="flex items-center space-x-4">
                     <DropdownMenu>
-                        <DropdownMenuTrigger>
-                            {profile?.profile_picture && (
-                            <Image 
-                                src={getProfilePicture()} 
-                                alt="profile" 
-                                width={40} 
-                                height={40} 
-                                className='rounded-full cursor-pointer' 
-                            />
-                            )}
-                            {!profile?.profile_picture && (
-                                <div className=' cursor-pointer w-10 h-10 rounded-full bg-gradient-to-bl from-blue-700 to-blue-300 flex items-center justify-center text-white text-lg'>
-                                    {getInitials()}
-                                </div>
-                            )}
+                        <DropdownMenuTrigger asChild>
+                            <div className="relative">
+                                <ProfileAvatar />
+                                {/* Hidden fallback for when image fails */}
+                                {hasValidProfilePicture() && (
+                                    <div 
+                                        className='cursor-pointer w-10 h-10 rounded-full bg-gradient-to-bl from-blue-700 to-blue-300 items-center justify-center text-white text-lg absolute top-0 left-0'
+                                        style={{ display: 'none' }}
+                                    >
+                                        {getInitials()}
+                                    </div>
+                                )}
+                            </div>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align='end' className='w-56'>
                             <DropdownMenuLabel className='flex items-center gap-2 text-md font-bold'>
-                                    {profile?.profile_picture && (
-                                    <Image 
-                                        src={getProfilePicture()} 
-                                        alt="profile" 
-                                        width={40} 
-                                        height={40} 
-                                        className='rounded-full cursor-pointer' 
-                                    />
-                                    )}
-                                    {!profile?.profile_picture && (
-                                        <div className=' cursor-pointer w-10 h-10 rounded-full bg-gradient-to-bl from-blue-700 to-blue-300 flex items-center justify-center text-white text-lg'>
+                                <div className="relative">
+                                    <ProfileAvatar />
+                                    {/* Hidden fallback for dropdown */}
+                                    {hasValidProfilePicture() && (
+                                        <div 
+                                            className='cursor-pointer w-10 h-10 rounded-full bg-gradient-to-bl from-blue-700 to-blue-300 items-center justify-center text-white text-lg absolute top-0 left-0'
+                                            style={{ display: 'none' }}
+                                        >
                                             {getInitials()}
                                         </div>
-                                    )}                                    
-                                    <span className='flex flex-col'>
-                                        {getDisplayName()}
-
-                                        <p className='border border-gray-300 rounded-md px-1 py-1 text-xs text-gray-500 w-fit'>
-                                            {getSubscriptionStatus()}
-                                        </p>
-                                    </span>
+                                    )}
+                                </div>
+                                <span className='flex flex-col'>
+                                    <span>{getDisplayName()}</span>
+                                    <p className='border border-gray-300 rounded-md px-1 py-1 text-xs text-gray-500 w-fit'>
+                                        {getSubscriptionStatus()}
+                                    </p>
+                                </span>
                             </DropdownMenuLabel>
                             
                             <DropdownMenuSeparator />

@@ -81,7 +81,7 @@ function SubscriptionPage() {
                 <p className='text-sm text-gray-500'>Manage your subscription and preferences.</p>
             </span>        
             
-            <section className='space-y-4'>
+            <section className='space-y-4 mb-8'>
                 {/* Current Subscription Card */}
                 <div className='p-4 rounded-md border flex flex-col gap-2 border-gray-200 mx-8'>
                     <p className='text-sm text-gray-500'>Your current subscription is</p>
@@ -118,8 +118,8 @@ function SubscriptionPage() {
                 <div className='p-4 rounded-md border flex flex-col gap-3 border-gray-200 mx-8'>
                     <div className='flex items-center justify-between'>
                         <div className='flex items-center gap-2'>
-                            <h1 className='text-lg font-bold'>Tokens Used</h1>
                             <Zap className='w-5 h-5 text-yellow-500' />
+                            <h1 className='text-lg font-bold'>Tokens Used</h1>
                         </div>
                         <button className='flex items-center gap-1 text-sm text-gray-600 hover:text-gray-800 transition-colors'>
                             <RefreshCw className='w-4 h-4' />
@@ -161,16 +161,16 @@ function SubscriptionPage() {
                 {/* Usage Statistics */}
                 <div className='p-4 rounded-md border flex flex-col gap-3 border-gray-200 mx-8'>
                     <div className='flex items-center gap-2'>
+                        <TrendingUp className='w-5 h-5 text-yellow-500' />
                         <h1 className='text-lg font-bold'>Usage Statistics</h1>
-                        <TrendingUp className='w-5 h-5 text-green-500' />
                     </div>
                     
                     <div className='grid grid-cols-2 gap-4'>
-                        <div className='text-center p-3 bg-blue-50 rounded'>
+                        <div className='text-center p-3 border border-gray-300 rounded'>
                             <div className='text-2xl font-bold text-blue-600'>47</div>
                             <div className='text-xs text-gray-600'>Documents</div>
                         </div>
-                        <div className='text-center p-3 bg-green-50 rounded'>
+                        <div className='text-center p-3 border border-gray-300 rounded'>
                             <div className='text-2xl font-bold text-yellow'>127</div>
                             <div className='text-xs text-gray-600'>Chat Sessions</div>
                         </div>
@@ -178,7 +178,7 @@ function SubscriptionPage() {
                 </div>
 
                 {/* Billing Information */}
-                {subscription !== 'BASIC' && billingDate !== '' && (
+                {billingDate !== '' && (
                     <div className='p-4 rounded-md border flex flex-col gap-3 border-gray-200 mx-8'>
                         <div className='flex items-center gap-2'>
                             <h1 className='text-lg font-bold'>Billing Information</h1>

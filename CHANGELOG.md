@@ -1,3 +1,10 @@
+## [0.1.6] - 2025-07-28
+**FIXED**
+- Fix system settings: Now dynamically changes the user settings.
+- Users can now add Two-factor Authentication (2FA) with their chosen authenticator
+**NEW**
+- Edit Feature: Users can now edit their prompt and automatically regenerate response
+
 ## [0.1.5] - 2025-07-24
 **NEW**
 - RAG Anomaly Detection. Adds a layer of security for prompt injection, user behavior, and rate limiter for file uploads.

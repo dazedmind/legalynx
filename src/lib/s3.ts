@@ -45,6 +45,9 @@ export class S3Service {
     try {
       const key = this.generateKey(userId, filename, folder);
       
+      // Check if this is a profile picture (these are public via bucket policy)
+      const isProfilePicture = folder === 'profile-pictures';
+      
       const command = new PutObjectCommand({
         Bucket: BUCKET_NAME,
         Key: key,
@@ -54,14 +57,20 @@ export class S3Service {
           userId,
           originalFilename: filename,
           uploadedAt: new Date().toISOString(),
+          // Mark profile pictures for identification
+          ...(isProfilePicture && { fileType: 'profile-picture' }),
         },
-        // Optional: Server-side encryption
+        // Server-side encryption for security
         ServerSideEncryption: 'AES256',
+        // Note: No ACL needed - bucket policy handles profile picture access
+        // Documents remain private by default (no public access)
       });
 
       await s3Client.send(command);
 
       const url = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+      console.log(`✅ File uploaded to S3: ${key} (${isProfilePicture ? 'PUBLIC via bucket policy' : 'PRIVATE'})`);
 
       return {
         key,
@@ -76,7 +85,7 @@ export class S3Service {
     }
   }
 
-  // Download file from S3
+  // Download file from S3 (for private files)
   static async downloadFile(key: string): Promise<S3DownloadResult> {
     try {
       const command = new GetObjectCommand({
@@ -112,7 +121,7 @@ export class S3Service {
     }
   }
 
-  // Get signed URL for temporary access
+  // Get signed URL for temporary access (for private files like documents)
   static async getSignedDownloadUrl(key: string, expiresIn: number = 3600): Promise<string> {
     try {
       const command = new GetObjectCommand({
@@ -182,6 +191,52 @@ export class S3Service {
       console.error('S3 metadata error:', error);
       throw new Error('Failed to get file metadata');
     }
+  }
+
+  // Helper method to get presigned URL with filename for downloads (for private files)
+  static async getPresignedDownloadUrl(
+    key: string, 
+    filename?: string,
+    expiresIn: number = 3600
+  ): Promise<string> {
+    try {
+      const command = new GetObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        ...(filename && {
+          ResponseContentDisposition: `attachment; filename="${filename}"`
+        })
+      });
+
+      return await getSignedUrl(s3Client, command, { expiresIn });
+    } catch (error) {
+      console.error('S3 Presigned URL Error:', error);
+      throw new Error(`Failed to generate presigned URL: ${error}`);
+    }
+  }
+
+  // Helper method to get file buffer (used by existing code)
+  static async getFileBuffer(key: string): Promise<Buffer> {
+    try {
+      const result = await this.downloadFile(key);
+      return result.buffer;
+    } catch (error) {
+      console.error('S3 Get File Buffer Error:', error);
+      throw error;
+    }
+  }
+
+  // Helper method to check if a file is a public profile picture
+  static isProfilePicture(key: string): boolean {
+    return key.startsWith('profile-pictures/');
+  }
+
+  // Helper method to get direct public URL for profile pictures
+  static getPublicUrl(key: string): string {
+    if (!this.isProfilePicture(key)) {
+      throw new Error('Public URLs are only available for profile pictures');
+    }
+    return `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
   }
 }
 

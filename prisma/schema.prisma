@@ -48,7 +48,7 @@ model Subscription {
   user_id         String    @unique @map("user_id") // Make unique for one-to-one
   tokens_used     Int       @default(0) @map("tokens_used")
   token_limit     Int       @map("token_limit")
-  billing_date    DateTime  @map("billing_date")
+  billing_date    DateTime?  @map("billing_date")
   days_remaining  Int       @map("days_remaining")
   
   // Subscription details
@@ -91,7 +91,6 @@ model UserSettings {
   file_client_name String? @map("file_client_name")
   file_retention_days Int?  @map("file_retention_days") // null = never delete, 7, 30, 60, 90
   auto_delete_files Boolean @default(false) @map("auto_delete_files")
-  max_file_size_mb Int     @default(50) @map("max_file_size_mb")
   
   // Security Settings
   two_factor_enabled Boolean @default(false) @map("two_factor_enabled")

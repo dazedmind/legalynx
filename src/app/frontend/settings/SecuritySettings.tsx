@@ -21,9 +21,8 @@ import {
     FilterFn,
 } from "@tanstack/react-table"
 import { profileService, SecurityLog } from '../lib/api'
-import { Activity, Calendar, Info, User, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Filter, Search } from 'lucide-react';
+import { Activity, Calendar, Info, User, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import LoaderComponent from '../components/ui/LoaderComponent';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -178,7 +177,12 @@ const columns: ColumnDef<SecurityLog>[] = [
 function SecuritySettings() {
     const [logs, setLogs] = useState<SecurityLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [sorting, setSorting] = useState<SortingState>([])
+    const [sorting, setSorting] = useState<SortingState>([
+        {
+            id: 'created_at',
+            desc: true
+        }
+    ])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = useState({})
@@ -254,21 +258,6 @@ function SecuritySettings() {
             rowSelection,
         },
     })
-
-    const handleDateRangeChange = (type: 'start' | 'end', value: string) => {
-        if (value) {
-            setDateRange(prev => ({
-                ...prev,
-                [type]: new Date(value)
-            }));
-        } else {
-            setDateRange(prev => {
-                const newRange = { ...prev };
-                delete newRange[type];
-                return newRange;
-            });
-        }
-    };
 
     const clearFilters = () => {
         setGlobalFilter('');
