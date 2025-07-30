@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, MicOff, Volume2, VolumeX, MessageSquare, Send, Brain } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, MessageSquare, Send, Brain, AudioLines } from 'lucide-react';
 import { apiService } from '../lib/api';
 import { AudioVisualizer } from './visualizer/AudioVisualizer'; // Adjust path as needed
 import PuffLoader from 'react-spinners/PuffLoader';
@@ -706,13 +706,13 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-primary">
       {/* Header */}
-      <div className="flex-shrink-0 border-b bg-white p-4 pt-0">
+      <div className="flex-shrink-0 border-b bg-primary p-4 pt-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-              <Volume2 className="w-5 h-5" />
+            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <AudioLines className="w-5 h-5" />
               Voice Mode
             </h2>
             {/* Save status indicator */}
@@ -729,15 +729,15 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handleManualInput}
-              className={`p-2 rounded-lg transition-colors hover:bg-gray-100`}
-              title="Toggle manual input"
+              className={`p-2 rounded-lg transition-colors hover:bg-accent text-foreground cursor-pointer`}
+              title="Manual input"
             >
               <MessageSquare className="w-5 h-5" />
             </button>
             <button
               onClick={() => setVoiceEnabled(!voiceEnabled)}
-              className={`p-2 rounded-lg transition-colors ${
-                voiceEnabled ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+              className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                voiceEnabled ? 'bg-blue/20 text-blue-600' : 'hover:bg-accent'
               }`}
               title={voiceEnabled ? 'Disable voice output' : 'Enable voice output'}
             >
@@ -746,7 +746,7 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
           </div>
         </div>
         {/* Audio Visualizer */}
-        <div className="mt-4 border rounded-lg overflow-hidden bg-white relative">
+        <div className="mt-4 border rounded-lg overflow-hidden bg-primary relative">
           <div 
             ref={visualizerContainerRef}
             className="w-full h-full relative"
@@ -785,7 +785,7 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
         )}
       </div>
       {/* Voice Controls */}
-      <div className="flex-shrink-0 border-t bg-gray-50 p-4">
+      <div className="flex-shrink-0 border-t bg-primary p-4">
         <div className="flex items-center justify-center gap-4">
           {supportsSpeech && getMicrophoneButton()}
           {isSpeaking && (

@@ -168,7 +168,7 @@ export function ChatContainer({
               className={`relative px-4 py-3 rounded-2xl max-w-full ${
                 isUser
                   ? 'bg-blue-600 text-white rounded-br-md'
-                  : 'bg-white text-gray-900 border border-gray-200 rounded-bl-md shadow-sm'
+                  : 'bg-primary text-foreground border border-tertiary rounded-bl-md '
                 } ${isEditing ? 'bg-blue/10 text-gray-900  rounded-bl-md w-120' : ''}
               } ${isRegeneratingThis ? 'opacity-50' : ''}`}
             >
@@ -178,7 +178,7 @@ export function ChatContainer({
                   <textarea
                     value={editedContent}
                     onChange={(e) => setEditedContent(e.target.value)}
-                    className="w-full text-gray-900 rounded-lg px-3 py-2 resize-none"
+                    className="w-full text-foreground rounded-lg px-3 py-2 resize-none"
                     rows={Math.max(2, editedContent.split('\n').length)}
                     placeholder="Edit your message..."
                     autoFocus
@@ -186,14 +186,14 @@ export function ChatContainer({
                   <div className="flex items-center gap-2 justify-end">
                     <button
                       onClick={handleCancelEdit}
-                      className="flex items-center gap-1 px-3 py-1 text-sm text-black hover:text-gray-800 transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-1 text-sm text-foreground hover:text-foreground/80 transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => handleSaveEdit(message.id)}
                       disabled={!editedContent.trim() || isRegeneratingThis}
-                      className="flex items-center gap-1 px-3 py-1 text-sm  text-white rounded-full bg-blue-600/60 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-1 text-sm  text-white rounded-full bg-blue-600/60 hover:bg-blue-700 disabled:bg-tertiary disabled:cursor-not-allowed transition-colors cursor-pointer"
                     >
                       {isRegeneratingThis ? 'Updating...' : 'Send'}
                       <ArrowUp className="w-4 h-4" />
@@ -210,7 +210,7 @@ export function ChatContainer({
 
             {/* Message Footer */}
             {!isEditing && (
-              <div className={`flex items-center gap-2 mt-1 text-xs text-gray-500 ${
+              <div className={`flex items-center gap-2 mt-1 text-xs text-muted-foreground ${
                 isUser ? 'flex-row-reverse' : 'flex-row'
               }`}>
                 
@@ -225,7 +225,7 @@ export function ChatContainer({
                     <button
                       onClick={() => handleStartEdit(message)}
                       disabled={isQuerying || isRegenerating !== null}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-1 hover:bg-accent rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Edit message"
                     >
                       <Edit className="w-3 h-3" />
@@ -235,7 +235,7 @@ export function ChatContainer({
                   {/* Copy Button - For all messages */}
                   <button
                     onClick={() => copyToClipboard(message.content, message.id)}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                    className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
                     title="Copy message"
                   >
                     <Copy className="w-3 h-3" />
@@ -247,7 +247,7 @@ export function ChatContainer({
                       {/* Thumbs Up */}
                       <button
                         onClick={() => onMessageAction('thumbsUp', message.id)}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                        className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
                         title="Good response"
                       >
                         <ThumbsUp className="w-3 h-3" />
@@ -256,7 +256,7 @@ export function ChatContainer({
                       {/* Thumbs Down */}
                       <button
                         onClick={() => onMessageAction('thumbsDown', message.id)}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                        className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
                         title="Poor response"
                       >
                         <ThumbsDown className="w-3 h-3" />
@@ -285,7 +285,7 @@ export function ChatContainer({
   return (
     <div 
       ref={chatContainerRef}
-      className="flex-1 overflow-y-auto bg-gray-50 chat-container"
+      className="flex-1 overflow-y-auto bg-primary chat-container"
     >
       <div className="mx-auto px-6 py-8">
         
@@ -295,10 +295,10 @@ export function ChatContainer({
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Bot className="w-8 h-8 text-blue-600" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            <h3 className="text-xl font-semibold text-foreground mb-2">
               Ready to Chat!
             </h3>
-            <p className="text-gray-600 max-w-md mx-auto">
+            <p className="text-muted-foreground max-w-md mx-auto">
               Ask me anything about your uploaded document. I can help you find information, summarize content, or answer specific questions.
             </p>
           </div>
@@ -320,11 +320,11 @@ export function ChatContainer({
               </div>
 
               {/* Typing Animation */}
-              <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+              <div className="bg-primary border border-tertiary rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               </div>
             </div>
@@ -333,8 +333,8 @@ export function ChatContainer({
 
         {/* Document Not Available Message */}
         {!documentExists && chatHistory.length > 0 && (
-          <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg text-center">
-            <p className="text-red-700 text-sm">
+          <div className="mt-8 p-4 bg-destructive/10 border border-destructive rounded-lg text-center">
+            <p className="text-destructive text-sm">
               💔 Document is no longer available. You can view the conversation history above, but cannot continue chatting.
             </p>
           </div>

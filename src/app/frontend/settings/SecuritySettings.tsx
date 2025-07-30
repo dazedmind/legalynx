@@ -109,7 +109,7 @@ const columns: ColumnDef<SecurityLog>[] = [
                         {actionTypes[action as keyof typeof actionTypes] || action}
                     </span>
                     {details && (
-                        <span className="text-xs text-gray-500 max-w-xs truncate">
+                        <span className="text-xs text-muted-foreground max-w-xs truncate">
                             {details}
                         </span>
                     )}
@@ -274,15 +274,15 @@ function SecuritySettings() {
         <div className="h-full flex flex-col">
             <div className='flex flex-col gap-1 p-6 px-8 flex-shrink-0'>
                 <h1 className='text-3xl font-bold font-serif'>Security Logs</h1>
-                <p className='text-sm text-gray-500'>
+                <p className='text-sm text-muted-foreground'>
                     Authentication and security changes in your account are logged here. 
                     Logs are retained for 60 days.
                 </p>
             </div>
             
-            <div className='rounded-md border border-gray-200 mx-8 mb-5 flex-1 flex flex-col overflow-hidden'>
+            <div className='rounded-md border border-tertiary mx-8 mb-5 flex-1 flex flex-col overflow-hidden'>
                 {/* Filters Section */}
-                <div className="p-4 space-y-4 border-b border-gray-200">
+                <div className="p-4 space-y-4 border-b border-tertiary">
                     <div className="flex justify-between gap-4">
                         {/* Action Filter */}
                         <div className="flex items-center gap-2">
@@ -362,10 +362,10 @@ function SecuritySettings() {
                 </div>
 
                 {/* Pagination */}
-                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 flex-shrink-0">
+                <div className="flex items-center justify-between px-4 py-3 border-t border-tertiary flex-shrink-0">
         
                     <div className="p-2">
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                             Showing {table.getFilteredRowModel().rows.length} of {logs.length} total logs
                             {globalFilter && ` (filtered by "${globalFilter}")`}
                         </p>

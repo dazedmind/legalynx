@@ -244,7 +244,7 @@ function ProfileSettings() {
         <div className='flex flex-col gap-1 overflow-y-auto'>
             <span className='flex flex-col gap-1 p-6 px-8'>
                 <h1 className='text-3xl font-bold font-serif'>Profile Settings</h1>
-                <p className='text-sm text-gray-500'>Manage your profile information and settings.</p>
+                <p className='text-sm text-muted-foreground'>Manage your profile information and settings.</p>
             </span>
         
             <section className='flex flex-col-reverse md:flex-row space-x-50 px-2 md:px-10 h-full overflow-y-auto overflow-x-hidden'>
@@ -255,7 +255,7 @@ function ProfileSettings() {
                         type="text" 
                         id="name" 
                         name="name" 
-                        className="w-auto p-2 border border-gray-300 rounded-md text-sm" 
+                        className="w-auto p-2 border border-tertiary rounded-md text-sm" 
                         placeholder='Enter your name'
                         onChange={(e) => {
                             setName(e.target.value)
@@ -268,7 +268,7 @@ function ProfileSettings() {
                         type="text" 
                         id="email" 
                         name="email" 
-                        className="w-auto p-2 border border-gray-300 rounded-md text-sm" 
+                        className="w-auto p-2 border border-tertiary rounded-md text-sm" 
                         placeholder='Enter your email'
                         onChange={(e) => {
                             setEmail(e.target.value)
@@ -281,7 +281,7 @@ function ProfileSettings() {
                         type="text" 
                         id="job_title" 
                         name="job_title" 
-                        className="w-auto p-2 border border-gray-300 rounded-md text-sm" 
+                        className="w-auto p-2 border border-tertiary rounded-md text-sm" 
                         placeholder='Lawyer, Paralegal, etc.'
                         onChange={(e) => {
                             setJobTitle(e.target.value)

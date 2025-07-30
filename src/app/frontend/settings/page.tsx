@@ -70,12 +70,12 @@ function SettingsContent() {
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b flex-shrink-0 px-6 md:px-0">
+      <header className="bg-primary shadow-sm border-b flex-shrink-0 px-6 md:px-0">
         <NavBar />
       </header>
 
       {/* Main Content */}
-      <main className="flex bg-white flex-1 overflow-hidden relative">
+      <main className="flex bg-primary flex-1 overflow-hidden relative">
         {/* Mobile Menu Button */}
  
 
@@ -90,18 +90,18 @@ function SettingsContent() {
         {/* Sidebar */}
         <aside className={`
           lg:w-1/5 lg:relative lg:translate-x-0 lg:shadow-none
-          fixed top-0 left-0 h-full w-80 bg-neutral-100 p-6 gap-2 flex flex-col flex-shrink-0 z-40 shadow-2xl
+          fixed top-0 left-0 h-full w-80 bg-primary p-6 gap-2 flex flex-col flex-shrink-0 z-40 shadow-2xl border-r border-tertiary
           transform transition-transform duration-300 ease-in-out
           ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
           {/* Mobile Header */}
           <div className="lg:hidden flex items-center justify-between mb-6 pt-4">
-            <h2 className="text-lg font-semibold text-gray-800">Settings</h2>
+            <h2 className="text-lg font-semibold text-foreground">Settings</h2>
             <button
               onClick={() => setIsMobileSidebarOpen(false)}
-              className="p-1 rounded-lg hover:bg-gray-200"
+              className="p-1 rounded-lg hover:bg-accent"
             >
-              <X className="w-5 h-5 text-gray-600" />
+              <X className="w-5 h-5 text-foreground" />
             </button>
           </div>
 
@@ -115,8 +115,8 @@ function SettingsContent() {
                   onClick={() => handleTabClick(item.id as ActiveTab)}
                   className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-r-lg transition-colors ${
                     activeTab === item.id
-                      ? 'bg-blue-100 text-blue-700 font-semibold'
-                      : 'text-gray-700 hover:bg-gray-200'
+                      ? 'bg-blue/20 text-blue-700 font-semibold'
+                      : 'text-foreground hover:bg-accent'
                   }`}
                 >
                   {activeTab === item.id && (
@@ -133,7 +133,7 @@ function SettingsContent() {
           <div className="mt-auto space-y-3">
             <button
               onClick={logout}
-              className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg text-red-600 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg hover:bg-destructive/20 border border-destructive transition-colors cursor-pointer text-destructive"
             >
               <LogOut className="w-4 h-4" />
               Sign out
@@ -144,18 +144,18 @@ function SettingsContent() {
         {/* Main Content Area */}
         <section className="flex-1 flex flex-col overflow-hidden lg:ml-0">
           {/* Mobile Content Header - Shows active tab */}
-          <div className="lg:hidden bg-white border-b px-4 py-3 flex items-center gap-3">
+          <div className="lg:hidden bg-primary border-b px-4 py-3 flex items-center gap-3">
             <button
               onClick={toggleMobileSidebar}
-              className="lg:hidden bg-white rounded-lg p-2 border"
+              className="lg:hidden bg-primary rounded-lg p-2 border"
             >
               {isMobileSidebarOpen ? (
-                <X className="w-6 h-6 text-gray-600" />
+                <X className="w-6 h-6 text-foreground" />
               ) : (
-                <Menu className="w-6 h-6 text-gray-600" />
+                <Menu className="w-6 h-6 text-foreground" />
               )}
             </button>
-            <h1 className="text-lg font-semibold text-gray-800">
+            <h1 className="text-lg font-semibold text-foreground">
               {menuItems.find(item => item.id === activeTab)?.label}
             </h1>
           </div>
@@ -177,14 +177,14 @@ function SettingsContent() {
 function SettingsLoading() {
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col overflow-hidden">
-      <header className="bg-white shadow-sm border-b flex-shrink-0 px-6 md:px-0">
+      <header className="bg-primary shadow-sm border-b flex-shrink-0 px-6 md:px-0">
         <NavBar />
       </header>
-      <main className="flex bg-white flex-1 overflow-hidden relative">
+      <main className="flex bg-primary flex-1 overflow-hidden relative">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading settings...</p>
+            <p className="text-foreground">Loading settings...</p>
           </div>
         </div>
       </main>

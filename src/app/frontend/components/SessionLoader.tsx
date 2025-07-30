@@ -72,18 +72,18 @@ export default function SessionLoader({
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+        <h2 className="text-2xl font-bold text-foreground mb-2">
           {stageInfo.title}
         </h2>
 
         {/* Session/Document Info */}
         {sessionTitle && (
-          <div className="bg-white rounded-lg p-4 mb-4 shadow-sm border">
-            <p className="font-medium text-gray-900 truncate">
+          <div className="bg-primary rounded-lg p-4 mb-4 shadow-sm border">
+            <p className="font-medium text-foreground truncate">
               {sessionTitle}
             </p>
             {documentName && (
-              <div className="flex items-center justify-center mt-2 text-sm text-gray-600">
+              <div className="flex items-center justify-center mt-2 text-sm text-muted-foreground">
                 <FileText className="w-4 h-4 mr-1" />
                 <span className="truncate">{documentName}</span>
               </div>
@@ -92,7 +92,7 @@ export default function SessionLoader({
         )}
 
         {/* Stage Description */}
-        <p className="text-gray-600 mb-6">
+        <p className="text-muted-foreground mb-6">
           {stageInfo.description}
         </p>
 
@@ -111,7 +111,7 @@ export default function SessionLoader({
         </div>
 
         {/* Loading Bar */}
-        <div className="w-full bg-gray-200 rounded-full h-1 overflow-hidden">
+        <div className="w-full bg-tertiary rounded-full h-1 overflow-hidden">
           <div 
             className={`h-full ${stageInfo.color.replace('text-', 'bg-')} rounded-full animate-pulse`}
             style={{
@@ -123,7 +123,7 @@ export default function SessionLoader({
 
         {/* Helpful tip */}
         <div className="mt-8 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-xs text-blue-700">
+          <p className="text-xs text-blue-500">
             💡 Large documents may take a few moments to process
           </p>
         </div>

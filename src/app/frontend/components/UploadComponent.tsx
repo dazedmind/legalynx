@@ -600,7 +600,7 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
       <div>
         <BlurText
           text="To get started, upload a PDF or DOCX document"
-          className="font-serif text-2xl font-bold text-gray-900"
+          className="font-serif text-2xl font-bold text-foreground"
           delay={50}
         />
       </div>
@@ -609,10 +609,10 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
       <div
         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
           uploadStatus === "error"
-            ? "border-red-300 bg-red-50"
+            ? "border-destructive/20 bg-destructive/10"
             : uploadStatus === "success"
-            ? "border-green-300 bg-green-50"
-            : "border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100"
+            ? "border-blue-500 bg-blue/20 hover:border-blue-500 hover:bg-blue/30"
+            : "border-tertiary bg-tertiary hover:border-tertiary hover:bg-accent"
         }`}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
@@ -633,17 +633,17 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
             <Upload className="w-12 h-12 text-gray-400 mb-3" />
           )}
 
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-lg font-medium text-foreground mb-2">
             {file ? file.name : "Upload PDF or DOCX Document"}
           </h3>
 
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             {file
               ? `${(file.size / 1024 / 1024).toFixed(2)} MB • Ready for processing`
               : "Drag and drop your document here, or click to browse"}
           </p>
 
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground">
             Supported: PDF, DOCX • Maximum file size: {uploadOptions?.max_file_size_mb || 50}MB
           </p>
         </div>
@@ -656,7 +656,7 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
           disabled={!file || isUploading || loadingSettings}
           className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
             !file || isUploading || loadingSettings
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              ? "bg-tertiary text-muted-foreground cursor-not-allowed"
               : "bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
           }`}
         >
@@ -674,7 +674,7 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
       )}
 
       {/* Session Mode Notice */}
-      <div className="mt-2 p-4 flex gap-4 items-center bg-neutral-50 border-dashed border-2 border-neutral-300 rounded-md text-neutral-800 text-sm">
+      <div className="mt-2 p-4 flex gap-4 items-center bg-tertiary border-dashed border-2 border-tertiary rounded-md text-foreground text-sm">
         <MessageSquareDashed className="w-10 h-10 mt-0.5 flex-shrink-0" />
         <span className="flex flex-col">
           <p className="font-medium">Temporary Session Mode</p>
@@ -686,8 +686,8 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
 
       {/* Warnings */}
       {warning && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-          <div className="flex items-center gap-2 text-yellow-800">
+        <div className="mb-4 p-3 bg-yellow-100/20 border border-yellow-200 rounded-md">
+          <div className="flex items-center gap-2 text-yellow-500">
             <AlertCircle className="w-4 h-4" />
             <span className="text-sm">{warning}</span>
           </div>

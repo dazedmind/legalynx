@@ -1264,30 +1264,30 @@ export default function ChatViewer({
   return (
     <div className="h-full flex flex-col">
       {/* Fixed Document Header */}
-      <div className="flex-shrink-0 bg-white p-4">
+      <div className="flex-shrink-0 bg-primary p-4">
         {currentDocument ? (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {!documentExists && (
                 <AlertCircle className="w-6 h-6 text-red-500" />
               )}
-              <FileText className={`w-6 h-6 ${documentExists ? 'text-blue-600' : 'text-gray-400'}`} />
+              <FileText className={`w-8 h-8 ${documentExists ? 'text-blue-600' : 'text-gray-400'}`} />
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className={`text-sm md:text-base font-semibold ${documentExists ? 'text-gray-900' : 'text-gray-500'}`}>
+                  <h3 className={`text-sm md:text-base font-semibold ${documentExists ? 'text-foreground' : 'text-muted-foreground'}`}>
                     {currentDocument.fileName}
                     {!documentExists && ' (Document Deleted)'}
                   </h3>
                 </div>
-                <p className={`text-sm ${documentExists ? 'text-gray-600' : 'text-red-600'}`}>
+                <p className={`text-sm ${documentExists ? 'text-muted-foreground' : 'text-red-600'}`}>
                   {documentExists ? (
                     <span className="flex items-center gap-2">
                       {currentSessionId && currentDocument.status === 'INDEXED' ? (
-                        <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full font-medium">
+                        <span className="px-2 py-1 text-xs bg-blue/20 text-blue-600 rounded-full font-medium">
                           Session Saved
                         </span>
                       ):(
-                        <span className="px-2 py-1 text-xs bg-neutral-100 text-neutral-800 border-neutral-300 border-dashed border-2 rounded-full font-medium">
+                        <span className="px-2 py-1 text-xs bg-neutral/20 text-muted-foreground border-tertiary border-dashed border-2 rounded-full font-medium">
                           Temporary Session
                         </span>
                       )}
@@ -1313,15 +1313,15 @@ export default function ChatViewer({
                 disabled={!documentExists || currentDocument?.status === 'INDEXED'}
                 className={`flex items-center p-2 px-3 text-sm rounded-lg transition-all duration-300 ${
                   !documentExists || currentDocument?.status === 'INDEXED' 
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'text-black hover:brightness-105 hover:bg-yellow-200/20 hover:text-yellow-600 cursor-pointer'
+                    ? 'bg-tertiary text-muted-foreground cursor-not-allowed'
+                    : 'text-foreground hover:brightness-105 hover:bg-yellow-200/20 hover:text-yellow-600 cursor-pointer'
                 }`}
               >
                 {!documentExists 
                   ? 'Unavailable'
                   : currentDocument?.status === 'INDEXED' 
-                    ? <><CloudCheck className="w-4 h-4 mr-1" /> Saved</>
-                    : <><Cloud className="w-4 h-4 mr-1" /> Save File</>
+                    ? <><CloudCheck className="w-4 h-4 md:mr-1" /> <span className='hidden md:block'>Saved</span></>
+                    : <><Cloud className="w-4 h-4 md:mr-1" /> <span className='hidden md:block'>Save File</span></>
                 }
               </button>
               
@@ -1369,8 +1369,8 @@ export default function ChatViewer({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {!documentExists && (
-          <div className="flex-shrink-0 bg-red-50 border-b border-red-200 p-4">
-            <div className="flex items-center text-red-700">
+          <div className="flex-shrink-0 bg-destructive/10 border-b border-destructive p-4">
+            <div className="flex items-center text-destructive">
               <AlertCircle className="w-5 h-5 mr-2" />
               <span className="text-sm">
                 This document no longer exists. You can view the chat history but cannot ask new questions.
@@ -1388,7 +1388,7 @@ export default function ChatViewer({
         />
 
         {/* Input Area */}
-        <div className="flex-shrink-0 bg-white border-t border-gray-200 p-6">
+        <div className="flex-shrink-0 bg-primary border-t border-tertiary p-6">
           {documentExists && (
             <div className='flex gap-4 mx-auto w-full relative'>
               <div className="flex-1">
@@ -1398,7 +1398,7 @@ export default function ChatViewer({
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Ask a question about the uploaded document..."
                   rows={2}
-                  className="w-full px-3 py-2 h-24 border border-gray-300 rounded-xl focus:outline-none resize-none"
+                  className="w-full px-3 py-2 h-24 border border-tertiary rounded-xl focus:outline-none resize-none"
                 />
               </div>
               <button

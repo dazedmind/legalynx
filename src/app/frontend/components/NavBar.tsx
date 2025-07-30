@@ -1,3 +1,4 @@
+'use client'
 import { LogOut, Settings } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -8,18 +9,23 @@ import { useAuth } from '@/lib/context/AuthContext'
 import { profileService, UserProfile } from '../lib/api'
 import { GoGift } from 'react-icons/go'
 import logo from '../img/legalynxlogo.png'
+import ThemeToggle from './ThemeToggle'
+import { useTheme } from 'next-themes'
 
 export default function NavBar() {
     const { logout, user } = useAuth();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string>('');
+    const { theme } = useTheme();
     
     useEffect(() => {
         if (user) {
             loadProfile();
         }
     }, [user]);
+
+
 
     const loadProfile = async () => {
         if (!user) return;
@@ -157,18 +163,19 @@ export default function NavBar() {
     };
 
     return (
-        <div className="px-0 md:px-8 py-2">
+        <div className={`px-0 md:px-8 py-2 ${theme === 'dark' ? 'bg-midnight' : 'bg-white'}`} data-theme="dark">
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-1">
                     <Image src={logo} alt="LegalynX" width={60} height={60} />
                     <div>
                         <Link href="/frontend/home">
-                            <h1 className="text-2xl font-bold font-serif text-gray-900">LegalynX</h1>
+                            <h1 className="text-2xl font-bold font-serif">LegalynX</h1>
                         </Link>
                     </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-4">
+                    <ThemeToggle />
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <div className="relative">
@@ -200,7 +207,7 @@ export default function NavBar() {
                                 </div>
                                 <span className='flex flex-col'>
                                     <span>{getDisplayName()}</span>
-                                    <p className='border border-gray-300 rounded-md px-1 py-1 text-xs text-gray-500 w-fit'>
+                                    <p className='border border-tertiary rounded-md px-1 py-1 text-xs text-muted-foreground w-fit'>
                                         {getSubscriptionStatus()}
                                     </p>
                                 </span>

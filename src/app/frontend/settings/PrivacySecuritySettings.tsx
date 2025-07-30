@@ -298,7 +298,7 @@ export default function PrivacySecuritySettings() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className='text-3xl font-bold font-serif'>Privacy & Security</h1>
-            <p className='text-sm text-gray-500'>Manage your privacy and security preferences.</p>
+            <p className='text-sm text-muted-foreground'>Manage your privacy and security preferences.</p>
           </div>
           
           {hasUnsavedChanges && (
@@ -321,7 +321,7 @@ export default function PrivacySecuritySettings() {
       </div>
 
       {/* Two-Factor Authentication */}
-      <section className="mx-8 p-6 rounded-lg border border-gray-200 bg-white">
+      <section className="mx-8 p-6 rounded-lg border border-tertiary bg-primary">
         <div className="flex items-center gap-3 mb-4">
           <Shield className="w-6 h-6 text-yellow-500" />
           <div>
@@ -338,7 +338,7 @@ export default function PrivacySecuritySettings() {
               <div className="flex justify-between gap-3">
                 <div className='flex flex-col'>
                     <h3 className="font-bold ">Set up 2FA</h3>
-                    <p className="text-sm ">
+                    <p className="text-sm text-muted-foreground ">
                         Protect your account with two-factor authentication. You'll need your phone to sign in.
                     </p>
                 </div>
@@ -474,7 +474,7 @@ export default function PrivacySecuritySettings() {
       </section>
 
       {/* Security Settings */}
-      <section className="mx-8 p-6 rounded-lg border border-gray-200 bg-white">
+      <section className="mx-8 p-6 rounded-lg border border-tertiary bg-primary">
         <div className="flex items-center gap-3 mb-4">
           <Lock className="w-6 h-6 text-yellow-500" />
           <div>
@@ -489,7 +489,7 @@ export default function PrivacySecuritySettings() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-medium">Login Notifications</h3>
-              <p className="text-sm text-gray-600">Get notified when someone signs into your account</p>
+              <p className="text-sm text-muted-foreground">Get notified when someone signs into your account</p>
             </div>
             <Switch 
               checked={securitySettings.login_notifications}
@@ -500,7 +500,7 @@ export default function PrivacySecuritySettings() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-medium">Security Alerts</h3>
-              <p className="text-sm text-gray-600">Receive alerts about unusual account activity</p>
+              <p className="text-sm text-muted-foreground">Receive alerts about unusual account activity</p>
             </div>
             <Switch 
               checked={securitySettings.security_alerts}
@@ -511,7 +511,7 @@ export default function PrivacySecuritySettings() {
       </section>
 
       {/* Privacy Settings */}
-      <section className="mx-8 p-6 rounded-lg border border-gray-200 bg-white">
+      <section className="mx-8 p-6 rounded-lg border border-tertiary bg-primary">
         <div className="flex items-center gap-3 mb-4">
           <Shield className="w-6 h-6 text-yellow-500" />
           <div>
@@ -526,7 +526,7 @@ export default function PrivacySecuritySettings() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-medium">Analytics & Usage Data</h3>
-              <p className="text-sm text-gray-600">Help improve our service by sharing anonymous usage data</p>
+              <p className="text-sm text-muted-foreground">Help improve our service by sharing anonymous usage data</p>
             </div>
             <Switch 
               checked={privacySettings.analytics_consent}
@@ -537,7 +537,7 @@ export default function PrivacySecuritySettings() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-medium">Marketing Emails</h3>
-              <p className="text-sm text-gray-600">Receive emails about new features and updates</p>
+              <p className="text-sm text-muted-foreground">Receive emails about new features and updates</p>
             </div>
             <Switch 
               checked={privacySettings.marketing_emails}
@@ -548,7 +548,7 @@ export default function PrivacySecuritySettings() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-medium">Data Sharing</h3>
-              <p className="text-sm text-gray-600">Allow sharing anonymized data with research partners</p>
+              <p className="text-sm text-muted-foreground">Allow sharing anonymized data with research partners</p>
             </div>
             <Switch 
               checked={privacySettings.data_sharing_consent}
@@ -559,11 +559,11 @@ export default function PrivacySecuritySettings() {
       </section>
 
       {/* Danger Zone */}
-      <section className="mx-8 p-6 mb-8 rounded-lg border border-red-200 bg-red-50">
+      <section className="mx-8 p-6 mb-8 rounded-lg border border-tertiary bg-destructive/5">
         <div className="flex items-center gap-3 mb-4">
           <AlertTriangle className="w-6 h-6 text-red-600" />
           <div>
-            <h2 className="text-xl font-semibold text-red-900">Danger Zone</h2>
+            <h2 className="text-xl font-semibold text-foreground">Danger Zone</h2>
           </div>
         </div>
 
@@ -571,10 +571,10 @@ export default function PrivacySecuritySettings() {
 
         <div className="space-y-4">
           {!showDeleteConfirm ? (
-            <div className="flex items-center justify-between p-4 bg-white border border-red-200 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-primary border border-tertiary rounded-lg">
               <div>
-                <h3 className="font-medium text-red-900">Delete Account</h3>
-                <p className="text-sm text-red-700">
+                <h3 className="font-medium text-red-600">Delete Account</h3>
+                <p className="text-sm text-muted-foreground">
                   Permanently delete your account and all associated data. This action cannot be undone.
                 </p>
               </div>
@@ -586,7 +586,7 @@ export default function PrivacySecuritySettings() {
               </button>
             </div>
           ) : (
-            <div className="p-4 bg-white border border-red-200 rounded-lg space-y-4">
+            <div className="p-4 bg-primary border border-tertiary rounded-lg space-y-4">
               <div className="flex items-start gap-3">
                 <div>
                   <h3 className="font-medium">Are you absolutely sure?</h3>
@@ -633,7 +633,7 @@ export default function PrivacySecuritySettings() {
                     setShowDeleteConfirm(false);
                     setDeleteConfirmText('');
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
+                  className="px-4 py-2 border border-tertiary rounded-md hover:bg-accent ransition-colors cursor-pointer"
                 >
                   Cancel
                 </button>

@@ -253,7 +253,7 @@ export default function FileSettings() {
       </span>
 
       {/* File Settings Preference */}
-      <section className="mx-8 p-6 rounded-lg border border-gray-200 bg-white">
+      <section className="mx-8 p-6 rounded-lg border border-tertiary bg-primary">
         <div className="flex items-center gap-3 mb-4">
           <Sparkle className="w-6 h-6 text-yellow-500" />
           <div>
@@ -292,7 +292,7 @@ export default function FileSettings() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex items-center justify-between border border-gray-300 rounded-md p-2 text-sm cursor-pointer min-w-[120px] text-left bg-white"
+                  className="flex items-center justify-between border border-tertiary rounded-md p-2 text-sm cursor-pointer min-w-[120px] text-left bg-primary"
                   type="button"
                 >
                   {retentionOptions.find(
@@ -308,7 +308,7 @@ export default function FileSettings() {
                     onSelect={() => handleRetentionChange(option.value)}
                     className={`flex flex-col items-start p-2 ${
                       settings.file_retention_days === option.value
-                        ? "font-semibold bg-accent"
+                        ? "font-semibold bg-blue/20"
                         : ""
                     } cursor-pointer`}
                   >
@@ -342,8 +342,8 @@ export default function FileSettings() {
                     key={format.value}
                     className={`flex items-center gap-3 p-3 border rounded cursor-pointer transition-colors ${
                       settings.file_naming_format === format.value
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-blue/20 bg-blue/20"
+                        : "border-tertiary hover:border-accent"
                     }`}
                   >
                     <input
@@ -366,7 +366,7 @@ export default function FileSettings() {
                       <div className="font-medium">{format.label}</div>
                       <div className="text-sm text-gray-500">
                         Example:{" "}
-                        <code className="bg-gray-100 px-1 rounded text-xs">
+                        <code className="bg-accent px-1 rounded text-xs">
                           {format.example}
                         </code>
                       </div>
@@ -381,7 +381,7 @@ export default function FileSettings() {
       </section>
 
       {/* Storage Usage */}
-      <section className="mx-8 p-6 mb-8 rounded-lg border border-gray-200 bg-white">
+        <section className="mx-8 p-6 mb-8 rounded-lg border border-tertiary bg-primary">
         <div className="flex items-center gap-3 mb-4">
           <GoCloud className="w-6 h-6 text-yellow-500" strokeWidth={1} />
           <div>
@@ -393,19 +393,19 @@ export default function FileSettings() {
         <Separator className="my-4"/>
 
         <div className="grid grid-cols-2 gap-4 text-center">
-            <div className="p-3 bg-yellow-50 rounded">
+            <div className="p-3 bg-yellow/20 rounded">
               <div className="text-lg font-bold text-yellow">
                 {storageInfo.used.toFixed(1)}{" "}
                 {subscription == "BASIC" ? "MB" : "GB"}
               </div>
-              <div className="text-xs text-gray-500">Used</div>
+              <div className="text-xs text-muted-foreground">Used</div>
             </div>
-            <div className="p-3 bg-blue-50 rounded">
+            <div className="p-3 bg-blue/20 rounded">
               <div className="text-lg font-bold text-blue">
                 {storageInfo.available.toFixed(1)}{" "}
                 {subscription == "BASIC" ? "MB" : "GB"}
               </div>
-              <div className="text-xs text-gray-500">Available</div>
+              <div className="text-xs text-muted-foreground">Available</div>
             </div>
         </div>
 
@@ -415,12 +415,12 @@ export default function FileSettings() {
                 <h1 className="text-xl font-bold">
                   {storageInfo.used.toFixed(1)} {subscription == "BASIC" ? "MB" : "GB"} / {storageInfo.total} {subscription == "BASIC" ? "MB" : "GB"}
                 </h1>
-                <p>used ({storagePercentage.toFixed(1)}%)</p>
+                <p className="text-sm text-muted-foreground">used ({storagePercentage.toFixed(1)}%)</p>
           </span>
           <Progress value={storagePercentage} />
 
           {storagePercentage >= 80 && (
-            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded text-amber-800 text-sm">
+            <div className="flex items-center gap-2 p-3 bg-amber/20 border border-amber-200 rounded text-amber-800 text-sm">
               <AlertCircle className="w-4 h-4" />
               {storagePercentage >= 90
                 ? "Storage is almost full. Consider upgrading or deleting unused files."

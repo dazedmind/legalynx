@@ -12,7 +12,8 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '@/lib/context/AuthContext';
 import { LogOut, Plus, Menu, X, Mic } from 'lucide-react';
 import UploadPage from '../components/UploadPage';
-  import ConfirmationModal, { ModalType } from '../components/ConfirmationModal';
+import ConfirmationModal, { ModalType } from '../components/ConfirmationModal';
+import { useTheme } from 'next-themes';
 
 type ActiveTab = 'chat' | 'documents' | 'chat_history' | 'upload' | 'voice_chat';
 
@@ -25,7 +26,8 @@ export default function Home() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false); // Mobile sidebar state
   const { user, logout } = useAuth();
   const [resetChatViewer, setResetChatViewer] = useState(false);
-  
+  const { theme } = useTheme();
+
    // Modal state for confirmation
    const [confirmationModalConfig, setConfirmationModalConfig] = useState<{
     header: string;
@@ -227,13 +229,13 @@ export default function Home() {
 
   return (
     <ProtectedRoute>
-      <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col overflow-hidden">
+      <div className="h-screen bg-primary flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b flex-shrink-0 flex px-6 md:px-0">
+        <header className="bg-primary shadow-sm border-b flex-shrink-0 flex px-6 md:px-0">
             <div className='flex items-center justify-between'>
             <button
                 onClick={toggleMobileSidebar}
-                className="lg:hidden bg-white rounded-lg p-2 border"
+                className="lg:hidden bg-primary rounded-lg p-2 border"
               >
                 {isMobileSidebarOpen ? (
                   <X className="w-6 h-6 text-gray-600" />
@@ -248,7 +250,7 @@ export default function Home() {
         </header>
 
         {/* Main Content */}
-        <main className="flex bg-white flex-1 overflow-hidden relative">
+        <main className="flex bg-primary flex-1 overflow-hidden relative">
           {/* Mobile Overlay */}
           {isMobileSidebarOpen && (
             <div 
@@ -260,8 +262,8 @@ export default function Home() {
           {/* Sidebar */}
           <aside className={`
             fixed md:relative inset-y-0 left-0 z-50 md:z-0
-            w-64 md:w-1/5 bg-neutral-100 p-4 md:p-6 
-            flex flex-col border-r border-gray-200 flex-shrink-0
+            w-64 md:w-1/5 bg-primary p-4 md:p-6 
+            flex flex-col border-r flex-shrink-0
             transform transition-transform duration-300 ease-in-out
             ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           `}>
@@ -277,10 +279,10 @@ export default function Home() {
             <div className="space-y-2 mb-8">
               <button
                 onClick={() => handleTabClick('chat_history')}
-                className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-r-lg transition-colors ${
-                  activeTab === 'chat_history' || activeTab === 'chat'
-                    ? 'bg-blue-100 text-blue-700 font-semibold'
-                    : 'text-gray-700 hover:bg-gray-200'
+                className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                  activeTab === 'chat_history'
+                    ? 'bg-blue/20 text-blue-700 font-semibold rounded-r-lg'
+                    : ' text-foreground hover:bg-blue/20'
                 }`}
               >
                   {activeTab === 'chat_history' && (
@@ -292,14 +294,14 @@ export default function Home() {
 
               <button
                 onClick={() => handleTabClick('documents')}
-                className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-r-lg transition-colors ${
+                className={`w-full relative cursor-pointer flex  items-center gap-3 text-left p-3 rounded-lg transition-colors ${
                   activeTab === 'documents'
-                    ? 'bg-blue-100 text-blue-700 font-semibold'
-                    : 'text-gray-700 hover:bg-gray-200'
+                    ? 'bg-blue/20 text-blue-700 font-semibold rounded-r-lg'
+                    : 'text-foreground hover:bg-blue/20'
                 }`}
               >
                 {activeTab === 'documents' && (
-                    <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
+                    <div className="h-full w-1 bg-blue-700  absolute left-0 overflow-hidden rounded-full"></div>
                   )}
                 <GoFileDirectory className={`${activeTab === 'documents' ? 'ml-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} />
                 <span className="truncate">My Documents</span>
@@ -310,7 +312,7 @@ export default function Home() {
             <div className="mt-auto space-y-3">
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg text-red-600 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
+                className={`w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg ${theme === 'dark' ? 'text-red-600 hover:bg-red-100 border border-red-500' : 'text-red-600 hover:bg-red-100 border border-red-200'} transition-colors cursor-pointer`}
               >
                 <LogOut className="w-4 h-4 flex-shrink-0" />
                 <span className="truncate">Sign out</span>

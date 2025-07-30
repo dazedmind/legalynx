@@ -229,22 +229,22 @@ export default function SavedChatHistory({
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 h-full flex items-center justify-center">
+      <div className="bg-primary rounded-lg shadow-md p-6 h-full flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading saved chats...</p>
+          <p className="text-muted-foreground">Loading saved chats...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 w-full h-full flex flex-col">
+    <div className="bg-primary p-6 w-full h-full flex flex-col">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold font-serif text-gray-800">Chat History</h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <h2 className="text-2xl font-bold font-serif text-foreground">Chat History</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             {savedSessions.length} conversation{savedSessions.length !== 1 ? 's' : ''} with saved documents
           </p>
         </div>
@@ -253,7 +253,7 @@ export default function SavedChatHistory({
           <button
             onClick={loadSavedSessions}
             disabled={isLoading}
-            className="flex items-center px-3 py-2 text-sm bg-yellow-100/50 text-yellow-700 rounded-md hover:bg-yellow/60 transition-colors disabled:opacity-50 cursor-pointer"
+            className="flex items-center px-3 py-2 text-sm bg-yellow-100/20 text-yellow-500 rounded-md hover:bg-yellow/20 transition-colors disabled:opacity-50 cursor-pointer"
             title="Refresh chat history"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
@@ -276,7 +276,7 @@ export default function SavedChatHistory({
 
       {/* Error State */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
+        <div className="mb-4 p-4 bg-destructive/10 border border-destructive rounded-md text-destructive">
           <div className="flex items-center">
             <AlertCircle className="w-5 h-5 mr-2" />
             <span>{error}</span>
@@ -286,7 +286,7 @@ export default function SavedChatHistory({
 
       {/* Content */}
       {!user || !isAuthenticated ? (
-        <div className="flex-1 flex items-center justify-center text-gray-500">
+        <div className="flex-1 flex items-center justify-center text-muted-foreground">
           <div className="text-center">
             <MessageSquare className="mx-auto w-16 h-16 mb-4 opacity-50" />
             <p className="text-lg font-medium mb-2">Please sign in</p>
@@ -294,12 +294,12 @@ export default function SavedChatHistory({
           </div>
         </div>
       ) : savedSessions.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center text-gray-500">
+        <div className="flex-1 flex items-center justify-center text-muted-foreground">
           <div className="text-center">
             <MessageSquare className="mx-auto w-16 h-16 mb-4 opacity-50" />
             <p className="text-lg font-medium mb-2">No saved chats yet</p>
             <p className="text-sm">Upload and save documents to start chatting</p>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Only conversations with saved documents will appear here
             </p>
           </div>
@@ -313,8 +313,8 @@ export default function SavedChatHistory({
                 key={session.id}
                 className={`p-4 border rounded-lg transition-all duration-200 cursor-pointer hover:shadow-md hover:border-blue-300 ${
                   currentSessionId === session.id
-                    ? 'border-blue-500 bg-blue-50 shadow-sm'
-                    : 'border-gray-200 hover:bg-gray-50'
+                    ? 'border-blue-500 bg-blue/20 hover:bg-blue/30 shadow-sm'
+                    : 'border-tertiary hover:bg-accent'
                 }`}
                 // ✅ Fixed: Direct function call that properly loads the session
                 onClick={() => handleSessionClick(session)}
@@ -322,10 +322,10 @@ export default function SavedChatHistory({
                 {/* Session Header */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 truncate mb-1">
+                    <h3 className="font-semibold text-foreground truncate mb-1">
                       {session.title}
                     </h3>
-                    <div className="flex items-center text-sm text-gray-600 space-x-4">
+                    <div className="flex items-center text-sm text-muted-foreground space-x-4">
                       <div className="flex items-center">
                         <FileText className="w-4 h-4 mr-1" />
                         <span className="truncate">{session.fileName}</span>
@@ -340,14 +340,14 @@ export default function SavedChatHistory({
                         e.stopPropagation();
                         handleSessionClick(session);
                       }}
-                      className="p-2 text-blue-600 hover:bg-blue-100 rounded-full transition-colors cursor-pointer"
+                      className="p-2 text-blue-600 hover:bg-blue/20 rounded-full transition-colors cursor-pointer"
                       title="Open chat session"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(e) => handleDeleteSession(session.id, e)}
-                      className="p-2 text-red-600 hover:bg-red-100 rounded-full transition-colors cursor-pointer"
+                      className="p-2 text-destructive hover:bg-destructive/20 rounded-full transition-colors cursor-pointer"
                       title="Delete chat session"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -358,7 +358,7 @@ export default function SavedChatHistory({
                 {/* Last Message Preview */}
                 {session.lastMessage && (
                   <div className="mb-3">
-                    <p className="text-sm text-gray-600 line-clamp-2">
+                    <p className="text-sm text-muted-foreground line-clamp-2">
                       {session.lastMessage.length > 150 
                         ? `${session.lastMessage.substring(0, 150)}...`
                         : session.lastMessage
@@ -368,14 +368,14 @@ export default function SavedChatHistory({
                 )}
 
                 {/* Session Footer */}
-                <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center space-x-4">
                     {session.document.status === 'INDEXED' ? (
                       <div className="flex items-center">
                         <span className='text-xs text-blue-600 bg-blue-500/10 border border-blue-500 rounded-full px-2 py-1'>Saved Session</span>
                       </div>
                     ) : (
-                      <span className='text-xs text-neutral-800 bg-neutral-500/10 border border-neutral-500 border-dashed rounded-full px-2 py-1'>Temporary Session</span>
+                      <span className='text-xs text-foreground border border-muted-foreground border-dashed rounded-full px-2 py-1'>Temporary Session</span>
                     )}
                     <div className="flex items-center">
                       <Calendar className="w-3 h-3 mr-1" />
@@ -398,8 +398,8 @@ export default function SavedChatHistory({
 
       {/* Footer */}
       {savedSessions.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="flex justify-between items-center text-sm text-gray-600">
+        <div className="mt-4 pt-4 border-t border-tertiary">
+          <div className="flex justify-between items-center text-sm text-muted-foreground">
             <span>
               {savedSessions.length} saved conversation{savedSessions.length !== 1 ? 's' : ''}
             </span>

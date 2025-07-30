@@ -78,25 +78,25 @@ function SubscriptionPage() {
         <div>
             <span className='flex flex-col gap-1 p-6 px-8'>
                 <h1 className='text-3xl font-bold font-serif'>Subscription</h1>
-                <p className='text-sm text-gray-500'>Manage your subscription and preferences.</p>
+                <p className='text-sm text-muted-foreground'>Manage your subscription and preferences.</p>
             </span>        
             
             <section className='space-y-4 mb-8'>
                 {/* Current Subscription Card */}
-                <div className='p-4 rounded-md border flex flex-col gap-2 border-gray-200 mx-8'>
-                    <p className='text-sm text-gray-500'>Your current subscription is</p>
+                <div className='p-4 rounded-md border flex flex-col gap-2 border-tertiary mx-8'>
+                    <p className='text-sm text-muted-foreground'>Your current subscription is</p>
                     <div className='flex items-center justify-between'>
-                        <span className={`w-fit font-bold text-2xl rounded-md p-3 bg-gradient-to-bl ${getSubscriptionColor(subscription)} text-white border border-gray-300 flex items-center gap-2`}>
+                        <span className={`w-fit font-bold text-2xl rounded-md p-3 bg-gradient-to-bl ${getSubscriptionColor(subscription)} text-white border border-tertiary flex items-center gap-2`}>
                             {getSubscriptionIcon(subscription)}
                             {subscription}
                         </span>
                         {subscription !== 'BASIC' && (
                             <div className='text-right'>
-                                <div className='flex items-center gap-1 text-sm text-gray-600'>
+                                <div className='flex items-center gap-1 text-sm text-muted-foreground'>
                                     <Calendar className='w-4 h-4' />
                                     {daysUntilBilling > 0 ? `${daysUntilBilling} days until renewal` : 'Renews today'}
                                 </div>
-                                <div className='text-xs text-gray-500 mt-1'>
+                                <div className='text-xs text-muted-foreground mt-1'>
                                     Next billing: {new Date(billingDate).toLocaleDateString('en-US', { 
                                         year: 'numeric', 
                                         month: 'long', 
@@ -106,7 +106,7 @@ function SubscriptionPage() {
                             </div>
                         )}
                     </div>
-                    <p className='text-sm text-gray-500'>
+                    <p className='text-sm text-muted-foreground'>
                         You are currently on the <span className='font-medium'>{subscription}</span> plan.
                         {subscription === 'BASIC' && (
                             <span className='text-blue-600'> Upgrade to unlock more features!</span>
@@ -115,13 +115,13 @@ function SubscriptionPage() {
                 </div>
 
                 {/* Token Usage Card */}
-                <div className='p-4 rounded-md border flex flex-col gap-3 border-gray-200 mx-8'>
+                <div className='p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-8'>
                     <div className='flex items-center justify-between'>
                         <div className='flex items-center gap-2'>
                             <Zap className='w-5 h-5 text-yellow-500' />
                             <h1 className='text-lg font-bold'>Tokens Used</h1>
                         </div>
-                        <button className='flex items-center gap-1 text-sm text-gray-600 hover:text-gray-800 transition-colors'>
+                        <button className='flex items-center gap-1 text-sm text-muted-foreground hover:text-gray-800 transition-colors'>
                             <RefreshCw className='w-4 h-4' />
                             Refresh
                         </button>
@@ -129,16 +129,16 @@ function SubscriptionPage() {
                     
                     <div className='flex items-center justify-between'>
                         <span className='flex items-baseline gap-2'>
-                            <h1 className='text-3xl font-bold text-gray-900'>
+                            <h1 className='text-3xl font-bold text-foreground'>
                                 {typeof tokensUsed === 'number' ? tokensUsed.toLocaleString() : '--'}
                             </h1>
-                            <span className='text-lg text-gray-500'>/ {typeof tokenLimit === 'number' ? tokenLimit.toLocaleString() : '--'}</span>
+                            <span className='text-lg text-muted-foreground'>/ {typeof tokenLimit === 'number' ? tokenLimit.toLocaleString() : '--'}</span>
                         </span>
                         <div className='text-right'>
-                            <div className='text-sm font-medium text-gray-700'>
+                            <div className='text-sm font-medium text-muted-foreground'>
                                 {tokenPercentage.toFixed(1)}% used
                             </div>
-                            <div className='text-xs text-gray-500'>
+                            <div className='text-xs text-muted-foreground'>
                                 {/* {(tokenLimit - tokensUsed).toLocaleString()} remaining */}
                             </div>
                         </div>
@@ -159,35 +159,35 @@ function SubscriptionPage() {
                 </div>
 
                 {/* Usage Statistics */}
-                <div className='p-4 rounded-md border flex flex-col gap-3 border-gray-200 mx-8'>
+                <div className='p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-8'>
                     <div className='flex items-center gap-2'>
                         <TrendingUp className='w-5 h-5 text-yellow-500' />
                         <h1 className='text-lg font-bold'>Usage Statistics</h1>
                     </div>
                     
                     <div className='grid grid-cols-2 gap-4'>
-                        <div className='text-center p-3 border border-gray-300 rounded'>
+                        <div className='text-center p-3 border border-tertiary rounded'>
                             <div className='text-2xl font-bold text-blue-600'>47</div>
-                            <div className='text-xs text-gray-600'>Documents</div>
+                            <div className='text-xs text-muted-foreground'>Documents</div>
                         </div>
-                        <div className='text-center p-3 border border-gray-300 rounded'>
+                        <div className='text-center p-3 border border-tertiary rounded'>
                             <div className='text-2xl font-bold text-yellow'>127</div>
-                            <div className='text-xs text-gray-600'>Chat Sessions</div>
+                            <div className='text-xs text-muted-foreground'>Chat Sessions</div>
                         </div>
                     </div>
                 </div>
 
                 {/* Billing Information */}
                 {billingDate !== '' && (
-                    <div className='p-4 rounded-md border flex flex-col gap-3 border-gray-200 mx-8'>
+                    <div className='p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-8'>
                         <div className='flex items-center gap-2'>
                             <h1 className='text-lg font-bold'>Billing Information</h1>
-                            <CreditCard className='w-5 h-5 text-gray-600' />
+                            <CreditCard className='w-5 h-5 text-muted-foreground' />
                         </div>
                         
                         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                             <div className='space-y-2'>
-                                <div className='text-sm text-gray-600'>Payment Method</div>
+                                <div className='text-sm text-muted-foreground'>Payment Method</div>
                                 <div className='flex items-center gap-2'>
                                     <div className='w-8 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold'>
                                         VISA
@@ -196,7 +196,7 @@ function SubscriptionPage() {
                                 </div>
                             </div>
                             <div className='space-y-2'>
-                                <div className='text-sm text-gray-600'>Next Billing Date</div>
+                                <div className='text-sm text-muted-foreground'>Next Billing Date</div>
                                 <div className='text-sm font-medium'>
                                     {new Date(billingDate).toLocaleDateString('en-US', { 
                                         year: 'numeric', 
@@ -207,8 +207,8 @@ function SubscriptionPage() {
                             </div>
                         </div>
                         
-                        <div className='flex gap-2 pt-2 border-t border-gray-100'>
-                            <button className='flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors'>
+                        <div className='flex gap-2 pt-2 border-t border-tertiary'>
+                            <button className='flex items-center gap-2 px-3 py-2 text-sm border border-tertiary rounded hover:bg-accent transition-colors'>
                                 <CreditCard className='w-4 h-4' />
                                 Update Payment
                             </button>
@@ -221,26 +221,26 @@ function SubscriptionPage() {
                 )}
 
                 {/* Plan Comparison / Upgrade */}
-                <div className='p-4 rounded-md border flex flex-col gap-3 border-gray-200 mx-8'>
+                <div className='p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-8'>
                     <h1 className='text-lg font-bold'>Available Plans</h1>
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                        <div className={`p-4 border rounded-lg ${subscription === 'BASIC' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
+                        <div className={`p-4 border rounded-lg ${subscription === 'BASIC' ? 'border-blue-500 bg-blue/20' : 'border-tertiary'}`}>
                             <div className='flex items-center gap-2 mb-2'>
-                                <Gift className='w-5 h-5 text-gray-600' />
+                                <Gift className='w-5 h-5 text-muted-foreground' />
                                 <span className='font-medium'>Basic</span>
                                 {subscription === 'BASIC' && (
                                     <span className='text-xs bg-blue-600 text-white px-2 py-1 rounded'>Current</span>
                                 )}
                             </div>
-                            <div className='text-2xl font-bold mb-2'>$0<span className='text-sm text-gray-500'>/month</span></div>
-                            <div className='text-sm text-gray-600 space-y-1'>
+                            <div className='text-2xl font-bold mb-2'>$0<span className='text-sm text-muted-foreground'>/month</span></div>
+                            <div className='text-sm text-muted-foreground space-y-1'>
                                 <div>• 1,000 tokens/month</div>
                                 <div>• Basic features</div>
                                 <div>• Community support</div>
                             </div>
                         </div>
                         
-                        <div className={`p-4 border rounded-lg ${subscription === 'STANDARD' ? 'border-purple-500 bg-purple-50' : 'border-gray-200'}`}>
+                        <div className={`p-4 border rounded-lg ${subscription === 'STANDARD' ? 'border-purple-500 bg-purple-500/20' : 'border-tertiary'}`}>
                             <div className='flex items-center gap-2 mb-2'>
                                 <Zap className='w-5 h-5 text-blue-600' />
                                 <span className='font-medium'>Standard</span>
@@ -248,8 +248,8 @@ function SubscriptionPage() {
                                     <span className='text-xs bg-purple-600 text-white px-2 py-1 rounded'>Current</span>
                                 )}
                             </div>
-                            <div className='text-2xl font-bold mb-2'>₱149<span className='text-sm text-gray-500'>/month</span></div>
-                            <div className='text-sm text-gray-600 space-y-1'>
+                            <div className='text-2xl font-bold mb-2'>₱149<span className='text-sm text-muted-foreground'>/month</span></div>
+                            <div className='text-sm text-muted-foreground space-y-1'>
                                 <div>• 10,000 tokens/month</div>
                                 <div>• Access to Chat History</div>
                                 <div>• Save Chat Sessions</div>
@@ -261,7 +261,7 @@ function SubscriptionPage() {
                             )}
                         </div>
                         
-                        <div className={`p-4 border rounded-lg ${subscription === 'PREMIUM' ? 'border-gray-800 bg-gray-50' : 'border-gray-200'}`}>
+                        <div className={`p-4 border rounded-lg ${subscription === 'PREMIUM' ? 'border-gray-800 bg-gray-500/20' : 'border-tertiary'}`}>
                             <div className='flex items-center gap-2 mb-2'>
                                 <Crown className='w-5 h-5 text-yellow-600' />
                                 <span className='font-medium'>Premium</span>
@@ -269,8 +269,8 @@ function SubscriptionPage() {
                                     <span className='text-xs bg-gray-800 text-white px-2 py-1 rounded'>Current</span>
                                 )}
                             </div>
-                            <div className='text-2xl font-bold mb-2'>₱249<span className='text-sm text-gray-500'>/month</span></div>
-                            <div className='text-sm text-gray-600 space-y-1'>
+                            <div className='text-2xl font-bold mb-2'>₱249<span className='text-sm text-muted-foreground'>/month</span></div>
+                            <div className='text-sm text-muted-foreground space-y-1'>
                                 <div>• Unlimited tokens</div>
                                 <div>• All features</div>
                                 <div>• Dedicated support</div>

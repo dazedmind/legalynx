@@ -24,6 +24,7 @@ import { useAuth } from '@/lib/context/AuthContext';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { GoInfo } from 'react-icons/go';
+import { useTheme } from 'next-themes';
 
 interface DocumentInfo {
   id: string;
@@ -32,7 +33,7 @@ interface DocumentInfo {
   size: number;
   uploadedAt: string;
   pages?: number;
-  status: 'processing' | 'ready' | 'indexed' | 'uploaded' | 'temporary' | 'failed';
+  status: 'PROCESSING' | 'READY' | 'INDEXED' | 'UPLOADED' | 'TEMPORARY' | 'FAILED';
   starred?: boolean;
   lastAccessed?: string;
   tags?: string[];
@@ -142,7 +143,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ isOpen, document, onClose }) => {
   const [zoom, setZoom] = useState(100);
   const [rotation, setRotation] = useState(0);
   const { user } = useAuth();
-
+  const { theme } = useTheme();
   useEffect(() => {
     if (isOpen && document) {
       loadPdfUrl();
@@ -196,7 +197,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ isOpen, document, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/20 flex items-center justify-center">
-      <div className="bg-white rounded-lg w-2xl h-10/11 flex flex-col">
+      <div className="bg-primary rounded-lg w-2xl h-10/11 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
@@ -212,19 +213,19 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ isOpen, document, onClose }) => {
         </div>
 
         {/* PDF Content */}
-        <div className="flex-1 overflow-auto bg-gray-100 p-4">
+        <div className="flex-1 overflow-auto bg-secondary p-4">
           {isLoading && (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading PDF...</p>
+                <p className="text-muted-foreground">Loading PDF...</p>
               </div>
             </div>
           )}
 
           {error && (
             <div className="flex items-center justify-center h-full">
-              <div className="text-center text-red-600">
+              <div className="text-center text-destructive">
                 <AlertCircle className="w-12 h-12 mx-auto mb-4" />
                 <p>{error}</p>
               </div>
@@ -249,8 +250,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ isOpen, document, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t bg-gray-50 rounded-b-lg">
-          <div className="flex justify-between items-center text-sm text-gray-600">
+        <div className="p-4 border-t bg-primary rounded-b-lg">
+          <div className="flex justify-between items-center text-sm text-muted-foreground">
             <div>
               Size: {(document.size / 1024 / 1024).toFixed(2)} MB
               {document.pages && ` • ${document.pages} pages`}
@@ -277,35 +278,35 @@ const FileDetailsModal: React.FC<FileDetailsModalProps> = ({ isOpen, document, o
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-      <div className="bg-white rounded-lg w-full max-w-lg mx-4">
+      <div className="bg-primary rounded-lg w-full max-w-lg mx-4">
         <div className="flex items-center gap-2  p-6 border-b">
           <GoInfo className='w-5 h-5 text-blue-600' />
-          <h3 className="text-xl font-semibold">File Details</h3>
+          <h3 className="text-xl font-semibold text-foreground">File Details</h3>
         </div>
         
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-500">File Name</label>
-              <p className="mt-1 text-sm text-gray-900">{document.originalFileName}</p>
+              <label className="text-sm font-medium text-muted-foreground">File Name</label>
+              <p className="mt-1 text-sm text-foreground">{document.originalFileName}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">File Size</label>
-              <p className="mt-1 text-sm text-gray-900">{(document.size / 1024 / 1024).toFixed(2)} MB</p>
+              <label className="text-sm font-medium text-muted-foreground">File Size</label>
+              <p className="mt-1 text-sm text-foreground">{(document.size / 1024 / 1024).toFixed(2)} MB</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">Upload Date</label>
-              <p className="mt-1 text-sm text-gray-900">
+              <label className="text-sm font-medium text-muted-foreground">Upload Date</label>
+              <p className="mt-1 text-sm text-foreground">
                 {new Date(document.uploadedAt).toLocaleString()}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">Status</label>
+              <label className="text-sm font-medium text-muted-foreground">Status</label>
               <p className="mt-1 text-sm">
                 <span className={`px-2 py-1 rounded-full text-xs ${
-                  document.status === 'indexed' ? 'bg-green-100 text-green-800' :
-                  document.status === 'ready' ? 'bg-blue-100 text-blue-800' :
-                  'bg-gray-100 text-gray-800'
+                  document.status === 'INDEXED' ? 'bg-green-700/20 text-green-500' :
+                  document.status === 'READY' ? 'bg-blue-700/20 text-blue-600' :
+                  'bg-gray-700/20 text-gray-600'
                 }`}>
                   {document.status}
                 </span>
@@ -313,34 +314,34 @@ const FileDetailsModal: React.FC<FileDetailsModalProps> = ({ isOpen, document, o
             </div>
             {document.pages && (
               <div>
-                <label className="text-sm font-medium text-gray-500">Pages</label>
-                <p className="mt-1 text-sm text-gray-900">{document.pages}</p>
+                <label className="text-sm font-medium text-muted-foreground">Pages</label>
+                <p className="mt-1 text-sm text-foreground">{document.pages}</p>
               </div>
             )}
             {document.chatSessionsCount !== undefined && (
               <div>
-                <label className="text-sm font-medium text-gray-500">Chat Sessions</label>
-                <p className="mt-1 text-sm text-gray-900">{document.chatSessionsCount}</p>
+                <label className="text-sm font-medium text-muted-foreground">Chat Sessions</label>
+                <p className="mt-1 text-sm text-foreground">{document.chatSessionsCount}</p>
               </div>
             )}
           </div>
           
           <div>
-            <label className="text-sm font-medium text-gray-500">File ID</label>
-            <p className="mt-1 text-sm text-gray-900 font-mono">{document.id}</p>
+            <label className="text-sm font-medium text-muted-foreground">File ID</label>
+            <p className="mt-1 text-sm text-foreground font-mono">{document.id}</p>
           </div>
           
           {document.lastAccessed && (
             <div>
-              <label className="text-sm font-medium text-gray-500">Last Accessed</label>
-              <p className="mt-1 text-sm text-gray-900">
+              <label className="text-sm font-medium text-muted-foreground">Last Accessed</label>
+              <p className="mt-1 text-sm text-foreground">
                 {new Date(document.lastAccessed).toLocaleString()}
               </p>
             </div>
           )}
         </div>
         
-        <div className="p-4 border-t rounded-lg bg-gray-50 flex justify-end">
+        <div className="p-4 border-t rounded-lg bg-tertiary flex justify-end">
           <Button onClick={onClose} className='cursor-pointer'>Close</Button>
         </div>
       </div>
@@ -356,7 +357,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string>('');
   const [isClient, setIsClient] = useState(false);
-  
+  const { theme } = useTheme();
   // UI State
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('uploadedAt');
@@ -424,8 +425,8 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
         if (data && data.documents) {
           const formattedDocs: DocumentInfo[] = data.documents
             .filter(doc => {
-              const validStatuses = ['indexed', 'ready', 'processed'];
-              const isValid = validStatuses.includes(doc.status?.toLowerCase() || '');
+              const validStatuses = ['INDEXED', 'READY', 'PROCESSED'];
+              const isValid = validStatuses.includes(doc.status?.toUpperCase() || '');
               console.log(`Document ${doc.originalFileName}: status=${doc.status}, valid=${isValid}`);
               return isValid;
             })
@@ -436,7 +437,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
               size: doc.fileSize,
               uploadedAt: doc.uploadedAt,
               pages: doc.pageCount,
-              status: doc.status?.toLowerCase() === 'indexed' ? 'indexed' : 'ready',
+              status: doc.status?.toUpperCase() === 'INDEXED' ? 'INDEXED' : 'READY',
               chatSessionsCount: doc.chatSessionsCount,
               mimeType: doc.mimeType,
               starred: false,
@@ -460,7 +461,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
             console.log('LocalStorage docs:', docs);
             
             const readyDocs = docs.filter((doc: any) => {
-              const validStatuses = ['ready', 'indexed'];
+              const validStatuses = ['READY', 'INDEXED'];
               return validStatuses.includes(doc.status);
             });
             
@@ -696,29 +697,29 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
 
   if (!isClient || isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 h-full flex items-center justify-center">
+      <div className="bg-primary rounded-lg shadow-md p-6 h-full flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading documents...</p>
+          <p className="text-muted-foreground">Loading documents...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white shadow-md p-6 h-full flex flex-col">
+    <div className="bg-primary shadow-md p-6 h-full flex flex-col">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold font-serif text-gray-800">My Documents</h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <h2 className="text-2xl font-bold font-serif text-foreground">My Documents</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             {filteredDocuments.length} of {documents.length} documents
             {selectedDocs.size > 0 && ` • ${selectedDocs.size} selected`}
           </p>
         </div>
         <div className="flex items-center space-x-2">
  
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-muted-foreground">
             <HardDrive className="w-4 h-4 mr-1" />
             {formatFileSize(documents.reduce((total, doc) => total + doc.size, 0))}
           </div>
@@ -726,15 +727,15 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+      <div className="flex flex-col sm:flex-row gap-4 mb-2 p-4 bg-tertiary rounded-lg">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
           <input
             type="text"
             placeholder="Search documents..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2 border border-tertiary rounded-md bg-primary text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
           />
         </div>
 
@@ -744,7 +745,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
             className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer ${
               showStarredOnly 
                 ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' 
-                : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+                : 'border border-tertiary text-foreground hover:bg-accent'
             }`}
           >
             <Star className={`w-4 h-4 ${showStarredOnly ? 'fill-current' : ''}`} />
@@ -753,7 +754,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
 
           <DropdownMenu>
             <DropdownMenuTrigger>
-              <span className="flex items-center gap-1 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer border border-gray-300 text-gray-600 hover:bg-gray-50">
+              <span className="flex items-center gap-1 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer border border-tertiary text-foreground hover:bg-accent">
                 <Filter className="w-4 h-4" />
                 Sort
               </span>
@@ -766,13 +767,13 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="flex border border-gray-300 rounded-md overflow-hidden">
+          <div className="flex border border-tertiary rounded-md overflow-hidden">
             <button
               onClick={() => setViewMode('list')}
               className={`p-2 cursor-pointer transition-colors ${
                 viewMode === 'list' 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : ' text-gray-600 hover:bg-gray-50'
+                  ? 'bg-blue/20 text-blue-700' 
+                  : ' text-muted-foreground hover:bg-accent'
               }`}
             >
               <List className="w-4 h-4" />
@@ -781,8 +782,8 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
               onClick={() => setViewMode('grid')}
               className={`p-2 cursor-pointer transition-colors ${
                 viewMode === 'grid' 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : ' text-gray-600 hover:bg-gray-50'
+                  ? 'bg-blue/20 text-blue-700' 
+                  : ' text-muted-foreground hover:bg-accent'
               }`}
             >
               <Grid className="w-4 h-4" />
@@ -792,7 +793,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
+        <div className="mb-4 p-4 bg-destructive/10 border border-destructive rounded-md text-destructive">
           <AlertCircle className="w-5 h-5 inline mr-2" />
           {error}
         </div>
@@ -800,7 +801,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
 
       {/* Content */}
       {filteredDocuments.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center text-gray-500">
+        <div className="flex-1 flex items-center justify-center text-muted-foreground">
           <div className="text-center">
             {documents.length === 0 ? (
               <>
@@ -822,7 +823,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
           {viewMode === 'list' ? (
             <>
               {/* List Header */}
-              <div className="grid grid-cols-12 gap-4 p-3 bg-gray-50 rounded-lg text-sm font-medium text-gray-600 mb-4">
+              <div className="grid grid-cols-12 gap-4 p-3 bg-primary rounded-lg text-sm font-medium text-muted-foreground mb-4">
                 <div className="col-span-1 flex items-center">
                   <input
                     type="checkbox"
@@ -843,12 +844,12 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
                 {filteredDocuments.map((doc) => (
                   <div
                     key={doc.id}
-                    className={`grid grid-cols-12 gap-4 p-4 border rounded-lg transition-colors cursor-pointer hover:bg-gray-50 ${
+                    className={`grid grid-cols-12 gap-4 p-4 border rounded-lg transition-colors cursor-pointer hover:bg-accent ${
                       selectedDocs.has(doc.id)
-                        ? 'border-blue-500 bg-blue-50'
+                        ? 'border-blue-500 bg-blue/20 hover:bg-blue/30'
                         : currentDocumentId === doc.id
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-200'
+                        ? 'border-blue-500 bg-blue/50'
+                        : 'border-tertiary'
                     }`}
                     onClick={() => handleDocumentClick(doc)}
                     onContextMenu={(e) => handleRightClick(e, doc)}
@@ -880,8 +881,8 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
                         <FileText className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{doc.fileName}</p>
-                        <div className="flex items-center space-x-2 text-xs text-gray-500">
+                        <p className="font-medium text-foreground truncate">{doc.fileName}</p>
+                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                           {doc.lastAccessed && (
                             <span className="flex items-center">
                               <Clock className="w-3 h-3 mr-1" />
@@ -893,19 +894,19 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
                     </div>
 
                     {/* Size */}
-                    <div className="col-span-2 flex items-center text-sm text-gray-600">
+                    <div className="col-span-2 flex items-center text-sm text-muted-foreground">
                       <File className="w-4 h-4 mr-1" />
                       {formatFileSize(doc.size)}
                     </div>
 
                     {/* Upload Date */}
-                    <div className="col-span-3 flex items-center text-sm text-gray-600">
+                    <div className="col-span-3 flex items-center text-sm text-muted-foreground">
                       <Calendar className="w-4 h-4 mr-1" />
                       {formatDate(doc.uploadedAt)}
                     </div>
 
                     {/* Pages */}
-                    <div className="col-span-1 flex items-center text-sm text-gray-600">
+                    <div className="col-span-1 flex items-center text-sm text-muted-foreground">
                       {doc.pages || 'N/A'}
                     </div>
 
@@ -913,7 +914,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
                     <div className="col-span-1 flex items-center space-x-1">
                       <button
                         onClick={(e) => handleDeleteDocument(doc.id, e)}
-                        className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                        className="p-1 text-destructive hover:text-destructive hover:bg-destructive/20 rounded transition-colors cursor-pointer"
                         title="Delete document"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -932,7 +933,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
                     key={doc.id}
                     className={`border rounded-lg p-5 transition-all cursor-pointer hover:shadow-md ${
                       selectedDocs.has(doc.id)
-                        ? 'border-blue-500 bg-blue-50'
+                        ? 'border-blue-500 bg-blue/20 hover:bg-blue/30'
                         : currentDocumentId === doc.id
                     }`}
                     onClick={() => handleDocumentClick(doc)}
@@ -966,7 +967,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button 
-                              className="rounded-full p-1 hover:bg-gray-200 cursor-pointer transition-colors duration-200"
+                              className="rounded-full p-1 hover:bg-accent cursor-pointer transition-colors duration-200"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <MoreHorizontal className="w-4 h-4" />
@@ -1035,10 +1036,10 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
 
                     {/* File Info */}
                     <div className="text-center">
-                      <h3 className="font-medium text-gray-900 truncate mb-1" title={doc.fileName}>
+                      <h3 className="font-medium text-foreground truncate mb-1" title={doc.fileName}>
                         {doc.fileName}
                       </h3>
-                      <div className="space-y-1 text-xs text-gray-500">
+                      <div className="space-y-1 text-xs text-muted-foreground">
                         {/* <p>{formatFileSize(doc.size)} • {doc.pages || 'N/A'} pages</p> */}
                         <p>{formatDate(doc.uploadedAt)}</p>
                         {doc.chatSessionsCount !== undefined && doc.chatSessionsCount > 0 && (
@@ -1058,8 +1059,8 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
       )}
 
       {/* Footer */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="flex justify-between items-center text-sm text-gray-600">
+      <div className="mt-4 pt-4 border-t border-tertiary">
+        <div className="flex justify-between items-center text-sm text-muted-foreground">
           <span>
             Total: {documents.length} documents • {formatFileSize(documents.reduce((total, doc) => total + doc.size, 0))}
           </span>
@@ -1075,7 +1076,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
                     selectedDocuments.forEach(doc => handleDeleteDocument(doc.id));
                   }
                 }}
-                className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
+                className="px-3 py-1 bg-destructive text-white rounded text-xs hover:bg-destructive/80 transition-colors"
               >
                 Delete Selected
               </button>
