@@ -60,8 +60,7 @@ export default function Home() {
               />
               
               <h2 className="text-1xl lg:text-2xl text-gray-600 mb-4 font-light">
-                Linking you to{' '}
-                <span className="text-blue font-semibold">legal clarity</span>
+                Linking you to legal clarity
               </h2>
               
           
@@ -277,14 +276,14 @@ export default function Home() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href="/frontend/pricing">
-              <Button className="px-10 py-6 text-lg  w-fit font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer">
+            <Link href="/frontend/register">
+              <button className="px-10 py-4 text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer">
                 Start Free Trial
-              </Button>
+              </button>
             </Link>
-            <Button variant="outline" className="px-10 py-6 text-lg w-fit font-semibold border-2 border-white text-white hover:bg-white hover:text-gray-900 transition-all duration-300 cursor-pointer">
+            <button className="px-10 py-4 text-lg font-semibold border-2 border-tertiary text-primary rounded-xl transition-all duration-300 cursor-pointer">
               Contact Sales
-            </Button>
+            </button>
           </div>
           
           <p className="text-gray-400 mt-6 text-sm">
