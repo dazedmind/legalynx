@@ -138,22 +138,42 @@ export default function FileSettings() {
 
   const loadStorageInfo = async () => {
     try {
+      console.log('🔄 Loading storage info...');
+      
       const response = await fetch("/backend/api/user-settings/storage", {
         method: "GET",
         headers: getAuthHeaders(),
       });
-
+  
       if (response.ok) {
         const data = await response.json();
+        console.log('📊 Storage response:', data);
+        
+        // ✅ Use the correct fields based on plan
+        const unit = data.storage_unit || 'MB';
+        
         setStorageInfo({
-          used: data.used_gb || 0,
-          total: data.total_gb || 10,
-          available: data.available_gb || 10,
+          used: unit === 'MB' ? data.used_mb || 0 : data.used_gb || 0,
+          total: unit === 'MB' ? data.total_mb || 50 : data.total_gb || 1,
+          available: unit === 'MB' ? data.available_mb || 50 : data.available_gb || 1,
         });
+        
+        console.log('💾 Storage info set:', {
+          used: unit === 'MB' ? data.used_mb : data.used_gb,
+          total: unit === 'MB' ? data.total_mb : data.total_gb,
+          unit
+        });
+      } else {
+        console.error('❌ Storage API error:', response.status);
       }
     } catch (error) {
       console.error("Failed to load storage info:", error);
       // Use default values on error
+      setStorageInfo({
+        used: 0,
+        total: subscription === "BASIC" ? 50 : 1000,
+        available: subscription === "BASIC" ? 50 : 1000,
+      });
     }
   };
 
@@ -381,11 +401,14 @@ export default function FileSettings() {
       </section>
 
       {/* Storage Usage */}
-        <section className="mx-8 p-6 mb-8 rounded-lg border border-tertiary bg-primary">
+      <section className="mx-8 p-6 mb-8 rounded-lg border border-tertiary bg-primary">
         <div className="flex items-center gap-3 mb-4">
           <GoCloud className="w-6 h-6 text-yellow-500" strokeWidth={1} />
           <div>
             <h2 className="text-xl font-semibold">Storage Usage</h2>
+            <p className="text-sm text-muted-foreground">
+              {subscription === "BASIC" ? "50MB limit" : subscription === "STANDARD" ? "1GB limit" : "10GB limit"}
+            </p>
           </div>
         </div>
 
@@ -393,34 +416,40 @@ export default function FileSettings() {
         <Separator className="my-4"/>
 
         <div className="grid grid-cols-2 gap-4 text-center">
-            <div className="p-3 bg-yellow/20 rounded">
-              <div className="text-lg font-bold text-yellow">
-                {storageInfo.used.toFixed(1)}{" "}
-                {subscription == "BASIC" ? "MB" : "GB"}
-              </div>
-              <div className="text-xs text-muted-foreground">Used</div>
+          <div className="p-3 bg-yellow/20 rounded">
+            <div className="text-lg font-bold text-yellow">
+              {storageInfo.used.toFixed(1)} {subscription === "BASIC" ? "MB" : "GB"}
             </div>
-            <div className="p-3 bg-blue/20 rounded">
-              <div className="text-lg font-bold text-blue">
-                {storageInfo.available.toFixed(1)}{" "}
-                {subscription == "BASIC" ? "MB" : "GB"}
-              </div>
-              <div className="text-xs text-muted-foreground">Available</div>
+            <div className="text-xs text-muted-foreground">Used</div>
+          </div>
+          <div className="p-3 bg-blue/20 rounded">
+            <div className="text-lg font-bold text-blue">
+              {storageInfo.available.toFixed(1)} {subscription === "BASIC" ? "MB" : "GB"}
             </div>
+            <div className="text-xs text-muted-foreground">Available</div>
+          </div>
         </div>
 
         <div className="mt-6 space-y-2">
           <span className="flex items-center gap-2">
-                <HardDrive className="w-8 h-8" />
-                <h1 className="text-xl font-bold">
-                  {storageInfo.used.toFixed(1)} {subscription == "BASIC" ? "MB" : "GB"} / {storageInfo.total} {subscription == "BASIC" ? "MB" : "GB"}
-                </h1>
-                <p className="text-sm text-muted-foreground">used ({storagePercentage.toFixed(1)}%)</p>
+            <HardDrive className="w-8 h-8" />
+            <h1 className="text-xl font-bold">
+              {storageInfo.used.toFixed(1)} {subscription === "BASIC" ? "MB" : "GB"} / {storageInfo.total} {subscription === "BASIC" ? "MB" : "GB"}
+            </h1>
+            <p className="text-sm text-muted-foreground">used ({storagePercentage.toFixed(1)}%)</p>
           </span>
           <Progress value={storagePercentage} />
 
-          {storagePercentage >= 80 && (
-            <div className="flex items-center gap-2 p-3 bg-amber/20 border border-amber-200 rounded text-amber-800 text-sm">
+          {/* ✅ Show helpful messages based on actual usage */}
+          {storageInfo.used === 0 && (
+            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded text-blue-800 text-sm">
+              <AlertCircle className="w-4 h-4" />
+              No documents uploaded yet. Upload a document to see your storage usage.
+            </div>
+          )}
+
+          {storagePercentage >= 80 && storageInfo.used > 0 && (
+            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded text-amber-800 text-sm">
               <AlertCircle className="w-4 h-4" />
               {storagePercentage >= 90
                 ? "Storage is almost full. Consider upgrading or deleting unused files."

@@ -1,4 +1,4 @@
-// src/app/backend/api/user-settings/storage/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
@@ -27,12 +27,14 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getUserFromToken(request);
 
+    console.log('🔍 Getting storage for user:', user.id);
+
     // Calculate total storage used by user's documents
     const storageStats = await prisma.document.aggregate({
       where: {
         owner_id: user.id,
         status: {
-          in: ['INDEXED', 'PROCESSED'] // Only count saved documents
+          in: ['INDEXED', 'PROCESSED', 'TEMPORARY'] // ✅ Include TEMPORARY for testing
         },
       },
       _sum: {
@@ -43,33 +45,85 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const userSubsciprtion = await prisma.subscription.findUnique({
+    // Get all documents for debugging
+    const allDocuments = await prisma.document.findMany({
+      where: { owner_id: user.id },
+      select: {
+        id: true,
+        original_file_name: true,
+        file_size: true,
+        status: true,
+        uploaded_at: true
+      }
+    });
+
+    console.log('📊 Found documents:', allDocuments.length);
+    console.log('📄 Documents:', allDocuments.map(d => ({
+      name: d.original_file_name,
+      size_mb: (d.file_size / (1024 * 1024)).toFixed(2),
+      status: d.status
+    })));
+
+    const userSubscription = await prisma.subscription.findUnique({
       where: {
         user_id: user.id
       }
     });
 
-    // Calculate used storage in GB
-    const usedBytes = storageStats._sum.file_size || 0;
-    const usedGB = usedBytes / (1024 * 1024 * 1024); // Convert bytes to GB
+    console.log('📋 User subscription:', userSubscription?.plan_type);
 
-    // Get user's storage limit based on subscription
-    let totalGB = 10; // Default for BASIC
-    switch (userSubsciprtion?.plan_type) {
+    // Calculate used storage
+    const usedBytes = storageStats._sum.file_size || 0;
+    console.log('💾 Total used bytes:', usedBytes, 'MB:', (usedBytes / (1024 * 1024)).toFixed(2));
+
+    // ✅ FIXED: Correct storage limits based on plan
+    let totalBytes = 50 * 1024 * 1024; // Default 50MB for BASIC
+    let totalGB = 0.05; // 50MB as GB
+    let unit = 'MB';
+
+    switch (userSubscription?.plan_type) {
       case 'BASIC':
-        totalGB = 500;
+        totalBytes = 50 * 1024 * 1024; // 50MB
+        totalGB = 0.05;
+        unit = 'MB';
         break;
       case 'STANDARD':
+        totalBytes = 1024 * 1024 * 1024; // 1GB  
         totalGB = 1;
+        unit = 'GB';
         break;
       case 'PREMIUM':
+        totalBytes = 10 * 1024 * 1024 * 1024; // 10GB
         totalGB = 10;
+        unit = 'GB';
         break;
       default:
-        totalGB = 10;
+        totalBytes = 50 * 1024 * 1024; // 50MB
+        totalGB = 0.05;
+        unit = 'MB';
     }
 
-    const availableGB = Math.max(0, totalGB - usedGB);
+    // Calculate in appropriate units
+    let usedInUnit, totalInUnit;
+    if (unit === 'MB') {
+      usedInUnit = usedBytes / (1024 * 1024); // Convert to MB
+      totalInUnit = totalBytes / (1024 * 1024); // Convert to MB
+    } else {
+      usedInUnit = usedBytes / (1024 * 1024 * 1024); // Convert to GB
+      totalInUnit = totalGB; // Already in GB
+    }
+
+    const availableInUnit = Math.max(0, totalInUnit - usedInUnit);
+    const usagePercentage = totalInUnit > 0 ? (usedInUnit / totalInUnit) * 100 : 0;
+
+    console.log('📈 Storage calculation:', {
+      usedBytes,
+      totalBytes,
+      usedInUnit: usedInUnit.toFixed(3),
+      totalInUnit,
+      unit,
+      percentage: usagePercentage.toFixed(1)
+    });
 
     // Get document breakdown
     const documentStats = await prisma.document.groupBy({
@@ -77,7 +131,7 @@ export async function GET(request: NextRequest) {
       where: {
         owner_id: user.id,
         status: {
-          in: ['INDEXED', 'PROCESSED']
+          in: ['INDEXED', 'PROCESSED', 'TEMPORARY']
         }
       },
       _sum: {
@@ -92,7 +146,7 @@ export async function GET(request: NextRequest) {
     const documentBreakdown = documentStats.map(stat => ({
       file_type: stat.mime_type,
       count: stat._count.id,
-      size_gb: (stat._sum.file_size || 0) / (1024 * 1024 * 1024),
+      size_mb: (stat._sum.file_size || 0) / (1024 * 1024),
       size_bytes: stat._sum.file_size || 0
     }));
 
@@ -101,7 +155,7 @@ export async function GET(request: NextRequest) {
       where: {
         owner_id: user.id,
         status: {
-          in: ['INDEXED', 'PROCESSED']
+          in: ['INDEXED', 'PROCESSED', 'TEMPORARY']
         }
       },
       select: {
@@ -126,16 +180,33 @@ export async function GET(request: NextRequest) {
       file_type: file.mime_type
     }));
 
-    return NextResponse.json({
-      used_gb: parseFloat(usedGB.toFixed(3)),
+    const response = {
+      // ✅ Return values in the unit appropriate for the plan
+      used_gb: unit === 'MB' ? usedInUnit / 1024 : usedInUnit, // Always GB for compatibility
+      used_mb: usedInUnit, // In plan's unit
       total_gb: totalGB,
-      available_gb: parseFloat(availableGB.toFixed(3)),
-      usage_percentage: parseFloat(((usedGB / totalGB) * 100).toFixed(1)),
+      total_mb: totalInUnit, // In plan's unit
+      available_gb: unit === 'MB' ? availableInUnit / 1024 : availableInUnit,
+      available_mb: availableInUnit, // In plan's unit
+      usage_percentage: parseFloat(usagePercentage.toFixed(1)),
       total_documents: storageStats._count.id,
       document_breakdown: documentBreakdown,
       largest_files: formattedLargeFiles,
-      last_calculated: new Date().toISOString()
-    });
+      plan_type: userSubscription?.plan_type || 'BASIC',
+      storage_unit: unit,
+      last_calculated: new Date().toISOString(),
+      
+      // Debug info
+      debug: {
+        total_docs_found: allDocuments.length,
+        used_bytes: usedBytes,
+        total_bytes: totalBytes
+      }
+    };
+
+    console.log('📤 Sending response:', response);
+
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error('Get storage info error:', error);

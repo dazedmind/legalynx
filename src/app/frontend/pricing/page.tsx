@@ -5,8 +5,10 @@ import Header from '../components/Header';
 import { Check, Star, Zap, Shield, Users, MessageSquare, FileText, Clock, Headphones, Crown, Sparkles } from 'lucide-react';
 import BlurText from '../components/reactbits/BlurText';
 import Link from 'next/link';
+import { useTheme } from 'next-themes';
 
 function EnhancedPricing() {
+    const { theme } = useTheme();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   
   const plans = [

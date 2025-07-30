@@ -9,9 +9,11 @@ import BlurText from './frontend/components/reactbits/BlurText';
 import Image from 'next/image';
 import heroImg from './frontend/img/document-hero.png'
 import Link from 'next/link';
+import { useTheme } from 'next-themes';
 
 export default function Home() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const { theme } = useTheme();
   
   const testimonials = [
     {
@@ -56,7 +58,7 @@ export default function Home() {
    
               <BlurText 
                 text="LegalynX" 
-                className="text-5xl lg:text-7xl font-bold font-serif  mb-2" 
+                className="text-5xl lg:text-7xl font-bold text-foreground font-serif  mb-2" 
               />
               
               <h2 className="text-1xl lg:text-2xl text-gray-600 mb-4 font-light">

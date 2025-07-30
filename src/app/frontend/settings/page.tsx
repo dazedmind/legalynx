@@ -113,9 +113,9 @@ function SettingsContent() {
                 <button
                   key={item.id}
                   onClick={() => handleTabClick(item.id as ActiveTab)}
-                  className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-r-lg transition-colors ${
+                  className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
                     activeTab === item.id
-                      ? 'bg-blue/20 text-blue-700 font-semibold'
+                      ? 'bg-blue/20 text-blue-700 font-semibold rounded-r-lg '
                       : 'text-foreground hover:bg-accent'
                   }`}
                 >

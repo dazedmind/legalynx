@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { TokenTracker, estimateTokens } from '@/lib/token-tracker';
 
 // Helper function to get user from token
 async function getUserFromToken(request: NextRequest) {
@@ -35,11 +36,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     console.log('Adding message to session:', sessionId, 'Role:', role);
 
+    // ===== ADD TOKEN CHECK HERE =====
+    if (role.toUpperCase() === 'USER') {
+      // Estimate tokens for user input
+      const estimatedTokens = estimateTokens(content);
+      
+      // Check if user has enough tokens
+      const canUse = await TokenTracker.canUseTokens(user.id, estimatedTokens);
+      if (!canUse) {
+        return NextResponse.json({ 
+          error: 'Token limit exceeded. Please upgrade your plan or wait for monthly reset.' 
+        }, { status: 429 });
+      }
+    }
+
     // Verify session belongs to user
     const session = await prisma.chatSession.findFirst({
       where: {
         id: sessionId,
-        user_id: user.id // ✅ Correct field name
+        user_id: user.id
       }
     });
 
@@ -59,19 +74,29 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Create message with correct field names
     const message = await prisma.chatMessage.create({
       data: {
-        session_id: sessionId,        // ✅ Correct field name
-        role: validRole,              // ✅ Must be MessageRole enum
+        session_id: sessionId,
+        role: validRole,
         content,
-        source_nodes: sourceNodes || null,  // ✅ Correct field name
-        tokens_used: tokensUsed || null     // ✅ Correct field name
+        source_nodes: sourceNodes || null,
+        tokens_used: tokensUsed || null
       }
     });
+
+    // ===== ADD TOKEN RECORDING HERE =====
+    if (tokensUsed && tokensUsed > 0) {
+      // Record actual token usage
+      await TokenTracker.useTokens(user.id, tokensUsed, "chat");
+    } else if (validRole === 'USER') {
+      // If no tokensUsed provided, estimate and record
+      const estimatedTokens = estimateTokens(content);
+      await TokenTracker.useTokens(user.id, estimatedTokens, "chat");
+    }
 
     // Update session's updatedAt
     await prisma.chatSession.update({
       where: { id: sessionId },
       data: { 
-        updated_at: new Date()  // ✅ Correct field name
+        updated_at: new Date()
       }
     });
 
@@ -81,9 +106,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       messageId: message.id,
       content: message.content,
       role: message.role,
-      createdAt: message.created_at,    // ✅ Correct field name
-      sourceNodes: message.source_nodes, // ✅ Correct field name
-      tokensUsed: message.tokens_used    // ✅ Correct field name
+      createdAt: message.created_at,
+      sourceNodes: message.source_nodes,
+      tokensUsed: message.tokens_used
     });
 
   } catch (error) {

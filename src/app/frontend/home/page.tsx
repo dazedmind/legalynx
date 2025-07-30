@@ -282,7 +282,7 @@ export default function Home() {
                 className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
                   activeTab === 'chat_history'
                     ? 'bg-blue/20 text-blue-700 font-semibold rounded-r-lg'
-                    : ' text-foreground hover:bg-blue/20'
+                    : ' text-foreground hover:bg-accent'
                 }`}
               >
                   {activeTab === 'chat_history' && (
@@ -297,7 +297,7 @@ export default function Home() {
                 className={`w-full relative cursor-pointer flex  items-center gap-3 text-left p-3 rounded-lg transition-colors ${
                   activeTab === 'documents'
                     ? 'bg-blue/20 text-blue-700 font-semibold rounded-r-lg'
-                    : 'text-foreground hover:bg-blue/20'
+                    : 'text-foreground hover:bg-accent'
                 }`}
               >
                 {activeTab === 'documents' && (

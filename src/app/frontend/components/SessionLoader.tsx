@@ -122,7 +122,7 @@ export default function SessionLoader({
         </div>
 
         {/* Helpful tip */}
-        <div className="mt-8 p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="mt-8 p-3 bg-blue-500/10 rounded-lg border border-blue-700">
           <p className="text-xs text-blue-500">
             💡 Large documents may take a few moments to process
           </p>

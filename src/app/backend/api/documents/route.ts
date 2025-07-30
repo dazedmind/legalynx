@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import { S3Service } from '@/lib/s3';
+import { StorageTracker } from '@/lib/storage-tracker';
+
 
 // Helper function to get user from token
 async function getUserFromToken(request: NextRequest) {
@@ -94,12 +96,10 @@ export async function DELETE(request: NextRequest) {
     const documentId = searchParams.get('id');
 
     if (!documentId) {
-      return NextResponse.json({ error: 'Document ID required' }, { status: 400 });
+      return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
     }
 
-    console.log(`🗑️ Deleting document ${documentId} for user ${user.id}`);
-
-    // Verify document belongs to user and get all details
+    // Find the document first to get its info
     const document = await prisma.document.findFirst({
       where: {
         id: documentId,
@@ -156,8 +156,11 @@ export async function DELETE(request: NextRequest) {
       where: { id: documentId }
     });
 
+    await StorageTracker.updateStorageUsage(user.id);
+
     console.log(`✅ Document deleted from database: ${documentId}`);
 
+    
     // Log security event
     await prisma.securityLog.create({
       data: {

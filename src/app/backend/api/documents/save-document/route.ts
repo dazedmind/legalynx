@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import { S3Service } from '@/lib/s3';
 import fs from 'fs';
+import { StorageTracker } from '@/lib/storage-tracker';
 
 // Helper function to get user from token
 async function getUserFromToken(request: NextRequest) {
@@ -192,6 +193,8 @@ export async function POST(request: NextRequest) {
 
         // Upload to S3 and update status to INDEXED
         const savedDocument = await saveDocumentToS3(document);
+
+        await StorageTracker.updateStorageUsage(user.id);
 
         // Log security event (optional - only if securityLog table exists)
         try {

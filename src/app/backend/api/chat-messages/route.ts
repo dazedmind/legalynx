@@ -1,6 +1,7 @@
 // src/app/backend/api/chat-messages/route.ts - FIXED VERSION
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { TokenTracker, estimateTokens } from '@/lib/token-tracker';
 
 // GET /backend/api/chat-messages?sessionId=xxx
 export async function GET(request: Request) {
@@ -54,33 +55,54 @@ export async function POST(request: Request) {
       );
     }
 
-    // ✅ FIX: Check if session exists first
-    const sessionExists = await prisma.chatSession.findUnique({
-      where: { id: sessionId }
+    // ===== ADD TOKEN TRACKING HERE =====
+    // Note: This endpoint doesn't have user auth, so we need to get user from session
+    const session = await prisma.chatSession.findUnique({
+      where: { id: sessionId },
+      include: { user: true }
     });
 
-    if (!sessionExists) {
+    if (!session) {
       return NextResponse.json(
         { error: 'Chat session not found' },
         { status: 404 }
       );
     }
 
+    // Check tokens if it's a user message
+    if (validRole === 'USER') {
+      const estimatedTokens = estimateTokens(content);
+      const canUse = await TokenTracker.canUseTokens(session.user_id, estimatedTokens);
+      if (!canUse) {
+        return NextResponse.json({ 
+          error: 'Token limit exceeded' 
+        }, { status: 429 });
+      }
+    }
+
     const message = await prisma.chatMessage.create({
       data: {
         id,
-        session_id: sessionId,           // ✅ Correct field name
-        role: validRole,                 // ✅ Valid enum value
+        session_id: sessionId,
+        role: validRole,
         content,
-        created_at: timestamp ? new Date(timestamp) : new Date(), // ✅ Correct field name
-        tokens_used: tokens_used || null // ✅ Correct field name
+        created_at: timestamp ? new Date(timestamp) : new Date(),
+        tokens_used: tokens_used || null
       }
     });
+
+    // ===== RECORD TOKEN USAGE =====
+    if (tokens_used && tokens_used > 0) {
+      await TokenTracker.useTokens(session.user_id, tokens_used, "chat");
+    } else if (validRole === 'USER') {
+      const estimatedTokens = estimateTokens(content);
+      await TokenTracker.useTokens(session.user_id, estimatedTokens, "chat");
+    }
 
     // Update session's updatedAt timestamp
     await prisma.chatSession.update({
       where: { id: sessionId },
-      data: { updated_at: new Date() }   // ✅ Correct field name
+      data: { updated_at: new Date() }
     });
 
     console.log('Message created successfully:', message.id);

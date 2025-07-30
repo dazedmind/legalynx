@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import { StorageTracker } from '@/lib/storage-tracker';
 
 // Just add this helper function to communicate with your FastAPI backend
 async function processWithRAGBackend(file: File, userToken: string) {
@@ -114,8 +115,6 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    
-    // ✅ NEW: Check if intelligent filename was provided by frontend
     const intelligentFilename = formData.get('intelligent_filename') as string;
 
     if (!file) {
@@ -130,9 +129,17 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // ===== ADD STORAGE CHECK HERE =====
+    const canUpload = await StorageTracker.canUploadFile(user.id, file.size);
+    if (!canUpload) {
+      return NextResponse.json({ 
+        error: 'Storage limit exceeded. Please delete some files or upgrade your plan.' 
+      }, { status: 413 }); // 413 = Payload Too Large
+    }
+
     console.log('📄 Processing file:', file.name);
 
-    let finalFilename = file.name; // Default to original filename
+    let finalFilename = file.name;
     let pageCount = null;
 
     // ✅ FIXED: Use intelligent filename if provided by frontend (from RAG response)
@@ -182,6 +189,10 @@ export async function POST(request: NextRequest) {
         owner_id: user.id
       }
     });
+
+    await StorageTracker.updateStorageUsage(user.id);
+    console.log('✅ Document uploaded and saved:', document.id);
+
 
     console.log('📋 Document created with intelligent naming');
 
