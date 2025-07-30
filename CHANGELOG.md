@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.1.7] - 2025-07-30
+
+### Added
+- **Dark Mode**: Added dark mode feature across the system
+- **Revamped User Interface**: Changed the Landing and Pricing page with informational content 
+
 
 ## [0.1.6] - 2025-07-28
 
@@ -22,9 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Authentication**: Improved JWT token handling in navigation components
 
 ### Security
-- **S3 Bucket Policy**: Restricted public access to profile pictures only (`profile-pictures/*`)
 - **Document Privacy**: Ensured all documents remain private and accessible only through authenticated API calls
-- **Enhanced Error Handling**: Added comprehensive logging and security audit trails
 
 ---
 
