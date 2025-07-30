@@ -62,15 +62,19 @@ function Login() {
     }
 
   return (
-    <div>
+    <div className='h-screen overflow-hidden'>
         <header className='bg-white shadow-sm border-b'>
             <Header />
         </header>
 
-        <main className='flex flex-col md:flex-row  w-full'>
-            <div className='flex flex-col items-center md:items-start mx-0  md:ml-60 w-full md:w-1/2 px-10 py-20 my-10 justify-center gap-2 '>
-                <h1 className='text-4xl font-bold font-serif'>Sign In</h1>
-                <p className='text-gray-600 mb-4'>Welcome back to LegalynX</p>
+        <main className='flex flex-col md:flex-row-reverse w-full h-[calc(100vh-var(--header-height,64px))]'>
+            <div className='flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 px-20 md:px-10 py-20 md:py-10 justify-center gap-2 overflow-y-auto'>
+                <div className='w-full flex flex-col items-start md:pl-20 gap-2'>
+                    <span>
+                        <h1 className='text-4xl font-bold font-serif'>Sign In</h1>
+                        <p className='text-gray-600 mb-4'>Welcome back to LegalynX</p>
+
+                    </span>
 
                 <div className='flex flex-col items-start justify-center gap-4 w-full md:not-first:w-2/3'>
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
@@ -108,9 +112,11 @@ function Login() {
                         </Link>
                     </span>
                 </div>  
+                </div>
+               
             </div>
 
-            <div className='hidden md:flex flex-col  items-center justify-center mr-40 w-full md:w-1/2 gap-2 relative'>
+            <div className='hidden md:flex flex-col bg-blue/5 border-l border-gray-400/20 shadow-md border items-center justify-center h-full w-full md:w-1/2 gap-2 relative'>
                 <Image
                     src={logo}
                     alt="Login"
