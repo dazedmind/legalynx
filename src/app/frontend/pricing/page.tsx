@@ -23,12 +23,11 @@ function EnhancedPricing() {
       popular: false,
       features: [
         { text: "Upload up to 5 documents", included: true },
-        { text: "2000 tokens per session", included: true },
-        { text: "Basic document analysis", included: true },
+        { text: "200 messages per session", included: true },
+        { text: "Document analysis with Lynx AI", included: true },
         { text: "Temporary Chat Session", included: true },
-        { text: "Community support", included: true },
         { text: "File Storage", included: false },
-        { text: "Voice assistant", included: false }
+        { text: "Voice mode", included: false }
       ],
       ctaText: "Get Started Free",
       ctaStyle: "bg-accent text-foreground hover:brightness-105 hover:bg-accent/10 hover:border hover:border-foreground"
@@ -47,12 +46,11 @@ function EnhancedPricing() {
       popular: true,
       features: [
         { text: "Upload up to 50 documents", included: true },
-        { text: "5000 tokens per session", included: true },
-        { text: "Advanced document analysis", included: true },
+        { text: "500 messages per session", included: true },
+        { text: "Document analysis with Lynx AI", included: true },
         { text: "Chat history", included: true },
         { text: "1GB file storage", included: true },
-        { text: "Priority email support", included: true },
-        { text: "Voice assistant", included: false }
+        { text: "Voice mode", included: false }
       ],
       ctaText: "Start Standard",
       ctaStyle: "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl"
@@ -71,12 +69,11 @@ function EnhancedPricing() {
       popular: false,
       features: [
         { text: "Upload unlimited documents", included: true },
-        { text: "Unlimited tokens", included: true },
-        { text: "Advanced legal AI insights", included: true },
+        { text: "Unlimited messages", included: true },
+        { text: "Document analysis with Lynx AI", included: true },
         { text: "Chat history", included: true },
         { text: "10GB file storage", included: true },
-        { text: "24/7 priority support", included: true },
-        { text: "Voice assistant integration", included: true },
+        { text: "Voice mode", included: true },
       ],
       ctaText: "Go Premium",
       ctaStyle: "bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800 shadow-lg hover:shadow-xl"
