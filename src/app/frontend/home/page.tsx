@@ -5,12 +5,12 @@ import React, { useState, useEffect } from 'react';
 import ChatViewer from '../components/ChatViewer';
 import FileManager from '../components/FileManager';
 import ChatHistory from '../components/ChatHistory';
-import { apiService, handleApiError, SystemStatus, UploadResponse } from '../lib/api';
+import { apiService, handleApiError, profileService, SystemStatus, UploadResponse } from '../lib/api';
 import { GoArchive, GoComment, GoFile, GoFileDirectory, GoHistory } from "react-icons/go";
 import NavBar from '../components/NavBar';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '@/lib/context/AuthContext';
-import { LogOut, Plus, Menu, X, Mic } from 'lucide-react';
+import { LogOut, Plus, Menu, X, Mic, Lock } from 'lucide-react';
 import UploadPage from '../components/UploadPage';
 import ConfirmationModal, { ModalType } from '../components/ConfirmationModal';
 import { useTheme } from 'next-themes';
@@ -27,6 +27,7 @@ export default function Home() {
   const { user, logout } = useAuth();
   const [resetChatViewer, setResetChatViewer] = useState(false);
   const { theme } = useTheme();
+  const [subscriptionStatus, setSubscriptionStatus] = useState('');
 
    // Modal state for confirmation
    const [confirmationModalConfig, setConfirmationModalConfig] = useState<{
@@ -36,6 +37,13 @@ export default function Home() {
     falseButton: string;
     type: string;
     onConfirm: () => void;
+    paywall?: {
+      isPaywallFeature: boolean;
+      userProfile?: any;
+      featureType?: 'saveSessions' | 'cloudStorage' | 'voiceMode' | 'fileHistory' | 'pdfDownload';
+      onUpgrade?: () => void;
+      allowTemporary?: boolean; // For features that can fallback to temporary
+    }
   } | null>(null);
 
   // Handler to open confirmation modal
@@ -53,6 +61,15 @@ export default function Home() {
       }
       setConfirmationModalConfig(null);
     };
+
+
+  useEffect(() => {
+    const getSubscriptionStatus = async () => {
+      const profile = await profileService.getProfile();
+      setSubscriptionStatus(profile.subscription?.plan_type?.toUpperCase() || '');
+    };
+    getSubscriptionStatus();
+  }, []);
 
   // Clear uploaded files and reset system on page load
   useEffect(() => {
@@ -191,6 +208,30 @@ export default function Home() {
   };
 
   const handleTabClick = (tab: ActiveTab) => {
+    if (subscriptionStatus === 'BASIC' && tab === 'documents') {
+      setConfirmationModalConfig({
+        header: 'Access Full Features',
+        message: 'Upgrade to Premium to access all features.',
+        trueButton: 'Upgrade Now',
+        falseButton: 'Cancel',
+        type: ModalType.PAYWALL,
+        onConfirm: () => {
+          // This won't be called for paywall - upgrade button handles it
+        },
+        // Add paywall configuration
+        paywall: {
+          isPaywallFeature: true,
+          userProfile: user,
+          featureType: 'fileHistory',
+          onUpgrade: () => {
+            // Redirect to pricing page
+            window.location.href = '/frontend/pricing';
+          },
+          allowTemporary: true // Allow users to save temporarily
+        }
+      });
+      return;
+    }
     setActiveTab(tab);
     setIsMobileSidebarOpen(false); // Close sidebar on mobile after tab selection
   };
@@ -304,7 +345,17 @@ export default function Home() {
                     <div className="h-full w-1 bg-blue-700  absolute left-0 overflow-hidden rounded-full"></div>
                   )}
                 <GoFileDirectory className={`${activeTab === 'documents' ? 'ml-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} />
-                <span className="truncate">My Documents</span>
+                <span className="truncate flex items-center justify-between w-full">
+                  My Documents
+                  {subscriptionStatus === 'BASIC' && (
+                    <div className='bg-gradient-to-tr from-blue-500 to-blue-400 text-white rounded-full p-2 text-xs'>
+                     <Lock className="w-4 h-4 flex-shrink-0 text-white" />
+                    </div>
+                  )}
+
+                </span>
+
+           
               </button>
 
             </div>

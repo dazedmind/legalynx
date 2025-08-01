@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FileText, AlertCircle, Plus, ArrowUp, Cloud } from 'lucide-react';
-import { apiService, handleApiError, UploadResponse, isSecurityError, getSecurityErrorMessage } from '../lib/api';
+import { apiService, handleApiError, UploadResponse, isSecurityError, getSecurityErrorMessage, profileService } from '../lib/api';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
@@ -79,6 +79,7 @@ export default function ChatViewer({
   const [isResetting, setIsResetting] = useState(false);
   const [savedSessions, setSavedSessions] = useState<SavedChatSession[]>([]);
   const [isVoiceChat, setIsVoiceChat] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState('');
 
   // Loading stage tracking
   const [loadingStage, setLoadingStage] = useState<LoadingStage>('loading_session');
@@ -104,6 +105,13 @@ export default function ChatViewer({
     falseButton: string;
     type: string;
     onConfirm: () => void;
+    paywall?: {
+      isPaywallFeature: boolean;
+      userProfile?: any;
+      featureType?: 'saveSessions' | 'cloudStorage' | 'voiceMode' | 'fileHistory' | 'pdfDownload';
+      onUpgrade?: () => void;
+      allowTemporary?: boolean; // For features that can fallback to temporary
+    }
   } | null>(null);
 
   // Handler to open confirmation modal
@@ -120,6 +128,54 @@ export default function ChatViewer({
       confirmationModalConfig.onConfirm();
     }
     setConfirmationModalConfig(null);
+  };
+
+  useEffect(() => {
+    const getSubscriptionStatus = async () => {
+      const profile = await profileService.getProfile();
+      setSubscriptionStatus(profile.subscription?.plan_type?.toUpperCase());
+    };
+    getSubscriptionStatus();  
+  }, []);
+
+
+  const hasCloudStorageAccess = () => {
+    if (!subscriptionStatus) return false;
+    const plan = subscriptionStatus;
+    if (plan === 'BASIC') {
+      return false;
+    }
+  };
+
+
+  const handleVoiceModeClick = () => {
+    const plan = subscriptionStatus;
+    
+    if (plan !== 'PREMIUM') {
+      setConfirmationModalConfig({
+        header: 'Voice Mode',
+        message: 'Interact with Legalynx AI using voice commands for a hands-free experience.',
+        trueButton: 'Upgrade to Premium',
+        falseButton: 'Cancel',
+        type: ModalType.PAYWALL,
+        onConfirm: () => {},
+        paywall: {
+          isPaywallFeature: true,
+          userProfile: user,
+          featureType: 'voiceMode',
+          onUpgrade: () => {
+            window.location.href = '/frontend/pricing';
+          },
+          allowTemporary: false // Voice mode has no fallback
+        }
+      });
+      return;
+    }
+
+    // User has access, proceed with voice mode
+    if (handleVoiceChat) {
+      setIsVoiceChat(true);
+    }
   };
 
   // Effects
@@ -1156,6 +1212,48 @@ export default function ChatViewer({
   const cacheStatus = getCacheStatus();
   const cacheStats = ragCache.getStats();
 
+
+    // Modified save file handler
+    const handleSaveFileClick = () => {
+      // Check if user has cloud storage access
+      if (!hasCloudStorageAccess()) {
+        // Show paywall modal
+        setConfirmationModalConfig({
+          header: 'Save to Cloud Storage',
+          message: 'Save your documents securely to the cloud and access them from any device.',
+          trueButton: 'Upgrade Now',
+          falseButton: 'Cancel',
+          type: ModalType.PAYWALL,
+          onConfirm: () => {
+            // This won't be called for paywall - upgrade button handles it
+          },
+          // Add paywall configuration
+          paywall: {
+            isPaywallFeature: true,
+            userProfile: user,
+            featureType: 'cloudStorage',
+            onUpgrade: () => {
+              // Redirect to pricing page
+              window.location.href = '/frontend/pricing';
+            },
+            allowTemporary: true // Allow users to save temporarily
+          }
+        });
+        return;
+      }
+  
+      // If user has access, show regular save confirmation
+      setConfirmationModalConfig({
+        header: 'Save to Account',
+        message: 'Save this document to your account for permanent access across all your devices. The document will be securely stored in cloud storage.',
+        trueButton: 'Save File',
+        falseButton: 'Cancel',
+        type: ModalType.SAVE,
+        onConfirm: handleSaveFile
+      });
+    };
+
+    
   const handleSaveFile = async () => {
     if (!currentDocument || !isAuthenticated || !user || !documentExists) {
       toast.error('No document to save, user not authenticated, or document no longer exists');
@@ -1300,26 +1398,17 @@ export default function ChatViewer({
             </div>
             <div className="flex items-center gap-2">
               <button 
-                onClick={() => openConfirmationModal(
-                  {
-                    header: 'Save to Account',
-                    message: 'Save this document to your account for permanent access across all your devices. The document will be securely stored in cloud storage.',
-                    trueButton: 'Save File',
-                    falseButton: 'Cancel',
-                    type: ModalType.SAVE,
-                  },
-                  handleSaveFile
-                )}
+                onClick={handleSaveFileClick}
                 disabled={!documentExists || currentDocument?.status === 'INDEXED'}
                 className={`flex items-center p-2 px-3 text-sm rounded-lg transition-all duration-300 ${
-                  !documentExists || currentDocument?.status === 'INDEXED' 
+                  !documentExists || currentDocument?.status === 'INDEXED'
                     ? 'bg-tertiary text-muted-foreground cursor-not-allowed'
                     : 'text-foreground hover:brightness-105 hover:bg-yellow-200/20 hover:text-yellow-600 cursor-pointer'
                 }`}
               >
-                {!documentExists 
+                {!documentExists
                   ? 'Unavailable'
-                  : currentDocument?.status === 'INDEXED' 
+                  : currentDocument?.status === 'INDEXED'
                     ? <><CloudCheck className="w-4 h-4 md:mr-1" /> <span className='hidden md:block'>Saved</span></>
                     : <><Cloud className="w-4 h-4 md:mr-1" /> <span className='hidden md:block'>Save File</span></>
                 }
@@ -1402,7 +1491,7 @@ export default function ChatViewer({
                 />
               </div>
               <button
-                onClick={() => {setIsVoiceChat(true)}}
+                onClick={handleVoiceModeClick}
                 title="Voice Chat with Lynx AI"
                 className="flex items-center absolute right-18 top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-gradient-to-tl from-yellow to-yellow-600 text-white hover:bg-blue-700 h-fit"
               >

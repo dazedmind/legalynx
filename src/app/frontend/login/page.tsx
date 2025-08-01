@@ -63,7 +63,7 @@ function Login() {
 
   return (
     <div className='h-screen overflow-hidden'>
-        <header className='bg-white shadow-sm border-b'>
+        <header className='bg-primary shadow-sm border-b'>
             <Header />
         </header>
 
@@ -72,13 +72,13 @@ function Login() {
                 <div className='w-full flex flex-col items-start md:pl-20 gap-2'>
                     <span>
                         <h1 className='text-4xl font-bold font-serif'>Sign In</h1>
-                        <p className='text-gray-600 mb-4'>Welcome back to LegalynX</p>
+                        <p className='text-muted-foreground mb-4'>Welcome back to LegalynX</p>
 
                     </span>
 
                 <div className='flex flex-col items-start justify-center gap-4 w-full md:not-first:w-2/3'>
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
-                        <p className='text-sm text-gray-600'>Email address</p>
+                        <p className='text-sm text-muted-foreground'>Email address</p>
                         <Input
                             name='email'
                             type='email'
@@ -96,17 +96,17 @@ function Login() {
                         )}
                     </span>
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
-                        <p className='text-sm text-gray-600'>Password</p>
+                        <p className='text-sm text-muted-foreground'>Password</p>
                         <Input name='password' type='password' placeholder='Enter your password' value={formData.password} onChange={handleChange} />
                     </span>
 
 
-                    <span className='text-sm text-gray-600'>
+                    <span className='text-sm text-muted-foreground'>
                         Forgot Password?
                     </span>
                     <Button onClick={handleLogin} className='w-full cursor-pointer bg-blue-600 text-white'>Sign In</Button>
 
-                    <span className='text-sm text-gray-600'>
+                    <span className='text-sm text-muted-foreground'>
                         <Link href="/frontend/register" className='cursor-pointer hover:text-blue-600'>
                             I don't have an account yet
                         </Link>
@@ -116,7 +116,7 @@ function Login() {
                
             </div>
 
-            <div className='hidden md:flex flex-col bg-blue/5 border-l border-gray-400/20 shadow-md border items-center justify-center h-full w-full md:w-1/2 gap-2 relative'>
+            <div className='hidden md:flex flex-col bg-blue/5 border-l border-tertiary shadow-md border items-center justify-center h-full w-full md:w-1/2 gap-2 relative'>
                 <Image
                     src={logo}
                     alt="Login"
@@ -124,7 +124,7 @@ function Login() {
                     height={500}
                     className="fade-gradient"
                 />
-                <p className='text-2xl mx-auto text-center absolute bottom-20 text-gray-600'>Linking you to legal clarity</p>
+                <p className='text-2xl mx-auto text-center absolute bottom-20 text-muted-foreground'>Linking you to legal clarity</p>
 
             </div>
         </main>

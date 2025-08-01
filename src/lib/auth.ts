@@ -84,7 +84,7 @@ export const authUtils = {
   logout: () => {
     Cookies.remove(AUTH_COOKIE_NAME, { path: '/' });
     Cookies.remove(USER_COOKIE_NAME, { path: '/' });
-    
+    localStorage.removeItem('theme');
   },
 
   // Update user data

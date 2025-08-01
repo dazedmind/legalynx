@@ -89,7 +89,7 @@ function Register() {
 
   return (
     <div className='h-screen overflow-hidden'>
-        <div className='bg-white shadow-sm border-b'>
+        <div className='bg-primary shadow-sm border-b'>
             <Header />
         </div>
 
@@ -98,13 +98,13 @@ function Register() {
                 <div className='w-full flex flex-col items-start md:pl-20 gap-2'>
                     <span>
                         <h1 className='text-4xl font-bold font-serif'>Sign Up</h1>
-                        <p className='text-gray-600 mb-4'>Create your account to get started</p>
+                        <p className='text-muted-foreground mb-4'>Create your account to get started</p>
 
                     </span>
 
                 <div className='flex flex-col items-start justify-center gap-4 w-full md:not-first:w-2/3'>
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
-                        <p className='text-sm text-gray-600'>Email address</p>
+                        <p className='text-sm text-muted-foreground'>Email address</p>
                         <Input
                             name='email'
                             type='email'
@@ -122,19 +122,19 @@ function Register() {
                         )}
                     </span> 
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
-                        <p className='text-sm text-gray-600'>Password</p>
+                        <p className='text-sm text-muted-foreground'>Password</p>
                         <Input type='password' name='password' placeholder='Enter your password' value={formData.password} onChange={handleChange} />
                     </span>
 
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
-                        <p className='text-sm text-gray-600'>Confirm Password</p>
+                        <p className='text-sm text-muted-foreground'>Confirm Password</p>
                         <Input type='password' name='confirmPassword' placeholder='Confirm your password' value={formData.confirmPassword} onChange={handleChange}/>
                     </span>
            
 
-                    <span className='text-sm text-gray-600 flex flex-row justify-start gap-1'>
+                    <span className='text-sm text-muted-foreground flex flex-row justify-start gap-1'>
                         <Checkbox className='w-4 h-4 mr-2' checked={formData.acceptTerms} onCheckedChange={handleCheckboxChange}/>
-                        <p className='text-xs text-gray-600'>
+                        <p className='text-xs text-muted-foreground'>
                             By creating your account, you agree to the processing of your personal data by LegalynX as described in the <Link href="/frontend/privacy-policy" className='cursor-pointer underline hover:text-blue-600'>Privacy Policy</Link>.
                         </p>
                         
@@ -144,7 +144,7 @@ function Register() {
                     </Button>
 
 
-                    <span className='text-sm text-gray-600'>
+                    <span className='text-sm text-muted-foreground'>
                         <Link href="/frontend/login" className='cursor-pointer hover:text-blue-600'>
                             I already have an account
                         </Link>
@@ -154,7 +154,7 @@ function Register() {
                
             </div>
 
-            <div className='hidden md:flex flex-col bg-blue/5 border-l border-gray-400/20 shadow-md border items-center justify-center h-full w-full md:w-1/2 gap-2 relative'>
+            <div className='hidden md:flex flex-col bg-blue/5 border-l border-tertiary shadow-md border items-center justify-center h-full w-full md:w-1/2 gap-2 relative'>
                 <Image
                     src={logo}
                     alt="Login"
@@ -162,7 +162,7 @@ function Register() {
                     height={500}
                     className="fade-gradient"
                 />
-                <p className='text-2xl mx-auto text-center absolute bottom-20 text-gray-600'>Linking you to legal clarity</p>
+                <p className='text-2xl mx-auto text-center absolute bottom-20 text-muted-foreground'>Linking you to legal clarity</p>
 
             </div>
         </main>

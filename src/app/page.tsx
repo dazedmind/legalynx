@@ -46,12 +46,12 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-sm border-b sticky top-0 z-50">
+      <header className="bg-primary backdrop-blur-md shadow-sm border-b sticky top-0 z-50">
         <Header />
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section className="bg-primary relative overflow-hidden">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-30 pb-32">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-16">
             <div className="flex-1 text-center lg:text-left">
@@ -61,7 +61,7 @@ export default function Home() {
                 className="text-5xl lg:text-7xl font-bold text-foreground font-serif  mb-2" 
               />
               
-              <h2 className="text-1xl lg:text-2xl text-gray-600 mb-4 font-light">
+              <h2 className="text-1xl lg:text-2xl text-muted-foreground mb-4 font-light">
                 Linking you to legal clarity
               </h2>
               
@@ -91,68 +91,68 @@ export default function Home() {
       </section>
 
       {/* Social Proof */}
-      <section className="py-16 bg-white border-t border-b">
+      <section className="py-16 bg-primary border-t border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-gray-500 mb-8">Trusted by leading legal professionals worldwide</p>
+          <p className="text-center text-muted-foreground mb-8">Trusted by leading legal professionals worldwide</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 opacity-60">
             <div className="flex items-center justify-center">
-              <div className="text-2xl font-bold text-gray-400">BigLaw Corp</div>
+              <div className="text-2xl font-bold text-muted-foreground hover:text-gray-700 cursor-pointer">BigLaw Corp</div>
             </div>
             <div className="flex items-center justify-center">
-              <div className="text-2xl font-bold text-gray-400">Legal Partners</div>
+              <div className="text-2xl font-bold text-muted-foreground hover:text-gray-700 cursor-pointer">Legal Partners</div>
             </div>
             <div className="flex items-center justify-center">
-              <div className="text-2xl font-bold text-gray-400">Justice & Co</div>
+              <div className="text-2xl font-bold text-muted-foreground hover:text-gray-700 cursor-pointer">Justice & Co</div>
             </div>
             <div className="flex items-center justify-center">
-              <div className="text-2xl font-bold text-gray-400">Law Firm Plus</div>
+              <div className="text-2xl font-bold text-muted-foreground hover:text-gray-700 cursor-pointer">Law Firm Plus</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-24 bg-gradient-to-b from-white to-gray-50">
+      <section className="py-24 bg-primary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
-            <h3 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+            <h3 className="text-4xl lg:text-5xl font-bold text-foreground mb-6">
               Powerful Features for Legal Excellence
             </h3>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Our AI-powered platform combines cutting-edge technology with legal expertise 
               to deliver unmatched document analysis capabilities.
             </p>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-blue-200">
-              <div className="bg-yellow w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <FileText className="w-8 h-8 text-white" />
+            <div className="group bg-accent rounded-2xl p-8  transition-all duration-300 border border-tertiary">
+              <div className="bg-yellow w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300">
+                <FileText className="w-8 h-8 text-foreground" />
               </div>
-              <h4 className="text-2xl font-bold text-gray-900 mb-4">Smart PDF Processing</h4>
-              <p className="text-gray-600 text-lg leading-relaxed">
+              <h4 className="text-2xl font-bold text-foreground mb-4">Smart PDF Processing</h4>
+              <p className="text-muted-foreground text-lg leading-relaxed">
                 Advanced OCR and text extraction technology automatically detects document types 
                 and processes both scanned and digital PDFs with 99.5% accuracy.
               </p>
             </div>
             
-            <div className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-green-200">
-              <div className="bg-yellow w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Brain className="w-8 h-8 text-white" />
+            <div className="group bg-accent rounded-2xl p-8 transition-all duration-300 border border-tertiary">
+              <div className="bg-yellow w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300">
+                <Brain className="w-8 h-8 text-foreground" />
               </div>
-              <h4 className="text-2xl font-bold text-gray-900 mb-4">Hybrid AI Retrieval</h4>
-              <p className="text-gray-600 text-lg leading-relaxed">
+              <h4 className="text-2xl font-bold text-foreground mb-4">Hybrid AI Retrieval</h4>
+              <p className="text-muted-foreground text-lg leading-relaxed">
                 Combines vector search, keyword matching (BM25), and semantic chunking 
                 for optimal information retrieval and contextual understanding.
               </p>
             </div>
             
-            <div className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-purple-200">
-              <div className="bg-yellow w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Zap className="w-8 h-8 text-white" />
+            <div className="group bg-accent rounded-2xl p-8 transition-all duration-300 border border-tertiary">
+              <div className="bg-yellow w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300">
+                <Zap className="w-8 h-8 text-foreground" />
               </div>
-              <h4 className="text-2xl font-bold text-gray-900 mb-4">Advanced Analysis</h4>
-              <p className="text-gray-600 text-lg leading-relaxed">
+              <h4 className="text-2xl font-bold text-foreground mb-4">Advanced Analysis</h4>
+              <p className="text-muted-foreground text-lg leading-relaxed">
                 Query analysis with reranking and detailed source attribution provides 
                 transparent, reliable AI responses with legal-grade accuracy.
               </p>
@@ -162,11 +162,11 @@ export default function Home() {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-24 bg-primary">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h3 className="text-4xl font-bold text-gray-900 mb-8">
+              <h3 className="text-3xl font-bold text-foreground mb-8">
                 Why Legal Professionals Choose LegalynX
               </h3>
               <div className="space-y-6">
@@ -175,8 +175,8 @@ export default function Home() {
                     <Clock className="w-6 h-6 text-yellow" />
                   </div>
                   <div>
-                    <h4 className="text-xl font-semibold text-gray-900 mb-2">80% Time Reduction</h4>
-                    <p className="text-gray-600">Dramatically reduce document review time from hours to minutes with AI-powered analysis.</p>
+                    <h4 className="text-xl font-semibold text-foreground mb-2">80% Time Reduction</h4>
+                    <p className="text-muted-foreground">Dramatically reduce document review time from hours to minutes with AI-powered analysis.</p>
                   </div>
                 </div>
                 
@@ -185,8 +185,8 @@ export default function Home() {
                     <Shield className="w-6 h-6 text-yellow" />
                   </div>
                   <div>
-                    <h4 className="text-xl font-semibold text-gray-900 mb-2">Enterprise Security</h4>
-                    <p className="text-gray-600">Bank-grade encryption and compliance with legal industry security standards.</p>
+                    <h4 className="text-xl font-semibold text-foreground mb-2">Enterprise Security</h4>
+                    <p className="text-muted-foreground">Bank-grade encryption and compliance with legal industry security standards.</p>
                   </div>
                 </div>
                 
@@ -195,36 +195,26 @@ export default function Home() {
                     <Users className="w-6 h-6 text-yellow" />
                   </div>
                   <div>
-                    <h4 className="text-xl font-semibold text-gray-900 mb-2">Team Collaboration</h4>
-                    <p className="text-gray-600">Seamless collaboration tools designed for legal teams of all sizes.</p>
+                    <h4 className="text-xl font-semibold text-foreground mb-2">Team Collaboration</h4>
+                    <p className="text-muted-foreground">Seamless collaboration tools designed for legal teams of all sizes.</p>
                   </div>
                 </div>
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-3xl p-8">
-              <div className="bg-white rounded-2xl p-6 shadow-lg">
-                <h4 className="text-2xl font-bold text-gray-900 mb-4">Performance Metrics</h4>
+            <div className="bg-accent rounded-3xl p-8 border border-tertiary">
+                <h4 className="text-2xl font-bold text-foreground mb-8">Performance Metrics</h4>
                 <div className="grid grid-cols-2 gap-6">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600 mb-2">99.5%</div>
-                    <div className="text-gray-600">Accuracy Rate</div>
+                    <div className="text-3xl font-bold text-blue-600 mb-2">80%</div>
+                    <div className="text-muted-foreground">Time Saved</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-green-600 mb-2">80%</div>
-                    <div className="text-gray-600">Time Saved</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-purple-600 mb-2">500+</div>
-                    <div className="text-gray-600">Legal Teams</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-orange-600 mb-2">24/7</div>
-                    <div className="text-gray-600">Support</div>
+                    <div className="text-3xl font-bold text-yellow mb-2">24/7</div>
+                    <div className="text-muted-foreground">Support</div>
                   </div>
                 </div>
               </div>
-            </div>
           </div>
         </div>
       </section>
@@ -283,7 +273,7 @@ export default function Home() {
                 Start Free Trial
               </button>
             </Link>
-            <button className="px-10 py-4 text-lg font-semibold border-2 border-tertiary text-primary rounded-xl transition-all duration-300 cursor-pointer">
+            <button className="px-10 py-4 text-lg font-semibold border-2 border-white text-white rounded-xl transition-all duration-300 cursor-pointer">
               Contact Sales
             </button>
           </div>
@@ -295,23 +285,23 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t">
+      <footer className="bg-primary border-t">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-2">
-              <h4 className="text-2xl font-bold text-gray-900 mb-4">LegalynX</h4>
-              <p className="text-gray-600 mb-4 max-w-md">
+              <h4 className="text-2xl font-bold text-foreground mb-4">LegalynX</h4>
+              <p className="text-muted-foreground mb-4 max-w-md">
                 Empowering legal professionals with AI-driven document analysis 
                 and intelligent insights for better decision-making.
               </p>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-muted-foreground">
                 <p>Powered by GPT 4.1 mini</p>
               </div>
             </div>
             
             <div>
-              <h5 className="font-semibold text-gray-900 mb-4">Product</h5>
-              <ul className="space-y-2 text-gray-600">
+              <h5 className="font-semibold text-foreground mb-4">Product</h5>
+              <ul className="space-y-2 text-muted-foreground">
                 <li><Link href="/features" className="hover:text-blue-600 transition-colors">Features</Link></li>
                 <li><Link href="/frontend/pricing" className="hover:text-blue-600 transition-colors">Pricing</Link></li>
                 <li><Link href="/security" className="hover:text-blue-600 transition-colors">Security</Link></li>
@@ -320,8 +310,8 @@ export default function Home() {
             </div>
             
             <div>
-              <h5 className="font-semibold text-gray-900 mb-4">Company</h5>
-              <ul className="space-y-2 text-gray-600">
+              <h5 className="font-semibold text-foreground mb-4">Company</h5>
+              <ul className="space-y-2 text-muted-foreground">
                 <li><Link href="/about" className="hover:text-blue-600 transition-colors">About</Link></li>
                 <li><Link href="/contact" className="hover:text-blue-600 transition-colors">Contact</Link></li>
                 <li><Link href="/frontend/privacy-policy" className="hover:text-blue-600 transition-colors">Privacy</Link></li>
@@ -331,10 +321,10 @@ export default function Home() {
           </div>
           
           <div className="border-t mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <div className="text-gray-500 text-sm">
-              © 2024 LegalynX. All rights reserved.
+            <div className="text-muted-foreground text-sm">
+              © 2025 LegalynX. All rights reserved.
             </div>
-            <div className="text-sm text-gray-500 mt-4 md:mt-0">
+            <div className="text-sm text-muted-foreground mt-4 md:mt-0">
               System Developers: <span className='text-blue-600 hover:text-blue-700 transition-colors'>Git Merge</span> 
             </div>
           </div>

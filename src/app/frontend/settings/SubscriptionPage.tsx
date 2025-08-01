@@ -121,7 +121,7 @@ function SubscriptionPage() {
                             <Zap className='w-5 h-5 text-yellow-500' />
                             <h1 className='text-lg font-bold'>Tokens Used</h1>
                         </div>
-                        <button className='flex items-center gap-1 text-sm text-muted-foreground hover:text-gray-800 transition-colors'>
+                        <button className={`flex items-center gap-1 text-sm text-muted-foreground ${subscription === 'BASIC' || subscription === 'STANDARD' ? 'hidden' : ''} hover:text-gray-800 transition-colors cursor-pointer`}>
                             <RefreshCw className='w-4 h-4' />
                             Refresh
                         </button>
@@ -147,9 +147,11 @@ function SubscriptionPage() {
                     <div className='space-y-2'>
                         <Progress value={tokenPercentage} className="h-2" />
                         {isNearLimit && (
-                            <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded text-amber-800 text-sm">
+                            <div className="flex items-center gap-2 p-2 bg-yellow/20 border border-amber-200 rounded text-foreground text-sm mt-4">
                                 <AlertCircle className="w-4 h-4" />
-                                {tokenPercentage >= 95 
+                                {tokenPercentage === 100
+                                    ? 'You\'ve reached your token limit! Consider upgrading your plan.'
+                                    : tokenPercentage >= 95 
                                     ? 'You\'re almost out of tokens! Consider upgrading your plan.'
                                     : 'You\'re running low on tokens. Consider upgrading soon.'
                                 }
@@ -240,7 +242,7 @@ function SubscriptionPage() {
                             </div>
                         </div>
                         
-                        <div className={`p-4 border rounded-lg ${subscription === 'STANDARD' ? 'border-purple-500 bg-purple-500/20' : 'border-tertiary'}`}>
+                        <div className={`p-4 border rounded-lg ${subscription === 'STANDARD' ? 'border-blue-500 bg-blue/20' : 'border-tertiary'}`}>
                             <div className='flex items-center gap-2 mb-2'>
                                 <Zap className='w-5 h-5 text-blue-600' />
                                 <span className='font-medium'>Standard</span>
@@ -261,7 +263,7 @@ function SubscriptionPage() {
                             )}
                         </div>
                         
-                        <div className={`p-4 border rounded-lg ${subscription === 'PREMIUM' ? 'border-gray-800 bg-gray-500/20' : 'border-tertiary'}`}>
+                        <div className={`p-4 border rounded-lg ${subscription === 'PREMIUM' ? 'border-blue-500 bg-blue/20' : 'border-tertiary'}`}>
                             <div className='flex items-center gap-2 mb-2'>
                                 <Crown className='w-5 h-5 text-yellow-600' />
                                 <span className='font-medium'>Premium</span>

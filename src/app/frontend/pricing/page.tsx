@@ -23,15 +23,15 @@ function EnhancedPricing() {
       popular: false,
       features: [
         { text: "Upload up to 5 documents", included: true },
-        { text: "1000 tokens per session", included: true },
+        { text: "2000 tokens per session", included: true },
         { text: "Basic document analysis", included: true },
-        { text: "Email support", included: true },
-        { text: "Chat history (per session only)", included: true },
+        { text: "Temporary Chat Session", included: true },
         { text: "Community support", included: true },
+        { text: "File Storage", included: false },
         { text: "Voice assistant", included: false }
       ],
       ctaText: "Get Started Free",
-      ctaStyle: "border border-tertiary text-foreground hover:bg-accent"
+      ctaStyle: "bg-accent text-foreground hover:brightness-105 hover:bg-accent/10 hover:border hover:border-foreground"
     },
     {
       name: "Standard",
@@ -46,11 +46,11 @@ function EnhancedPricing() {
       },
       popular: true,
       features: [
-        { text: "Upload unlimited documents", included: true },
+        { text: "Upload up to 50 documents", included: true },
         { text: "5000 tokens per session", included: true },
         { text: "Advanced document analysis", included: true },
         { text: "Chat history", included: true },
-        { text: "1GB storage", included: true },
+        { text: "1GB file storage", included: true },
         { text: "Priority email support", included: true },
         { text: "Voice assistant", included: false }
       ],
@@ -70,11 +70,11 @@ function EnhancedPricing() {
       },
       popular: false,
       features: [
-        { text: "Everything in Professional", included: true },
-        { text: "Unlimited AI messages", included: true },
+        { text: "Upload unlimited documents", included: true },
+        { text: "Unlimited tokens", included: true },
         { text: "Advanced legal AI insights", included: true },
         { text: "Chat history", included: true },
-        { text: "Unlimited storage", included: true },
+        { text: "10GB file storage", included: true },
         { text: "24/7 priority support", included: true },
         { text: "Voice assistant integration", included: true },
       ],
@@ -130,7 +130,7 @@ function EnhancedPricing() {
                 }`}
               >
                 Yearly
-                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                <span className="absolute -top-3 -right-4 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
                   Save {yearlyDiscount}%
                 </span>
               </button>
@@ -241,10 +241,10 @@ function EnhancedPricing() {
      
 
       {/* FAQ Section */}
-      <section className="py-24 bg-gradient-to-br from-blue to-dark-blue">
+      <section className="py-24 bg-accent">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h3 className="text-3xl font-bold text-primary mb-4">
+            <h3 className="text-3xl font-bold text-foreground mb-4">
               Frequently Asked Questions
             </h3>
           </div>

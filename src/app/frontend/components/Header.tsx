@@ -7,6 +7,7 @@ import Image from 'next/image'
 import logo from '../img/legalynxlogo.png'
 import { GoLaw } from 'react-icons/go'
 import { PiNetwork, PiSuitcaseSimple } from 'react-icons/pi'
+import ThemeToggle from './ThemeToggle'
 
 function Header() {
   return (
@@ -16,12 +17,12 @@ function Header() {
           <Image src={logo} alt="LegalynX" width={60} height={60} />
         <div>
             <Link href="/">
-                <h1 className="text-2xl font-bold font-serif text-gray-900">LegalynX</h1>
+                <h1 className="text-2xl font-bold font-serif text-foreground">LegalynX</h1>
             </Link>
         </div>
       </div>
       <div className="flex items-center space-x-2">
-        <div className="hidden md:flex items-center space-x-8 text-sm text-gray-600">
+        <div className="hidden md:flex items-center space-x-8 text-sm text-muted-foreground">
           <Link href="/frontend/pricing">
             <div>
               Pricing
@@ -56,8 +57,9 @@ function Header() {
               </HoverCardContent>
             </HoverCard>
           <Link href="/frontend/login">
-            <button className='cursor-pointer bg-gradient-to-tr from-yellow-500 to-yellow-300 hover:brightness-110 transition-all duration-300 text-white px-4 py-2 rounded-md'>Sign In</button>
+            <button className='cursor-pointer bg-gradient-to-tr from-yellow-500 to-yellow-300 hover:brightness-110 transition-all duration-300 text-white font-bold px-4 py-2 rounded-md'>Sign In</button>
           </Link>
+          <ThemeToggle />
         </div>
       </div>
     </div>

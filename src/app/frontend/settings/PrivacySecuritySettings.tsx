@@ -9,7 +9,9 @@ import {
   Check, 
   X,
   Lock,
-  Loader2
+  Loader2,
+  Save,
+  Undo
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
@@ -31,6 +33,67 @@ interface PrivacySettings {
   marketing_emails: boolean;
 }
 
+// Floating Save Changes Bar Component
+const FloatingSaveBar = ({ 
+  isVisible, 
+  onSave, 
+  onDiscard, 
+  isSaving 
+}: {
+  isVisible: boolean;
+  onSave: () => void;
+  onDiscard: () => void;
+  isSaving: boolean;
+}) => {
+  return (
+    <div 
+      className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 ease-out ${
+        isVisible 
+          ? 'translate-y-0 opacity-100 scale-100' 
+          : 'translate-y-16 opacity-0 scale-95 pointer-events-none'
+      }`}
+    >
+      <div className="bg-primary/50 backdrop-blur-sm border border-tertiary rounded-lg shadow-lg p-4 min-w-3xl">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="font-medium text-foreground">You have unsaved changes</p>
+              <p className="text-xs text-muted-foreground">Your settings will be lost if you leave without saving</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onDiscard}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-3 py-2 text-sm border border-tertiary rounded-md hover:bg-accent transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              Discard
+            </button>
+            
+            <button
+              onClick={onSave}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  Save Changes
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function PrivacySecuritySettings() {
   const { user, isAuthenticated } = useAuth();
   
@@ -42,6 +105,19 @@ export default function PrivacySecuritySettings() {
   });
   
   const [privacySettings, setPrivacySettings] = useState<PrivacySettings>({
+    data_sharing_consent: false,
+    analytics_consent: true,
+    marketing_emails: false,
+  });
+
+  // Store original settings for discard functionality
+  const [originalSecuritySettings, setOriginalSecuritySettings] = useState<SecuritySettings>({
+    two_factor_enabled: false,
+    login_notifications: true,
+    security_alerts: true,
+  });
+  
+  const [originalPrivacySettings, setOriginalPrivacySettings] = useState<PrivacySettings>({
     data_sharing_consent: false,
     analytics_consent: true,
     marketing_emails: false,
@@ -91,18 +167,25 @@ export default function PrivacySecuritySettings() {
       if (response.ok) {
         const data = await response.json();
         
-        setSecuritySettings({
+        const loadedSecuritySettings = {
           two_factor_enabled: data.two_factor_enabled || false,
           two_factor_secret: data.two_factor_secret,
           login_notifications: data.login_notifications ?? true,
           security_alerts: data.security_alerts ?? true,
-        });
+        };
 
-        setPrivacySettings({
+        const loadedPrivacySettings = {
           data_sharing_consent: data.data_sharing_consent || false,
           analytics_consent: data.analytics_consent ?? true,
           marketing_emails: data.marketing_emails || false,
-        });
+        };
+
+        setSecuritySettings(loadedSecuritySettings);
+        setPrivacySettings(loadedPrivacySettings);
+        
+        // Store originals for discard functionality
+        setOriginalSecuritySettings(loadedSecuritySettings);
+        setOriginalPrivacySettings(loadedPrivacySettings);
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -143,6 +226,11 @@ export default function PrivacySecuritySettings() {
 
       if (response.ok) {
         setHasUnsavedChanges(false);
+        
+        // Update originals to current values
+        setOriginalSecuritySettings({ ...securitySettings });
+        setOriginalPrivacySettings({ ...privacySettings });
+        
         toast.success('Settings saved successfully');
       } else {
         const errorData = await response.json();
@@ -154,6 +242,14 @@ export default function PrivacySecuritySettings() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const discardChanges = () => {
+    // Revert to original settings
+    setSecuritySettings({ ...originalSecuritySettings });
+    setPrivacySettings({ ...originalPrivacySettings });
+    setHasUnsavedChanges(false);
+    toast.info('Changes discarded');
   };
 
   // 2FA Setup Functions
@@ -292,7 +388,7 @@ export default function PrivacySecuritySettings() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4"> {/* Added padding bottom for floating bar */}
       {/* Header */}
       <div className="p-6 px-8">
         <div className="flex items-center justify-between">
@@ -300,23 +396,6 @@ export default function PrivacySecuritySettings() {
             <h1 className='text-3xl font-bold font-serif'>Privacy & Security</h1>
             <p className='text-sm text-muted-foreground'>Manage your privacy and security preferences.</p>
           </div>
-          
-          {hasUnsavedChanges && (
-            <button 
-              onClick={saveSettings}
-              disabled={isSaving}
-              className="flex items-center gap-2 px-4 py-2 bg-yellow text-white text-sm rounded-md hover:bg-yellow/80 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
-              )}
-            </button>
-          )}
         </div>
       </div>
 
@@ -633,7 +712,7 @@ export default function PrivacySecuritySettings() {
                     setShowDeleteConfirm(false);
                     setDeleteConfirmText('');
                   }}
-                  className="px-4 py-2 border border-tertiary rounded-md hover:bg-accent ransition-colors cursor-pointer"
+                  className="px-4 py-2 border border-tertiary rounded-md hover:bg-accent transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -642,6 +721,14 @@ export default function PrivacySecuritySettings() {
           )}
         </div>
       </section>
+
+      {/* Floating Save Changes Bar */}
+      <FloatingSaveBar
+        isVisible={hasUnsavedChanges}
+        onSave={saveSettings}
+        onDiscard={discardChanges}
+        isSaving={isSaving}
+      />
     </div>
   );
 }
