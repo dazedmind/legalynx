@@ -100,9 +100,6 @@ export function ChatContainer({
   };
 
   const formatTime = (date: Date | string): string => {
-    // Add debugging to see what we're getting
-    console.log('formatTime called with:', { date, type: typeof date, isDate: date instanceof Date });
-    
     let d: Date;
 
     if (typeof date === 'string') {
@@ -136,16 +133,6 @@ export function ChatContainer({
     const isEditing = editingMessageId === message.id;
     const isRegeneratingThis = isRegenerating === message.id;
     
-    // Debug logging to help identify the issue
-    console.log('Rendering message:', {
-      id: message.id,
-      type: message.type,
-      isUser,
-      isAssistant,
-      isEditing,
-      content: message.content.substring(0, 50)
-    });
-
     return (
       <div
         key={message.id}

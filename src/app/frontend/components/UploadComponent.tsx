@@ -222,7 +222,9 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
       console.log("🚀 Uploading to RAG system...");
   
       // Use the same URL consistently
-      const RAG_BASE_URL = process.env.NEXT_PUBLIC_RAG_API_URL || "http://localhost:8000";
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      
+      const RAG_BASE_URL = isDevelopment ? "http://localhost:8000" : process.env.NEXT_PUBLIC_RAG_API_URL;
   
       console.log("🔗 Using RAG URL:", RAG_BASE_URL);
   

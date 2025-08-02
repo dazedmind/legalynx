@@ -1,3 +1,7 @@
+# ================================
+# ULTRA-OPTIMIZED FASTAPI MAIN
+# ================================
+
 import os
 import sys
 import time
@@ -187,6 +191,99 @@ async def startup_event():
         print("⚠️ Running in basic mode - optimized system not available")
 
 # ================================
+# DEBUG ENDPOINTS
+# ================================
+
+@app.get("/debug/globals")
+async def debug_globals():
+    """Debug endpoint to check global variables."""
+    global rag_system, current_pdf_path
+    
+    return {
+        "rag_system_exists": rag_system is not None,
+        "rag_system_keys": list(rag_system.keys()) if rag_system else None,
+        "has_query_engine": "query_engine" in rag_system if rag_system else False,
+        "current_pdf_path": current_pdf_path,
+        "pdf_file_exists": os.path.exists(current_pdf_path) if current_pdf_path else False
+    }
+
+@app.get("/debug/rag-status")
+async def debug_rag_status():
+    """Debug endpoint to check RAG system status."""
+    global rag_system, current_pdf_path
+    
+    debug_info = {
+        "timestamp": time.time(),
+        "rag_system_available": rag_system is not None,
+        "current_pdf_path": current_pdf_path,
+        "security_available": SECURITY_AVAILABLE,
+        "optimized_system_available": OPTIMIZED_SYSTEM_AVAILABLE,
+        "utils_available": UTILS_AVAILABLE,
+        "docx_converter_available": DOCX_CONVERTER_AVAILABLE,
+    }
+    
+    if rag_system:
+        debug_info["rag_system_keys"] = list(rag_system.keys())
+        debug_info["has_query_engine"] = "query_engine" in rag_system
+        
+        if "query_engine" in rag_system:
+            query_engine = rag_system["query_engine"]
+            debug_info["query_engine_type"] = str(type(query_engine))
+            debug_info["query_engine_available"] = query_engine is not None
+    
+    # Test model manager
+    if OPTIMIZED_SYSTEM_AVAILABLE:
+        try:
+            debug_info["model_manager_initialized"] = model_manager._is_initialized
+            debug_info["model_manager_type"] = str(type(model_manager))
+        except:
+            debug_info["model_manager_error"] = "Could not access model manager"
+    
+    return debug_info
+
+@app.post("/debug/test-query")
+async def debug_test_query(query_request: QueryRequest):
+    """Debug endpoint to test query without security middleware."""
+    global rag_system
+    
+    if not rag_system:
+        return {
+            "error": "No RAG system available",
+            "rag_system_exists": False
+        }
+    
+    if "query_engine" not in rag_system:
+        return {
+            "error": "No query engine in RAG system",
+            "rag_system_keys": list(rag_system.keys()),
+            "rag_system_exists": True
+        }
+    
+    try:
+        query_engine = rag_system["query_engine"]
+        
+        # Simple test query
+        test_response = query_engine.query("What is this document about?")
+        
+        return {
+            "success": True,
+            "query": query_request.query,
+            "test_query_success": True,
+            "test_response_type": str(type(test_response)),
+            "test_response_length": len(str(test_response)),
+            "has_source_nodes": hasattr(test_response, 'source_nodes'),
+            "source_node_count": len(test_response.source_nodes) if hasattr(test_response, 'source_nodes') else 0
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "error_type": str(type(e)),
+            "query_engine_type": str(type(rag_system.get("query_engine")))
+        }
+
+# ================================
 # API ENDPOINTS
 # ================================
 
@@ -194,12 +291,16 @@ async def startup_event():
 async def root():
     """Root endpoint."""
     return {"message": "Ultra-Fast RAG Pipeline API is running"}
+ 
 
 @app.get("/status", response_model=SystemStatus)
 async def get_status():
     """Get system status including model cache status."""
     if OPTIMIZED_SYSTEM_AVAILABLE:
-        model_cache_status = "warmed" if model_manager._is_initialized else "cold"
+        try:
+            model_cache_status = "warmed" if model_manager._is_initialized else "cold"
+        except:
+            model_cache_status = "error"
     else:
         model_cache_status = "not_available"
     
@@ -337,20 +438,44 @@ async def upload_document_ultra_fast(
         print("🚀 Starting ultra-fast optimized workflow...")
         workflow_start = time.time()
         
-        result = await optimized_upload_workflow(
-            file_content=final_file_content,
-            original_filename=file.filename,
-            naming_option=naming_option,
-            user_title=title,
-            user_client_name=client_name,
-            counter=counter
-        )
+        try:
+            result = await optimized_upload_workflow(
+                file_content=final_file_content,
+                original_filename=file.filename,
+                naming_option=naming_option,
+                user_title=title,
+                user_client_name=client_name,
+                counter=counter
+            )
+            print(f"🔍 DEBUG: Workflow completed, result keys: {list(result.keys()) if result else 'None'}")
+        except Exception as workflow_error:
+            print(f"❌ Workflow failed: {type(workflow_error).__name__}: {str(workflow_error)}")
+            raise HTTPException(status_code=500, detail=f"Workflow failed: {str(workflow_error)}")
         
         workflow_time = time.time() - workflow_start
         
+        # Verify the RAG system was built successfully
+        if not result.get("rag_system"):
+            print("❌ RAG system not returned from workflow!")
+            print(f"❌ Available result keys: {list(result.keys()) if result else 'No result'}")
+            raise HTTPException(status_code=500, detail="Failed to build RAG system during upload")
+        
+        if "query_engine" not in result["rag_system"]:
+            print("❌ Query engine not found in RAG system!")
+            print(f"❌ Available RAG system keys: {list(result['rag_system'].keys())}")
+            raise HTTPException(status_code=500, detail="Query engine not properly initialized")
+        
         # ===== STEP 6: UPDATE GLOBAL STATE =====
+        print("🔄 Updating global state...")
         rag_system = result["rag_system"]
         current_pdf_path = result["file_path"]
+        
+        print(f"✅ Global state updated:")
+        print(f"   - RAG system available: {rag_system is not None}")
+        print(f"   - Current PDF path: {current_pdf_path}")
+        if rag_system:
+            print(f"   - RAG system keys: {list(rag_system.keys())}")
+            print(f"   - Has query engine: {'query_engine' in rag_system}")
         
         # ===== STEP 7: SECURITY CHECK (NON-BLOCKING) =====
         try:
@@ -415,127 +540,116 @@ async def upload_document_ultra_fast(
         
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
 
-@app.post("/upload-pdf-demo-rule-based")
-async def demo_rule_based_naming(
-    file: UploadFile = File(...),
-):
-    """
-    Demo endpoint to test rule-based naming without full RAG processing.
-    Shows ultra-fast naming in ~0.01-0.1 seconds.
-    """
-    if not OPTIMIZED_SYSTEM_AVAILABLE:
-        raise HTTPException(
-            status_code=503,
-            detail="Rule-based naming system not available. Check server logs for missing dependencies."
-        )
-    
-    try:
-        if not file.filename:
-            raise HTTPException(status_code=400, detail="No filename provided")
-        
-        file_content = await file.read()
-        
-        # Test all naming options
-        demo_results = {}
-        
-        for naming_option in ['keep_original', 'add_timestamp', 'sequential_numbering']:
-            start_time = time.time()
-            
-            result_filename = RuleBasedFileNamer.generate_filename_ultra_fast(
-                file_content=file_content,
-                original_filename=file.filename,
-                naming_option=naming_option,
-                user_title="TestDocument",
-                user_client_name="TestClient",
-                counter=1
-            )
-            
-            processing_time = time.time() - start_time
-            
-            demo_results[naming_option] = {
-                "filename": result_filename,
-                "processing_time_ms": round(processing_time * 1000, 2),
-                "processing_time_s": round(processing_time, 4)
-            }
-        
-        return {
-            "original_filename": file.filename,
-            "file_size_bytes": len(file_content),
-            "results": demo_results,
-            "total_analysis_time": sum(r["processing_time_s"] for r in demo_results.values()),
-            "message": "Rule-based naming demo - no LLM calls, pure regex/pattern matching"
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Demo failed: {str(e)}")
-
 @app.post("/query", response_model=QueryResponse)
 async def query_document_secure(request: Request, query_request: QueryRequest):
-    """Query the RAG system."""
+    """Query the RAG system with enhanced error handling."""
     global rag_system
     
+    print(f"🔍 Query received: '{query_request.query}'")
+    
+    # Check if RAG system is available
     if not rag_system:
+        print("❌ No RAG system available")
         raise HTTPException(status_code=400, detail="No PDF has been uploaded and indexed yet")
     
+    # Check if query engine exists
+    if "query_engine" not in rag_system:
+        print("❌ No query engine in RAG system")
+        raise HTTPException(status_code=500, detail="Query engine not properly initialized")
+    
     user_id = extract_user_id_from_token(request)
+    print(f"👤 User ID: {user_id}")
     
     try:
-        # Security check and sanitization
+        # Step 1: Security check and sanitization
+        sanitized_query = query_request.query
+        was_sanitized = False
+        
         if SECURITY_AVAILABLE and security:
-            sanitized_query = security.check_query_security(user_id, query_request.query)
-            was_sanitized = sanitized_query != query_request.query
+            try:
+                print("🛡️ Running security check...")
+                sanitized_query = security.check_query_security(user_id, query_request.query)
+                was_sanitized = sanitized_query != query_request.query
+                print(f"✅ Security check passed. Sanitized: {was_sanitized}")
+            except Exception as security_error:
+                print(f"⚠️ Security check failed: {security_error}")
+                # If security fails, still allow the query but log it
+                sanitized_query = query_request.query
+                was_sanitized = False
         else:
-            sanitized_query = query_request.query
-            was_sanitized = False
+            print("⚠️ Security middleware not available, proceeding without security check")
         
-        # Execute query using cached models (fast)
-        response = rag_system["query_engine"].query(sanitized_query)
-        
-        return QueryResponse(
-            query=query_request.query,
-            response=str(response),
-            source_count=len(response.source_nodes) if hasattr(response, 'source_nodes') else 0,
-            security_status="sanitized" if was_sanitized else "verified"
-        )
+        # Step 2: Execute query
+        print("🤖 Executing query with RAG system...")
+        try:
+            query_engine = rag_system["query_engine"]
+            print(f"🔍 Query engine type: {type(query_engine)}")
+            
+            # Execute the actual query
+            response = query_engine.query(sanitized_query)
+            print("✅ Query executed successfully")
+            
+            # Extract response and source information
+            response_text = str(response)
+            source_count = 0
+            
+            if hasattr(response, 'source_nodes') and response.source_nodes:
+                source_count = len(response.source_nodes)
+                print(f"📄 Found {source_count} source nodes")
+            else:
+                print("📄 No source nodes found in response")
+            
+            print(f"📝 Response length: {len(response_text)} characters")
+            
+            return QueryResponse(
+                query=query_request.query,
+                response=response_text,
+                source_count=source_count,
+                security_status="sanitized" if was_sanitized else "verified"
+            )
+            
+        except Exception as query_error:
+            print(f"❌ Query execution error: {type(query_error).__name__}: {str(query_error)}")
+            print(f"❌ Query error traceback: {query_error}")
+            
+            # Check if it's a specific type of error
+            if "API" in str(query_error) or "key" in str(query_error).lower():
+                raise HTTPException(
+                    status_code=500, 
+                    detail="AI model API error. Please check API keys and try again."
+                )
+            elif "embedding" in str(query_error).lower():
+                raise HTTPException(
+                    status_code=500,
+                    detail="Embedding model error. Please try again or contact support."
+                )
+            elif "connection" in str(query_error).lower():
+                raise HTTPException(
+                    status_code=500,
+                    detail="Connection error to AI services. Please try again."
+                )
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Query processing error: {str(query_error)}"
+                )
         
     except HTTPException:
+        # Re-raise HTTP exceptions as-is
         raise
     except Exception as e:
-        print(f"❌ Error executing query: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error executing query: {str(e)}")
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "system_ready": rag_system is not None,
-        "pdf_loaded": current_pdf_path is not None,
-        "models_cached": model_manager._is_initialized if OPTIMIZED_SYSTEM_AVAILABLE else False,
-        "optimization_mode": "ultra_fast" if OPTIMIZED_SYSTEM_AVAILABLE else "basic",
-        "components": {
-            "optimized_system": OPTIMIZED_SYSTEM_AVAILABLE,
-            "security": SECURITY_AVAILABLE,
-            "utils": UTILS_AVAILABLE,
-            "docx_converter": DOCX_CONVERTER_AVAILABLE
-        }
-    }
-
-@app.get("/debug")
-async def debug_info():
-    """Debug endpoint to check what's available."""
-    return {
-        "python_path": sys.path,
-        "current_directory": os.getcwd(),
-        "backend_directory": current_dir,
-        "components_available": {
-            "optimized_system": OPTIMIZED_SYSTEM_AVAILABLE,
-            "security": SECURITY_AVAILABLE,
-            "utils": UTILS_AVAILABLE,
-            "docx_converter": DOCX_CONVERTER_AVAILABLE
-        },
-        "environment": dict(os.environ)
-    }
+        print(f"❌ Unexpected error in query endpoint: {type(e).__name__}: {str(e)}")
+        print(f"❌ Full error: {e}")
+        
+        # Generic error handling
+        error_message = str(e)
+        if len(error_message) > 200:
+            error_message = error_message[:200] + "..."
+            
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Internal server error: {error_message}"
+        )
 
 # ================================
 # COMPATIBILITY ENDPOINTS
@@ -585,6 +699,39 @@ async def reset_system():
     current_pdf_path = None
     
     return {"message": "System reset successfully", "note": "Models remain cached for speed"}
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {
+        "status": "healthy",
+        "system_ready": rag_system is not None,
+        "pdf_loaded": current_pdf_path is not None,
+        "models_cached": model_manager._is_initialized if OPTIMIZED_SYSTEM_AVAILABLE else False,
+        "optimization_mode": "ultra_fast" if OPTIMIZED_SYSTEM_AVAILABLE else "basic",
+        "components": {
+            "optimized_system": OPTIMIZED_SYSTEM_AVAILABLE,
+            "security": SECURITY_AVAILABLE,
+            "utils": UTILS_AVAILABLE,
+            "docx_converter": DOCX_CONVERTER_AVAILABLE
+        }
+    }
+
+@app.get("/debug")
+async def debug_info():
+    """Debug endpoint to check what's available."""
+    return {
+        "python_path": sys.path,
+        "current_directory": os.getcwd(),
+        "backend_directory": current_dir,
+        "components_available": {
+            "optimized_system": OPTIMIZED_SYSTEM_AVAILABLE,
+            "security": SECURITY_AVAILABLE,
+            "utils": UTILS_AVAILABLE,
+            "docx_converter": DOCX_CONVERTER_AVAILABLE
+        },
+        "environment_keys": list(os.environ.keys())
+    }
 
 # ================================
 # MAIN FUNCTION

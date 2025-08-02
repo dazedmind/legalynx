@@ -144,6 +144,8 @@ export default function ChatViewer({
     const plan = subscriptionStatus;
     if (plan === 'BASIC') {
       return false;
+    } else {
+      return true;
     }
   };
 
@@ -488,6 +490,8 @@ export default function ChatViewer({
   };
 
   const loadPdfIntoRagSystemCached = async (documentId: string, filename: string): Promise<void> => {
+    console.log("🔄 Loading PDF into RAG system:", documentId, filename);
+
     const getFileBlob = async (): Promise<Blob> => {
       const exists = await checkDocumentExists(documentId);
       if (!exists) {
@@ -641,7 +645,6 @@ export default function ChatViewer({
 
         if (response.ok) {
           const savedMessage = await response.json();
-          console.log('✅ Message saved successfully:', savedMessage.messageId || savedMessage.id);
         } else if (response.status === 404) {
           console.log('❌ Session not found, document may have been deleted');
           setDocumentExists(false);
