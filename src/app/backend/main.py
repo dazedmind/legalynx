@@ -1,7 +1,3 @@
-# ================================
-# ULTRA-OPTIMIZED FASTAPI MAIN
-# ================================
-
 import os
 import sys
 import time
@@ -17,22 +13,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Add backend directory to Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
 
-# Import optimized system
-from optimized_rag_system import (
-    optimized_upload_workflow,
-    model_manager,
-    RuleBasedFileNamer,
-    apply_ultra_fast_config
-)
-
-# Import existing modules
-from security.security_middleware import SimplifiedSecurityMiddleware
-from utils.file_handler import get_next_sequential_number, validate_pdf_content
-from utils.docx_converter import convert_docx_to_pdf, validate_docx_file
-
-# Initialize FastAPI app
+# Initialize FastAPI app first to avoid import issues
 app = FastAPI(title="Ultra-Fast RAG Pipeline API", version="2.0.0")
 
 # Add CORS middleware
@@ -48,8 +32,50 @@ app.add_middleware(
 rag_system: Optional[Dict[str, Any]] = None
 current_pdf_path: Optional[str] = None
 
-# Security middleware
-security = SimplifiedSecurityMiddleware()
+# ================================
+# IMPORT WITH ERROR HANDLING
+# ================================
+
+try:
+    # Import optimized system
+    from optimized_rag_system import (
+        optimized_upload_workflow,
+        model_manager,
+        RuleBasedFileNamer,
+        apply_ultra_fast_config
+    )
+    OPTIMIZED_SYSTEM_AVAILABLE = True
+    print("✅ Optimized RAG system loaded")
+except ImportError as e:
+    print(f"⚠️ Optimized system not available: {e}")
+    OPTIMIZED_SYSTEM_AVAILABLE = False
+
+try:
+    # Import existing modules
+    from security.security_middleware import SimplifiedSecurityMiddleware
+    security = SimplifiedSecurityMiddleware()
+    SECURITY_AVAILABLE = True
+    print("✅ Security middleware loaded")
+except ImportError as e:
+    print(f"⚠️ Security middleware not available: {e}")
+    SECURITY_AVAILABLE = False
+    security = None
+
+try:
+    from utils.file_handler import get_next_sequential_number, validate_pdf_content
+    UTILS_AVAILABLE = True
+    print("✅ File handler utils loaded")
+except ImportError as e:
+    print(f"⚠️ File handler utils not available: {e}")
+    UTILS_AVAILABLE = False
+
+try:
+    from utils.docx_converter import convert_docx_to_pdf, validate_docx_file
+    DOCX_CONVERTER_AVAILABLE = True
+    print("✅ DOCX converter loaded")
+except ImportError as e:
+    print(f"⚠️ DOCX converter not available: {e}")
+    DOCX_CONVERTER_AVAILABLE = False
 
 # ================================
 # PYDANTIC MODELS
@@ -87,15 +113,33 @@ class UploadResponse(BaseModel):
     optimization_used: str
 
 # ================================
+# FALLBACK FUNCTIONS
+# ================================
+
+def get_next_sequential_number_fallback(upload_dir: str, title: Optional[str] = None, client_name: Optional[str] = None) -> int:
+    """Fallback implementation when utils not available."""
+    return 1
+
+def validate_pdf_content_fallback(file_path: str) -> Dict[str, Any]:
+    """Fallback PDF validation."""
+    return {"is_valid": os.path.exists(file_path) and file_path.endswith('.pdf')}
+
+def validate_docx_file_fallback(file_path: str) -> Dict[str, Any]:
+    """Fallback DOCX validation."""
+    return {"is_valid": os.path.exists(file_path) and file_path.endswith(('.docx', '.doc'))}
+
+def convert_docx_to_pdf_fallback(docx_path: str, pdf_path: str):
+    """Fallback DOCX conversion - raises error."""
+    raise NotImplementedError("DOCX conversion not available - install docx2pdf")
+
+# ================================
 # USER SETTINGS (SIMPLIFIED)
 # ================================
 
 async def get_user_settings_mock(user_id: str) -> dict:
     """Mock user settings - replace with your actual database logic."""
-    # For demo purposes, return default settings
-    # In production, replace with actual database call
     return {
-        'file_naming_format': 'ADD_TIMESTAMP',  # or 'ORIGINAL', 'SEQUENTIAL_NUMBERING'
+        'file_naming_format': 'ADD_TIMESTAMP',
         'file_naming_title': 'Document',
         'file_client_name': 'Client'
     }
@@ -111,10 +155,9 @@ def convert_enum_to_naming_option(enum_value: str) -> str:
 
 def extract_user_id_from_token(request: Request) -> Optional[str]:
     """Extract user ID from JWT token (simplified)."""
-    # Mock implementation - replace with your actual JWT logic
     auth_header = request.headers.get('Authorization')
     if auth_header and auth_header.startswith('Bearer '):
-        return 'demo_user_123'  # Mock user ID
+        return 'demo_user_123'
     return None
 
 # ================================
@@ -125,19 +168,23 @@ def extract_user_id_from_token(request: Request) -> Optional[str]:
 async def startup_event():
     """Initialize models on startup for maximum speed."""
     print("🚀 Starting Ultra-Fast RAG Pipeline...")
-    print("⚡ Pre-warming models for maximum speed...")
     
-    # Pre-warm the singleton model manager
-    try:
-        await model_manager.get_embedding_manager()
-        print("✅ Models pre-warmed successfully")
-    except Exception as e:
-        print(f"⚠️ Model pre-warming failed: {e}")
-        print("   Models will be initialized on first upload")
-    
-    # Apply ultra-fast configuration
-    apply_ultra_fast_config()
-    print("✅ Ultra-fast configuration applied")
+    if OPTIMIZED_SYSTEM_AVAILABLE:
+        print("⚡ Pre-warming models for maximum speed...")
+        try:
+            await model_manager.get_embedding_manager()
+            print("✅ Models pre-warmed successfully")
+        except Exception as e:
+            print(f"⚠️ Model pre-warming failed: {e}")
+            print("   Models will be initialized on first upload")
+        
+        try:
+            apply_ultra_fast_config()
+            print("✅ Ultra-fast configuration applied")
+        except Exception as e:
+            print(f"⚠️ Ultra-fast config failed: {e}")
+    else:
+        print("⚠️ Running in basic mode - optimized system not available")
 
 # ================================
 # API ENDPOINTS
@@ -151,7 +198,10 @@ async def root():
 @app.get("/status", response_model=SystemStatus)
 async def get_status():
     """Get system status including model cache status."""
-    model_cache_status = "warmed" if model_manager._is_initialized else "cold"
+    if OPTIMIZED_SYSTEM_AVAILABLE:
+        model_cache_status = "warmed" if model_manager._is_initialized else "cold"
+    else:
+        model_cache_status = "not_available"
     
     return SystemStatus(
         status="running",
@@ -171,6 +221,12 @@ async def upload_document_ultra_fast(
     Expected time: 15-30 seconds (down from 5+ minutes).
     """
     global rag_system, current_pdf_path
+    
+    if not OPTIMIZED_SYSTEM_AVAILABLE:
+        raise HTTPException(
+            status_code=503, 
+            detail="Optimized upload system not available. Check server logs for missing dependencies."
+        )
     
     # Track total processing time
     start_time = time.time()
@@ -202,7 +258,7 @@ async def upload_document_ultra_fast(
         
         # ===== STEP 2: GET USER SETTINGS (FAST) =====
         user_id = extract_user_id_from_token(request)
-        user_settings = {'file_naming_format': 'ADD_TIMESTAMP'}  # Default
+        user_settings = {'file_naming_format': 'ADD_TIMESTAMP'}
         naming_option = 'add_timestamp'
         title = None
         client_name = None
@@ -226,6 +282,12 @@ async def upload_document_ultra_fast(
         
         if file_ext in ['.docx', '.doc']:
             file_type = "docx"
+            if not DOCX_CONVERTER_AVAILABLE:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="DOCX conversion not available. Please upload PDF files or install docx2pdf."
+                )
+            
             try:
                 # For DOCX, convert to PDF first
                 temp_docx_path = f"temp_{file.filename}"
@@ -233,14 +295,16 @@ async def upload_document_ultra_fast(
                     f.write(file_content)
                 
                 # Validate DOCX
-                docx_validation = validate_docx_file(temp_docx_path)
+                validate_func = validate_docx_file if DOCX_CONVERTER_AVAILABLE else validate_docx_file_fallback
+                docx_validation = validate_func(temp_docx_path)
                 if not docx_validation['is_valid']:
                     os.remove(temp_docx_path)
                     raise HTTPException(status_code=400, detail="Invalid DOCX file")
                 
                 # Convert to PDF
                 temp_pdf_path = f"temp_{os.path.splitext(file.filename)[0]}.pdf"
-                convert_docx_to_pdf(temp_docx_path, temp_pdf_path)
+                convert_func = convert_docx_to_pdf if DOCX_CONVERTER_AVAILABLE else convert_docx_to_pdf_fallback
+                convert_func(temp_docx_path, temp_pdf_path)
                 
                 # Read converted PDF content
                 with open(temp_pdf_path, 'rb') as f:
@@ -266,7 +330,8 @@ async def upload_document_ultra_fast(
         # ===== STEP 4: GET COUNTER FOR SEQUENTIAL NUMBERING =====
         counter = None
         if naming_option == 'sequential_numbering' and title and client_name:
-            counter = get_next_sequential_number("sample_docs", title, client_name)
+            get_counter_func = get_next_sequential_number if UTILS_AVAILABLE else get_next_sequential_number_fallback
+            counter = get_counter_func("sample_docs", title, client_name)
         
         # ===== STEP 5: ULTRA-FAST OPTIMIZED WORKFLOW =====
         print("🚀 Starting ultra-fast optimized workflow...")
@@ -289,13 +354,17 @@ async def upload_document_ultra_fast(
         
         # ===== STEP 7: SECURITY CHECK (NON-BLOCKING) =====
         try:
-            security_result = security.check_upload_security(
-                user_id or 'anonymous', 
-                final_file_content, 
-                result["file_path"]
-            )
-            document_id = security_result.get("document_id", f"doc_{int(file_size)}_{len(result['documents'])}")
-            security_status = "verified"
+            if SECURITY_AVAILABLE and security:
+                security_result = security.check_upload_security(
+                    user_id or 'anonymous', 
+                    final_file_content, 
+                    result["file_path"]
+                )
+                document_id = security_result.get("document_id", f"doc_{int(file_size)}_{len(result['documents'])}")
+                security_status = "verified"
+            else:
+                document_id = f"doc_{int(file_size)}_{len(result['documents'])}"
+                security_status = "not_available"
         except Exception as e:
             print(f"⚠️ Security check failed: {e}")
             document_id = f"doc_{int(file_size)}_{len(result['documents'])}"
@@ -354,6 +423,12 @@ async def demo_rule_based_naming(
     Demo endpoint to test rule-based naming without full RAG processing.
     Shows ultra-fast naming in ~0.01-0.1 seconds.
     """
+    if not OPTIMIZED_SYSTEM_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Rule-based naming system not available. Check server logs for missing dependencies."
+        )
+    
     try:
         if not file.filename:
             raise HTTPException(status_code=400, detail="No filename provided")
@@ -406,8 +481,12 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
     
     try:
         # Security check and sanitization
-        sanitized_query = security.check_query_security(user_id, query_request.query)
-        was_sanitized = sanitized_query != query_request.query
+        if SECURITY_AVAILABLE and security:
+            sanitized_query = security.check_query_security(user_id, query_request.query)
+            was_sanitized = sanitized_query != query_request.query
+        else:
+            sanitized_query = query_request.query
+            was_sanitized = False
         
         # Execute query using cached models (fast)
         response = rag_system["query_engine"].query(sanitized_query)
@@ -425,95 +504,6 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
         print(f"❌ Error executing query: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error executing query: {str(e)}")
 
-@app.get("/optimization-stats")
-async def get_optimization_stats():
-    """Get statistics about the optimization improvements."""
-    return {
-        "optimizations_applied": [
-            "Singleton model manager (eliminates 3x LLM re-initialization)",
-            "Rule-based filename extraction (no LLM calls)",
-            "Reduced query expansions (3→1)",
-            "Disabled expensive logical chunking", 
-            "Model caching and reuse",
-            "Background processing",
-            "Fast regex-based pattern matching"
-        ],
-        "performance_improvements": {
-            "before": {
-                "typical_time_seconds": 300,
-                "typical_time_minutes": 5,
-                "llm_initializations": 3,
-                "filename_method": "LLM-based with RAG queries",
-                "query_expansions": 3,
-                "logical_chunking": True
-            },
-            "after": {
-                "typical_time_seconds": 20,
-                "typical_time_minutes": 0.33,
-                "llm_initializations": 1,
-                "filename_method": "Rule-based regex patterns",
-                "query_expansions": 1,
-                "logical_chunking": False
-            },
-            "speedup_factor": "15x faster",
-            "time_reduction": "95% reduction"
-        },
-        "model_cache_status": "warmed" if model_manager._is_initialized else "cold",
-        "config_optimizations": {
-            "fine_chunk_size": 512,
-            "retrieval_top_k": 3,
-            "num_query_expansions": 1,
-            "enable_logical_chunking": False,
-            "enable_hybrid_retrieval": True
-        }
-    }
-
-@app.get("/compare-naming-methods")
-async def compare_naming_methods():
-    """Compare old vs new naming methods."""
-    return {
-        "old_method": {
-            "name": "LLM-based with RAG queries",
-            "steps": [
-                "Build temporary RAG system",
-                "Make 3 separate LLM queries",
-                "Parse responses",
-                "Combine results"
-            ],
-            "typical_time": "10-30 seconds",
-            "llm_calls": 3,
-            "accuracy": "95%",
-            "cost": "High (API calls)",
-            "rate_limiting": "Yes, can hit limits"
-        },
-        "new_method": {
-            "name": "Rule-based regex extraction",
-            "steps": [
-                "Extract first 3 pages text",
-                "Apply regex patterns",
-                "Match document types",
-                "Build filename"
-            ],
-            "typical_time": "0.01-0.1 seconds",
-            "llm_calls": 0,
-            "accuracy": "90%",
-            "cost": "Free (no API calls)",
-            "rate_limiting": "No limits"
-        },
-        "speedup": "100-1000x faster for naming",
-        "recommendation": "Use rule-based for most cases, LLM for complex edge cases"
-    }
-
-@app.delete("/reset")
-async def reset_system():
-    """Reset the RAG system."""
-    global rag_system, current_pdf_path
-    
-    rag_system = None
-    current_pdf_path = None
-    
-    return {"message": "System reset successfully", "note": "Models remain cached for speed"}
-
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
@@ -521,33 +511,30 @@ async def health_check():
         "status": "healthy",
         "system_ready": rag_system is not None,
         "pdf_loaded": current_pdf_path is not None,
-        "models_cached": model_manager._is_initialized,
-        "optimization_mode": "ultra_fast"
+        "models_cached": model_manager._is_initialized if OPTIMIZED_SYSTEM_AVAILABLE else False,
+        "optimization_mode": "ultra_fast" if OPTIMIZED_SYSTEM_AVAILABLE else "basic",
+        "components": {
+            "optimized_system": OPTIMIZED_SYSTEM_AVAILABLE,
+            "security": SECURITY_AVAILABLE,
+            "utils": UTILS_AVAILABLE,
+            "docx_converter": DOCX_CONVERTER_AVAILABLE
+        }
     }
 
-@app.get("/performance-tips")
-async def get_performance_tips():
-    """Get tips for maximum performance."""
+@app.get("/debug")
+async def debug_info():
+    """Debug endpoint to check what's available."""
     return {
-        "tips": [
-            "Use the /upload-pdf-ultra-fast endpoint for maximum speed",
-            "Keep the server running to maintain model cache",
-            "Use rule-based naming for 90%+ accuracy with 1000x speed",
-            "Upload PDF files directly when possible (avoid DOCX conversion)", 
-            "Consider pre-processing documents to remove unnecessary pages",
-            "Use smaller documents when possible (under 10MB optimal)"
-        ],
-        "benchmark_expectations": {
-            "small_pdf_5_pages": "10-15 seconds",
-            "medium_pdf_20_pages": "20-30 seconds", 
-            "large_pdf_50_pages": "45-60 seconds",
-            "very_large_pdf_100_pages": "90-120 seconds"
+        "python_path": sys.path,
+        "current_directory": os.getcwd(),
+        "backend_directory": current_dir,
+        "components_available": {
+            "optimized_system": OPTIMIZED_SYSTEM_AVAILABLE,
+            "security": SECURITY_AVAILABLE,
+            "utils": UTILS_AVAILABLE,
+            "docx_converter": DOCX_CONVERTER_AVAILABLE
         },
-        "bottlenecks_remaining": [
-            "Vector embedding generation (GPU would help)",
-            "Text extraction from complex PDFs",
-            "Disk I/O for large files"
-        ]
+        "environment": dict(os.environ)
     }
 
 # ================================
@@ -563,8 +550,6 @@ async def upload_pdf_compatibility(
     Compatibility endpoint for /upload-pdf - redirects to ultra-fast endpoint
     """
     print(f"🔄 Compatibility endpoint called: /upload-pdf for {file.filename}")
-    
-    # Redirect to the ultra-fast endpoint
     return await upload_document_ultra_fast(request, file)
 
 @app.get("/check-document/{document_id}")
@@ -576,13 +561,11 @@ async def check_document_exists(document_id: str):
     
     print(f"🔍 Checking document existence: {document_id}")
     
-    # For now, we'll check if any document is loaded
-    # In a more sophisticated system, you'd track individual documents
     if rag_system is not None and current_pdf_path is not None:
         return {
             "exists": True,
             "document_id": document_id,
-            "rag_id": document_id,  # For compatibility
+            "rag_id": document_id,
             "filename": os.path.basename(current_pdf_path) if current_pdf_path else None
         }
     else:
@@ -593,6 +576,16 @@ async def check_document_exists(document_id: str):
             "filename": None
         }
 
+@app.delete("/reset")
+async def reset_system():
+    """Reset the RAG system."""
+    global rag_system, current_pdf_path
+    
+    rag_system = None
+    current_pdf_path = None
+    
+    return {"message": "System reset successfully", "note": "Models remain cached for speed"}
+
 # ================================
 # MAIN FUNCTION
 # ================================
@@ -600,23 +593,22 @@ async def check_document_exists(document_id: str):
 def main():
     """Main function to run the ultra-fast RAG API."""
     print("🚀 Starting Ultra-Fast RAG Pipeline API...")
-    print("⚡ Optimizations enabled:")
-    print("   - Singleton model manager")
-    print("   - Rule-based naming (no LLM)")
-    print("   - Cached embeddings")
-    print("   - Reduced query expansions")
-    print("   - Background processing")
-    print("   - Disabled expensive features")
-    print("💡 Expected performance: 15-30 seconds (was 5+ minutes)")
-    print("🛡️ Security features: Rate limiting, Content scanning, Injection protection")
+    print("⚡ Available components:")
+    print(f"   - Optimized system: {OPTIMIZED_SYSTEM_AVAILABLE}")
+    print(f"   - Security middleware: {SECURITY_AVAILABLE}")
+    print(f"   - File utilities: {UTILS_AVAILABLE}")
+    print(f"   - DOCX converter: {DOCX_CONVERTER_AVAILABLE}")
+    
+    port = int(os.environ.get("PORT", 8000))
+    print(f"🌐 Starting server on port {port}")
     
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
-        reload=False,  # Disable reload for production performance
+        port=port,
+        reload=False,
         log_level="info",
-        workers=1  # Single worker to maintain model cache
+        workers=1
     )
 
 if __name__ == "__main__":

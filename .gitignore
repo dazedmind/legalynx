@@ -229,6 +229,7 @@ cython_debug/
 /sample_docs/
 /uploads/
 /src/app/backend/sample_docs/
+/src/app/backend/uploads/
 /src/app/backend/rag_pipeline/__pycache__/
 /src/app/backend/security/__pycache__/
 /src/app/backend/utils/__pycache__/

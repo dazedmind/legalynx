@@ -1,4 +1,4 @@
-// Fixed UploadComponent.tsx for ultra-fast backend integration
+
 import {
   Upload,
   FileText,
@@ -52,7 +52,7 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
   >("idle");
   const [warning, setWarning] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
-  
+
   // User settings and upload options
   const [uploadOptions, setUploadOptions] = useState<UploadOptions>({
     supported_file_types: [
@@ -79,7 +79,7 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
       "Password-protected files",
     ],
   });
-  
+
   const [userSettings, setUserSettings] = useState<UserSettings>({
     file_naming_format: "ORIGINAL",
   });
@@ -87,24 +87,6 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
 
   // Load upload options and user settings on component mount
   useEffect(() => {
-    const loadUploadOptions = async () => {
-      try {
-        // Try to load from the new ultra-fast backend
-        const response = await fetch("http://localhost:8000/upload-options");
-        if (response.ok) {
-          const options = await response.json();
-          setUploadOptions(options);
-          console.log("✅ Loaded upload options from ultra-fast backend");
-        } else {
-          console.log("📋 Using default upload options (backend endpoint not available)");
-          // Keep default options defined above
-        }
-      } catch (error) {
-        console.log("📋 Using default upload options (fetch failed):", error);
-        // Keep default options defined above
-      }
-    };
-
     const loadUserSettings = async () => {
       if (!isAuthenticated || !user) {
         // For non-authenticated users, use default settings
@@ -145,8 +127,6 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
         setLoadingSettings(false);
       }
     };
-
-    loadUploadOptions();
     loadUserSettings();
   }, [isAuthenticated, user]);
 
@@ -194,47 +174,58 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
       }
     }
   };
-// ✅ NEW: Modified database save function that accepts the RAG filename
-const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: string): Promise<any> => {
-  if (!isAuthenticated || !user) {
-    console.log("👤 User not authenticated, skipping database save");
-    return null;
-  }
-
-  try {
-    console.log("💾 Saving to database with RAG filename:", ragFilename);
-
-    const formData = new FormData();
-    formData.append("file", file);
-    
-    // ✅ CRITICAL: Pass the RAG filename to the backend
-    formData.append("intelligent_filename", ragFilename);
-
-    const response = await fetch("/backend/api/documents/upload", {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: formData,
-    });
-
-    if (response.ok) {
-      const savedDocument = await response.json();
-      console.log("✅ Document saved to database with RAG filename:", savedDocument);
-      return savedDocument;
-    } else {
-      const errorData = await response.json();
-      console.error("❌ Database save failed:", errorData);
-      throw new Error(errorData.error || "Failed to save to database");
+  // ✅ NEW: Modified database save function that accepts the RAG filename
+  const saveDocumentToDatabaseWithFilename = async (
+    file: File,
+    ragFilename: string
+  ): Promise<any> => {
+    if (!isAuthenticated || !user) {
+      console.log("👤 User not authenticated, skipping database save");
+      return null;
     }
-  } catch (error) {
-    console.error("❌ Database save error:", error);
-    throw error;
-  }
-};
+
+    try {
+      console.log("💾 Saving to database with RAG filename:", ragFilename);
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // ✅ CRITICAL: Pass the RAG filename to the backend
+      formData.append("intelligent_filename", ragFilename);
+
+      const response = await fetch("/backend/api/documents/upload", {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: formData,
+      });
+
+      if (response.ok) {
+        const savedDocument = await response.json();
+        console.log(
+          "✅ Document saved to database with RAG filename:",
+          savedDocument
+        );
+        return savedDocument;
+      } else {
+        const errorData = await response.json();
+        console.error("❌ Database save failed:", errorData);
+        throw new Error(errorData.error || "Failed to save to database");
+      }
+    } catch (error) {
+      console.error("❌ Database save error:", error);
+      throw error;
+    }
+  };
 
   const uploadToRagSystem = async (file: File): Promise<any> => {
     try {
-      console.log("🚀 Uploading to ULTRA-FAST RAG system...");
-
+      console.log("🚀 Uploading to RAG system...");
+  
+      // Use the same URL consistently
+      const RAG_BASE_URL = "http://localhost:8000";
+  
+      console.log("🔗 Using RAG URL:", RAG_BASE_URL);
+  
       // Convert enum to string format expected by backend
       const getNamingOption = (format: string) => {
         switch (format) {
@@ -248,7 +239,7 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
             return "keep_original";
         }
       };
-
+  
       // Prepare form data with user settings
       const formData = new FormData();
       formData.append("file", file);
@@ -256,7 +247,7 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
         "naming_option",
         getNamingOption(userSettings?.file_naming_format || "ORIGINAL")
       );
-
+  
       // Add title and client name from user settings if available
       if (userSettings?.title?.trim()) {
         formData.append("title", userSettings.title.trim());
@@ -264,98 +255,41 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
       if (userSettings?.client_name?.trim()) {
         formData.append("client_name", userSettings.client_name.trim());
       }
-
-      // 🚀 USE THE NEW ULTRA-FAST ENDPOINT
-      const response = await fetch("http://localhost:8000/upload-pdf-ultra-fast", {
+  
+      // 🔥 FIXED: Use the single consolidated endpoint
+      const response = await fetch(`${RAG_BASE_URL}/upload-pdf`, {
         method: "POST",
         body: formData,
         headers: getAuthHeaders(),
       });
-
+  
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail || "Ultra-fast upload failed");
+        throw new Error(error.detail || "Upload failed");
       }
-
+  
       const ragResponse = await response.json();
-      console.log("✅ ULTRA-FAST RAG upload successful:", ragResponse);
-      console.log(`⚡ Processing time: ${ragResponse.processing_time?.toFixed(2)}s`);
+      console.log("✅ RAG upload successful:", ragResponse);
+      console.log(
+        `⚡ Processing time: ${ragResponse.processing_time?.toFixed(2)}s`
+      );
       console.log(`🎯 Optimization used: ${ragResponse.optimization_used}`);
-      
+  
       // Show performance improvement in toast
       if (ragResponse.processing_time) {
         const oldTime = 300; // 5 minutes
         const speedup = oldTime / ragResponse.processing_time;
-        toast.success(`Ultra-fast processing complete! ${speedup.toFixed(1)}x faster than before`);
+        toast.success(
+          `Processing complete! ${speedup.toFixed(
+            1
+          )}x faster than before`
+        );
       }
-      
+  
       return ragResponse;
     } catch (error) {
-      console.error("❌ Ultra-fast RAG upload failed:", error);
-      
-      // Fallback to regular endpoint if ultra-fast fails
-      console.log("🔄 Trying fallback to regular endpoint...");
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        
-        const fallbackResponse = await fetch("http://localhost:8000/upload-pdf", {
-          method: "POST",
-          body: formData,
-          headers: getAuthHeaders(),
-        });
-
-        if (fallbackResponse.ok) {
-          const result = await fallbackResponse.json();
-          console.log("✅ Fallback upload successful");
-          toast.warning("Used fallback upload method");
-          return result;
-        }
-      } catch (fallbackError) {
-        console.error("❌ Fallback also failed:", fallbackError);
-      }
-      
+      console.error("❌ RAG upload failed:", error);
       throw error;
-    }
-  };
-
-  const getPreviewExample = () => {
-    if (!file || !userSettings) return file?.name || "";
-
-    const namingFormat = userSettings.file_naming_format;
-
-    if (namingFormat === "ORIGINAL") {
-      return file.name;
-    } else if (namingFormat === "ADD_TIMESTAMP") {
-      const date = new Date().toISOString().split("T")[0];
-      const ext = file.name.toLowerCase().endsWith(".docx")
-        ? "pdf"
-        : file.name.split(".").pop();
-      const title = userSettings.title || "TITLE";
-      const clientName = userSettings.client_name || "CLIENTNAME";
-      return `${title}_${clientName}_${date}.${ext}`;
-    } else if (namingFormat === "SEQUENTIAL_NUMBERING") {
-      const ext = file.name.toLowerCase().endsWith(".docx")
-        ? "pdf"
-        : file.name.split(".").pop();
-      const title = userSettings.title || "TITLE";
-      const clientName = userSettings.client_name || "CLIENTNAME";
-      return `${title}_${clientName}_001.${ext}`;
-    }
-
-    return file.name;
-  };
-
-  const getNamingFormatLabel = (format: string) => {
-    switch (format) {
-      case "ORIGINAL":
-        return "Keep original names";
-      case "ADD_TIMESTAMP":
-        return "Add timestamp";
-      case "SEQUENTIAL_NUMBERING":
-        return "Sequential numbering";
-      default:
-        return "Keep original names";
     }
   };
 
@@ -365,63 +299,76 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
       setStatusMessage("Please select a file first");
       return;
     }
-  
+
     if (!userSettings) {
       setUploadStatus("error");
       setStatusMessage("User settings not loaded. Please try again.");
       return;
     }
-  
+
     setIsUploading(true);
     setUploadStatus("processing");
     setStatusMessage("Starting ultra-fast processing...");
-  
+
     const startTime = Date.now();
-  
+
     try {
       let documentInfo: any = null;
       let ragResponse: any = null;
-  
+
       if (isAuthenticated && user) {
         // ✅ NEW WORKFLOW: RAG processing FIRST, then database save
-        console.log("👤 Authenticated user - RAG-first workflow with ultra-fast processing");
-  
+        console.log(
+          "👤 Authenticated user - RAG-first workflow with ultra-fast processing"
+        );
+
         try {
           // Step 1: Upload to ULTRA-FAST RAG system FIRST
           setStatusMessage("Processing document...");
           ragResponse = await uploadToRagSystem(file);
-          
+
           // Step 2: Save to database using the filename from RAG response
           setStatusMessage("Preparing document...");
-          documentInfo = await saveDocumentToDatabaseWithFilename(file, ragResponse.filename);
-  
+          documentInfo = await saveDocumentToDatabaseWithFilename(
+            file,
+            ragResponse.filename
+          );
+
           // Calculate and display performance
           const processingTime = (Date.now() - startTime) / 1000;
           const estimatedOldTime = 300; // 5 minutes
           const speedup = estimatedOldTime / processingTime;
-  
+
           // Enhanced success messages with performance info
-          let successMessage = `Document processed in ${processingTime.toFixed(1)}s (${speedup.toFixed(1)}x faster)!`;
+          let successMessage = `Document processed in ${processingTime.toFixed(
+            1
+          )}s (${speedup.toFixed(1)}x faster)!`;
           if (ragResponse?.conversion_performed) {
             successMessage += " (DOCX converted to PDF)";
           }
           if (ragResponse?.filename !== ragResponse?.original_filename) {
             successMessage += `\nRenamed: ${ragResponse.original_filename} → ${ragResponse.filename}`;
           }
-  
+
           // Check for security feedback
           if (ragResponse?.security_status === "sanitized") {
-            toast.warning("Document content was sanitized for security reasons");
-            setStatusMessage("Document processed (some content was sanitized for security)");
+            toast.warning(
+              "Document content was sanitized for security reasons"
+            );
+            setStatusMessage(
+              "Document processed (some content was sanitized for security)"
+            );
           } else {
             setStatusMessage(successMessage);
-            toast.success(`Ultra-fast processing complete! ${speedup.toFixed(1)}x faster`);
+            toast.success(
+              `Ultra-fast processing complete! ${speedup.toFixed(1)}x faster`
+            );
           }
-  
+
           setUploadStatus("success");
         } catch (error) {
           console.error("RAG-first workflow failed:", error);
-  
+
           // Handle security errors specifically
           if (isSecurityError(error)) {
             setUploadStatus("error");
@@ -429,27 +376,35 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
             // Don't fallback for security errors
             return;
           }
-  
+
           // For non-security errors, try fallback to RAG only (no database save)
           console.log("Trying RAG-only fallback after database error:", error);
           try {
-            setStatusMessage("Account save failed, processing for session only...");
+            setStatusMessage(
+              "Account save failed, processing for session only..."
+            );
             ragResponse = await uploadToRagSystem(file);
-  
+
             const processingTime = (Date.now() - startTime) / 1000;
             const speedup = 300 / processingTime;
-  
-            let fallbackMessage = `Document processed in ${processingTime.toFixed(1)}s (${speedup.toFixed(1)}x faster) for this session only`;
+
+            let fallbackMessage = `Document processed in ${processingTime.toFixed(
+              1
+            )}s (${speedup.toFixed(1)}x faster) for this session only`;
             if (ragResponse?.conversion_performed) {
               fallbackMessage += " (DOCX converted to PDF)";
             }
-  
+
             if (ragResponse?.security_status === "sanitized") {
-              toast.warning("Document processed but content was sanitized for security");
+              toast.warning(
+                "Document processed but content was sanitized for security"
+              );
             } else {
-              toast.warning(`Ultra-fast processing complete! Not saved to account.`);
+              toast.warning(
+                `Ultra-fast processing complete! Not saved to account.`
+              );
             }
-  
+
             setUploadStatus("success");
             setStatusMessage(fallbackMessage);
           } catch (fallbackError) {
@@ -463,62 +418,78 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
         }
       } else {
         // For non-authenticated users: Ultra-fast RAG system only
-        console.log("👥 Non-authenticated user - ultra-fast RAG processing only");
-  
+        console.log(
+          "👥 Non-authenticated user - ultra-fast RAG processing only"
+        );
+
         setStatusMessage("Processing with ultra-fast AI system...");
         ragResponse = await uploadToRagSystem(file);
-  
+
         const processingTime = (Date.now() - startTime) / 1000;
         const speedup = 300 / processingTime;
-  
-        let sessionMessage = `Document processed in ${processingTime.toFixed(1)}s (${speedup.toFixed(1)}x faster) for this session only`;
+
+        let sessionMessage = `Document processed in ${processingTime.toFixed(
+          1
+        )}s (${speedup.toFixed(1)}x faster) for this session only`;
         if (ragResponse?.conversion_performed) {
           sessionMessage += " (DOCX converted to PDF)";
         }
-  
+
         if (ragResponse?.security_status === "sanitized") {
-          toast.warning("Document processed but some content was sanitized for security");
-          setStatusMessage("Document processed for this session (content sanitized)");
+          toast.warning(
+            "Document processed but some content was sanitized for security"
+          );
+          setStatusMessage(
+            "Document processed for this session (content sanitized)"
+          );
         } else {
-          toast.success(`Ultra-fast processing complete! ${speedup.toFixed(1)}x faster`);
+          toast.success(
+            `Ultra-fast processing complete! ${speedup.toFixed(1)}x faster`
+          );
           setStatusMessage(sessionMessage);
         }
-  
+
         setUploadStatus("success");
       }
-  
+
       // ✅ FIXED: Use the correct filename from RAG response
       const uploadResponse: UploadResponse = {
-        documentId: documentInfo?.documentId || documentInfo?.id || Date.now().toString(),
-        fileName: ragResponse?.filename || file.name,                    
-        originalFileName: ragResponse?.original_filename || file.name,   
+        documentId:
+          documentInfo?.documentId || documentInfo?.id || Date.now().toString(),
+        fileName: ragResponse?.filename || file.name,
+        originalFileName: ragResponse?.original_filename || file.name,
         fileSize: file.size,
         uploadedAt: documentInfo?.uploadedAt || new Date().toISOString(),
-        pageCount: ragResponse?.pages_processed || 1,                    // ✅ FIXED: Use pages_processed
+        pageCount: ragResponse?.pages_processed || 1, // ✅ FIXED: Use pages_processed
         status: documentInfo ? "TEMPORARY" : "TEMPORARY",
         securityStatus: ragResponse?.security_status || "verified",
-        mimeType: ragResponse?.mime_type || (file.name.toLowerCase().endsWith(".docx") ? "docx" : "pdf"),
+        mimeType:
+          ragResponse?.mime_type ||
+          (file.name.toLowerCase().endsWith(".docx") ? "docx" : "pdf"),
         conversionPerformed: ragResponse?.conversion_performed || false,
       };
-      
+
       // ✅ FIXED: Save to localStorage with correct field names from RAG response
-      const storageKey = isAuthenticated && user?.id ? `uploaded_documents_${user.id}` : "uploaded_documents";
+      const storageKey =
+        isAuthenticated && user?.id
+          ? `uploaded_documents_${user.id}`
+          : "uploaded_documents";
 
       const existingDocs = JSON.parse(localStorage.getItem(storageKey) || "[]");
       const documentForStorage = {
         // Use field names that ChatViewer expects with RAG response data
         id: uploadResponse.documentId,
-        fileName: ragResponse?.filename || file.name,                    
-        originalFileName: ragResponse?.original_filename || file.name,   
+        fileName: ragResponse?.filename || file.name,
+        originalFileName: ragResponse?.original_filename || file.name,
         original_file_name: ragResponse?.original_filename || file.name, // Backward compatibility
         fileSize: uploadResponse.fileSize,
-        file_size: uploadResponse.fileSize,                              // Backward compatibility  
-        pageCount: ragResponse?.pages_processed || 1,                    // ✅ FIXED: Use pages_processed directly
-        page_count: ragResponse?.pages_processed || 1,                   // ✅ FIXED: Use pages_processed directly
+        file_size: uploadResponse.fileSize, // Backward compatibility
+        pageCount: ragResponse?.pages_processed || 1, // ✅ FIXED: Use pages_processed directly
+        page_count: ragResponse?.pages_processed || 1, // ✅ FIXED: Use pages_processed directly
         status: uploadResponse.status,
         uploadedAt: uploadResponse.uploadedAt,
-        uploaded_at: uploadResponse.uploadedAt,                          // Backward compatibility
-        
+        uploaded_at: uploadResponse.uploadedAt, // Backward compatibility
+
         // Additional properties for compatibility
         databaseId: documentInfo?.documentId || documentInfo?.id,
         processingTime: ragResponse?.processing_time,
@@ -527,13 +498,13 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
         securityStatus: uploadResponse.securityStatus,
         conversionPerformed: uploadResponse.conversionPerformed,
       };
-      
+
       existingDocs.push(documentForStorage);
       localStorage.setItem(storageKey, JSON.stringify(existingDocs));
-  
+
       // Call success callback
       onUploadSuccess(uploadResponse);
-  
+
       // Reset form
       setFile(null);
       if (fileInputRef.current) {
@@ -541,7 +512,7 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
       }
     } catch (error) {
       console.error("❌ Upload failed completely:", error);
-  
+
       // Handle security errors at the top level
       if (isSecurityError(error)) {
         setUploadStatus("error");
@@ -551,11 +522,13 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
         // Enhanced error handling
         let errorMessage = handleApiError(error);
         if (errorMessage.includes("conversion")) {
-          errorMessage = "DOCX conversion failed. Please try a different file or convert manually to PDF.";
+          errorMessage =
+            "DOCX conversion failed. Please try a different file or convert manually to PDF.";
         } else if (errorMessage.includes("extractable text")) {
-          errorMessage = "Document does not contain extractable text. Please ensure it's not a scanned document.";
+          errorMessage =
+            "Document does not contain extractable text. Please ensure it's not a scanned document.";
         }
-  
+
         setUploadStatus("error");
         setStatusMessage(errorMessage);
         toast.error("Upload failed: " + errorMessage);
@@ -564,8 +537,6 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
       setIsUploading(false);
     }
   };
-
-
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -576,7 +547,9 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile) {
       const fileExt = droppedFile.name.toLowerCase().split(".").pop();
-      const supportedExts = uploadOptions?.supported_file_types?.map((t) => t.extension.replace(".", "")) || ["pdf", "docx"];
+      const supportedExts = uploadOptions?.supported_file_types?.map((t) =>
+        t.extension.replace(".", "")
+      ) || ["pdf", "docx"];
 
       if (supportedExts.includes(fileExt || "")) {
         setFile(droppedFile);
@@ -585,7 +558,9 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
       } else {
         setUploadStatus("error");
         setStatusMessage(
-          `Please drop a valid file. Supported: ${supportedExts.join(", ").toUpperCase()}`
+          `Please drop a valid file. Supported: ${supportedExts
+            .join(", ")
+            .toUpperCase()}`
         );
       }
     }
@@ -639,12 +614,15 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
 
           <p className="text-sm text-muted-foreground mb-4">
             {file
-              ? `${(file.size / 1024 / 1024).toFixed(2)} MB • Ready for processing`
+              ? `${(file.size / 1024 / 1024).toFixed(
+                  2
+                )} MB • Ready for processing`
               : "Drag and drop your document here, or click to browse"}
           </p>
 
           <p className="text-xs text-muted-foreground">
-            Supported: PDF, DOCX • Maximum file size: {uploadOptions?.max_file_size_mb || 50}MB
+            Supported: PDF, DOCX • Maximum file size:{" "}
+            {uploadOptions?.max_file_size_mb || 50}MB
           </p>
         </div>
       </div>
@@ -663,7 +641,9 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
           {isUploading ? (
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-              {uploadStatus === "processing" ? statusMessage : "Processing document..."}
+              {uploadStatus === "processing"
+                ? statusMessage
+                : "Processing document..."}
             </div>
           ) : loadingSettings ? (
             "Loading settings..."
@@ -679,7 +659,8 @@ const saveDocumentToDatabaseWithFilename = async (file: File, ragFilename: strin
         <span className="flex flex-col">
           <p className="font-medium">Temporary Session Mode</p>
           <p>
-            Documents are processed for this session only unless you save them permanently.
+            Documents are processed for this session only unless you save them
+            permanently.
           </p>
         </span>
       </div>
