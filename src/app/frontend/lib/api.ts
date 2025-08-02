@@ -2,20 +2,45 @@
 import axios, { AxiosError } from 'axios';
 import { authUtils } from '@/lib/auth';
 
-// API base URLs
-const MAIN_API_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-const RAG_API_BASE_URL = 'http://localhost:8000'; // Your existing RAG system
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+// API base URLs with environment-aware configuration
+const MAIN_API_BASE_URL = isDevelopment 
+  ? 'http://localhost:3000'
+  : (process.env.NEXT_PUBLIC_APP_URL);
+
+const RAG_API_BASE_URL = isDevelopment
+  ? 'http://localhost:8000'
+  : (process.env.NEXT_PUBLIC_RAG_API_URL);
+
+
+  // Log configuration in development
+if (isDevelopment) {
+  console.log('🔧 Development Mode - API Configuration:');
+  console.log(`   Main API: ${MAIN_API_BASE_URL}`);
+  console.log(`   RAG API: ${RAG_API_BASE_URL}`);
+} else {
+  console.log('🚀 Production Mode - API Configuration:');
+  console.log(`   Main API: ${MAIN_API_BASE_URL}`);
+  console.log(`   RAG API: ${RAG_API_BASE_URL}`);
+}
 
 // Main API instance (for database operations)
 export const mainApi = axios.create({
   baseURL: MAIN_API_BASE_URL,
-  timeout: 90000,
+  timeout: isDevelopment ? 90000 : 120000, // Longer timeout in production
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // RAG API instance (for your existing RAG system)
-const ragApi = axios.create({
+export const ragApi = axios.create({
   baseURL: RAG_API_BASE_URL,
-  timeout: 30000,
+  timeout: isDevelopment ? 30000 : 60000, // Longer timeout in production
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Add auth token to main API requests
