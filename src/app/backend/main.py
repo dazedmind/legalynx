@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 
 # Load environment variables
 load_dotenv()
@@ -32,8 +33,39 @@ from security.security_middleware import SimplifiedSecurityMiddleware
 from utils.file_handler import get_next_sequential_number, validate_pdf_content
 from utils.docx_converter import convert_docx_to_pdf, validate_docx_file
 
+# ================================
+# LIFESPAN MANAGER
+# ================================
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    print("🚀 Starting Ultra-Fast RAG Pipeline...")
+    print("⚡ Pre-warming models for maximum speed...")
+    
+    # Pre-warm the singleton model manager
+    try:
+        await model_manager.get_embedding_manager()
+        print("✅ Models pre-warmed successfully")
+    except Exception as e:
+        print(f"⚠️ Model pre-warming failed: {e}")
+        print("   Models will be initialized on first upload")
+    
+    # Apply ultra-fast configuration
+    apply_ultra_fast_config()
+    print("✅ Ultra-fast configuration applied")
+    
+    yield  # This is where the app runs
+    
+    # Shutdown (if you need any cleanup)
+    print("🛑 Shutting down RAG Pipeline...")
+
 # Initialize FastAPI app
-app = FastAPI(title="Ultra-Fast RAG Pipeline API", version="2.0.0")
+app = FastAPI(
+    title="Ultra-Fast RAG Pipeline API", 
+    version="2.0.0",
+    lifespan=lifespan
+)
 
 # Add CORS middleware
 app.add_middleware(
@@ -192,27 +224,6 @@ def extract_user_id_from_token(request: Request) -> Optional[str]:
         return 'demo_user_123'  # Mock user ID
     return None
 
-# ================================
-# STARTUP EVENT
-# ================================
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize models on startup for maximum speed."""
-    print("🚀 Starting Ultra-Fast RAG Pipeline...")
-    print("⚡ Pre-warming models for maximum speed...")
-    
-    # Pre-warm the singleton model manager
-    try:
-        await model_manager.get_embedding_manager()
-        print("✅ Models pre-warmed successfully")
-    except Exception as e:
-        print(f"⚠️ Model pre-warming failed: {e}")
-        print("   Models will be initialized on first upload")
-    
-    # Apply ultra-fast configuration
-    apply_ultra_fast_config()
-    print("✅ Ultra-fast configuration applied")
 
 # ================================
 # API ENDPOINTS
