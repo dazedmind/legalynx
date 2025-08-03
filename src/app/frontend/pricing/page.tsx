@@ -95,10 +95,11 @@ function EnhancedPricing() {
             <span className='flex flex-col items-center justify-center'>
                 <BlurText
                     text="Power Up Your Legal Workflow"
-                    className="text-4xl lg:text-6xl font-bold font-serif text-foreground mb-6"
+                    className="hidden md:block text-4xl lg:text-6xl font-bold font-serif text-foreground mb-6"
                 />
+                <h1 className='md:hidden text-4xl lg:text-6xl font-bold font-serif text-foreground mb-6'>Power Up Your Legal Workflow</h1>
                 
-                <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto">
+                <p className="text-lg text-muted-foreground mb-12 max-w-3xl mx-auto">
                     Choose the plan that fits your needs. Upgrade or downgrade at any time. 
                     All plans include our core AI-powered document analysis features.
                 </p>
@@ -138,7 +139,7 @@ function EnhancedPricing() {
 
       {/* Pricing Cards */}
       <section className="pb-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-8 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {plans.map((plan, index) => (
               <div
@@ -241,7 +242,7 @@ function EnhancedPricing() {
       <section className="py-24 bg-accent">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h3 className="text-3xl font-bold text-foreground mb-4">
+            <h3 className="text-3xl font-bold font-serif text-foreground mb-4">
               Frequently Asked Questions
             </h3>
           </div>
@@ -283,20 +284,20 @@ function EnhancedPricing() {
       {/* CTA Section */}
       <section className="py-24 bg-primary">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-4xl font-bold text-foreground mb-6">
+          <h3 className="text-4xl font-bold font-serif text-foreground mb-6">
             Ready to Transform Your Legal Practice?
           </h3>
-          <p className="text-xl text-muted-foreground mb-10">
+          <p className="text-lg text-muted-foreground mb-10">
             Join thousands of legal professionals who've streamlined their workflow with LegalynX.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link href="/frontend/register">
               <button className="px-10 py-4 text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer">
                 Start Free Trial
               </button>
             </Link>
-            <button className="px-10 py-4 text-lg font-semibold border-2 border-tertiary text-foreground rounded-xl hover:bg-accent transition-all duration-300 cursor-pointer">
+            <button className="w-fit px-10 py-4 text-lg font-semibold border-2 border-tertiary text-foreground rounded-xl hover:bg-accent transition-all duration-300 cursor-pointer">
               Contact Sales
             </button>
           </div>

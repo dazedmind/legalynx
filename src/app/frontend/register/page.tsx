@@ -89,12 +89,13 @@ function Register() {
 
   return (
     <div className='h-screen overflow-hidden'>
-        <div className='bg-primary shadow-sm border-b'>
+        {/* Header */}
+        <header className="bg-primary backdrop-blur-md shadow-sm border-b sticky top-0 z-50">
             <Header />
-        </div>
+        </header>
 
         <main className='flex flex-col md:flex-row-reverse w-full h-[calc(100vh-var(--header-height,64px))]'>
-            <div className='flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 px-20 md:px-10 py-20 md:py-10 justify-center gap-2 overflow-y-auto'>
+            <div className='flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 px-10 py-20 md:py-10 justify-center gap-2 overflow-y-auto'>
                 <div className='w-full flex flex-col items-start md:pl-20 gap-2'>
                     <span>
                         <h1 className='text-4xl font-bold font-serif'>Sign Up</h1>
