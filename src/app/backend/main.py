@@ -45,8 +45,83 @@ app.add_middleware(
 )
 
 # Global state
-rag_system: Optional[Dict[str, Any]] = None
-current_pdf_path: Optional[str] = None
+class RAGSystemManager:
+    """
+    Manages RAG systems with proper isolation and cleanup.
+    """
+    def __init__(self):
+        self.systems = {}  # document_id -> rag_system
+        self.current_system_id = None
+        self.last_upload_time = {}  # document_id -> timestamp
+        
+    def set_system(self, document_id: str, rag_system: Dict[str, Any], file_path: str):
+        """Set RAG system for a specific document."""
+        print(f"📝 Setting RAG system for document: {document_id}")
+        self.systems[document_id] = {
+            "rag_system": rag_system,
+            "file_path": file_path,
+            "created_at": time.time()
+        }
+        self.current_system_id = document_id
+        self.last_upload_time[document_id] = time.time()
+        
+        # Clean up old systems (keep only last 3)
+        self._cleanup_old_systems()
+    
+    def get_current_system(self) -> Optional[Dict[str, Any]]:
+        """Get the current RAG system."""
+        if not self.current_system_id or self.current_system_id not in self.systems:
+            return None
+        return self.systems[self.current_system_id]["rag_system"]
+    
+    def get_current_file_path(self) -> Optional[str]:
+        """Get the current file path."""
+        if not self.current_system_id or self.current_system_id not in self.systems:
+            return None
+        return self.systems[self.current_system_id]["file_path"]
+    
+    def clear_current_system(self):
+        """Clear the current system (for error handling)."""
+        print("🗑️ Clearing current RAG system due to error")
+        if self.current_system_id:
+            self.systems.pop(self.current_system_id, None)
+            self.current_system_id = None
+    
+    def reset_all(self):
+        """Reset all systems."""
+        print("🗑️ Resetting all RAG systems")
+        self.systems.clear()
+        self.current_system_id = None
+        self.last_upload_time.clear()
+    
+    def _cleanup_old_systems(self):
+        """Keep only the 3 most recent systems."""
+        if len(self.systems) > 3:
+            # Sort by creation time and keep the 3 newest
+            sorted_systems = sorted(
+                self.systems.items(),
+                key=lambda x: x[1]["created_at"],
+                reverse=True
+            )
+            
+            # Keep only the 3 most recent
+            self.systems = dict(sorted_systems[:3])
+            
+            # Update current_system_id if it was removed
+            if self.current_system_id not in self.systems:
+                self.current_system_id = sorted_systems[0][0] if sorted_systems else None
+    
+    def get_status(self) -> Dict[str, Any]:
+        """Get status information."""
+        return {
+            "current_system_id": self.current_system_id,
+            "total_systems": len(self.systems),
+            "has_current_system": self.current_system_id is not None,
+            "systems": list(self.systems.keys())
+        }
+
+# Replace global variables with manager
+rag_manager = RAGSystemManager()
 
 # Security middleware
 security = SimplifiedSecurityMiddleware()
@@ -150,16 +225,18 @@ async def root():
 
 @app.get("/status", response_model=SystemStatus)
 async def get_status():
-    """Get system status including model cache status."""
-    model_cache_status = "warmed" if model_manager._is_initialized else "cold"
+    """Get system status with proper state management."""
+    manager_status = rag_manager.get_status()
+    current_file_path = rag_manager.get_current_file_path()
     
     return SystemStatus(
         status="running",
-        pdf_loaded=current_pdf_path is not None,
-        index_ready=rag_system is not None,
-        pdf_name=os.path.basename(current_pdf_path) if current_pdf_path else None,
-        model_cache_status=model_cache_status
+        pdf_loaded=current_file_path is not None,
+        index_ready=manager_status["has_current_system"],
+        pdf_name=os.path.basename(current_file_path) if current_file_path else None,
+        model_cache_status="warmed" if model_manager._is_initialized else "cold"
     )
+
 
 @app.post("/upload-pdf-ultra-fast", response_model=UploadResponse)
 async def upload_document_ultra_fast(
@@ -170,15 +247,25 @@ async def upload_document_ultra_fast(
     ULTRA-FAST UPLOAD: Complete workflow optimized for speed.
     Expected time: 15-30 seconds (down from 5+ minutes).
     """
-    global rag_system, current_pdf_path
+    # Clear any existing system at start of upload
+    rag_manager.clear_current_system()
     
-    # Track total processing time
     start_time = time.time()
+    document_id = None
     
     try:
         # ===== STEP 1: VALIDATE FILE =====
         if not file.filename:
             raise HTTPException(status_code=400, detail="No filename provided")
+        
+        file_content = await file.read()
+        file_size = len(file_content)
+        
+        print(f"📄 Processing: {file.filename} ({file_size:,} bytes)")
+        
+        # Generate unique document ID EARLY
+        document_id = f"doc_{int(time.time())}_{hash(file.filename + str(file_size)) % 10000}"
+        print(f"🆔 Document ID: {document_id}")
         
         file_ext = os.path.splitext(file.filename)[1].lower()
         supported_extensions = ['.pdf', '.docx', '.doc']
@@ -189,16 +276,11 @@ async def upload_document_ultra_fast(
                 detail=f"Unsupported file type: {file_ext}. Supported: PDF, DOCX"
             )
         
-        file_content = await file.read()
-        file_size = len(file_content)
-        
         # Size validation
         if file_size > 50 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="File size too large (max 50MB)")
         if file_size == 0:
             raise HTTPException(status_code=400, detail="File is empty")
-        
-        print(f"📄 Processing: {file.filename} ({file_size:,} bytes)")
         
         # ===== STEP 2: GET USER SETTINGS (FAST) =====
         user_id = extract_user_id_from_token(request)
@@ -283,9 +365,17 @@ async def upload_document_ultra_fast(
         
         workflow_time = time.time() - workflow_start
         
-        # ===== STEP 6: UPDATE GLOBAL STATE =====
-        rag_system = result["rag_system"]
-        current_pdf_path = result["file_path"]
+        # ===== STEP 6: UPDATE MANAGED STATE (REPLACE GLOBAL STATE) =====
+        if result and "rag_system" in result:
+            rag_manager.set_system(
+                document_id=document_id,
+                rag_system=result["rag_system"],
+                file_path=result["file_path"]
+            )
+            print(f"✅ RAG system stored for document: {document_id}")
+        else:
+            print("❌ RAG system creation failed - no rag_system in result")
+            raise HTTPException(status_code=500, detail="RAG system creation failed")
         
         # ===== STEP 7: SECURITY CHECK (NON-BLOCKING) =====
         try:
@@ -294,11 +384,10 @@ async def upload_document_ultra_fast(
                 final_file_content, 
                 result["file_path"]
             )
-            document_id = security_result.get("document_id", f"doc_{int(file_size)}_{len(result['documents'])}")
+            # Use the generated document_id instead of creating a new one
             security_status = "verified"
         except Exception as e:
             print(f"⚠️ Security check failed: {e}")
-            document_id = f"doc_{int(file_size)}_{len(result['documents'])}"
             security_status = "pending"
         
         # ===== STEP 8: FINAL RESPONSE =====
@@ -306,17 +395,16 @@ async def upload_document_ultra_fast(
         final_filename = result["filename"]
         
         print(f"🎉 ULTRA-FAST UPLOAD COMPLETED in {total_time:.2f}s!")
-        print(f"   - Original time: ~300s (5+ minutes)")
-        print(f"   - New time: {total_time:.2f}s") 
-        print(f"   - Speedup: {300/total_time:.1f}x faster!")
+        print(f"   - Document ID: {document_id}")
         print(f"   - File: {file.filename} → {final_filename}")
+        print(f"   - RAG system stored and isolated")
         
         return UploadResponse(
             message=f"Ultra-fast processing complete in {total_time:.2f}s ({300/total_time:.1f}x speedup)",
             filename=final_filename,
             original_filename=file.filename,
             document_count=len(result["documents"]),
-            document_id=document_id,
+            document_id=document_id,  # Return the unique document ID
             security_status=security_status,
             file_type=file_type,
             conversion_performed=conversion_performed,
@@ -328,8 +416,15 @@ async def upload_document_ultra_fast(
         )
         
     except HTTPException:
+        # Clear failed system
+        if document_id:
+            rag_manager.clear_current_system()
         raise
     except Exception as e:
+        # Clear failed system
+        if document_id:
+            rag_manager.clear_current_system()
+            
         print(f"❌ Error in ultra-fast upload: {str(e)}")
         
         # Clean up any temporary files
@@ -399,24 +494,35 @@ async def demo_rule_based_naming(
 
 @app.post("/query", response_model=QueryResponse)
 async def query_document_secure(request: Request, query_request: QueryRequest):
-    """Query the RAG system with enhanced error handling and debugging."""
-    global rag_system
+    """Query the RAG system with enhanced error handling and proper isolation."""
     
     print(f"🔍 Query received: '{query_request.query}'")
     print(f"🔍 Query length: {len(query_request.query)} characters")
     
-    # Step 1: Check if RAG system is available
+    # Step 1: Get current RAG system from manager
+    rag_system = rag_manager.get_current_system()
+    
     if not rag_system:
         print("❌ No RAG system available")
-        raise HTTPException(status_code=400, detail="No PDF has been uploaded and indexed yet")
+        print(f"📊 Manager status: {rag_manager.get_status()}")
+        raise HTTPException(
+            status_code=400, 
+            detail="No document has been uploaded and indexed yet. Please upload a document first."
+        )
     
-    print(f"✅ RAG system exists with keys: {list(rag_system.keys())}")
+    print(f"✅ Using RAG system: {rag_manager.current_system_id}")
+    print(f"✅ RAG system keys: {list(rag_system.keys())}")
     
     # Step 2: Check if query engine exists
     if "query_engine" not in rag_system:
         print("❌ No query engine in RAG system")
         print(f"❌ Available RAG system keys: {list(rag_system.keys())}")
-        raise HTTPException(status_code=500, detail="Query engine not properly initialized. Please re-upload your document.")
+        # Clear broken system
+        rag_manager.clear_current_system()
+        raise HTTPException(
+            status_code=500, 
+            detail="Query engine not properly initialized. Please re-upload your document."
+        )
     
     query_engine = rag_system["query_engine"]
     print(f"✅ Query engine found: {type(query_engine)}")
@@ -485,6 +591,7 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
                 response_text = "I apologize, but I couldn't generate a meaningful response to your query. Please try rephrasing your question or check if the document contains relevant information."
             
             print(f"✅ Returning response with {len(response_text)} characters and {source_count} sources")
+            print(f"📋 Document: {rag_manager.current_system_id}")
             
             return QueryResponse(
                 query=query_request.query,
@@ -505,7 +612,14 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
             # Classify different types of errors and provide specific handling
             error_str = str(query_error).lower()
             
-            if "api" in error_str and ("key" in error_str or "token" in error_str):
+            if "assertionerror" in error_str:
+                print("❌ Vector store assertion error detected - clearing system")
+                rag_manager.clear_current_system()
+                raise HTTPException(
+                    status_code=500,
+                    detail="Document index error. Please re-upload your document."
+                )
+            elif "api" in error_str and ("key" in error_str or "token" in error_str):
                 print("❌ API Key error detected")
                 raise HTTPException(
                     status_code=500, 
@@ -531,6 +645,7 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
                 )
             elif "index" in error_str or "retriever" in error_str:
                 print("❌ Index/Retriever error detected")
+                rag_manager.clear_current_system()
                 raise HTTPException(
                     status_code=500,
                     detail="Document index error. Please try re-uploading your document."
@@ -656,21 +771,20 @@ async def compare_naming_methods():
 
 @app.delete("/reset")
 async def reset_system():
-    """Reset the RAG system."""
-    global rag_system, current_pdf_path
-    
-    rag_system = None
-    current_pdf_path = None
-    
-    return {"message": "System reset successfully", "note": "Models remain cached for speed"}
+    """Reset the RAG system with proper cleanup."""
+    rag_manager.reset_all()
+    return {
+        "message": "All RAG systems reset successfully", 
+        "note": "Models remain cached for speed"
+    }
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "system_ready": rag_system is not None,
-        "pdf_loaded": current_pdf_path is not None,
+        "system_ready": rag_manager.get_status()["has_current_system"],
+        "pdf_loaded": rag_manager.get_current_file_path() is not None,
         "models_cached": model_manager._is_initialized,
         "optimization_mode": "ultra_fast"
     }
@@ -722,25 +836,34 @@ async def check_document_exists(document_id: str):
     """
     Check if a document exists in the RAG system
     """
-    global rag_system, current_pdf_path
-    
     print(f"🔍 Checking document existence: {document_id}")
     
-    # For now, we'll check if any document is loaded
-    # In a more sophisticated system, you'd track individual documents
-    if rag_system is not None and current_pdf_path is not None:
+    manager_status = rag_manager.get_status()
+    current_file_path = rag_manager.get_current_file_path()
+    
+    # Check if this specific document exists
+    document_exists = document_id in rag_manager.systems
+    
+    # If no specific document, check if any document is loaded
+    if not document_exists and manager_status["has_current_system"]:
+        document_exists = True
+        document_id = rag_manager.current_system_id
+    
+    if document_exists and current_file_path:
         return {
             "exists": True,
             "document_id": document_id,
-            "rag_id": document_id,  # For compatibility
-            "filename": os.path.basename(current_pdf_path) if current_pdf_path else None
+            "rag_id": document_id,
+            "filename": os.path.basename(current_file_path),
+            "current_system_id": rag_manager.current_system_id
         }
     else:
         return {
             "exists": False,
             "document_id": document_id,
             "rag_id": None,
-            "filename": None
+            "filename": None,
+            "current_system_id": None
         }
 
 # ================================
