@@ -1,4 +1,6 @@
 // src/lib/ragCacheService.ts - RAG Pipeline Cache Management
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 export interface CachedDocument {
   documentId: string;
   filename: string;
@@ -12,7 +14,7 @@ class RAGCacheService {
   private cache = new Map<string, CachedDocument>();
   private loadingPromises = new Map<string, Promise<void>>();
   private readonly CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutes
-  private readonly RAG_BASE_URL = process.env.NEXT_PUBLIC_RAG_API_URL || 'http://localhost:8000';
+  private readonly RAG_BASE_URL = isDevelopment ? 'http://localhost:8000' : process.env.NEXT_PUBLIC_RAG_API_URL;
 
   constructor() {
     // Load cache from localStorage on initialization

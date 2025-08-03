@@ -202,7 +202,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ isOpen, document, onClose }) => {
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-lg">{document.originalFileName}</h3>
+            <h3 className="font-semibold text-lg">{document.fileName}</h3>
           </div>
           <div className="flex items-center gap-2">
 
@@ -286,10 +286,17 @@ const FileDetailsModal: React.FC<FileDetailsModalProps> = ({ isOpen, document, o
         
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">File Name</label>
-              <p className="mt-1 text-sm text-foreground">{document.originalFileName}</p>
-            </div>
+            <span className='flex col-span-2 w-full flex-col gap-2'>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">File Name</label>
+                <p className="mt-1 text-sm text-foreground">{document.fileName}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Original File Name</label>
+                <p className="mt-1 text-sm text-muted-foreground">{document.originalFileName}</p>
+              </div>
+            </span>
+      
             <div>
               <label className="text-sm font-medium text-muted-foreground">File Size</label>
               <p className="mt-1 text-sm text-foreground">{(document.size / 1024 / 1024).toFixed(2)} MB</p>

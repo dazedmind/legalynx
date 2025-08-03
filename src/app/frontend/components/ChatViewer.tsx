@@ -144,6 +144,8 @@ export default function ChatViewer({
     const plan = subscriptionStatus;
     if (plan === 'BASIC') {
       return false;
+    } else {
+      return true;
     }
   };
 

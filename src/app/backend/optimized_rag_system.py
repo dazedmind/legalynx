@@ -1,5 +1,5 @@
 # ================================
-# CRITICAL OPTIMIZATION SYSTEM
+# ULTRA-OPTIMIZED FASTAPI MAIN - VECTOR FREE
 # ================================
 
 import os
@@ -56,6 +56,130 @@ class GlobalModelManager:
 model_manager = GlobalModelManager()
 
 # ================================
+# VECTOR-FREE RAG SYSTEM BUILDER
+# ================================
+
+def create_vector_free_rag_system(documents: List, pdf_path: str) -> Dict[str, Any]:
+    """
+    Create a completely vector-free RAG system using only BM25 text search.
+    """
+    print("🔄 Building vector-free RAG system...")
+    start_time = time.time()
+    
+    try:
+        from llama_index.core.schema import TextNode, Document
+        from llama_index.core.query_engine import RetrieverQueryEngine
+        from llama_index.retrievers.bm25 import BM25Retriever
+        from rag_pipeline.embedder import EmbeddingManager
+        
+        # Convert documents to TextNode format
+        nodes = []
+        for i, doc in enumerate(documents):
+            try:
+                if isinstance(doc, dict):
+                    content = doc.get('content', str(doc))
+                    metadata = doc.get('metadata', {})
+                else:
+                    content = str(doc)
+                    metadata = {}
+                
+                # Validate content
+                content = content.strip()
+                if not content or len(content) < 10:
+                    continue
+                
+                # Limit content length
+                if len(content) > 2000:
+                    content = content[:2000] + "..."
+                
+                metadata.update({
+                    'source': pdf_path,
+                    'page': i + 1,
+                    'chunk_id': i,
+                    'chunk_type': 'text_only'
+                })
+                
+                node = TextNode(
+                    text=content,
+                    metadata=metadata
+                )
+                nodes.append(node)
+                
+            except Exception as doc_error:
+                print(f"⚠️ Failed to process document {i}: {doc_error}")
+                continue
+        
+        if not nodes:
+            raise Exception("No valid nodes created from documents")
+        
+        print(f"📄 Created {len(nodes)} text nodes")
+        
+        # Create BM25 retriever only
+        try:
+            bm25_retriever = BM25Retriever.from_defaults(
+                nodes=nodes,
+                similarity_top_k=min(3, len(nodes))
+            )
+            print("✅ BM25 retriever created successfully")
+        except Exception as bm25_error:
+            print(f"❌ BM25 retriever creation failed: {bm25_error}")
+            raise Exception(f"Could not create BM25 retriever: {bm25_error}")
+        
+        # Get LLM from embedding manager
+        try:
+            embedding_manager = EmbeddingManager()
+            llm = embedding_manager.get_llm()
+            print("✅ LLM retrieved successfully")
+        except Exception as llm_error:
+            print(f"❌ LLM retrieval failed: {llm_error}")
+            raise Exception(f"Could not get LLM: {llm_error}")
+        
+        # Create query engine with BM25 only
+        try:
+            query_engine = RetrieverQueryEngine.from_args(
+                retriever=bm25_retriever,
+                llm=llm
+            )
+            print("✅ Vector-free query engine created")
+        except Exception as engine_error:
+            print(f"❌ Query engine creation failed: {engine_error}")
+            raise Exception(f"Could not create query engine: {engine_error}")
+        
+        # Create simple performance monitor
+        class SimplePerformanceMonitor:
+            def __init__(self):
+                self.query_count = 0
+                
+            def log_query(self, query: str, response_time: float):
+                self.query_count += 1
+                print(f"📊 Query #{self.query_count} completed in {response_time:.2f}s")
+        
+        performance_monitor = SimplePerformanceMonitor()
+        
+        # Create simple analyzer
+        def analyze_query_results(query_text: str, top_k: int = 4):
+            """Simple query analyzer."""
+            return {"query": query_text, "status": "analyzed"}
+        
+        build_time = time.time() - start_time
+        print(f"✅ Vector-free RAG system built in {build_time:.2f}s")
+        
+        return {
+            "query_engine": query_engine,
+            "rerank_demo": analyze_query_results,
+            "analyzer": analyze_query_results,
+            "pipeline_builder": None,
+            "embedding_manager": embedding_manager,
+            "performance_monitor": performance_monitor,
+            "retrieval_type": "bm25_only",
+            "build_time": build_time
+        }
+        
+    except Exception as e:
+        print(f"❌ Vector-free RAG system build failed: {e}")
+        raise Exception(f"Vector-free RAG build failed: {e}")
+
+# ================================
 # ULTRA-FAST RULE-BASED NAMING
 # ================================
 
@@ -105,6 +229,8 @@ class RuleBasedFileNamer:
         'bond': 'Bond',
         'warranty': 'Warranty',
         'guarantee': 'Guarantee',
+        'resignation': 'ResignationLetter',
+        'resignation letter': 'ResignationLetter',
     }
 
     @staticmethod
@@ -305,6 +431,7 @@ class RuleBasedFileNamer:
             'claim': 'Claim',
             'approval': 'Approval',
             'certificate': 'Certificate',
+            'resignation': 'ResignationLetter',
         }
         
         for keyword, doc_type in type_map.items():
@@ -313,52 +440,53 @@ class RuleBasedFileNamer:
         return None
 
 # ================================
-# OPTIMIZED RAG SYSTEM BUILDER
+# OPTIMIZED RAG SYSTEM BUILDER - VECTOR FREE
 # ================================
 
 class OptimizedRAGBuilder:
     """
-    Optimized RAG system that builds index only once per upload.
+    Vector-free RAG system that builds using only BM25 text search.
     Uses singleton model manager to avoid re-initialization.
     """
     
     @staticmethod
     async def build_rag_system_fast(documents: List, pdf_path: str) -> Dict[str, Any]:
         """
-        Build RAG system using cached models and optimized config.
+        Build vector-free RAG system using cached models.
         """
-        print("🚀 Building RAG system with optimizations...")
+        print("🚀 Building vector-free RAG system with optimizations...")
         start_time = time.time()
         
         # Get cached embedding manager (singleton)
-        embedding_manager = await model_manager.get_embedding_manager()
-        
-        # Import functions
-        from rag_pipeline.embedder import create_index_from_documents
-        from rag_pipeline.pipeline_builder import build_complete_rag_system
+        try:
+            embedding_manager = await model_manager.get_embedding_manager()
+            print("✅ Using cached embedding manager")
+        except Exception as e:
+            print(f"⚠️ Could not get embedding manager: {e}")
+            # Continue without it for now
         
         # Run in background thread to avoid blocking
         loop = asyncio.get_event_loop()
         executor = ThreadPoolExecutor(max_workers=1)
         
         try:
-            # Build index with cached models
-            index_result = await loop.run_in_executor(
-                executor,
-                lambda: create_index_from_documents(documents, pdf_path)
-            )
-            
-            # Build complete RAG system
+            # Build vector-free RAG system
             rag_system = await loop.run_in_executor(
                 executor,
-                lambda: build_complete_rag_system(index_result[0], index_result[1])
+                lambda: create_vector_free_rag_system(documents, pdf_path)
             )
             
+            if not rag_system or "query_engine" not in rag_system:
+                raise Exception("Vector-free RAG system build failed - no query engine")
+            
             build_time = time.time() - start_time
-            print(f"✅ RAG system built in {build_time:.2f}s (optimized)")
+            print(f"✅ Vector-free RAG system built in {build_time:.2f}s")
             
             return rag_system
             
+        except Exception as e:
+            print(f"❌ Vector-free RAG system build failed: {e}")
+            raise
         finally:
             executor.shutdown(wait=False)
 
@@ -367,16 +495,17 @@ class OptimizedRAGBuilder:
 # ================================
 
 ULTRA_FAST_CONFIG = {
-    "fine_chunk_size": 512,           # Larger chunks = fewer total
-    "fine_chunk_overlap": 50,         
-    "coarse_chunk_size": 1024,        
-    "retrieval_top_k": 3,             # Reduced from 4
-    "rerank_top_n": 2,                
-    "num_query_expansions": 1,        # 🔥 MAJOR SPEEDUP: 3→1 
-    "enable_logical_chunking": False,  # 🔥 DISABLE expensive feature
-    "enable_hybrid_retrieval": True,   # Keep for quality
-    "disable_reranking": False,        # Keep reranking for quality
-    "fast_mode": True
+    "fine_chunk_size": 512,
+    "fine_chunk_overlap": 50,
+    "coarse_chunk_size": 1024,
+    "retrieval_top_k": 3,
+    "rerank_top_n": 2,
+    "num_query_expansions": 1,
+    "enable_logical_chunking": False,
+    "enable_hybrid_retrieval": False,  # Disabled for vector-free
+    "disable_reranking": False,
+    "fast_mode": True,
+    "bm25_similarity_top_k": 3,
 }
 
 def apply_ultra_fast_config():
@@ -384,15 +513,16 @@ def apply_ultra_fast_config():
     try:
         from rag_pipeline.config import rag_config
         rag_config.update(ULTRA_FAST_CONFIG)
-        print("⚡ Applied ULTRA-FAST configuration:")
-        print(f"   - Query expansions: {ULTRA_FAST_CONFIG['num_query_expansions']} (was 3)")
-        print(f"   - Logical chunking: {ULTRA_FAST_CONFIG['enable_logical_chunking']} (was True)")
-        print(f"   - Retrieval top_k: {ULTRA_FAST_CONFIG['retrieval_top_k']} (was 4)")
+        print("⚡ Applied ULTRA-FAST configuration (Vector-Free):")
+        print(f"   - Query expansions: {ULTRA_FAST_CONFIG['num_query_expansions']}")
+        print(f"   - Logical chunking: {ULTRA_FAST_CONFIG['enable_logical_chunking']}")
+        print(f"   - Hybrid retrieval: {ULTRA_FAST_CONFIG['enable_hybrid_retrieval']}")
+        print(f"   - BM25 top_k: {ULTRA_FAST_CONFIG['bm25_similarity_top_k']}")
     except ImportError:
-        print("⚠️ Could not import rag_config")
+        print("⚠️ Could not import rag_config, using defaults")
 
 # ================================
-# OPTIMIZED UPLOAD WORKFLOW
+# OPTIMIZED UPLOAD WORKFLOW - VECTOR FREE
 # ================================
 
 async def optimized_upload_workflow(
@@ -404,10 +534,10 @@ async def optimized_upload_workflow(
     counter: Optional[int] = None
 ) -> Dict[str, Any]:
     """
-    Optimized upload workflow:
+    Vector-free optimized upload workflow:
     1. Ultra-fast rule-based naming (no LLM)
     2. Save file immediately
-    3. Build RAG system once with cached models
+    3. Build vector-free RAG system with cached models
     """
     total_start_time = time.time()
     
@@ -448,43 +578,62 @@ async def optimized_upload_workflow(
     
     save_time = time.time() - save_start
     
-    # STEP 3: Process for RAG (with caching)
-    print("🔄 Step 3: Processing for RAG...")
+    # STEP 3: Process for vector-free RAG
+    print("🔄 Step 3: Processing for vector-free RAG...")
     rag_start = time.time()
     
-    # Extract text
-    from utils.file_handler import extract_text_from_pdf, validate_pdf_content
-    
-    validation = validate_pdf_content(file_path)
-    if not validation.get("is_valid", False):
-        raise Exception("Invalid PDF content")
-    
-    documents = extract_text_from_pdf(file_path)
-    
-    # Build RAG system with optimizations
-    rag_system = await OptimizedRAGBuilder.build_rag_system_fast(documents, file_path)
-    
-    rag_time = time.time() - rag_start
-    total_time = time.time() - total_start_time
-    
-    print(f"🎉 OPTIMIZED WORKFLOW COMPLETED in {total_time:.2f}s:")
-    print(f"   - Naming: {naming_time:.3f}s (rule-based)")
-    print(f"   - File Save: {save_time:.3f}s")
-    print(f"   - RAG Build: {rag_time:.2f}s (cached models)")
-    print(f"   - Total Speedup: ~{300/total_time:.1f}x faster")
-    
-    return {
-        "file_path": file_path,
-        "filename": intelligent_filename,
-        "rag_system": rag_system,
-        "documents": documents,
-        "timing": {
-            "naming": naming_time,
-            "save": save_time, 
-            "rag": rag_time,
-            "total": total_time
+    try:
+        # Extract text
+        from utils.file_handler import extract_text_from_pdf, validate_pdf_content
+        
+        validation = validate_pdf_content(file_path)
+        if not validation.get("is_valid", False):
+            raise Exception("Invalid PDF content")
+        
+        documents = extract_text_from_pdf(file_path)
+        if not documents:
+            raise Exception("No text extracted from PDF")
+        
+        print(f"📄 Extracted {len(documents)} document chunks")
+        
+        # Build vector-free RAG system
+        rag_system = await OptimizedRAGBuilder.build_rag_system_fast(documents, file_path)
+        
+        if not rag_system or "query_engine" not in rag_system:
+            raise Exception("Vector-free RAG system build completed but query engine is missing")
+        
+        rag_time = time.time() - rag_start
+        total_time = time.time() - total_start_time
+        
+        print(f"🎉 VECTOR-FREE WORKFLOW COMPLETED in {total_time:.2f}s:")
+        print(f"   - Naming: {naming_time:.3f}s (rule-based)")
+        print(f"   - File Save: {save_time:.3f}s")
+        print(f"   - RAG Build: {rag_time:.2f}s (vector-free)")
+        print(f"   - Total Speedup: ~{300/total_time:.1f}x faster")
+        
+        return {
+            "file_path": file_path,
+            "filename": intelligent_filename,
+            "rag_system": rag_system,
+            "documents": documents,
+            "timing": {
+                "naming": naming_time,
+                "save": save_time, 
+                "rag": rag_time,
+                "total": total_time
+            }
         }
-    }
+        
+    except Exception as e:
+        print(f"❌ Vector-free RAG processing failed: {e}")
+        # Clean up the saved file on failure
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                print(f"🗑️ Cleaned up file: {file_path}")
+            except:
+                pass
+        raise
 
 # ================================
 # INITIALIZATION
@@ -493,12 +642,12 @@ async def optimized_upload_workflow(
 # Apply ultra-fast config on import
 apply_ultra_fast_config()
 
-print("🚀 ULTRA-FAST RAG SYSTEM LOADED")
+print("🚀 ULTRA-FAST VECTOR-FREE RAG SYSTEM LOADED")
 print("⚡ Optimizations enabled:")
 print("   - Singleton model manager (no re-initialization)")
 print("   - Rule-based naming (no LLM calls)")
+print("   - Vector-free retrieval (BM25 only)")
 print("   - Reduced query expansions (3→1)")
-print("   - Disabled logical chunking")
 print("   - Background processing")
 print("   - Model caching")
 print("💡 Expected speedup: 10-20x faster (5min → 15-30sec)")

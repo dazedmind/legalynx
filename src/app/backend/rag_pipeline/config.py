@@ -221,6 +221,19 @@ def apply_ultra_fast_optimizations():
         "fast_mode": True,                # Enable all fast features
     })
     
+    print('''
+    .____                       .__               ____  ___
+    |    |    ____   _________  |  | ___.__. ____ \   \/  /
+    |    |  _/ __ \ / ___\__  \ |  |<   |  |/    \ \     /
+    |    |__\  ___// /_/  > __ \|  |_\___  |   |  \/     \
+    |_______ \___  >___  (____  /____/ ____|___|  /___/\  \\
+            \/   \/_____/     \/     \/         \/      \_/
+    ''')
+    
+    print('''
+     Developer: @dazedmind
+     Version: v1.0.0
+    ''')
     print("⚡ ULTRA-FAST optimizations applied:")
     print(f"   - Query expansions: {rag_config['num_query_expansions']} (was 3)")
     print(f"   - Logical chunking: {rag_config['enable_logical_chunking']} (was True)")

@@ -33,9 +33,7 @@ export default function NavBar() {
         try {
             setLoading(true);
             setError('');
-            
-            console.log('🔄 NavBar: Loading profile for user:', user.email);
-            
+                        
             const userProfile = await profileService.getProfile();
             
             console.log('✅ NavBar: Profile loaded successfully:', {
