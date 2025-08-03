@@ -10,14 +10,12 @@ from rag_pipeline.config import MODEL_CONFIG, SYSTEM_PROMPT
 class EmbeddingManager:
     """
     Manages the embedding model and LLM configuration for the RAG pipeline.
+    Now includes proper vector embeddings alongside existing functionality.
     """
     
     def __init__(self):
         """
         Initialize the embedding manager with LLM and embedding models.
-        
-        Args:
-            google_api_key: Google API key for LLM
         """
         self.google_api_key = os.getenv("GOOGLE_API_KEY")
         self.embed_model = None
@@ -28,7 +26,7 @@ class EmbeddingManager:
         """
         Setup the embedding model and LLM.
         """
-        # Initialize the HuggingFace embedding model
+        # Initialize the HuggingFace embedding model for vector operations
         print("🔄 Initializing embedding model...")
         self.embed_model = HuggingFaceEmbedding(
             model_name=MODEL_CONFIG["embedding_model"]
@@ -39,8 +37,6 @@ class EmbeddingManager:
         # Validate API key
         if not self.google_api_key:
             raise ValueError("❌ GOOGLE_API_KEY not found! Please set GOOGLE_API_KEY environment variable.")
-        
-        # print(f"🔑 Using Google API key: {self.google_api_key[:20]}...")
         
         # Initialize the Google LLM
         try:
@@ -57,7 +53,6 @@ class EmbeddingManager:
             
         except Exception as e:
             print(f"❌ LLM initialization failed: {e}")
-            # print(f"   API key used: {self.google_api_key[:20]}...")
             print(f"   Model: {MODEL_CONFIG['llm_model']}")
             raise
         
@@ -79,6 +74,7 @@ class EmbeddingManager:
 class IndexBuilder:
     """
     Builds and manages vector indices for the RAG pipeline.
+    Now supports both vector and BM25 retrieval.
     """
     
     def __init__(self, embedding_manager: EmbeddingManager):
@@ -105,8 +101,8 @@ class IndexBuilder:
         
         print(f"🔄 Building vector index with {len(nodes)} nodes...")
         
-        # Create vector index
-        vector_index = VectorStoreIndex(nodes)
+        # Create vector index with proper embeddings
+        vector_index = VectorStoreIndex(nodes, embed_model=self.embedding_manager.get_embedding_model())
         print(f"✅ Indexed {len(nodes)} nodes in vector store")
         
         return vector_index
@@ -198,14 +194,13 @@ def create_index_from_documents(documents, pdf_path: str) -> tuple:
     Args:
         documents: List of Document objects
         pdf_path: Path to the source PDF
-        google_api_key: Google API key for LLM
         
     Returns:
         tuple: (VectorStoreIndex, EmbeddingManager)
     """
     from rag_pipeline.chunking import multi_granularity_chunking
     
-    print(f"🔄 Creating index from documents...")
+    print(f"🔄 Creating vector index from documents...")
     api_key = os.getenv('GOOGLE_API_KEY')
     
     # Initialize embedding manager
@@ -215,8 +210,8 @@ def create_index_from_documents(documents, pdf_path: str) -> tuple:
     print("🔄 Creating chunks...")
     all_nodes = multi_granularity_chunking(documents, pdf_path)
     
-    # Build index
-    print("🔄 Building index...")
+    # Build vector index
+    print("🔄 Building vector index...")
     index_builder = IndexBuilder(embedding_manager)
     vector_index = index_builder.build_vector_index(all_nodes)
     

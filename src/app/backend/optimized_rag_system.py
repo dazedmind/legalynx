@@ -1,5 +1,5 @@
 # ================================
-# ULTRA-OPTIMIZED FASTAPI MAIN - VECTOR FREE
+# VECTORIZED RAG SYSTEM - HYBRID VECTOR + BM25
 # ================================
 
 import os
@@ -18,7 +18,7 @@ import fitz  # PyMuPDF
 class GlobalModelManager:
     """
     Singleton pattern to initialize models ONCE and reuse across all uploads.
-    This eliminates the 3x redundant LLM initialization that's killing performance.
+    Now includes vector embedding capabilities.
     """
     _instance = None
     _embedding_manager = None
@@ -36,7 +36,7 @@ class GlobalModelManager:
         if not cls._is_initialized:
             async with cls._initialization_lock:
                 if not cls._is_initialized:
-                    print("🔄 Initializing models (SINGLETON - ONCE ONLY)...")
+                    print("🔄 Initializing models with vector embeddings (SINGLETON - ONCE ONLY)...")
                     start_time = time.time()
                     
                     # Import here to avoid circular imports
@@ -47,30 +47,35 @@ class GlobalModelManager:
                     cls._is_initialized = True
                     
                     init_time = time.time() - start_time
-                    print(f"✅ Models initialized in {init_time:.2f}s (will be reused)")
+                    print(f"✅ Models with vector embeddings initialized in {init_time:.2f}s (will be reused)")
         
-        print("⚡ Using cached models (FAST)")
+        print("⚡ Using cached models with vector embeddings (FAST)")
         return cls._embedding_manager
 
 # Global instance
 model_manager = GlobalModelManager()
 
 # ================================
-# VECTOR-FREE RAG SYSTEM BUILDER
+# VECTORIZED RAG SYSTEM BUILDER
 # ================================
 
-def create_vector_free_rag_system(documents: List, pdf_path: str) -> Dict[str, Any]:
+def create_vectorized_rag_system(documents: List, pdf_path: str) -> Dict[str, Any]:
     """
-    Create a completely vector-free RAG system using only BM25 text search.
+    Create a vectorized RAG system using hybrid vector + BM25 retrieval.
     """
-    print("🔄 Building vector-free RAG system...")
+    print("🔄 Building vectorized RAG system with hybrid retrieval...")
     start_time = time.time()
     
     try:
         from llama_index.core.schema import TextNode, Document
         from llama_index.core.query_engine import RetrieverQueryEngine
+        from llama_index.core.postprocessor import SentenceTransformerRerank
         from llama_index.retrievers.bm25 import BM25Retriever
+        from llama_index.core.retrievers import BaseRetriever, QueryFusionRetriever
+        from llama_index.core import VectorStoreIndex
+        from llama_index.core.vector_stores import MetadataFilters, ExactMatchFilter
         from rag_pipeline.embedder import EmbeddingManager
+        from rag_pipeline.pipeline_builder import HybridRetriever
         
         # Convert documents to TextNode format
         nodes = []
@@ -96,7 +101,7 @@ def create_vector_free_rag_system(documents: List, pdf_path: str) -> Dict[str, A
                     'source': pdf_path,
                     'page': i + 1,
                     'chunk_id': i,
-                    'chunk_type': 'text_only'
+                    'chunk_type': 'fine'  # Set as fine chunks for vector retrieval
                 })
                 
                 node = TextNode(
@@ -114,7 +119,24 @@ def create_vector_free_rag_system(documents: List, pdf_path: str) -> Dict[str, A
         
         print(f"📄 Created {len(nodes)} text nodes")
         
-        # Create BM25 retriever only
+        # Get embedding manager
+        try:
+            embedding_manager = EmbeddingManager()
+            print("✅ Embedding manager retrieved successfully")
+        except Exception as em_error:
+            print(f"❌ Embedding manager retrieval failed: {em_error}")
+            raise Exception(f"Could not get embedding manager: {em_error}")
+        
+        # Create vector index
+        try:
+            print("🔄 Building vector index...")
+            vector_index = VectorStoreIndex(nodes, embed_model=embedding_manager.get_embedding_model())
+            print("✅ Vector index created successfully")
+        except Exception as vector_error:
+            print(f"❌ Vector index creation failed: {vector_error}")
+            raise Exception(f"Could not create vector index: {vector_error}")
+        
+        # Create BM25 retriever
         try:
             bm25_retriever = BM25Retriever.from_defaults(
                 nodes=nodes,
@@ -125,27 +147,48 @@ def create_vector_free_rag_system(documents: List, pdf_path: str) -> Dict[str, A
             print(f"❌ BM25 retriever creation failed: {bm25_error}")
             raise Exception(f"Could not create BM25 retriever: {bm25_error}")
         
-        # Get LLM from embedding manager
+        # Create vector retriever
         try:
-            embedding_manager = EmbeddingManager()
+            vector_retriever = vector_index.as_retriever(
+                similarity_top_k=min(3, len(nodes))
+            )
+            print("✅ Vector retriever created successfully")
+        except Exception as vector_ret_error:
+            print(f"❌ Vector retriever creation failed: {vector_ret_error}")
+            raise Exception(f"Could not create vector retriever: {vector_ret_error}")
+        
+        # Create hybrid retriever
+        try:
+            hybrid_retriever = HybridRetriever(
+                vector_retriever=vector_retriever,
+                bm25_retriever=bm25_retriever,
+                top_k=min(3, len(nodes))
+            )
+            print("✅ Hybrid retriever created successfully")
+        except Exception as hybrid_error:
+            print(f"❌ Hybrid retriever creation failed: {hybrid_error}")
+            raise Exception(f"Could not create hybrid retriever: {hybrid_error}")
+        
+        # Get LLM
+        try:
             llm = embedding_manager.get_llm()
             print("✅ LLM retrieved successfully")
         except Exception as llm_error:
             print(f"❌ LLM retrieval failed: {llm_error}")
             raise Exception(f"Could not get LLM: {llm_error}")
         
-        # Create query engine with BM25 only
+        # Create query engine with hybrid retrieval
         try:
             query_engine = RetrieverQueryEngine.from_args(
-                retriever=bm25_retriever,
+                retriever=hybrid_retriever,
                 llm=llm
             )
-            print("✅ Vector-free query engine created")
+            print("✅ Vectorized query engine created")
         except Exception as engine_error:
             print(f"❌ Query engine creation failed: {engine_error}")
             raise Exception(f"Could not create query engine: {engine_error}")
         
-        # Create simple performance monitor
+        # Create performance monitor
         class SimplePerformanceMonitor:
             def __init__(self):
                 self.query_count = 0
@@ -156,13 +199,31 @@ def create_vector_free_rag_system(documents: List, pdf_path: str) -> Dict[str, A
         
         performance_monitor = SimplePerformanceMonitor()
         
-        # Create simple analyzer
+        # Create analyzer
         def analyze_query_results(query_text: str, top_k: int = 4):
-            """Simple query analyzer."""
-            return {"query": query_text, "status": "analyzed"}
+            """Enhanced query analyzer for hybrid retrieval."""
+            from llama_index.core.schema import QueryBundle
+            
+            try:
+                query_bundle = QueryBundle(query_str=query_text)
+                
+                # Get results from individual retrievers
+                vector_nodes = vector_retriever.retrieve(query_bundle)
+                bm25_nodes = bm25_retriever.retrieve(query_bundle)
+                hybrid_nodes = hybrid_retriever._retrieve(query_bundle)
+                
+                return {
+                    "query": query_text,
+                    "vector_results": len(vector_nodes),
+                    "bm25_results": len(bm25_nodes),
+                    "hybrid_results": len(hybrid_nodes),
+                    "status": "analyzed"
+                }
+            except Exception as e:
+                return {"query": query_text, "status": f"analysis_failed: {e}"}
         
         build_time = time.time() - start_time
-        print(f"✅ Vector-free RAG system built in {build_time:.2f}s")
+        print(f"✅ Vectorized RAG system built in {build_time:.2f}s")
         
         return {
             "query_engine": query_engine,
@@ -171,16 +232,19 @@ def create_vector_free_rag_system(documents: List, pdf_path: str) -> Dict[str, A
             "pipeline_builder": None,
             "embedding_manager": embedding_manager,
             "performance_monitor": performance_monitor,
-            "retrieval_type": "bm25_only",
+            "retrieval_type": "hybrid_vector_bm25",
+            "vector_index": vector_index,
             "build_time": build_time
         }
         
     except Exception as e:
-        print(f"❌ Vector-free RAG system build failed: {e}")
-        raise Exception(f"Vector-free RAG build failed: {e}")
+        print(f"❌ Vectorized RAG system build failed: {e}")
+        raise Exception(f"Vectorized RAG build failed: {e}")
+
+# BM25-only functionality removed as requested
 
 # ================================
-# ULTRA-FAST RULE-BASED NAMING
+# ULTRA-FAST RULE-BASED NAMING (UNCHANGED)
 # ================================
 
 class RuleBasedFileNamer:
@@ -440,21 +504,21 @@ class RuleBasedFileNamer:
         return None
 
 # ================================
-# OPTIMIZED RAG SYSTEM BUILDER - VECTOR FREE
+# VECTORIZED RAG SYSTEM BUILDER
 # ================================
 
-class OptimizedRAGBuilder:
+class VectorizedRAGBuilder:
     """
-    Vector-free RAG system that builds using only BM25 text search.
+    Vectorized RAG system that builds using hybrid vector + BM25 retrieval.
     Uses singleton model manager to avoid re-initialization.
     """
     
     @staticmethod
     async def build_rag_system_fast(documents: List, pdf_path: str) -> Dict[str, Any]:
         """
-        Build vector-free RAG system using cached models.
+        Build vectorized RAG system using cached models.
         """
-        print("🚀 Building vector-free RAG system with optimizations...")
+        print("🚀 Building vectorized RAG system with optimizations...")
         start_time = time.time()
         
         # Get cached embedding manager (singleton)
@@ -470,28 +534,28 @@ class OptimizedRAGBuilder:
         executor = ThreadPoolExecutor(max_workers=1)
         
         try:
-            # Build vector-free RAG system
+            # Build vectorized RAG system
             rag_system = await loop.run_in_executor(
                 executor,
-                lambda: create_vector_free_rag_system(documents, pdf_path)
+                lambda: create_vectorized_rag_system(documents, pdf_path)
             )
             
             if not rag_system or "query_engine" not in rag_system:
-                raise Exception("Vector-free RAG system build failed - no query engine")
+                raise Exception("Vectorized RAG system build failed - no query engine")
             
             build_time = time.time() - start_time
-            print(f"✅ Vector-free RAG system built in {build_time:.2f}s")
+            print(f"✅ RAG system built in {build_time:.2f}s")
             
             return rag_system
             
         except Exception as e:
-            print(f"❌ Vector-free RAG system build failed: {e}")
+            print(f"❌ RAG system build failed: {e}")
             raise
         finally:
             executor.shutdown(wait=False)
 
 # ================================
-# ULTRA-FAST CONFIGURATION
+# ULTRA-FAST CONFIGURATION (UNCHANGED)
 # ================================
 
 ULTRA_FAST_CONFIG = {
@@ -502,7 +566,7 @@ ULTRA_FAST_CONFIG = {
     "rerank_top_n": 2,
     "num_query_expansions": 1,
     "enable_logical_chunking": False,
-    "enable_hybrid_retrieval": False,  # Disabled for vector-free
+    "enable_hybrid_retrieval": True,  # Now enabled for vector + BM25
     "disable_reranking": False,
     "fast_mode": True,
     "bm25_similarity_top_k": 3,
@@ -513,7 +577,7 @@ def apply_ultra_fast_config():
     try:
         from rag_pipeline.config import rag_config
         rag_config.update(ULTRA_FAST_CONFIG)
-        print("⚡ Applied ULTRA-FAST configuration (Vector-Free):")
+        print("⚡ Applied ULTRA-FAST configuration (Vectorized):")
         print(f"   - Query expansions: {ULTRA_FAST_CONFIG['num_query_expansions']}")
         print(f"   - Logical chunking: {ULTRA_FAST_CONFIG['enable_logical_chunking']}")
         print(f"   - Hybrid retrieval: {ULTRA_FAST_CONFIG['enable_hybrid_retrieval']}")
@@ -522,7 +586,7 @@ def apply_ultra_fast_config():
         print("⚠️ Could not import rag_config, using defaults")
 
 # ================================
-# OPTIMIZED UPLOAD WORKFLOW - VECTOR FREE
+# OPTIMIZED UPLOAD WORKFLOW - VECTORIZED
 # ================================
 
 async def optimized_upload_workflow(
@@ -534,10 +598,10 @@ async def optimized_upload_workflow(
     counter: Optional[int] = None
 ) -> Dict[str, Any]:
     """
-    Vector-free optimized upload workflow:
+    Vectorized optimized upload workflow:
     1. Ultra-fast rule-based naming (no LLM)
     2. Save file immediately
-    3. Build vector-free RAG system with cached models
+    3. Build vectorized RAG system with cached models
     """
     total_start_time = time.time()
     
@@ -578,8 +642,8 @@ async def optimized_upload_workflow(
     
     save_time = time.time() - save_start
     
-    # STEP 3: Process for vector-free RAG
-    print("🔄 Step 3: Processing for vector-free RAG...")
+    # STEP 3: Process for vectorized RAG
+    print("🔄 Step 3: Processing for vectorized RAG...")
     rag_start = time.time()
     
     try:
@@ -596,19 +660,20 @@ async def optimized_upload_workflow(
         
         print(f"📄 Extracted {len(documents)} document chunks")
         
-        # Build vector-free RAG system
-        rag_system = await OptimizedRAGBuilder.build_rag_system_fast(documents, file_path)
+        # Build vectorized RAG system
+        rag_system = await VectorizedRAGBuilder.build_rag_system_fast(documents, file_path)
         
         if not rag_system or "query_engine" not in rag_system:
-            raise Exception("Vector-free RAG system build completed but query engine is missing")
+            raise Exception("Vectorized RAG system build completed but query engine is missing")
         
         rag_time = time.time() - rag_start
         total_time = time.time() - total_start_time
         
-        print(f"🎉 VECTOR-FREE WORKFLOW COMPLETED in {total_time:.2f}s:")
+        print(f"🎉 VECTORIZED WORKFLOW COMPLETED in {total_time:.2f}s:")
         print(f"   - Naming: {naming_time:.3f}s (rule-based)")
         print(f"   - File Save: {save_time:.3f}s")
-        print(f"   - RAG Build: {rag_time:.2f}s (vector-free)")
+        print(f"   - RAG Build: {rag_time:.2f}s (vectorized)")
+        print(f"   - Retrieval Type: {rag_system.get('retrieval_type', 'unknown')}")
         print(f"   - Total Speedup: ~{300/total_time:.1f}x faster")
         
         return {
@@ -625,7 +690,7 @@ async def optimized_upload_workflow(
         }
         
     except Exception as e:
-        print(f"❌ Vector-free RAG processing failed: {e}")
+        print(f"❌ Vectorized RAG processing failed: {e}")
         # Clean up the saved file on failure
         if os.path.exists(file_path):
             try:
@@ -642,12 +707,15 @@ async def optimized_upload_workflow(
 # Apply ultra-fast config on import
 apply_ultra_fast_config()
 
-print("🚀 ULTRA-FAST VECTOR-FREE RAG SYSTEM LOADED")
+print("🚀 ULTRA-FAST VECTORIZED RAG SYSTEM LOADED")
 print("⚡ Optimizations enabled:")
 print("   - Singleton model manager (no re-initialization)")
 print("   - Rule-based naming (no LLM calls)")
-print("   - Vector-free retrieval (BM25 only)")
+print("   - Hybrid vector + BM25 retrieval")
+print("   - Vector embeddings for semantic search")
+print("   - BM25 for keyword matching")
 print("   - Reduced query expansions (3→1)")
 print("   - Background processing")
 print("   - Model caching")
 print("💡 Expected speedup: 10-20x faster (5min → 15-30sec)")
+print("🔬 Enhanced accuracy with vector semantics + keyword precision")
