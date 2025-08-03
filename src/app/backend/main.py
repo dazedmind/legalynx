@@ -20,18 +20,37 @@ load_dotenv()
 # Add backend directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Import optimized system
-from optimized_rag_system import (
-    optimized_upload_workflow,
-    model_manager,
-    RuleBasedFileNamer,
-    apply_ultra_fast_config
-)
+# Import optimized system with fallback handling
+try:
+    from optimized_rag_system import (
+        optimized_upload_workflow,
+        model_manager,
+        RuleBasedFileNamer,
+        apply_ultra_fast_config
+    )
+    OPTIMIZED_SYSTEM_AVAILABLE = True
+    print("✅ Optimized RAG system loaded successfully")
+except ImportError as e:
+    print(f"⚠️ Optimized system not available: {e}")
+    OPTIMIZED_SYSTEM_AVAILABLE = False
 
-# Import existing modules
-from security.security_middleware import SimplifiedSecurityMiddleware
-from utils.file_handler import get_next_sequential_number, validate_pdf_content
-from utils.docx_converter import convert_docx_to_pdf, validate_docx_file
+# Import existing modules with fallback handling
+try:
+    from security.security_middleware import SimplifiedSecurityMiddleware
+    SECURITY_AVAILABLE = True
+    print("✅ Security middleware loaded")
+except ImportError as e:
+    print(f"⚠️ Security middleware not available: {e}")
+    SECURITY_AVAILABLE = False
+
+try:
+    from utils.file_handler import get_next_sequential_number, validate_pdf_content
+    from utils.docx_converter import convert_docx_to_pdf, validate_docx_file
+    UTILS_AVAILABLE = True
+    print("✅ Utils loaded")
+except ImportError as e:
+    print(f"⚠️ Utils not available: {e}")
+    UTILS_AVAILABLE = False
 
 # ================================
 # LIFESPAN MANAGER
@@ -43,17 +62,20 @@ async def lifespan(app: FastAPI):
     print("🚀 Starting Ultra-Fast RAG Pipeline...")
     print("⚡ Pre-warming models for maximum speed...")
     
-    # Pre-warm the singleton model manager
-    try:
-        await model_manager.get_embedding_manager()
-        print("✅ Models pre-warmed successfully")
-    except Exception as e:
-        print(f"⚠️ Model pre-warming failed: {e}")
-        print("   Models will be initialized on first upload")
-    
-    # Apply ultra-fast configuration
-    apply_ultra_fast_config()
-    print("✅ Ultra-fast configuration applied")
+    # Pre-warm the singleton model manager if available
+    if OPTIMIZED_SYSTEM_AVAILABLE:
+        try:
+            await model_manager.get_embedding_manager()
+            print("✅ Models pre-warmed successfully")
+        except Exception as e:
+            print(f"⚠️ Model pre-warming failed: {e}")
+            print("   Models will be initialized on first upload")
+        
+        # Apply ultra-fast configuration
+        apply_ultra_fast_config()
+        print("✅ Ultra-fast configuration applied")
+    else:
+        print("⚠️ Running in fallback mode without optimized system")
     
     yield  # This is where the app runs
     
@@ -155,8 +177,11 @@ class RAGSystemManager:
 # Replace global variables with manager
 rag_manager = RAGSystemManager()
 
-# Security middleware
-security = SimplifiedSecurityMiddleware()
+# Security middleware (conditional initialization)
+if SECURITY_AVAILABLE:
+    security = SimplifiedSecurityMiddleware()
+else:
+    security = None
 
 # ================================
 # PYDANTIC MODELS
@@ -240,12 +265,20 @@ async def get_status():
     manager_status = rag_manager.get_status()
     current_file_path = rag_manager.get_current_file_path()
     
+    # Safe model cache status check
+    model_cache_status = "cold"
+    if OPTIMIZED_SYSTEM_AVAILABLE:
+        try:
+            model_cache_status = "warmed" if model_manager._is_initialized else "cold"
+        except:
+            model_cache_status = "unknown"
+    
     return SystemStatus(
         status="running",
         pdf_loaded=current_file_path is not None,
         index_ready=manager_status["has_current_system"],
         pdf_name=os.path.basename(current_file_path) if current_file_path else None,
-        model_cache_status="warmed" if model_manager._is_initialized else "cold"
+        model_cache_status=model_cache_status
     )
 
 
@@ -258,6 +291,13 @@ async def upload_document_ultra_fast(
     ULTRA-FAST UPLOAD: Complete workflow optimized for speed.
     Expected time: 15-30 seconds (down from 5+ minutes).
     """
+    # Check if optimized system is available
+    if not OPTIMIZED_SYSTEM_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Optimized RAG system not available. Please check server configuration and dependencies."
+        )
+    
     # Clear any existing system at start of upload
     rag_manager.clear_current_system()
     
@@ -317,7 +357,7 @@ async def upload_document_ultra_fast(
         file_type = "pdf"
         conversion_performed = False
         
-        if file_ext in ['.docx', '.doc']:
+        if file_ext in ['.docx', '.doc'] and UTILS_AVAILABLE:
             file_type = "docx"
             try:
                 # For DOCX, convert to PDF first
@@ -358,7 +398,7 @@ async def upload_document_ultra_fast(
         
         # ===== STEP 4: GET COUNTER FOR SEQUENTIAL NUMBERING =====
         counter = None
-        if naming_option == 'sequential_numbering' and title and client_name:
+        if naming_option == 'sequential_numbering' and title and client_name and UTILS_AVAILABLE:
             counter = get_next_sequential_number("sample_docs", title, client_name)
         
         # ===== STEP 5: ULTRA-FAST OPTIMIZED WORKFLOW =====
@@ -389,17 +429,20 @@ async def upload_document_ultra_fast(
             raise HTTPException(status_code=500, detail="RAG system creation failed")
         
         # ===== STEP 7: SECURITY CHECK (NON-BLOCKING) =====
-        try:
-            security_result = security.check_upload_security(
-                user_id or 'anonymous', 
-                final_file_content, 
-                result["file_path"]
-            )
-            # Use the generated document_id instead of creating a new one
-            security_status = "verified"
-        except Exception as e:
-            print(f"⚠️ Security check failed: {e}")
-            security_status = "pending"
+        security_status = "verified"
+        if security:
+            try:
+                security_result = security.check_upload_security(
+                    user_id or 'anonymous', 
+                    final_file_content, 
+                    result["file_path"]
+                )
+                security_status = "verified"
+            except Exception as e:
+                print(f"⚠️ Security check failed: {e}")
+                security_status = "pending"
+        else:
+            security_status = "skipped"
         
         # ===== STEP 8: FINAL RESPONSE =====
         total_time = time.time() - start_time
@@ -460,6 +503,12 @@ async def demo_rule_based_naming(
     Demo endpoint to test rule-based naming without full RAG processing.
     Shows ultra-fast naming in ~0.01-0.1 seconds.
     """
+    if not OPTIMIZED_SYSTEM_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Rule-based naming not available. Please check dependencies."
+        )
+    
     try:
         if not file.filename:
             raise HTTPException(status_code=400, detail="No filename provided")
@@ -499,9 +548,6 @@ async def demo_rule_based_naming(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Demo failed: {str(e)}")
-
-# Enhanced query endpoint with comprehensive error handling
-# Insert this into your main.py file to replace the existing query endpoint
 
 @app.post("/query", response_model=QueryResponse)
 async def query_document_secure(request: Request, query_request: QueryRequest):
@@ -547,19 +593,22 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
         sanitized_query = query_request.query
         was_sanitized = False
         
-        try:
-            print("🛡️ Running security check...")
-            sanitized_query = security.check_query_security(user_id, query_request.query)
-            was_sanitized = sanitized_query != query_request.query
-            print(f"✅ Security check passed. Sanitized: {was_sanitized}")
-            if was_sanitized:
-                print(f"🔧 Original: {query_request.query}")
-                print(f"🔧 Sanitized: {sanitized_query}")
-        except Exception as security_error:
-            print(f"⚠️ Security check failed: {security_error}")
-            # If security fails, still allow the query but log it
-            sanitized_query = query_request.query
-            was_sanitized = False
+        if security:
+            try:
+                print("🛡️ Running security check...")
+                sanitized_query = security.check_query_security(user_id, query_request.query)
+                was_sanitized = sanitized_query != query_request.query
+                print(f"✅ Security check passed. Sanitized: {was_sanitized}")
+                if was_sanitized:
+                    print(f"🔧 Original: {query_request.query}")
+                    print(f"🔧 Sanitized: {sanitized_query}")
+            except Exception as security_error:
+                print(f"⚠️ Security check failed: {security_error}")
+                # If security fails, still allow the query but log it
+                sanitized_query = query_request.query
+                was_sanitized = False
+        else:
+            print("⚠️ Security middleware not available, proceeding without security check")
         
         # Step 5: Validate query content
         if not sanitized_query or not sanitized_query.strip():
@@ -704,6 +753,13 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
 @app.get("/optimization-stats")
 async def get_optimization_stats():
     """Get statistics about the optimization improvements."""
+    model_cache_status = "unknown"
+    if OPTIMIZED_SYSTEM_AVAILABLE:
+        try:
+            model_cache_status = "warmed" if model_manager._is_initialized else "cold"
+        except:
+            model_cache_status = "unavailable"
+    
     return {
         "optimizations_applied": [
             "Singleton model manager (eliminates 3x LLM re-initialization)",
@@ -734,7 +790,12 @@ async def get_optimization_stats():
             "speedup_factor": "15x faster",
             "time_reduction": "95% reduction"
         },
-        "model_cache_status": "warmed" if model_manager._is_initialized else "cold",
+        "model_cache_status": model_cache_status,
+        "system_status": {
+            "optimized_system_available": OPTIMIZED_SYSTEM_AVAILABLE,
+            "security_available": SECURITY_AVAILABLE,
+            "utils_available": UTILS_AVAILABLE
+        },
         "config_optimizations": {
             "fine_chunk_size": 512,
             "retrieval_top_k": 3,
@@ -791,13 +852,29 @@ async def reset_system():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
+    """Health check endpoint for Railway deployment."""
+    manager_status = rag_manager.get_status()
+    current_file_path = rag_manager.get_current_file_path()
+    
+    # Safe model cache status check
+    model_cache_status = "cold"
+    if OPTIMIZED_SYSTEM_AVAILABLE:
+        try:
+            model_cache_status = "warmed" if model_manager._is_initialized else "cold"
+        except:
+            model_cache_status = "unknown"
+    
     return {
         "status": "healthy",
-        "system_ready": rag_manager.get_status()["has_current_system"],
-        "pdf_loaded": rag_manager.get_current_file_path() is not None,
-        "models_cached": model_manager._is_initialized,
-        "optimization_mode": "ultra_fast"
+        "system_ready": manager_status["has_current_system"],
+        "pdf_loaded": current_file_path is not None,
+        "models_cached": model_cache_status,
+        "optimization_mode": "ultra_fast" if OPTIMIZED_SYSTEM_AVAILABLE else "fallback",
+        "dependencies": {
+            "optimized_system_available": OPTIMIZED_SYSTEM_AVAILABLE,
+            "security_available": SECURITY_AVAILABLE,
+            "utils_available": UTILS_AVAILABLE
+        }
     }
 
 @app.get("/performance-tips")
@@ -878,11 +955,11 @@ async def check_document_exists(document_id: str):
         }
 
 # ================================
-# MAIN FUNCTION
+# MAIN FUNCTION - FIXED FOR RAILWAY
 # ================================
 
 def main():
-    """Main function to run the ultra-fast RAG API."""
+    """Main function to run the ultra-fast RAG API with Railway support."""
     print("🚀 Starting Ultra-Fast RAG Pipeline API...")
     print("⚡ Optimizations enabled:")
     print("   - Singleton model manager")
@@ -894,10 +971,21 @@ def main():
     print("💡 Expected performance: 15-30 seconds (was 5+ minutes)")
     print("🛡️ Security features: Rate limiting, Content scanning, Injection protection")
     
+    # FIXED: Use Railway's PORT environment variable
+    port = int(os.environ.get("PORT", 8000))
+    print(f"🌐 Starting server on port: {port}")
+    print(f"🔧 Environment: {'Production' if port != 8000 else 'Development'}")
+    
+    # Print dependency status
+    print(f"📦 Dependencies status:")
+    print(f"   - Optimized system: {'✅' if OPTIMIZED_SYSTEM_AVAILABLE else '❌'}")
+    print(f"   - Security middleware: {'✅' if SECURITY_AVAILABLE else '❌'}")
+    print(f"   - Utils: {'✅' if UTILS_AVAILABLE else '❌'}")
+    
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,  # FIXED: Use dynamic port from Railway
         reload=False,  # Disable reload for production performance
         log_level="info",
         workers=1  # Single worker to maintain model cache

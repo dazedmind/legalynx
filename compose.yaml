@@ -12,7 +12,15 @@ services:
     build:
       context: .
     ports:
-      - 8085:8085
+      - 3000:3000  # Next.js frontend
+      - 8000:8000  # FastAPI backend
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - NEXT_PUBLIC_RAG_API_URL=http://localhost:8000
+    volumes:
+      - ./sample_docs:/app/sample_docs  # Persist uploaded documents
+    command: npm run start:full
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to
@@ -46,4 +54,3 @@ services:
 # secrets:
 #   db-password:
 #     file: db/password.txt
-
