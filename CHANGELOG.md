@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.9] - 2025-08-05 - Pre-Alpha
+
+### Added
+- **RAG Hosting on Railway**: Deployed the Retrieval-Augmented Generation (RAG) backend on Railway for production testing
+- **Folder/File Nesting**: Introduced support for nested folders and files in the File Manager
+
+### Fixed
+- **Mobile Responsiveness**: Addressed additional minor UI issues on smaller screen sizes
+
+### Changed
+- **Component Structure**: Refactored the `components/` directory for improved organization and scalability
+
 ## [0.1.8] - 2025-08-01
 
 ### Added
