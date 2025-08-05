@@ -1,4 +1,4 @@
-// src/app/frontend/components/FileGrid.tsx - Complete Enhanced Version
+// src/app/frontend/components/FileGrid.tsx - Complete Enhanced Version with Rename
 "use client";
 import React, { useState } from "react";
 import {
@@ -11,6 +11,7 @@ import {
   Trash2,
   Eye,
   Move,
+  Edit,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -34,14 +35,16 @@ interface DocumentInfo {
     | "UPLOADED"
     | "TEMPORARY"
     | "FAILED";
-  starred?: boolean;
   chatSessionsCount?: number;
 }
 
 interface FolderInfo {
   id: string;
   name: string;
+  path: string;
+  parent_id?: string;
   created_at: string;
+  updated_at: string;
   document_count?: number;
   subfolder_count?: number;
 }
@@ -65,7 +68,11 @@ interface FileGridProps {
     documentIds: string[],
     targetFolderId: string | null
   ) => void;
-  onShowMoveToModal?: (documents: DocumentInfo[]) => void; // Add this prop
+  onShowMoveToModal?: (documents: DocumentInfo[]) => void;
+  onShowRenameModal?: (
+    item: DocumentInfo | FolderInfo,
+    itemType: "document" | "folder"
+  ) => void;
   formatFileSize: (bytes: number) => string;
   formatDate: (dateString: string) => string;
 }
@@ -87,6 +94,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
   onToggleSelection,
   onMoveDocuments,
   onShowMoveToModal,
+  onShowRenameModal,
   formatFileSize,
   formatDate,
 }) => {
@@ -196,7 +204,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
   };
 
   const truncateString = (str: string, maxLength: number): string => {
-    return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+    return str.length > maxLength ? str.substring(0, maxLength) + "..." : str;
   };
 
   if (viewMode === "grid") {
@@ -212,7 +220,9 @@ export const FileGrid: React.FC<FileGridProps> = ({
             {folders.map((folder) => (
               <div
                 key={folder.id}
-                className={`bg-primary border border-tertiary rounded-lg p-4 transition-all duration-200 cursor-pointer`}
+                className={`group bg-primary border border-tertiary rounded-lg p-4 transition-all duration-200 cursor-pointer
+                   ${selectedDocs.has(folder.id) ? "selected-item" : ""}
+                   `}
                 onDoubleClick={() => onFolderNavigate(folder.id)}
                 onContextMenu={(e) => onFolderContextMenu(e, folder.id)}
                 onDragOver={(e) => handleDragOver(e, folder.id)}
@@ -221,19 +231,19 @@ export const FileGrid: React.FC<FileGridProps> = ({
               >
                 <div className="flex justify-between items-start">
                   {/* Selection checkbox */}
-                  <div>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <input
                       type="checkbox"
                       checked={selectedDocs.has(folder.id)}
                       onChange={() => onToggleSelection(folder.id)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                     />
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
-                        className="p-1 hover:bg-accent rounded-md transition-colors"
+                        className="p-1 hover:bg-accent rounded-md transition-colors cursor-pointer"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
@@ -245,6 +255,12 @@ export const FileGrid: React.FC<FileGridProps> = ({
                       >
                         <Folder className="w-4 h-4" />
                         Open Folder
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onShowRenameModal?.(folder, "folder")}
+                      >
+                        <Edit className="w-4 h-4" />
+                        Rename Folder
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -259,7 +275,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
                 </div>
                 <div className="text-center flex flex-col items-center no-select">
                   <Folder
-                    className={`w-12 h-12 ${
+                    className={`w-12 h-12 mb-2 ${
                       dragState.dragOverFolder === folder.id
                         ? "text-blue-600"
                         : "text-blue-500"
@@ -270,11 +286,6 @@ export const FileGrid: React.FC<FileGridProps> = ({
                     {truncateString(folder.name, 20)}
                   </h3>
                   <div className="space-y-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-2">
-                      <p>{folder.document_count || 0} documents</p>{" "}
-                      <span className="text-muted-foreground">•</span>
-                      <p>{folder.subfolder_count || 0} subfolders</p>
-                    </span>
                     <p>{formatDate(folder.created_at)}</p>
                   </div>
                   {dragState.dragOverFolder === folder.id && (
@@ -291,10 +302,8 @@ export const FileGrid: React.FC<FileGridProps> = ({
               <div
                 key={doc.id}
                 draggable
-                className={`relative bg-primary border border-tertiary rounded-lg p-4 transition-all duration-200 cursor-pointer 
-                } ${selectedDocs.has(doc.id) ? "selected-item" : ""} ${
-                  doc.starred ? "starred-item" : ""
-                } ${
+                className={`group relative bg-primary border border-tertiary rounded-lg p-4 transition-all duration-200 cursor-pointer 
+                 ${selectedDocs.has(doc.id) ? "selected-item" : ""} ${
                   dragState.isDragging &&
                   dragState.draggedItems.includes(doc.id)
                     ? "opacity-50"
@@ -308,13 +317,13 @@ export const FileGrid: React.FC<FileGridProps> = ({
               >
                 <div className="flex justify-between items-center">
                   {/* Selection checkbox */}
-                  <div>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <input
                       type="checkbox"
                       checked={selectedDocs.has(doc.id)}
                       onChange={() => onToggleSelection(doc.id)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                     />
                   </div>
                   <DropdownMenu>
@@ -343,6 +352,12 @@ export const FileGrid: React.FC<FileGridProps> = ({
                         <Move className="w-4 h-4" />
                         Move To
                       </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onShowRenameModal?.(doc, "document")}
+                      >
+                        <Edit className="w-4 h-4" />
+                        Rename
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onViewDetails(doc)}>
                         <Info className="w-4 h-4" />
                         View Details
@@ -361,7 +376,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
 
                 <div className="text-center flex flex-col items-center">
                   <div>
-                    <FileText className="w-12 h-12 text-red-500" />
+                    <FileText className="w-12 h-12 mb-2 text-red-500" />
                   </div>
                   <h3
                     className="font-medium text-foreground mb-1"
@@ -370,9 +385,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
                     {truncateString(doc.fileName, 25)}
                   </h3>
                   <div className="space-y-1 text-xs text-muted-foreground">
-                    <p>
-                      {formatFileSize(doc.size)} • {doc.pages || "N/A"} pages
-                    </p>
+                    <p>{formatFileSize(doc.size)}</p>
                     <p>{formatDate(doc.uploadedAt)}</p>
                     {doc.chatSessionsCount !== undefined &&
                       doc.chatSessionsCount > 0 && (
@@ -417,11 +430,13 @@ export const FileGrid: React.FC<FileGridProps> = ({
           {folders.map((folder) => (
             <div
               key={folder.id}
-              className={`flex items-center justify-between p-3 bg-primary border border-tertiary rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer ${
-                dragState.dragOverFolder === folder.id
-                  ? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                  : ""
-              }`}
+              className={`group flex items-center justify-between p-3 bg-primary border border-tertiary rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer 
+                ${selectedDocs.has(folder.id) ? "selected-item" : ""}
+                ${
+                  dragState.dragOverFolder === folder.id
+                    ? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                    : ""
+                }`}
               onDoubleClick={() => onFolderNavigate(folder.id)}
               onContextMenu={(e) => onFolderContextMenu(e, folder.id)}
               onDragOver={(e) => handleDragOver(e, folder.id)}
@@ -429,6 +444,15 @@ export const FileGrid: React.FC<FileGridProps> = ({
               onDrop={(e) => handleDrop(e, folder.id)}
             >
               <div className="flex items-center space-x-3 flex-1 min-w-0">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <input
+                    type="checkbox"
+                    checked={selectedDocs.has(folder.id)}
+                    onChange={() => onToggleSelection(folder.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </div>
                 <div className="flex items-center gap-2">
                   <Folder
                     className={`w-6 h-6 flex-shrink-0 ${
@@ -460,7 +484,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
                 <span>{formatDate(folder.created_at)}</span>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="p-1 hover:bg-accent rounded-md transition-colors">
+                    <button className="p-1 hover:bg-accent rounded-md transition-colors cursor-pointer">
                       <MoreHorizontal className="w-4 h-4" />
                     </button>
                   </DropdownMenuTrigger>
@@ -470,6 +494,12 @@ export const FileGrid: React.FC<FileGridProps> = ({
                     >
                       <Folder className="w-4 h-4" />
                       Open Folder
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onShowRenameModal?.(folder, "folder")}
+                    >
+                      <Edit className="w-4 h-4" />
+                      Rename Folder
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -490,11 +520,9 @@ export const FileGrid: React.FC<FileGridProps> = ({
             <div
               key={doc.id}
               draggable
-              className={`flex items-center justify-between p-3 bg-primary border border-tertiary rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer ${
+              className={`group flex items-center justify-between p-3 bg-primary border border-tertiary rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer ${
                 currentDocumentId === doc.id ? "ring-2 ring-blue-500" : ""
               } ${selectedDocs.has(doc.id) ? "selected-item" : ""} ${
-                doc.starred ? "starred-item" : ""
-              } ${
                 dragState.isDragging && dragState.draggedItems.includes(doc.id)
                   ? "opacity-50"
                   : ""
@@ -506,35 +534,28 @@ export const FileGrid: React.FC<FileGridProps> = ({
               onDoubleClick={() => onViewPDF(doc)} // Double-click to view PDF
             >
               <div className="flex items-center space-x-3 flex-1 min-w-0">
-                <input
-                  type="checkbox"
-                  checked={selectedDocs.has(doc.id)}
-                  onChange={() => onToggleSelection(doc.id)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                />
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <input
+                    type="checkbox"
+                    checked={selectedDocs.has(doc.id)}
+                    onChange={() => onToggleSelection(doc.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </div>
                 <div className="flex items-center gap-2">
-                  <div
-                    className={`status-indicator ${doc.status.toLowerCase()}`}
-                  >
+                  <div>
                     <FileText className="w-6 h-6 text-red-500 flex-shrink-0" />
                   </div>
-                  {dragState.isDragging &&
-                    dragState.draggedItems.includes(doc.id) && (
-                      <Move className="w-4 h-4 text-blue-600" />
-                    )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-foreground truncate">
                       {doc.fileName}
                     </p>
-                    {doc.starred && (
-                      <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />
-                    )}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {formatFileSize(doc.size)} • {doc.pages || "N/A"} pages
+                    {formatFileSize(doc.size)}
                     {doc.chatSessionsCount !== undefined &&
                       doc.chatSessionsCount > 0 && (
                         <span className="ml-2 text-blue-600">
@@ -545,22 +566,11 @@ export const FileGrid: React.FC<FileGridProps> = ({
                 </div>
               </div>
               <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs ${
-                    doc.status === "INDEXED"
-                      ? "bg-green-700/20 text-green-500"
-                      : doc.status === "READY"
-                      ? "bg-blue-700/20 text-blue-600"
-                      : "bg-gray-700/20 text-gray-600"
-                  }`}
-                >
-                  {doc.status}
-                </span>
                 <span>{formatDate(doc.uploadedAt)}</span>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="p-1 hover:bg-accent rounded-md transition-colors"
+                      className="p-1 hover:bg-accent rounded-md transition-colors cursor-pointer"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <MoreHorizontal className="w-4 h-4" />
@@ -582,6 +592,12 @@ export const FileGrid: React.FC<FileGridProps> = ({
                     >
                       <Move className="w-4 h-4" />
                       Move To
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onShowRenameModal?.(doc, "document")}
+                    >
+                      <Edit className="w-4 h-4" />
+                      Rename
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onViewDetails(doc)}>
                       <Info className="w-4 h-4" />

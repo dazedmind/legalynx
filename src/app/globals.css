@@ -257,7 +257,6 @@
 /* Selection highlight */
 .selected-item,
 .selected-folder {
-  /* box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); */
   border: 1px solid #3B77E0;
   background-color: rgba(59, 130, 246, 0.1);
 }

@@ -2,16 +2,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import ChatViewer from '../components/ChatViewer';
-import FileManager from '../components/FileManager';
-import ChatHistory from '../components/ChatHistory';
+import ChatViewer from './tabs/chat-viewer/ChatViewer';
+import FileManager from './tabs/file-manager/FileManager';
+import ChatHistory from './tabs/chat-viewer/ChatHistory';
 import { apiService, handleApiError, profileService, SystemStatus, UploadResponse } from '../lib/api';
 import { GoArchive, GoComment, GoFile, GoFileDirectory, GoHistory } from "react-icons/go";
 import NavBar from '../components/NavBar';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '@/lib/context/AuthContext';
 import { LogOut, Plus, Menu, X, Mic, Lock } from 'lucide-react';
-import UploadPage from '../components/UploadPage';
+import UploadPage from './tabs/chat-viewer/UploadPage';
 import ConfirmationModal, { ModalType } from '../components/ConfirmationModal';
 import { useTheme } from 'next-themes';
 

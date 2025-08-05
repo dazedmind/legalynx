@@ -1,4 +1,4 @@
-// src/app/frontend/components/FileManager.tsx - Enhanced with Move To and PDF Viewer
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { 
@@ -15,9 +15,10 @@ import {
   Folder,
   FileText,
   Move,
-  Eye
+  Eye,
+  Edit
 } from 'lucide-react';
-import { apiService, handleApiError } from '../lib/api';
+import { apiService, handleApiError } from '../../../lib/api';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useTheme } from 'next-themes';
 import { CreateFolderModal } from './CreateFolderModal';
@@ -27,6 +28,7 @@ import { FileGrid } from './FileGrid';
 import { PDFViewer } from './PDFViewer';
 import { FileDetailsModal } from './FileDetailsModal';
 import { DeleteFolderModal } from './DeleteFolderModal';
+import { RenameModal } from './RenameModal';
 import { authUtils } from '@/lib/auth';
 
 interface DocumentInfo {
@@ -250,6 +252,16 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
     selectedDocuments: []
   });
 
+  const [renameModal, setRenameModal] = useState<{
+    isOpen: boolean;
+    item: DocumentInfo | FolderInfo | null;
+    itemType: 'document' | 'folder';
+  }>({
+    isOpen: false,
+    item: null,
+    itemType: 'document'
+  });
+
   useEffect(() => {
     setIsClient(true);
     if (isAuthenticated) {
@@ -316,7 +328,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
   const loadDocumentsOnly = async () => {
     try {
       const response = await apiService.getDocuments();
-      setDocuments(response.documents.map(doc => ({
+      setDocuments(response.documents.map((doc: any) => ({
         ...doc,
         size: doc.fileSize || 0,
         status: doc.status as any
@@ -393,6 +405,87 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
       const errorMessage = handleApiError(err);
       setError(errorMessage);
       console.error('Delete folder error:', err);
+    }
+  };
+
+  const renameDocument = async (documentId: string, newName: string) => {
+    if (!isAuthenticated) return;
+
+    try {
+      const token = authUtils.getToken();
+      const response = await fetch(`/backend/api/documents/${documentId}/rename`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ newName })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to rename document');
+      }
+
+      const result = await response.json();
+      console.log('✅ Document renamed:', result);
+
+      // Update documents in state
+      setDocuments(prev => prev.map(doc => 
+        doc.id === documentId 
+          ? { ...doc, originalFileName: result.document.originalFileName }
+          : doc
+      ));
+
+    } catch (err) {
+      const errorMessage = handleApiError(err);
+      setError(errorMessage);
+      console.error('Rename document error:', err);
+      throw err;
+    }
+  };
+
+  const renameFolder = async (folderId: string, newName: string) => {
+    if (!isAuthenticated) return;
+
+    try {
+      const token = authUtils.getToken();
+      const response = await fetch(`/backend/api/folders/${folderId}/rename`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ newName })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to rename folder');
+      }
+
+      const result = await response.json();
+      console.log('✅ Folder renamed:', result);
+
+      // Update folders in state
+      setFolders(prev => prev.map(folder => 
+        folder.id === folderId 
+          ? { ...folder, name: result.folder.name, path: result.folder.path }
+          : folder
+      ));
+
+      // Also update allFolders for move-to modal
+      setAllFolders(prev => prev.map(folder => 
+        folder.id === folderId 
+          ? { ...folder, name: result.folder.name, path: result.folder.path }
+          : folder
+      ));
+
+    } catch (err) {
+      const errorMessage = handleApiError(err);
+      setError(errorMessage);
+      console.error('Rename folder error:', err);
+      throw err;
     }
   };
 
@@ -563,6 +656,25 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
     });
   };
 
+  const handleRename = async (newName: string) => {
+    if (!renameModal.item) return;
+
+    if (renameModal.itemType === 'document') {
+      await renameDocument(renameModal.item.id, newName);
+    } else {
+      await renameFolder(renameModal.item.id, newName);
+    }
+  };
+
+  const handleShowRenameModal = (item: DocumentInfo | FolderInfo, itemType: 'document' | 'folder') => {
+    console.log('Showing rename modal for:', itemType, item);
+    setRenameModal({
+      isOpen: true,
+      item,
+      itemType
+    });
+  };
+
   // Filter and sort logic
   useEffect(() => {
     let filtered = [...documents];
@@ -662,7 +774,6 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
           </p>
         </div>
         
-        
         {/* Bulk Actions */}
         {selectedDocs.size > 0 && (
           <div className="flex items-center gap-2">
@@ -680,7 +791,6 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
         )}
       </div>
 
-
       {/* Toolbar */}
       <FileManagerToolbar
         searchQuery={searchQuery}
@@ -697,7 +807,6 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
       <div className="p-4 px-6 pt-2 mb-2">
         <FolderNavigation folders={breadcrumbs} onNavigate={navigateToFolder} />
       </div>
-
 
       {error && (
         <div className="mb-4 mx-4 p-4 bg-destructive/10 border border-destructive rounded-md text-destructive">
@@ -732,7 +841,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
           viewMode={viewMode}
           currentDocumentId={currentDocumentId}
           selectedDocs={selectedDocs}
-          onDocumentSelect={handleDocumentClick} // Changed to use PDF viewer
+          onDocumentSelect={handleDocumentClick}
           onDocumentContextMenu={handleDocumentContextMenu}
           onFolderContextMenu={handleFolderContextMenu}
           onFolderNavigate={navigateToFolder}
@@ -742,7 +851,8 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
           onViewDetails={(doc) => setFileDetails({ isOpen: true, document: doc, folder: null })}
           onToggleSelection={toggleDocumentSelection}
           onMoveDocuments={moveDocuments}
-          onShowMoveToModal={handleShowMoveToModal} // Add this prop
+          onShowMoveToModal={handleShowMoveToModal}
+          onShowRenameModal={handleShowRenameModal}
           formatFileSize={formatFileSize}
           formatDate={formatDate}
         />
@@ -793,6 +903,19 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
               <button
                 onClick={() => {
                   const doc = documents.find(d => d.id === contextMenu.documentId);
+                  if (doc) {
+                    handleShowRenameModal(doc, 'document');
+                  }
+                  setContextMenu({ ...contextMenu, isOpen: false });
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+              >
+                <Edit className="w-4 h-4" />
+                Rename
+              </button>
+              <button
+                onClick={() => {
+                  const doc = documents.find(d => d.id === contextMenu.documentId);
                   if (doc) setFileDetails({ isOpen: true, document: doc, folder: null });
                   setContextMenu({ ...contextMenu, isOpen: false });
                 }}
@@ -826,6 +949,19 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
               >
                 <Folder className="w-4 h-4" />
                 Open Folder
+              </button>
+              <button
+                onClick={() => {
+                  const folder = folders.find(f => f.id === contextMenu.folderId);
+                  if (folder) {
+                    handleShowRenameModal(folder, 'folder');
+                  }
+                  setContextMenu({ ...contextMenu, isOpen: false });
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+              >
+                <Edit className="w-4 h-4" />
+                Rename Folder
               </button>
               <button
                 onClick={() => {
@@ -884,6 +1020,15 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
         folders={allFolders}
         currentFolderId={currentFolderId}
         selectedDocuments={moveToModal.selectedDocuments}
+      />
+
+      {/* Rename Modal */}
+      <RenameModal
+        isOpen={renameModal.isOpen}
+        onClose={() => setRenameModal({ isOpen: false, item: null, itemType: 'document' })}
+        onRename={handleRename}
+        item={renameModal.item}
+        itemType={renameModal.itemType}
       />
 
       {/* PDF Viewer */}

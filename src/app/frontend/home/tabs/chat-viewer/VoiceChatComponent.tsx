@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Mic, MicOff, Volume2, VolumeX, MessageSquare, Send, Brain, AudioLines } from 'lucide-react';
-import { apiService } from '../lib/api';
-import { AudioVisualizer } from './visualizer/AudioVisualizer'; // Adjust path as needed
+import { apiService } from '../../../lib/api';
+import { AudioVisualizer } from '../../../components/visualizer/AudioVisualizer'; // Adjust path as needed
 import PuffLoader from 'react-spinners/PuffLoader';
 
 interface VoiceChatComponentProps {
@@ -763,7 +763,7 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
           </div>
           {/* Visualizer Status Indicator */}
           {visualizerReady && (
-            <div className="absolute top-2 left-2 text-white text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
+            <div className="absolute top-2 left-2 text-white text-xs bg-black/50 px-2 py-1 rounded">
               {isListening && '🔵 Listening'}
               {isSpeaking && '🟡 Speaking'}
               {isProcessing && '🧠 Processing'}

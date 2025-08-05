@@ -119,21 +119,14 @@ export const RenameModal: React.FC<RenameModalProps> = ({
   if (!isOpen || !item) return null;
 
   const currentName = itemType === 'document' 
-    ? (item as DocumentInfo).originalFileName 
+    ? (item as DocumentInfo).fileName 
     : (item as FolderInfo).name;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-primary rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="p-6 border-b border-tertiary">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-              {itemType === 'document' ? (
-                <FileText className="w-5 h-5 text-blue-600" />
-              ) : (
-                <Folder className="w-5 h-5 text-blue-600" />
-              )}
-            </div>
+          <div className="flex items-center">
             <div>
               <h2 className="text-lg font-semibold text-foreground">
                 Rename {itemType === 'document' ? 'Document' : 'Folder'}
@@ -181,7 +174,7 @@ export const RenameModal: React.FC<RenameModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               disabled={isRenaming}
             >
               Cancel
@@ -189,7 +182,7 @@ export const RenameModal: React.FC<RenameModalProps> = ({
             <button
               type="submit"
               disabled={isRenaming || !newName.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
             >
               {isRenaming && (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

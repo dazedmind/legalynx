@@ -1,6 +1,6 @@
 import React from 'react'
 import UploadComponent from './UploadComponent'
-import { UploadResponse } from '../lib/api';
+import { UploadResponse } from '../../../lib/api';
 import { useTheme } from 'next-themes';
 interface UploadPageProps {
   onUploadSuccess: (response: UploadResponse) => void;

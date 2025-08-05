@@ -8,16 +8,16 @@ import {
   Info,
 } from "lucide-react";
 import React, { useRef, useState, useEffect } from "react";
-import { apiService, handleApiError, UploadResponse } from "../lib/api";
+import { apiService, handleApiError, UploadResponse } from "../../../lib/api";
 import { useAuth } from "@/lib/context/AuthContext";
 import { toast } from "sonner";
 import { authUtils } from "@/lib/auth";
-import BlurText from "./reactbits/BlurText";
+import BlurText from "../../../components/reactbits/BlurText";
 import {
   SecurityError,
   getSecurityErrorMessage,
   isSecurityError,
-} from "../lib/api";
+} from "../../../lib/api";
 
 interface UploadPageProps {
   onUploadSuccess: (response: UploadResponse) => void;

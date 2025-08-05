@@ -67,7 +67,7 @@ export const FileDetailsModal: React.FC<FileDetailsModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       
-      <div className="relative bg-primary border border-tertiary rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
+      <div className="relative bg-primary border border-tertiary rounded-lg shadow-xl w-full max-w-xl mx-4 max-h-[80vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-tertiary">
           <div className="flex items-center gap-3">
@@ -80,9 +80,7 @@ export const FileDetailsModal: React.FC<FileDetailsModalProps> = ({
               <h2 className="text-xl font-semibold text-foreground">
                 {document ? 'Document Details' : 'Folder Details'}
               </h2>
-              <p className="text-sm text-muted-foreground">
-                {document ? document.originalFileName : folder?.name}
-              </p>
+      
             </div>
           </div>
           <button

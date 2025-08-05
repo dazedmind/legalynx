@@ -3,16 +3,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { FileText, AlertCircle, Plus, ArrowUp, Cloud } from 'lucide-react';
-import { apiService, handleApiError, UploadResponse, isSecurityError, getSecurityErrorMessage, profileService } from '../lib/api';
+import { apiService, handleApiError, UploadResponse, isSecurityError, getSecurityErrorMessage, profileService } from '../../../lib/api';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
 import { useRAGCache } from '@/lib/ragCacheService';
-import ConfirmationModal from './ConfirmationModal';
+import ConfirmationModal from '../../../components/ConfirmationModal';
 import { ChatContainer } from './ChatContainer';
-import SessionLoader from './SessionLoader';
+import SessionLoader from '../../../components/SessionLoader';
 import { CloudCheck, AudioLines } from 'lucide-react';
-import { ModalType } from './ConfirmationModal';
+import { ModalType } from '../../../components/ConfirmationModal';
 import VoiceChatComponent from './VoiceChatComponent';
 
 interface ChatMessage {

@@ -42,20 +42,6 @@ export const FileManagerToolbar: React.FC<FileManagerToolbarProps> = ({
       </div>
 
       <div className="flex items-center space-x-2">
-        <button
-          onClick={() => setShowStarredOnly(!showStarredOnly)}
-          className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer ${
-            showStarredOnly 
-              ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' 
-              : 'border border-tertiary text-foreground hover:bg-accent'
-          }`}
-        >
-          <Star className={`w-4 h-4 ${showStarredOnly ? 'fill-current' : ''}`} />
-          <span className='hidden sm:block'>
-            Starred
-          </span>
-          
-        </button>
 
         <DropdownMenu>
           <DropdownMenuTrigger>
