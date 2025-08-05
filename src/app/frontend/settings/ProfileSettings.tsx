@@ -242,12 +242,12 @@ function ProfileSettings() {
 
     return (
         <div className='flex flex-col gap-1 overflow-y-auto'>
-            <span className='flex flex-col gap-1 p-6 px-8'>
+            <span className='flex flex-col gap-1 p-4 px-4'>
                 <h1 className='text-3xl font-bold font-serif'>Profile Settings</h1>
                 <p className='text-sm text-muted-foreground'>Manage your profile information and settings.</p>
             </span>
         
-            <section className='flex flex-col-reverse md:flex-row space-x-50 px-2 md:px-10 h-full overflow-y-auto overflow-x-hidden'>
+            <section className='flex flex-col-reverse md:flex-row space-x-50 px-2 md:px-6 h-full overflow-y-auto overflow-x-hidden'>
              
                 <div className='w-full md:w-auto flex flex-col mt-6 md:mt-0'>
                     <InputField 

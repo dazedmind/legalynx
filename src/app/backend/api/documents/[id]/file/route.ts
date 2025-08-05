@@ -1,17 +1,26 @@
-// src/app/backend/api/documents/[id]/file/route.ts - Fixed with correct S3Service methods
+// src/app/backend/api/documents/[id]/file/route.ts - Updated with query token support
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
-import { S3Service } from '@/lib/s3'; // ✅ Using named import
 import fs from 'fs';
 import path from 'path';
 
-// Helper function to get user from token
+// Helper function to get user from token (supports both header and query)
 async function getUserFromToken(request: NextRequest) {
-  const token = request.headers.get('authorization')?.replace('Bearer ', '');
+  // Try to get token from Authorization header first
+  let token = request.headers.get('authorization')?.replace('Bearer ', '');
+  
+  // If no header token, try query parameter (for iframe compatibility)
+  if (!token) {
+    const { searchParams } = new URL(request.url);
+    token = searchParams.get('token') || '';
+  }
+
   if (!token) {
     throw new Error('No token provided');
   }
+
+  console.log('🔍 Token found:', token ? `${token.substring(0, 20)}...` : 'MISSING');
 
   const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
   const user = await prisma.user.findUnique({
@@ -22,6 +31,7 @@ async function getUserFromToken(request: NextRequest) {
     throw new Error('User not found');
   }
 
+  console.log('✅ User authenticated:', user.email);
   return user;
 }
 
@@ -31,8 +41,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
+    console.log('📥 PDF file request for document:', resolvedParams.id);
+    
     const user = await getUserFromToken(request);
-    const { id: documentId } = await params; // ✅ FIX: Handle async params
+    const documentId = resolvedParams.id;
 
     if (!documentId) {
       return NextResponse.json({ error: 'Document ID required' }, { status: 400 });
@@ -51,134 +64,102 @@ export async function GET(
         file_name: true,
         original_file_name: true,
         mime_type: true,
-        status: true
+        status: true,
+        file_size: true
       }
     });
 
     if (!document) {
+      console.log('❌ Document not found or access denied');
       return NextResponse.json(
-        { error: 'Document not found or access denied' }, 
+        { 
+          error: 'Document not found or access denied',
+          details: 'Document may not exist or you do not have permission to view it'
+        }, 
         { status: 404 }
       );
     }
 
-    let fileBuffer: Buffer;
+    console.log('📄 Document found:', {
+      id: document.id,
+      filename: document.original_file_name,
+      status: document.status,
+      hasS3Key: !!document.s3_key,
+      hasFilePath: !!document.file_path
+    });
+
+    let fileBuffer: Buffer = Buffer.alloc(0);
     let fileSource = '';
 
-    // Try multiple approaches in order of preference
+    // Try multiple approaches to get the file
     try {
-      // Method 1: Try S3 first if document is saved/indexed and has S3 key
-      if (document.status === 'INDEXED' && (document.s3_key || document.file_path?.startsWith('http'))) {
-        const s3Key = document.s3_key || document.file_path;
+      // Method 1: Try local file system first
+      if (document.file_path && !document.file_path.startsWith('http')) {
+        console.log('📁 Trying local file path:', document.file_path);
         
-        try {
-          console.log(`📁 Attempting S3 retrieval for key: ${s3Key}`);
-          // ✅ FIX: Use correct method name and extract buffer from result
-          const s3Result = await S3Service.downloadFile(s3Key);
-          fileBuffer = s3Result.buffer;
-          fileSource = 'S3';
-          console.log(`✅ Retrieved from S3, size: ${fileBuffer.length} bytes`);
-        } catch (s3Error) {
-          console.error('❌ S3 retrieval failed, trying local fallback:', s3Error);
-          throw s3Error; // Let it fall through to local file attempt
+        let fullPath = document.file_path;
+        
+        // Handle relative paths
+        if (!path.isAbsolute(fullPath)) {
+          fullPath = path.join(process.cwd(), fullPath);
         }
-      } 
-      // Method 2: Try local file path
-      else if (document.file_path && !document.file_path.startsWith('http')) {
-        console.log(`📁 Attempting local file retrieval: ${document.file_path}`);
         
-        // Construct full local path - handle both absolute and relative paths
-        let fullPath: string;
-        if (document.file_path.startsWith('/uploads')) {
-          // Relative path from project root
-          fullPath = path.join(process.cwd(), document.file_path);
-        } else if (path.isAbsolute(document.file_path)) {
-          // Already absolute path
-          fullPath = document.file_path;
+        if (fs.existsSync(fullPath)) {
+          fileBuffer = fs.readFileSync(fullPath);
+          fileSource = `Local file: ${fullPath}`;
+          console.log(`✅ Retrieved from local file, size: ${fileBuffer.length} bytes`);
         } else {
-          // Relative path, assume it's from project root
-          fullPath = path.join(process.cwd(), document.file_path);
-        }
-        
-        console.log(`📂 Full path resolved to: ${fullPath}`);
-        
-        // Check if file exists
-        if (!fs.existsSync(fullPath)) {
           throw new Error(`Local file not found: ${fullPath}`);
         }
-        
-        fileBuffer = fs.readFileSync(fullPath);
-        fileSource = 'LOCAL';
-        console.log(`✅ Retrieved from local storage, size: ${fileBuffer.length} bytes`);
+      } else {
+        throw new Error('No local file path available');
       }
-      // Method 3: Fallback - try local even if S3 failed
-      else {
-        throw new Error('No valid file path found');
-      }
-
     } catch (primaryError) {
-      console.log('Primary retrieval method failed, trying fallback...');
+      console.log('⚠️ Local file access failed:', primaryError);
       
-      // Fallback: If S3 failed, try local file path
-      if (document.file_path && !document.file_path.startsWith('http')) {
+      // Method 2: Try S3 if available
+      if (document.s3_key) {
         try {
-          console.log(`🔄 Fallback: Attempting local file retrieval: ${document.file_path}`);
-          
-          // Construct full local path for fallback
-          let fullPath: string;
-          if (document.file_path.startsWith('/uploads')) {
-            // Relative path from project root
-            fullPath = path.join(process.cwd(), document.file_path);
-          } else if (path.isAbsolute(document.file_path)) {
-            // Already absolute path
-            fullPath = document.file_path;
-          } else {
-            // Relative path, assume it's from project root
-            fullPath = path.join(process.cwd(), document.file_path);
-          }
-          
-          console.log(`📂 Fallback full path resolved to: ${fullPath}`);
-          
-          if (fs.existsSync(fullPath)) {
-            fileBuffer = fs.readFileSync(fullPath);
-            fileSource = 'LOCAL_FALLBACK';
-            console.log(`✅ Retrieved from local fallback, size: ${fileBuffer.length} bytes`);
-          } else {
-            throw new Error(`Fallback file not found: ${fullPath}`);
-          }
-        } catch (localError) {
-          console.error('❌ Local fallback also failed:', localError);
-          throw localError;
+          console.log('☁️ Trying S3 file:', document.s3_key);
+          // Import S3Service dynamically
+          const { S3Service } = await import('@/lib/s3');
+          const s3Result = await S3Service.downloadFile(document.s3_key);
+          fileBuffer = Buffer.from(s3Result.buffer);
+          fileSource = `S3: ${document.s3_key}`;
+          console.log(`✅ Retrieved from S3, size: ${fileBuffer.length} bytes`);
+        } catch (s3Error) {
+          console.log('❌ S3 access failed:', s3Error);
+          throw s3Error;
         }
       } else {
-        // No fallback available
-        console.error('❌ No fallback available, primary error:', primaryError);
-        
-        if (primaryError instanceof Error) {
-          if (primaryError.message.includes('File not found') || primaryError.message.includes('ENOENT')) {
-            return NextResponse.json(
-              { 
-                error: 'Document file not found',
-                details: 'The file may have been moved or deleted from storage'
-              }, 
-              { status: 404 }
-            );
-          }
-          if (primaryError.message.includes('Access denied') || primaryError.message.includes('EACCES')) {
-            return NextResponse.json(
-              { error: 'Access denied to document file' }, 
-              { status: 403 }
-            );
+        // Method 3: Try common upload locations
+        const possiblePaths = [
+          path.join(process.cwd(), 'uploads', user.id, document.file_name),
+          path.join(process.cwd(), 'uploads', document.file_name),
+          path.join(process.cwd(), 'uploads', document.original_file_name),
+        ];
+
+        let found = false;
+        for (const testPath of possiblePaths) {
+          if (fs.existsSync(testPath)) {
+            fileBuffer = fs.readFileSync(testPath);
+            fileSource = `Fallback: ${testPath}`;
+            console.log(`✅ Retrieved from fallback location, size: ${fileBuffer.length} bytes`);
+            found = true;
+            break;
           }
         }
-        
-        return NextResponse.json(
-          { 
-            error: 'Failed to retrieve document file',
-            details: 'File not accessible from any storage location'
-          }, 
-          { status: 500 }
-        );
+
+        if (!found) {
+          console.error('❌ File not found in any location');
+          return NextResponse.json(
+            { 
+              error: 'Document file not found',
+              details: 'The file may have been moved or deleted from storage'
+            }, 
+            { status: 404 }
+          );
+        }
       }
     }
 
@@ -186,120 +167,46 @@ export async function GET(
     const contentType = document.mime_type || 
       (document.original_file_name?.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
 
+    console.log(`📤 Serving file: ${fileSource}, size: ${fileBuffer.length}, type: ${contentType}`);
+
     // Return the file with appropriate headers
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `inline; filename="${document.original_file_name || 'document.pdf'}"`,
         'Content-Length': fileBuffer.length.toString(),
-        'Cache-Control': 'private, max-age=3600', // Cache for 1 hour
-        'X-File-Source': fileSource, // Debug header to see which method worked
-        // CORS headers
-        'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || '*',
+        'Cache-Control': 'private, max-age=3600',
+        'X-File-Source': fileSource,
+        // CORS headers for iframe compatibility
+        'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type',
       }
     });
 
   } catch (error) {
-    console.error('Document file retrieval error:', error);
+    console.error('❌ Document file retrieval error:', error);
     
     // Handle specific JWT errors
-    if (error instanceof Error && error.name === 'JsonWebTokenError') {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    if (error instanceof Error && (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError')) {
+      return NextResponse.json({ 
+        error: 'Authentication failed', 
+        details: 'Invalid or expired token'
+      }, { status: 401 });
     }
-    if (error instanceof Error && error.name === 'TokenExpiredError') {
-      return NextResponse.json({ error: 'Token expired' }, { status: 401 });
+
+    if (error instanceof Error && error.message.includes('No token provided')) {
+      return NextResponse.json({ 
+        error: 'Authentication required', 
+        details: 'No token provided'
+      }, { status: 401 });
     }
     
     return NextResponse.json(
       { 
         error: 'Failed to retrieve document file',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
       }, 
-      { status: 500 }
-    );
-  }
-}
-
-// Alternative endpoint: /documents/[id]/download - Returns a presigned URL (S3 only)
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const user = await getUserFromToken(request);
-    const { id: documentId } = await params; // ✅ FIX: Handle async params
-
-    if (!documentId) {
-      return NextResponse.json({ error: 'Document ID required' }, { status: 400 });
-    }
-
-    // Get document details and verify ownership
-    const document = await prisma.document.findFirst({
-      where: {
-        id: documentId,
-        owner_id: user.id
-      },
-      select: {
-        id: true,
-        s3_key: true,
-        file_path: true,
-        file_name: true, // ← add this line
-        original_file_name: true,
-        status: true
-      }
-    });
-
-    if (!document) {
-      return NextResponse.json(
-        { error: 'Document not found or access denied' }, 
-        { status: 404 }
-      );
-    }
-
-    // This endpoint only works for S3 stored files
-    const s3Key = document.s3_key || (document.file_path?.startsWith('http') ? document.file_path : null);
-    
-    if (!s3Key) {
-      return NextResponse.json(
-        { 
-          error: 'Presigned URLs only available for cloud-stored documents',
-          details: 'Use the GET endpoint for direct file access'
-        }, 
-        { status: 400 }
-      );
-    }
-
-    try {
-      // ✅ FIX: Use correct method name and parameters
-      const presignedUrl = await S3Service.getSignedDownloadUrl(
-        s3Key, 
-        3600 // 1 hour - this is the correct parameter signature
-      );
-
-      return NextResponse.json({
-        downloadUrl: presignedUrl,
-        fileName: document.file_name,
-        originalFileName: document.original_file_name,
-        expiresIn: 3600,
-        expiresAt: new Date(Date.now() + 3600 * 1000).toISOString()
-      });
-
-    } catch (s3Error: any) {
-      console.error('S3 Presigned URL Error:', s3Error);
-      
-      return NextResponse.json(
-        { error: 'Failed to generate download link' }, 
-        { status: 500 }
-      );
-    }
-
-  } catch (error) {
-    console.error('Presigned URL generation error:', error);
-    
-    return NextResponse.json(
-      { error: 'Failed to generate download link' }, 
       { status: 500 }
     );
   }

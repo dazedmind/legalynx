@@ -37,7 +37,8 @@ model User {
 
   // One-to-one relationship with Subscription
   subscription       Subscription?     @relation("UserSubscription")
-  
+  folders           Folder[]
+
   // One-to-one relationship with UserSettings
   user_settings      UserSettings?     @relation("UserUserSettings")
 
@@ -163,12 +164,38 @@ model Document {
   owner            User @relation(fields: [owner_id], references: [id], onDelete: Cascade)
   chat_sessions    ChatSession[] @relation("DocumentChatSessions")
   
+    // Add folder relationship
+  folder_id     String?  @map("folder_id")
+  folder        Folder?  @relation(fields: [folder_id], references: [id], onDelete: SetNull)
+
   // Indexes for performance
   @@index([owner_id, status])
   @@index([status, updated_at])
   @@map("documents")
 }
 
+model Folder {
+  id          String   @id @default(uuid())
+  name        String
+  path        String   // Full path like "folder1/subfolder2"
+  parent_id   String?  @map("parent_id")
+  owner_id    String   @map("owner_id")
+  created_at  DateTime @default(now()) @map("created_at")
+  updated_at  DateTime @updatedAt @map("updated_at")
+  
+  // Self-referential relationship for nested folders
+  parent      Folder?   @relation("FolderHierarchy", fields: [parent_id], references: [id], onDelete: Cascade)
+  children    Folder[]  @relation("FolderHierarchy")
+  
+  // Relations
+  owner       User      @relation(fields: [owner_id], references: [id], onDelete: Cascade)
+  documents   Document[]
+  
+  // Constraints
+  @@unique([owner_id, parent_id, name]) // Prevent duplicate folder names in same directory
+  @@index([owner_id, parent_id])
+  @@map("folders")
+}
 
 model ChatSession {
   id          String        @id @default(uuid())

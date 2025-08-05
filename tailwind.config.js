@@ -59,6 +59,12 @@ module.exports = {
         fontFamily: {
           display: ['Fusion Pixel 10px Proportional TC', 'sans-serif'],
         },
+        // Custom truncation utilities
+        textOverflow: {
+          'truncate-10': 'ellipsis',
+          'truncate-20': 'ellipsis',
+          'truncate-30': 'ellipsis',
+        },
       },
     },
     plugins: [],

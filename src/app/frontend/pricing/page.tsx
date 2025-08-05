@@ -90,7 +90,7 @@ function EnhancedPricing() {
       </header>
 
       {/* Hero Section */}
-      <section className="pt-20 pb-16">
+      <section className="pt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <span className='flex flex-col items-center justify-center'>
                 <BlurText
@@ -152,8 +152,8 @@ function EnhancedPricing() {
               >
                 {/* Popular Badge */}
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 ">
+                    <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full text-xs md:text-sm font-semibold flex items-center gap-2">
                       <Star className="w-4 h-4 fill-current" />
                       Most Popular
                     </span>

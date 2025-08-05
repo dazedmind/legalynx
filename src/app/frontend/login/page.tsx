@@ -129,7 +129,7 @@ function Login() {
 
             </div>
         </main>
-        <Toaster position='top-right' richColors />
+        <Toaster />
     </div>
   )
 }

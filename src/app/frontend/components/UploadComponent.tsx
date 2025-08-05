@@ -382,7 +382,7 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
           console.log("Trying RAG-only fallback after database error:", error);
           try {
             setStatusMessage(
-              "Account save failed, processing for session only..."
+              "Preparing the Document..."
             );
             ragResponse = await uploadToRagSystem(file);
 

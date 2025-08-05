@@ -167,7 +167,7 @@ function Register() {
 
             </div>
         </main>
-        <Toaster position='top-right' richColors />
+        <Toaster />
     </div>
   )
 }

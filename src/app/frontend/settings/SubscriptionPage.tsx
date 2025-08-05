@@ -76,16 +76,16 @@ function SubscriptionPage() {
 
     return (
         <div>
-            <span className='flex flex-col gap-1 p-6 px-8'>
+            <span className='flex flex-col gap-1 p-4 px-4'>
                 <h1 className='text-3xl font-bold font-serif'>Subscription</h1>
                 <p className='text-sm text-muted-foreground'>Manage your subscription and preferences.</p>
             </span>        
             
             <section className='space-y-4 mb-8'>
                 {/* Current Subscription Card */}
-                <div className='p-4 rounded-md border flex flex-col gap-2 border-tertiary mx-8'>
+                <div className='p-4 rounded-md border flex flex-col gap-2 border-tertiary mx-4'>
                     <p className='text-sm text-muted-foreground'>Your current subscription is</p>
-                    <div className='flex items-center justify-between'>
+                    <div className='flex flex-col md:flex-row items-start md:items-center gap-4 justify-between'>
                         <span className={`w-fit font-bold text-2xl rounded-md p-3 bg-gradient-to-bl ${getSubscriptionColor(subscription)} text-white border border-tertiary flex items-center gap-2`}>
                             {getSubscriptionIcon(subscription)}
                             {subscription}
@@ -115,7 +115,7 @@ function SubscriptionPage() {
                 </div>
 
                 {/* Token Usage Card */}
-                <div className='p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-8'>
+                <div className='p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-4'>
                     <div className='flex items-center justify-between'>
                         <div className='flex items-center gap-2'>
                             <Zap className='w-5 h-5 text-yellow-500' />
@@ -161,7 +161,7 @@ function SubscriptionPage() {
                 </div>
 
                 {/* Usage Statistics */}
-                <div className='p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-8'>
+                <div className='p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-4'>
                     <div className='flex items-center gap-2'>
                         <TrendingUp className='w-5 h-5 text-yellow-500' />
                         <h1 className='text-lg font-bold'>Usage Statistics</h1>
@@ -181,7 +181,7 @@ function SubscriptionPage() {
 
                 {/* Billing Information */}
                 {billingDate !== '' && (
-                    <div className='p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-8'>
+                    <div className='p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-4'>
                         <div className='flex items-center gap-2'>
                             <h1 className='text-lg font-bold'>Billing Information</h1>
                             <CreditCard className='w-5 h-5 text-muted-foreground' />
@@ -223,7 +223,7 @@ function SubscriptionPage() {
                 )}
 
                 {/* Plan Comparison / Upgrade */}
-                <div className='p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-8'>
+                <div className='p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-4'>
                     <h1 className='text-lg font-bold'>Available Plans</h1>
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                         <div className={`p-4 border rounded-lg ${subscription === 'BASIC' ? 'border-blue-500 bg-blue/20' : 'border-tertiary'}`}>

@@ -227,6 +227,10 @@ export default function SavedChatHistory({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
+  const truncateString = (str: string, maxLength: number): string => {
+    return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+  };
+
   if (isLoading) {
     return (
       <div className="bg-primary rounded-lg shadow-md p-6 h-full flex items-center justify-center">
@@ -328,7 +332,7 @@ export default function SavedChatHistory({
                     <div className="flex items-center text-sm text-muted-foreground space-x-4">
                       <div className="flex items-center">
                         <FileText className="w-4 h-4 mr-1" />
-                        <span className="truncate">{session.fileName}</span>
+                        <span className="truncate max-w-[150px] sm:max-w-none">{session.fileName}</span>
                       </div>
                     </div>
                   </div>

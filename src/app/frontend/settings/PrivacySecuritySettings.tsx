@@ -53,12 +53,12 @@ const FloatingSaveBar = ({
           : 'translate-y-16 opacity-0 scale-95 pointer-events-none'
       }`}
     >
-      <div className="bg-primary/50 backdrop-blur-sm border border-tertiary rounded-lg shadow-lg p-4 min-w-3xl">
+      <div className="bg-primary/50 backdrop-blur-sm border border-tertiary rounded-lg shadow-lg p-4 w-xs md:min-w-3xl">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div>
-              <p className="font-medium text-foreground">You have unsaved changes</p>
-              <p className="text-xs text-muted-foreground">Your settings will be lost if you leave without saving</p>
+              <p className="font-medium text-sm md:text-base text-foreground">You have unsaved changes</p>
+              <p className="hidden md:block text-xs text-muted-foreground">Your settings will be lost if you leave without saving</p>
             </div>
           </div>
           
@@ -68,7 +68,8 @@ const FloatingSaveBar = ({
               disabled={isSaving}
               className="flex items-center gap-2 px-3 py-2 text-sm border border-tertiary rounded-md hover:bg-accent transition-colors disabled:opacity-50 cursor-pointer"
             >
-              Discard
+              <span className='hidden md:block'>Discard</span>
+              <span className='block md:hidden'>Cancel</span>
             </button>
             
             <button
@@ -83,7 +84,8 @@ const FloatingSaveBar = ({
                 </>
               ) : (
                 <>
-                  Save Changes
+                  <span className='hidden md:block'>Save Changes</span>
+                  <span className='block md:hidden'>Save</span>
                 </>
               )}
             </button>
@@ -390,7 +392,7 @@ export default function PrivacySecuritySettings() {
   return (
     <div className="space-y-4"> {/* Added padding bottom for floating bar */}
       {/* Header */}
-      <div className="p-6 px-8">
+      <div className="p-4 pb-2 px-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className='text-3xl font-bold font-serif'>Privacy & Security</h1>
@@ -400,7 +402,7 @@ export default function PrivacySecuritySettings() {
       </div>
 
       {/* Two-Factor Authentication */}
-      <section className="mx-8 p-6 rounded-lg border border-tertiary bg-primary">
+      <section className="mx-4 p-6 rounded-lg border border-tertiary bg-primary">
         <div className="flex items-center gap-3 mb-4">
           <Shield className="w-6 h-6 text-yellow-500" />
           <div>
@@ -414,7 +416,7 @@ export default function PrivacySecuritySettings() {
         {!securitySettings.two_factor_enabled && !is2FASetup ? (
           <div className="space-y-4">
             <div className=" rounded-lg">
-              <div className="flex justify-between gap-3">
+              <div className="flex flex-col md:flex-row justify-between items-start gap-3">
                 <div className='flex flex-col'>
                     <h3 className="font-bold ">Set up 2FA</h3>
                     <p className="text-sm text-muted-foreground ">
@@ -435,7 +437,7 @@ export default function PrivacySecuritySettings() {
                         </>
                     ) : (
                         <>
-                        <Key className="w-4 h-4" />
+                        <Key className="hidden md:block w-4 h-4" />
                         Enable 2FA
                         </>
                     )}
@@ -553,7 +555,7 @@ export default function PrivacySecuritySettings() {
       </section>
 
       {/* Security Settings */}
-      <section className="mx-8 p-6 rounded-lg border border-tertiary bg-primary">
+      <section className="mx-4 p-6 rounded-lg border border-tertiary bg-primary">
         <div className="flex items-center gap-3 mb-4">
           <Lock className="w-6 h-6 text-yellow-500" />
           <div>
@@ -590,7 +592,7 @@ export default function PrivacySecuritySettings() {
       </section>
 
       {/* Privacy Settings */}
-      <section className="mx-8 p-6 rounded-lg border border-tertiary bg-primary">
+      <section className="mx-4 p-6 rounded-lg border border-tertiary bg-primary">
         <div className="flex items-center gap-3 mb-4">
           <Shield className="w-6 h-6 text-yellow-500" />
           <div>
@@ -638,7 +640,7 @@ export default function PrivacySecuritySettings() {
       </section>
 
       {/* Danger Zone */}
-      <section className="mx-8 p-6 mb-8 rounded-lg border border-tertiary bg-destructive/5">
+      <section className="mx-4 p-6 mb-8 rounded-lg border border-tertiary bg-destructive/5">
         <div className="flex items-center gap-3 mb-4">
           <AlertTriangle className="w-6 h-6 text-red-600" />
           <div>
@@ -650,7 +652,7 @@ export default function PrivacySecuritySettings() {
 
         <div className="space-y-4">
           {!showDeleteConfirm ? (
-            <div className="flex items-center justify-between p-4 bg-primary border border-tertiary rounded-lg">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 justify-between p-4 bg-primary border border-tertiary rounded-lg">
               <div>
                 <h3 className="font-medium text-red-600">Delete Account</h3>
                 <p className="text-sm text-muted-foreground">
@@ -702,7 +704,7 @@ export default function PrivacySecuritySettings() {
                     </>
                   ) : (
                     <>
-                      Delete My Account
+                      Confirm Delete
                     </>
                   )}
                 </button>

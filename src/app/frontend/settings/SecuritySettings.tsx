@@ -272,15 +272,15 @@ function SecuritySettings() {
 
     return (
         <div className="h-full flex flex-col">
-            <div className='flex flex-col gap-1 p-6 px-8 flex-shrink-0'>
+            <span className='flex flex-col gap-1 p-4 px-4'>
                 <h1 className='text-3xl font-bold font-serif'>Security Logs</h1>
                 <p className='text-sm text-muted-foreground'>
                     Authentication and security changes in your account are logged here. 
                     Logs are retained for 60 days.
                 </p>
-            </div>
+            </span>
             
-            <div className='rounded-md border border-tertiary mx-8 mb-5 flex-1 flex flex-col overflow-hidden'>
+            <div className='rounded-md border border-tertiary mx-4 mb-5 flex-1 flex flex-col overflow-hidden'>
                 {/* Filters Section */}
                 <div className="p-4 space-y-4 border-b border-tertiary">
                     <div className="flex justify-between gap-4">

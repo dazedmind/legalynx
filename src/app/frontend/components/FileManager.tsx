@@ -1,30 +1,33 @@
+// src/app/frontend/components/FileManager.tsx - Enhanced with Move To and PDF Viewer
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  FileText, 
-  Trash2, 
-  Calendar, 
+  File, 
   HardDrive, 
   AlertCircle, 
-  Search,
-  Filter,
-  Grid,
-  List,
-  Star,
-  Clock,
-  File,
   Upload,
-  MoreHorizontal,
+  Search,
+  FolderPlus,
+  ArrowLeft,
   MessageSquare,
   Info,
-  X,
+  Trash2,
+  Folder,
+  FileText,
+  Move,
+  Eye
 } from 'lucide-react';
 import { apiService, handleApiError } from '../lib/api';
 import { useAuth } from '@/lib/context/AuthContext';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { GoInfo } from 'react-icons/go';
 import { useTheme } from 'next-themes';
+import { CreateFolderModal } from './CreateFolderModal';
+import { FolderNavigation } from './FolderNavigation';
+import { FileManagerToolbar } from './FileManagerToolbar';
+import { FileGrid } from './FileGrid';
+import { PDFViewer } from './PDFViewer';
+import { FileDetailsModal } from './FileDetailsModal';
+import { DeleteFolderModal } from './DeleteFolderModal';
+import { authUtils } from '@/lib/auth';
 
 interface DocumentInfo {
   id: string;
@@ -41,6 +44,17 @@ interface DocumentInfo {
   mimeType?: string;
 }
 
+interface FolderInfo {
+  id: string;
+  name: string;
+  path: string;
+  parent_id?: string;
+  created_at: string;
+  updated_at: string;
+  document_count?: number;
+  subfolder_count?: number;
+}
+
 interface FileManagerProps {
   onDocumentSelect?: (docId: string) => void;
   currentDocumentId?: string;
@@ -51,305 +65,111 @@ type SortField = 'name' | 'size' | 'uploadedAt' | 'lastAccessed' | 'pages';
 type SortOrder = 'asc' | 'desc';
 type ViewMode = 'grid' | 'list';
 
-// Context Menu Component
-interface ContextMenuProps {
+// Move To Modal Component
+interface MoveToModalProps {
   isOpen: boolean;
-  position: { x: number; y: number };
   onClose: () => void;
-  onOpenInChat: () => void;
-  onToggleFavorite: () => void;
-  onViewDetails: () => void;
-  onDelete: () => void;
-  isStarred: boolean;
+  onMove: (targetFolderId: string | null) => void;
+  folders: FolderInfo[];
+  currentFolderId: string | null;
+  selectedDocuments: DocumentInfo[];
 }
 
-const ContextMenu: React.FC<ContextMenuProps> = ({
+const MoveToModal: React.FC<MoveToModalProps> = ({
   isOpen,
-  position,
   onClose,
-  onOpenInChat,
-  onToggleFavorite,
-  onViewDetails,
-  onDelete,
-  isStarred
+  onMove,
+  folders,
+  currentFolderId,
+  selectedDocuments
 }) => {
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [isMoving, setIsMoving] = useState(false);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+  const handleMove = async () => {
+    setIsMoving(true);
+    try {
+      await onMove(selectedFolderId);
+      onClose();
+    } catch (error) {
+      console.error('Move failed:', error);
+    } finally {
+      setIsMoving(false);
     }
-  }, [isOpen, onClose]);
+  };
 
   if (!isOpen) return null;
 
   return (
-    <div
-      ref={menuRef}
-      className="fixed z-50 bg-white border border-gray-200 rounded-md shadow-lg py-2 min-w-[180px]"
-      style={{ left: position.x, top: position.y }}
-    >
-      <button
-        onClick={onOpenInChat}
-        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-      >
-        <MessageSquare className="w-4 h-4" />
-        Open in Chat
-      </button>
-      <button
-        onClick={onToggleFavorite}
-        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-      >
-        <Star className={`w-4 h-4 ${isStarred ? 'fill-yellow-500 text-yellow-500' : ''}`} />
-        {isStarred ? 'Remove from Favorites' : 'Add to Favorites'}
-      </button>
-      <button
-        onClick={onViewDetails}
-        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-      >
-        <Info className="w-4 h-4" />
-        View File Details
-      </button>
-      <div className="border-t border-gray-200 my-1"></div>
-      <button
-        onClick={onDelete}
-        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 text-red-600 flex items-center gap-2"
-      >
-        <Trash2 className="w-4 h-4" />
-        Delete
-      </button>
-    </div>
-  );
-};
-
-// PDF Viewer Component
-interface PDFViewerProps {
-  isOpen: boolean;
-  document: DocumentInfo | null;
-  onClose: () => void;
-}
-
-const PDFViewer: React.FC<PDFViewerProps> = ({ isOpen, document, onClose }) => {
-  const [pdfUrl, setPdfUrl] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>('');
-  const [zoom, setZoom] = useState(100);
-  const [rotation, setRotation] = useState(0);
-  const { user } = useAuth();
-  const { theme } = useTheme();
-  useEffect(() => {
-    if (isOpen && document) {
-      loadPdfUrl();
-    }
-    return () => {
-      if (pdfUrl) {
-        URL.revokeObjectURL(pdfUrl);
-        setPdfUrl('');
-      }
-    };
-  }, [isOpen, document]);
-
-  const loadPdfUrl = async () => {
-    if (!document || !user) return;
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      // Import authUtils to get the token properly
-      const { authUtils } = await import('@/lib/auth');
-      
-      // Get the file from your API endpoint
-      const response = await fetch(`/backend/api/documents/${document.id}/file`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authUtils.getToken()}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load PDF file');
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      setPdfUrl(url);
-    } catch (error) {
-      console.error('Error loading PDF:', error);
-      setError('Failed to load PDF file');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleZoomIn = () => setZoom(prev => Math.min(prev + 25, 200));
-  const handleZoomOut = () => setZoom(prev => Math.max(prev - 25, 50));
-  const handleRotate = () => setRotation(prev => (prev + 90) % 360);
-
-  if (!isOpen || !document) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/20 flex items-center justify-center">
-      <div className="bg-primary rounded-lg w-2xl h-10/11 flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-lg">{document.fileName}</h3>
-          </div>
-          <div className="flex items-center gap-2">
-
-            <Button size="sm" variant="outline" onClick={onClose} className='cursor-pointer'>
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* PDF Content */}
-        <div className="flex-1 overflow-auto bg-secondary p-4">
-          {isLoading && (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading PDF...</p>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center text-destructive">
-                <AlertCircle className="w-12 h-12 mx-auto mb-4" />
-                <p>{error}</p>
-              </div>
-            </div>
-          )}
-
-          {pdfUrl && !isLoading && !error && (
-            <div className="flex justify-center">
-              <iframe
-                src={pdfUrl}
-                className="border border-gray-300 rounded"
-                style={{
-                  width: `${zoom}%`,
-                  height: '80vh',
-                  transform: `rotate(${rotation}deg)`,
-                  transformOrigin: 'center center'
-                }}
-                title={`PDF Viewer - ${document.originalFileName}`}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t bg-primary rounded-b-lg">
-          <div className="flex justify-between items-center text-sm text-muted-foreground">
-            <div>
-              Size: {(document.size / 1024 / 1024).toFixed(2)} MB
-              {document.pages && ` • ${document.pages} pages`}
-            </div>
-            <div>
-              Uploaded: {new Date(document.uploadedAt).toLocaleDateString()}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// File Details Modal Component
-interface FileDetailsModalProps {
-  isOpen: boolean;
-  document: DocumentInfo | null;
-  onClose: () => void;
-}
-
-const FileDetailsModal: React.FC<FileDetailsModalProps> = ({ isOpen, document, onClose }) => {
-  if (!isOpen || !document) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-      <div className="bg-primary rounded-lg w-full max-w-lg mx-4">
-        <div className="flex items-center gap-2  p-6 border-b">
-          <GoInfo className='w-5 h-5 text-blue-600' />
-          <h3 className="text-xl font-semibold text-foreground">File Details</h3>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-primary rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[80vh] overflow-hidden">
+        <div className="p-6 border-b border-tertiary">
+          <h2 className="text-lg font-semibold text-foreground">
+            Move {selectedDocuments.length} document{selectedDocuments.length !== 1 ? 's' : ''}
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Select destination folder
+          </p>
         </div>
         
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <span className='flex col-span-2 w-full flex-col gap-2'>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">File Name</label>
-                <p className="mt-1 text-sm text-foreground">{document.fileName}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Original File Name</label>
-                <p className="mt-1 text-sm text-muted-foreground">{document.originalFileName}</p>
-              </div>
-            </span>
-      
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">File Size</label>
-              <p className="mt-1 text-sm text-foreground">{(document.size / 1024 / 1024).toFixed(2)} MB</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Upload Date</label>
-              <p className="mt-1 text-sm text-foreground">
-                {new Date(document.uploadedAt).toLocaleString()}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Status</label>
-              <p className="mt-1 text-sm">
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  document.status === 'INDEXED' ? 'bg-green-700/20 text-green-500' :
-                  document.status === 'READY' ? 'bg-blue-700/20 text-blue-600' :
-                  'bg-gray-700/20 text-gray-600'
-                }`}>
-                  {document.status}
-                </span>
-              </p>
-            </div>
-            {document.pages && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Pages</label>
-                <p className="mt-1 text-sm text-foreground">{document.pages}</p>
-              </div>
-            )}
-            {document.chatSessionsCount !== undefined && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Chat Sessions</label>
-                <p className="mt-1 text-sm text-foreground">{document.chatSessionsCount}</p>
-              </div>
+        <div className="p-4 max-h-64 overflow-y-auto">
+          {/* Root folder option */}
+          <div 
+            className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${
+              selectedFolderId === null ? 'bg-blue-50 border-2 border-blue-500' : 'hover:bg-accent'
+            }`}
+            onClick={() => setSelectedFolderId(null)}
+          >
+            <Folder className="w-5 h-5 text-blue-500 mr-3" />
+            <span className="text-foreground">Root Folder</span>
+            {currentFolderId === null && (
+              <span className="ml-auto text-xs text-muted-foreground">(current)</span>
             )}
           </div>
-          
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">File ID</label>
-            <p className="mt-1 text-sm text-foreground font-mono">{document.id}</p>
-          </div>
-          
-          {document.lastAccessed && (
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Last Accessed</label>
-              <p className="mt-1 text-sm text-foreground">
-                {new Date(document.lastAccessed).toLocaleString()}
-              </p>
+
+          {/* Available folders */}
+          {folders.map((folder) => (
+            <div
+              key={folder.id}
+              className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${
+                selectedFolderId === folder.id ? 'bg-blue-50 border-2 border-blue-500' : 'hover:bg-accent'
+              } ${folder.id === currentFolderId ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => {
+                if (folder.id !== currentFolderId) {
+                  setSelectedFolderId(folder.id);
+                }
+              }}
+            >
+              <Folder className="w-5 h-5 text-blue-500 mr-3" />
+              <div className="flex-1">
+                <span className="text-foreground">{folder.name}</span>
+                {folder.id === currentFolderId && (
+                  <span className="ml-2 text-xs text-muted-foreground">(current)</span>
+                )}
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {folder.document_count || 0} docs
+              </span>
             </div>
-          )}
+          ))}
         </div>
-        
-        <div className="p-4 border-t rounded-lg bg-tertiary flex justify-end">
-          <Button onClick={onClose} className='cursor-pointer'>Close</Button>
+
+        <div className="p-4 border-t border-tertiary flex gap-2 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            disabled={isMoving}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleMove}
+            disabled={isMoving}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isMoving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+            Move Here
+          </button>
         </div>
       </div>
     </div>
@@ -359,12 +179,20 @@ const FileDetailsModal: React.FC<FileDetailsModalProps> = ({ isOpen, document, o
 export default function FileManager({ onDocumentSelect, currentDocumentId, onDocumentDeleted }: FileManagerProps) {
   const { isAuthenticated, user } = useAuth();
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
+  const [folders, setFolders] = useState<FolderInfo[]>([]);
+  const [allFolders, setAllFolders] = useState<FolderInfo[]>([]); // For move-to modal
   const [filteredDocuments, setFilteredDocuments] = useState<DocumentInfo[]>([]);
+  const [filteredFolders, setFilteredFolders] = useState<FolderInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string>('');
   const [isClient, setIsClient] = useState(false);
-  const { theme } = useTheme();
+
+  // Folder navigation
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [breadcrumbs, setBreadcrumbs] = useState<{ id: string; name: string }[]>([]);
+  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
+
   // UI State
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('uploadedAt');
@@ -377,10 +205,14 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
     isOpen: boolean;
     position: { x: number; y: number };
     documentId: string | null;
+    folderId: string | null;
+    isFolder: boolean;
   }>({
     isOpen: false,
     position: { x: 0, y: 0 },
-    documentId: null
+    documentId: null,
+    folderId: null,
+    isFolder: false
   });
 
   // Modal States
@@ -395,110 +227,355 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
   const [fileDetails, setFileDetails] = useState<{
     isOpen: boolean;
     document: DocumentInfo | null;
+    folder: FolderInfo | null;
   }>({
     isOpen: false,
-    document: null
+    document: null,
+    folder: null
   });
 
-  // Ensure we're on the client side
+  const [deleteFolderModal, setDeleteFolderModal] = useState<{
+    isOpen: boolean;
+    folder: any | null;
+  }>({
+    isOpen: false,
+    folder: null
+  });
+
+  const [moveToModal, setMoveToModal] = useState<{
+    isOpen: boolean;
+    selectedDocuments: DocumentInfo[];
+  }>({
+    isOpen: false,
+    selectedDocuments: []
+  });
+
   useEffect(() => {
     setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (isClient) {
-      loadDocuments();
+    if (isAuthenticated) {
+      loadFolderContents(currentFolderId);
+      loadAllFolders(); // Load all folders for move-to modal
     }
-  }, [isAuthenticated, user?.id, isClient]);
+  }, [isAuthenticated, currentFolderId]);
 
-  useEffect(() => {
-    filterAndSortDocuments();
-  }, [documents, searchQuery, sortField, sortOrder, showStarredOnly]);
+  const loadFolderContents = async (folderId: string | null) => {
+    if (!isAuthenticated) return;
 
-  const loadDocuments = async () => {
-    if (!isClient) return;
-    
     setIsLoading(true);
     setError('');
-    
+
     try {
-      console.log('Loading documents...', { isAuthenticated, userId: user?.id });
-      
-      if (isAuthenticated && user) {
-        console.log('Loading from database...');
-        const data = await apiService.getDocuments();
-        console.log('Database response:', data);
-        
-        if (data && data.documents) {
-          const formattedDocs: DocumentInfo[] = data.documents
-            .filter(doc => {
-              const validStatuses = ['INDEXED', 'READY', 'PROCESSED'];
-              const isValid = validStatuses.includes(doc.status?.toUpperCase() || '');
-              console.log(`Document ${doc.originalFileName}: status=${doc.status}, valid=${isValid}`);
-              return isValid;
-            })
-            .map(doc => ({
-              id: doc.id,
-              fileName: doc.fileName,
-              originalFileName: doc.originalFileName,
-              size: doc.fileSize,
-              uploadedAt: doc.uploadedAt,
-              pages: doc.pageCount,
-              status: doc.status?.toUpperCase() === 'INDEXED' ? 'INDEXED' : 'READY',
-              chatSessionsCount: doc.chatSessionsCount,
-              mimeType: doc.mimeType,
-              starred: false,
-              lastAccessed: undefined
-            }));
-          
-          console.log('Formatted documents:', formattedDocs);
-          setDocuments(formattedDocs);
-        } else {
-          console.log('No documents found in database response');
-          setDocuments([]);
+      const token = authUtils.getToken();
+      const response = await fetch(`/backend/api/folders?parentId=${folderId || ''}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-      } else {
-        console.log('Loading from localStorage...');
-        const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
-        const saved = localStorage.getItem(userKey);
-        
-        if (saved) {
-          try {
-            const docs = JSON.parse(saved);
-            console.log('LocalStorage docs:', docs);
-            
-            const readyDocs = docs.filter((doc: any) => {
-              const validStatuses = ['READY', 'INDEXED'];
-              return validStatuses.includes(doc.status);
-            });
-            
-            console.log('Ready docs from localStorage:', readyDocs);
-            setDocuments(readyDocs);
-          } catch (parseError) {
-            console.error('Failed to parse localStorage documents:', parseError);
-            setDocuments([]);
-          }
-        } else {
-          console.log('No documents in localStorage');
-          setDocuments([]);
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.warn('Folders API not found, loading documents only');
+          await loadDocumentsOnly();
+          return;
         }
+        throw new Error('Failed to load folder contents');
       }
-    } catch (error) {
-      console.error('Failed to load documents:', error);
-      setError(handleApiError(error));
-      setDocuments([]);
+
+      const data = await response.json();
+      setFolders(data.folders || []);
+      setDocuments(data.documents || []);
+      setBreadcrumbs(data.breadcrumbs || []);
+    } catch (err) {
+      console.warn('Folder API failed, falling back to documents only');
+      await loadDocumentsOnly();
     } finally {
       setIsLoading(false);
     }
   };
 
-  const filterAndSortDocuments = () => {
-    let filtered = [...documents];
+  const loadAllFolders = async () => {
+    if (!isAuthenticated) return;
 
-    if (searchQuery.trim()) {
+    try {
+      const token = authUtils.getToken();
+      const response = await fetch('/backend/api/folders/all', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAllFolders(data.folders || []);
+      }
+    } catch (err) {
+      console.warn('Could not load all folders for move-to modal');
+    }
+  };
+
+  const loadDocumentsOnly = async () => {
+    try {
+      const response = await apiService.getDocuments();
+      setDocuments(response.documents.map(doc => ({
+        ...doc,
+        size: doc.fileSize || 0,
+        status: doc.status as any
+      })) || []);
+      setFolders([]);
+      setBreadcrumbs([]);
+    } catch (err) {
+      const errorMessage = handleApiError(err);
+      setError(errorMessage);
+      console.error('Load documents error:', err);
+    }
+  };
+
+  const createFolder = async (name: string) => {
+    if (!isAuthenticated) return;
+
+    try {
+      const token = authUtils.getToken();
+      const response = await fetch('/backend/api/folders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name,
+          parentId: currentFolderId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create folder');
+      }
+
+      await loadFolderContents(currentFolderId);
+      await loadAllFolders(); // Refresh all folders list
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const deleteFolder = async (folderId: string, force: boolean = false) => {
+    if (!isAuthenticated) return;
+
+    try {
+      const token = authUtils.getToken();
+      const url = `/backend/api/folders/${folderId}${force ? '?force=true' : ''}`;
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.status === 409 && data.requiresConfirmation) {
+        setDeleteFolderModal({
+          isOpen: true,
+          folder: data.folder
+        });
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete folder');
+      }
+
+      await loadFolderContents(currentFolderId);
+      await loadAllFolders();
+    } catch (err) {
+      const errorMessage = handleApiError(err);
+      setError(errorMessage);
+      console.error('Delete folder error:', err);
+    }
+  };
+
+  const handleDeleteFolderConfirm = async (force: boolean) => {
+    if (!deleteFolderModal.folder) return;
+    
+    await deleteFolder(deleteFolderModal.folder.id, force);
+    setDeleteFolderModal({ isOpen: false, folder: null });
+  };
+
+  const moveDocuments = async (documentIds: string[], targetFolderId: string | null) => {
+    if (!isAuthenticated) return;
+
+    try {
+      const token = authUtils.getToken();
+      const response = await fetch('/backend/api/documents/move', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          documentIds,
+          targetFolderId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to move documents');
+      }
+
+      const result = await response.json();
+      console.log('✅ Documents moved:', result);
+
+      await loadFolderContents(currentFolderId);
+      setSelectedDocs(new Set());
+
+    } catch (err) {
+      const errorMessage = handleApiError(err);
+      setError(errorMessage);
+      console.error('Move documents error:', err);
+    }
+  };
+
+  const deleteDocument = async (docId: string) => {
+    try {
+      const response = await apiService.deleteDocument(docId);
+      
+      if (response.message) {
+        setDocuments(prev => prev.filter(doc => doc.id !== docId));
+        if (onDocumentDeleted) {
+          onDocumentDeleted(docId);
+        }
+      } else {
+        throw new Error('Failed to delete document');
+      }
+    } catch (err) {
+      const errorMessage = handleApiError(err);
+      setError(errorMessage);
+    }
+  };
+
+  const navigateToFolder = (folderId: string | null) => {
+    setCurrentFolderId(folderId);
+    setSearchQuery('');
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+  };
+
+  const handleDocumentContextMenu = (e: React.MouseEvent, docId: string) => {
+    e.preventDefault();
+    setContextMenu({
+      isOpen: true,
+      position: { x: e.clientX, y: e.clientY },
+      documentId: docId,
+      folderId: null,
+      isFolder: false
+    });
+  };
+
+  const handleFolderContextMenu = (e: React.MouseEvent, folderId: string) => {
+    e.preventDefault();
+    setContextMenu({
+      isOpen: true,
+      position: { x: e.clientX, y: e.clientY },
+      documentId: null,
+      folderId: folderId,
+      isFolder: true
+    });
+  };
+
+  const toggleDocumentSelection = (docId: string) => {
+    const newSelected = new Set(selectedDocs);
+    if (newSelected.has(docId)) {
+      newSelected.delete(docId);
+    } else {
+      newSelected.add(docId);
+    }
+    setSelectedDocs(newSelected);
+  };
+
+  const selectAllDocuments = () => {
+    if (selectedDocs.size === filteredDocuments.length) {
+      setSelectedDocs(new Set());
+    } else {
+      setSelectedDocs(new Set(filteredDocuments.map(doc => doc.id)));
+    }
+  };
+
+  // Enhanced document click handler to open PDF viewer
+  const handleDocumentClick = (docId: string) => {
+    const doc = documents.find(d => d.id === docId);
+    if (doc) {
+      // Update last accessed time
+      const updatedDocs = documents.map(d => 
+        d.id === docId 
+          ? { ...d, lastAccessed: new Date().toISOString() }
+          : d
+      );
+      setDocuments(updatedDocs);
+      
+      // Open PDF viewer
+      setPdfViewer({ isOpen: true, document: doc });
+    }
+  };
+
+  const handleMoveToClick = () => {
+    const selectedDocuments = documents.filter(doc => selectedDocs.has(doc.id));
+    setMoveToModal({
+      isOpen: true,
+      selectedDocuments
+    });
+  };
+
+  const handleMoveDocuments = async (targetFolderId: string | null) => {
+    let documentIds: string[];
+    
+    // If we have documents in the modal, use those IDs
+    if (moveToModal.selectedDocuments && moveToModal.selectedDocuments.length > 0) {
+      documentIds = moveToModal.selectedDocuments.map(doc => doc.id);
+    } else {
+      // Otherwise use selected documents
+      documentIds = Array.from(selectedDocs);
+    }
+    
+    if (documentIds.length === 0) {
+      console.error('No documents selected for move');
+      return;
+    }
+    
+    console.log('Moving documents:', documentIds, 'to folder:', targetFolderId);
+    await moveDocuments(documentIds, targetFolderId);
+  };
+
+  const handleShowMoveToModal = (documents: DocumentInfo[]) => {
+    console.log('Showing move to modal for documents:', documents.map(d => d.originalFileName));
+    setMoveToModal({
+      isOpen: true,
+      selectedDocuments: documents
+    });
+  };
+
+  // Filter and sort logic
+  useEffect(() => {
+    let filtered = [...documents];
+    let filteredFolderList = [...folders];
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       filtered = filtered.filter(doc => 
-        doc.originalFileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doc.fileName.toLowerCase().includes(searchQuery.toLowerCase())
+        doc.originalFileName.toLowerCase().includes(query) ||
+        doc.fileName.toLowerCase().includes(query)
+      );
+      filteredFolderList = filteredFolderList.filter(folder =>
+        folder.name.toLowerCase().includes(query)
       );
     }
 
@@ -506,10 +583,9 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
       filtered = filtered.filter(doc => doc.starred);
     }
 
+    // Sort documents
     filtered.sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
+      let aValue: any, bValue: any;
       switch (sortField) {
         case 'name':
           aValue = a.originalFileName.toLowerCase();
@@ -523,166 +599,25 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
           aValue = new Date(a.uploadedAt).getTime();
           bValue = new Date(b.uploadedAt).getTime();
           break;
-        case 'lastAccessed':
-          aValue = a.lastAccessed ? new Date(a.lastAccessed).getTime() : 0;
-          bValue = b.lastAccessed ? new Date(b.lastAccessed).getTime() : 0;
-          break;
         case 'pages':
           aValue = a.pages || 0;
           bValue = b.pages || 0;
           break;
         default:
-          return 0;
+          aValue = new Date(a.uploadedAt).getTime();
+          bValue = new Date(b.uploadedAt).getTime();
       }
-
-      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
+      if (sortOrder === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
     });
 
+    filteredFolderList.sort((a, b) => a.name.localeCompare(b.name));
     setFilteredDocuments(filtered);
-  };
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-  };
-
-  const handleDocumentClick = (doc: DocumentInfo) => {
-    // Update last accessed time
-    const updatedDocs = documents.map(d => 
-      d.id === doc.id 
-        ? { ...d, lastAccessed: new Date().toISOString() }
-        : d
-    );
-    setDocuments(updatedDocs);
-    
-    // Save to appropriate storage
-    if (!isAuthenticated && isClient) {
-      const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
-      localStorage.setItem(userKey, JSON.stringify(updatedDocs));
-    }
-    
-    // Open PDF viewer
-    setPdfViewer({
-      isOpen: true,
-      document: doc
-    });
-  };
-
-  const handleRightClick = (event: React.MouseEvent, doc: DocumentInfo) => {
-    event.preventDefault();
-    setContextMenu({
-      isOpen: true,
-      position: { x: event.clientX, y: event.clientY },
-      documentId: doc.id
-    });
-  };
-
-  const handleContextMenuClose = () => {
-    setContextMenu({
-      isOpen: false,
-      position: { x: 0, y: 0 },
-      documentId: null
-    });
-  };
-
-  const getContextMenuDocument = () => {
-    return documents.find(doc => doc.id === contextMenu.documentId) || null;
-  };
-
-  const handleOpenInChat = () => {
-    const doc = getContextMenuDocument();
-    if (doc) {
-      onDocumentSelect?.(doc.id);
-      handleContextMenuClose();
-    }
-  };
-
-  const handleToggleFavorite = () => {
-    const doc = getContextMenuDocument();
-    if (doc) {
-      const updatedDocs = documents.map(d => 
-        d.id === doc.id 
-          ? { ...d, starred: !d.starred }
-          : d
-      );
-      setDocuments(updatedDocs);
-      
-      if (!isAuthenticated && isClient) {
-        const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
-        localStorage.setItem(userKey, JSON.stringify(updatedDocs));
-      }
-      
-      handleContextMenuClose();
-    }
-  };
-
-  const handleViewDetails = () => {
-    const doc = getContextMenuDocument();
-    if (doc) {
-      setFileDetails({
-        isOpen: true,
-        document: doc
-      });
-      handleContextMenuClose();
-    }
-  };
-
-  const handleDeleteFromContext = () => {
-    const doc = getContextMenuDocument();
-    if (doc) {
-      handleDeleteDocument(doc.id);
-      handleContextMenuClose();
-    }
-  };
-
-  const handleDeleteDocument = async (docId: string, event?: React.MouseEvent) => {
-    event?.stopPropagation();
-    
-    const doc = documents.find(d => d.id === docId);
-    if (!confirm(`Are you sure you want to delete "${doc?.originalFileName}"?`)) {
-      return;
-    }
-
-    try {
-      if (isAuthenticated) {
-        await apiService.deleteDocument(docId);
-      } else if (isClient) {
-        const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
-        const saved = localStorage.getItem(userKey);
-        if (saved) {
-          const docs = JSON.parse(saved);
-          const updatedDocs = docs.filter((d: DocumentInfo) => d.id !== docId);
-          localStorage.setItem(userKey, JSON.stringify(updatedDocs));
-        }
-      }
-      
-      setDocuments(prev => prev.filter(d => d.id !== docId));
-      
-      const newSelected = new Set(selectedDocs);
-      newSelected.delete(docId);
-      setSelectedDocs(newSelected);
-
-      if (docId === currentDocumentId) {
-        await apiService.resetSystem();
-      }
-    } catch (error) {
-      setError(handleApiError(error));
-    }
-  };
-
-  const selectAllDocuments = () => {
-    if (selectedDocs.size === filteredDocuments.length) {
-      setSelectedDocs(new Set());
-    } else {
-      setSelectedDocs(new Set(filteredDocuments.map(doc => doc.id)));
-    }
-  };
+    setFilteredFolders(filteredFolderList);
+  }, [documents, folders, searchQuery, sortField, sortOrder, showStarredOnly]);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -696,426 +631,283 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: 'numeric'
     });
   };
 
-  if (!isClient || isLoading) {
+  if (!isClient) {
+    return <div className="flex items-center justify-center h-64">Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
     return (
-      <div className="bg-primary rounded-lg shadow-md p-6 h-full flex items-center justify-center">
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading documents...</p>
+          <AlertCircle className="mx-auto w-16 h-16 mb-4 opacity-50" />
+          <p className="text-lg font-medium mb-2">Authentication Required</p>
+          <p className="text-sm">Please sign in to access your documents</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-primary shadow-md p-6 h-full flex flex-col">
+    <div className="flex flex-col p-2 h-full bg-primary">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex items-center justify-between p-4 border-b border-tertiary">
         <div>
-          <h2 className="text-2xl font-bold font-serif text-foreground">My Documents</h2>
+          <h2 className="text-2xl font-bold font-serif text-foreground">File Manager</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {filteredDocuments.length} of {documents.length} documents
-            {selectedDocs.size > 0 && ` • ${selectedDocs.size} selected`}
+            Manage your documents and folders
           </p>
         </div>
-        <div className="flex items-center space-x-2">
- 
-          <div className="flex items-center text-sm text-muted-foreground">
-            <HardDrive className="w-4 h-4 mr-1" />
-            {formatFileSize(documents.reduce((total, doc) => total + doc.size, 0))}
+        
+        
+        {/* Bulk Actions */}
+        {selectedDocs.size > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {selectedDocs.size} selected
+            </span>
+            <button
+              onClick={handleMoveToClick}
+              className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors flex items-center gap-1"
+            >
+              <Move className="w-3 h-3" />
+              Move To
+            </button>
           </div>
-        </div>
+        )}
       </div>
+
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-2 p-4 bg-tertiary rounded-lg">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search documents..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-tertiary rounded-md bg-primary text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-          />
-        </div>
+      <FileManagerToolbar
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        showStarredOnly={showStarredOnly}
+        setShowStarredOnly={setShowStarredOnly}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onSort={handleSort}
+        setShowCreateFolderModal={setShowCreateFolderModal}
+      />
 
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setShowStarredOnly(!showStarredOnly)}
-            className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer ${
-              showStarredOnly 
-                ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' 
-                : 'border border-tertiary text-foreground hover:bg-accent'
-            }`}
-          >
-            <Star className={`w-4 h-4 ${showStarredOnly ? 'fill-current' : ''}`} />
-            Starred
-          </button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <span className="flex items-center gap-1 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer border border-tertiary text-foreground hover:bg-accent">
-                <Filter className="w-4 h-4" />
-                Sort
-              </span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => handleSort('name')}>Name</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleSort('uploadedAt')}>Upload Date</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleSort('size')}>Size</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleSort('pages')}>Pages</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <div className="flex border border-tertiary rounded-md overflow-hidden">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 cursor-pointer transition-colors ${
-                viewMode === 'list' 
-                  ? 'bg-blue/20 text-blue-700' 
-                  : ' text-muted-foreground hover:bg-accent'
-              }`}
-            >
-              <List className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 cursor-pointer transition-colors ${
-                viewMode === 'grid' 
-                  ? 'bg-blue/20 text-blue-700' 
-                  : ' text-muted-foreground hover:bg-accent'
-              }`}
-            >
-              <Grid className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+      {/* Navigation */}
+      <div className="p-4 px-6 pt-2 mb-2">
+        <FolderNavigation folders={breadcrumbs} onNavigate={navigateToFolder} />
       </div>
 
+
       {error && (
-        <div className="mb-4 p-4 bg-destructive/10 border border-destructive rounded-md text-destructive">
+        <div className="mb-4 mx-4 p-4 bg-destructive/10 border border-destructive rounded-md text-destructive">
           <AlertCircle className="w-5 h-5 inline mr-2" />
           {error}
         </div>
       )}
 
       {/* Content */}
-      {filteredDocuments.length === 0 ? (
+      {filteredDocuments.length === 0 && filteredFolders.length === 0 ? (
         <div className="flex-1 flex items-center justify-center text-muted-foreground">
           <div className="text-center">
-            {documents.length === 0 ? (
+            {documents.length === 0 && folders.length === 0 ? (
               <>
                 <Upload className="mx-auto w-16 h-16 mb-4 opacity-50" />
-                <p className="text-lg font-medium mb-2">No documents uploaded</p>
-                <p className="text-sm">Upload a PDF document to get started</p>
+                <p className="text-lg font-medium mb-2">No documents or folders</p>
+                <p className="text-sm">Upload a document or create a folder to get started</p>
               </>
             ) : (
               <>
                 <Search className="mx-auto w-16 h-16 mb-4 opacity-50" />
-                <p className="text-lg font-medium mb-2">No documents found</p>
+                <p className="text-lg font-medium mb-2">No items found</p>
                 <p className="text-sm">Try adjusting your search or filters</p>
               </>
             )}
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-hidden">
-          {viewMode === 'list' ? (
+        <FileGrid
+          folders={filteredFolders}
+          documents={filteredDocuments}
+          viewMode={viewMode}
+          currentDocumentId={currentDocumentId}
+          selectedDocs={selectedDocs}
+          onDocumentSelect={handleDocumentClick} // Changed to use PDF viewer
+          onDocumentContextMenu={handleDocumentContextMenu}
+          onFolderContextMenu={handleFolderContextMenu}
+          onFolderNavigate={navigateToFolder}
+          onFolderDelete={deleteFolder}
+          onDocumentDelete={deleteDocument}
+          onViewPDF={(doc) => setPdfViewer({ isOpen: true, document: doc })}
+          onViewDetails={(doc) => setFileDetails({ isOpen: true, document: doc, folder: null })}
+          onToggleSelection={toggleDocumentSelection}
+          onMoveDocuments={moveDocuments}
+          onShowMoveToModal={handleShowMoveToModal} // Add this prop
+          formatFileSize={formatFileSize}
+          formatDate={formatDate}
+        />
+      )}
+
+      {/* Enhanced Context Menu */}
+      {contextMenu.isOpen && (
+        <div
+          className="fixed z-50 bg-primary border border-tertiary rounded-md shadow-lg py-2 min-w-[180px]"
+          style={{ left: contextMenu.position.x, top: contextMenu.position.y }}
+        >
+          {!contextMenu.isFolder && contextMenu.documentId && (
             <>
-              {/* List Header */}
-              <div className="grid grid-cols-12 gap-4 p-3 bg-primary rounded-lg text-sm font-medium text-muted-foreground mb-4">
-                <div className="col-span-1 flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={selectedDocs.size === filteredDocuments.length && filteredDocuments.length > 0}
-                    onChange={selectAllDocuments}
-                    className="rounded"
-                  />
-                </div>
-                <div className="col-span-4">Name</div>
-                <div className="col-span-2">Size</div>
-                <div className="col-span-3">Upload Date</div>
-                <div className="col-span-1">Pages</div>
-                <div className="col-span-1">Actions</div>
-              </div>
-
-              {/* List Items */}
-              <div className="flex-1 overflow-y-auto space-y-2">
-                {filteredDocuments.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className={`grid grid-cols-12 gap-4 p-4 border rounded-lg transition-colors cursor-pointer hover:bg-accent ${
-                      selectedDocs.has(doc.id)
-                        ? 'border-blue-500 bg-blue/20 hover:bg-blue/30'
-                        : currentDocumentId === doc.id
-                        ? 'border-blue-500 bg-blue/50'
-                        : 'border-tertiary'
-                    }`}
-                    onClick={() => handleDocumentClick(doc)}
-                    onContextMenu={(e) => handleRightClick(e, doc)}
-                  >
-                    {/* Checkbox */}
-                    <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedDocs.has(doc.id)}
-                        onChange={() => {
-                          const newSelected = new Set(selectedDocs);
-                          if (newSelected.has(doc.id)) {
-                            newSelected.delete(doc.id);
-                          } else {
-                            newSelected.add(doc.id);
-                          }
-                          setSelectedDocs(newSelected);
-                        }}
-                        className="rounded"
-                      />
-                    </div>
-
-                    {/* File Info */}
-                    <div className="col-span-4 flex items-center">
-                      <div className="flex items-center">
-                        {doc.starred && (
-                          <Star className="w-4 h-4 text-yellow-500 fill-current mr-2" />
-                        )}
-                        <FileText className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-foreground truncate">{doc.fileName}</p>
-                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                          {doc.lastAccessed && (
-                            <span className="flex items-center">
-                              <Clock className="w-3 h-3 mr-1" />
-                              {formatDate(doc.lastAccessed)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Size */}
-                    <div className="col-span-2 flex items-center text-sm text-muted-foreground">
-                      <File className="w-4 h-4 mr-1" />
-                      {formatFileSize(doc.size)}
-                    </div>
-
-                    {/* Upload Date */}
-                    <div className="col-span-3 flex items-center text-sm text-muted-foreground">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      {formatDate(doc.uploadedAt)}
-                    </div>
-
-                    {/* Pages */}
-                    <div className="col-span-1 flex items-center text-sm text-muted-foreground">
-                      {doc.pages || 'N/A'}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="col-span-1 flex items-center space-x-1">
-                      <button
-                        onClick={(e) => handleDeleteDocument(doc.id, e)}
-                        className="p-1 text-destructive hover:text-destructive hover:bg-destructive/20 rounded transition-colors cursor-pointer"
-                        title="Delete document"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <button
+                onClick={() => {
+                  const doc = documents.find(d => d.id === contextMenu.documentId);
+                  if (doc) setPdfViewer({ isOpen: true, document: doc });
+                  setContextMenu({ ...contextMenu, isOpen: false });
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+              >
+                <Eye className="w-4 h-4" />
+                View PDF
+              </button>
+              <button
+                onClick={() => {
+                  onDocumentSelect?.(contextMenu.documentId!);
+                  setContextMenu({ ...contextMenu, isOpen: false });
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Open in Chat
+              </button>
+              <button
+                onClick={() => {
+                  const doc = documents.find(d => d.id === contextMenu.documentId);
+                  if (doc) {
+                    handleShowMoveToModal([doc]);
+                  }
+                  setContextMenu({ ...contextMenu, isOpen: false });
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+              >
+                <Move className="w-4 h-4" />
+                Move To
+              </button>
+              <button
+                onClick={() => {
+                  const doc = documents.find(d => d.id === contextMenu.documentId);
+                  if (doc) setFileDetails({ isOpen: true, document: doc, folder: null });
+                  setContextMenu({ ...contextMenu, isOpen: false });
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+              >
+                <Info className="w-4 h-4" />
+                View Details
+              </button>
+              <div className="border-t border-tertiary my-1"></div>
+              <button
+                onClick={() => {
+                  if (contextMenu.documentId) deleteDocument(contextMenu.documentId);
+                  setContextMenu({ ...contextMenu, isOpen: false });
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-destructive"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
             </>
-          ) : (
-            /* Grid View */
-            <div className="flex-1 overflow-y-auto px-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredDocuments.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className={`border rounded-lg p-5 transition-all cursor-pointer hover:shadow-md ${
-                      selectedDocs.has(doc.id)
-                        ? 'border-blue-500 bg-blue/20 hover:bg-blue/30'
-                        : currentDocumentId === doc.id
-                    }`}
-                    onClick={() => handleDocumentClick(doc)}
-                    onContextMenu={(e) => handleRightClick(e, doc)}
-                  >
-                    {/* Header */}
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedDocs.has(doc.id)}
-                          onChange={() => {
-                            const newSelected = new Set(selectedDocs);
-                            if (newSelected.has(doc.id)) {
-                              newSelected.delete(doc.id);
-                            } else {
-                              newSelected.add(doc.id);
-                            }
-                            setSelectedDocs(newSelected);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="rounded p-1"
-                        />
-                        {doc.starred && (
-                          <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                        )}
-                      </div>
-
-                      {/* Quick Actions */}
-                      <div className="flex items-center space-x-1">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button 
-                              className="rounded-full p-1 hover:bg-accent cursor-pointer transition-colors duration-200"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreHorizontal className="w-4 h-4" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDocumentSelect?.(doc.id);
-                              }}
-                              className="cursor-pointer"
-                            >
-                              <MessageSquare className="w-4 h-4" />
-                              Open in Chat
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const updatedDocs = documents.map(d => 
-                                  d.id === doc.id ? { ...d, starred: !d.starred } : d
-                                );
-                                setDocuments(updatedDocs);
-                                if (!isAuthenticated && isClient) {
-                                  const userKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
-                                  localStorage.setItem(userKey, JSON.stringify(updatedDocs));
-                                }
-                              }}
-                              className="cursor-pointer"
-                            >
-                              <Star className={`w-4 h-4 ${doc.starred ? 'fill-yellow-500 text-yellow-500' : ''}`} />
-                              {doc.starred ? 'Remove from Favorites' : 'Add to Favorites'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setFileDetails({ isOpen: true, document: doc });
-                              }}
-                              className="cursor-pointer"
-                            >
-                              <Info className="w-4 h-4" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteDocument(doc.id);
-                              }}
-                              className="cursor-pointer text-red-600 focus:text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-
-                    {/* File Icon */}
-                    <div className="flex justify-center mb-3">
-                      <div className="relative">
-                        <FileText className="w-12 h-12 text-red-500" />
-                      </div>
-                    </div>
-
-                    {/* File Info */}
-                    <div className="text-center">
-                      <h3 className="font-medium text-foreground truncate mb-1" title={doc.fileName}>
-                        {doc.fileName}
-                      </h3>
-                      <div className="space-y-1 text-xs text-muted-foreground">
-                        {/* <p>{formatFileSize(doc.size)} • {doc.pages || 'N/A'} pages</p> */}
-                        <p>{formatDate(doc.uploadedAt)}</p>
-                        {doc.chatSessionsCount !== undefined && doc.chatSessionsCount > 0 && (
-                          <p className="text-blue-600">
-                            <MessageSquare className="w-3 h-3 inline mr-1" />
-                            {doc.chatSessionsCount} chats
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          )}
+          
+          {contextMenu.isFolder && contextMenu.folderId && (
+            <>
+              <button
+                onClick={() => {
+                  navigateToFolder(contextMenu.folderId!);
+                  setContextMenu({ ...contextMenu, isOpen: false });
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+              >
+                <Folder className="w-4 h-4" />
+                Open Folder
+              </button>
+              <button
+                onClick={() => {
+                  const folder = folders.find(f => f.id === contextMenu.folderId);
+                  if (folder) setFileDetails({ isOpen: true, document: null, folder });
+                  setContextMenu({ ...contextMenu, isOpen: false });
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+              >
+                <Info className="w-4 h-4" />
+                Folder Details
+              </button>
+              <div className="border-t border-tertiary my-1"></div>
+              <button
+                onClick={() => {
+                  if (contextMenu.folderId) deleteFolder(contextMenu.folderId);
+                  setContextMenu({ ...contextMenu, isOpen: false });
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-destructive"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Folder
+              </button>
+            </>
           )}
         </div>
       )}
 
-      {/* Footer */}
-      <div className="mt-4 pt-4 border-t border-tertiary">
-        <div className="flex justify-between items-center text-sm text-muted-foreground">
-          <span>
-            Total: {documents.length} documents • {formatFileSize(documents.reduce((total, doc) => total + doc.size, 0))}
-          </span>
-          {selectedDocs.size > 0 && (
-            <div className="flex items-center space-x-2">
-              <span className="text-blue-600">
-                {selectedDocs.size} document{selectedDocs.size !== 1 ? 's' : ''} selected
-              </span>
-              <button
-                onClick={() => {
-                  const selectedDocuments = filteredDocuments.filter(doc => selectedDocs.has(doc.id));
-                  if (selectedDocuments.length > 0 && confirm(`Delete ${selectedDocuments.length} selected documents?`)) {
-                    selectedDocuments.forEach(doc => handleDeleteDocument(doc.id));
-                  }
-                }}
-                className="px-3 py-1 bg-destructive text-white rounded text-xs hover:bg-destructive/80 transition-colors"
-              >
-                Delete Selected
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Click outside to close context menu */}
+      {contextMenu.isOpen && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setContextMenu({ ...contextMenu, isOpen: false })}
+        />
+      )}
 
-      {/* Context Menu */}
-      <ContextMenu
-        isOpen={contextMenu.isOpen}
-        position={contextMenu.position}
-        onClose={handleContextMenuClose}
-        onOpenInChat={handleOpenInChat}
-        onToggleFavorite={handleToggleFavorite}
-        onViewDetails={handleViewDetails}
-        onDelete={handleDeleteFromContext}
-        isStarred={getContextMenuDocument()?.starred || false}
+      {/* Modals */}
+      <CreateFolderModal
+        isOpen={showCreateFolderModal}
+        onClose={() => setShowCreateFolderModal(false)}
+        onCreate={createFolder}
+        parentFolder={breadcrumbs.length > 0 ? { 
+          id: currentFolderId || '', 
+          name: breadcrumbs[breadcrumbs.length - 1]?.name || '',
+          path: breadcrumbs.map(b => b.name).join('/'),
+          created_at: '',
+          updated_at: ''
+        } : null}
       />
 
-      {/* PDF Viewer Modal */}
+      {/* Move To Modal */}
+      <MoveToModal
+        isOpen={moveToModal.isOpen}
+        onClose={() => setMoveToModal({ isOpen: false, selectedDocuments: [] })}
+        onMove={handleMoveDocuments}
+        folders={allFolders}
+        currentFolderId={currentFolderId}
+        selectedDocuments={moveToModal.selectedDocuments}
+      />
+
+      {/* PDF Viewer */}
       <PDFViewer
         isOpen={pdfViewer.isOpen}
         document={pdfViewer.document}
         onClose={() => setPdfViewer({ isOpen: false, document: null })}
+        onOpenInChat={onDocumentSelect}
       />
 
       {/* File Details Modal */}
       <FileDetailsModal
         isOpen={fileDetails.isOpen}
         document={fileDetails.document}
-        onClose={() => setFileDetails({ isOpen: false, document: null })}
+        folder={fileDetails.folder}
+        onClose={() => setFileDetails({ isOpen: false, document: null, folder: null })}
+      />
+
+      {/* Delete Folder Confirmation Modal */}
+      <DeleteFolderModal
+        isOpen={deleteFolderModal.isOpen}
+        folder={deleteFolderModal.folder}
+        onClose={() => setDeleteFolderModal({ isOpen: false, folder: null })}
+        onConfirm={handleDeleteFolderConfirm}
       />
     </div>
   );

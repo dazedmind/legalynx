@@ -255,13 +255,28 @@
 }
 
 /* Selection highlight */
-.selected-item {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+.selected-item,
+.selected-folder {
+  /* box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); */
+  border: 1px solid #3B77E0;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.clicked {
+  border: 1px solid var(--tertiary);
+  background-color: var(--accent);
 }
 
 /* Smooth transitions for all interactive elements */
 .interactive-element {
   transition: all 0.2s ease-in-out;
+}
+
+.no-select {
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE 10+ */
+  user-select: none;         /* Standard syntax */
 }
 
 /* Custom scrollbar for document list */

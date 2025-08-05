@@ -82,12 +82,12 @@ const FloatingSaveBar = ({
           : 'translate-y-16 opacity-0 scale-95 pointer-events-none'
       }`}
     >
-      <div className="bg-primary/50 backdrop-blur-sm border border-tertiary rounded-lg shadow-lg p-4 min-w-3xl">
+      <div className="bg-primary/50 backdrop-blur-sm border border-tertiary rounded-lg shadow-lg p-4 w-xs md:min-w-3xl">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div>
-              <p className="font-medium text-foreground">You have unsaved changes</p>
-              <p className="text-xs text-muted-foreground">Your settings will be lost if you leave without saving</p>
+              <p className="font-medium text-sm md:text-base text-foreground">You have unsaved changes</p>
+              <p className="hidden md:block text-xs text-muted-foreground">Your settings will be lost if you leave without saving</p>
             </div>
           </div>
           
@@ -97,7 +97,8 @@ const FloatingSaveBar = ({
               disabled={isSaving}
               className="flex items-center gap-2 px-3 py-2 text-sm border border-tertiary rounded-md hover:bg-accent transition-colors disabled:opacity-50 cursor-pointer"
             >
-              Discard
+              <span className='hidden md:block'>Discard</span>
+              <span className='block md:hidden'>Cancel</span>
             </button>
             
             <button
@@ -112,7 +113,8 @@ const FloatingSaveBar = ({
                 </>
               ) : (
                 <>
-                  Save Changes
+                  <span className='hidden md:block'>Save Changes</span>
+                  <span className='block md:hidden'>Save</span>
                 </>
               )}
             </button>
@@ -323,8 +325,8 @@ export default function FileSettings() {
 
   return (
     <div className="space-y-4 pb-24"> {/* Added padding bottom for floating bar */}
-      <span className="flex flex-col gap-1 p-6 pb-2 px-8">
-        <div className="flex items-center justify-between">
+          <span className='flex flex-col gap-1 p-4 pb-2 px-4'>
+            <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold font-serif">File Settings</h1>
             <p className="text-sm text-muted-foreground">
@@ -335,7 +337,7 @@ export default function FileSettings() {
       </span>
 
       {/* File Settings Preference */}
-      <section className="mx-8 p-6 rounded-lg border border-tertiary bg-primary">
+      <section className="mx-4 p-6 rounded-lg border border-tertiary bg-primary">
         <div className="flex items-center gap-3 mb-4">
           <Sparkle className="w-6 h-6 text-yellow-500" />
           <div>
@@ -461,7 +463,7 @@ export default function FileSettings() {
       </section>
 
       {/* Storage Usage */}
-      <section className="mx-8 p-6 mb-8 rounded-lg border border-tertiary bg-primary">
+      <section className="mx-4 p-6 mb-8 rounded-lg border border-tertiary bg-primary">
         <div className="flex items-center gap-3 mb-4">
           <GoCloud className="w-6 h-6 text-yellow-500" strokeWidth={1} />
           <div className="flex justify-between items-center w-full">
