@@ -331,7 +331,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
       setDocuments(response.documents.map((doc: any) => ({
         ...doc,
         size: doc.fileSize || 0,
-        status: doc.status as any
+        status: doc.status
       })) || []);
       setFolders([]);
       setBreadcrumbs([]);
@@ -370,6 +370,27 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
       throw err;
     }
   };
+
+  const handleBulkDelete = async (docId: string, folderId:string, force: boolean = false) => {
+    if (!isAuthenticated) return;
+
+    try {
+      const response = await apiService.bulkDeleteDocuments([docId, folderId]);
+      if (response.message) {
+        setDocuments(prev => prev.filter(doc => doc.id !== docId));
+        if (onDocumentDeleted) {
+          onDocumentDeleted(docId);
+        }
+      } else {
+        throw new Error('Failed to delete documents');
+      }
+    } catch (err) {
+      const errorMessage = handleApiError(err);
+      setError(errorMessage);
+      console.error('Bulk delete error:', err);
+      throw err;
+    }
+  }
 
   const deleteFolder = async (folderId: string, force: boolean = false) => {
     if (!isAuthenticated) return;
@@ -680,6 +701,9 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
     let filtered = [...documents];
     let filteredFolderList = [...folders];
 
+    // Filter to show only INDEXED documents
+    filtered = filtered.filter(doc => doc.status === 'INDEXED');
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(doc => 
@@ -782,10 +806,17 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
             </span>
             <button
               onClick={handleMoveToClick}
-              className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors flex items-center gap-1"
+              className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors flex items-center gap-1 cursor-pointer"
             >
               <Move className="w-3 h-3" />
               Move To
+            </button>
+            <button
+              // onClick={() => handleBulkDelete(Array.from(selectedDocs), currentFolderId, false)}
+              className="px-3 py-1 bg-destructive text-primary rounded text-xs hover:bg-destructive/80 transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <Trash2 className="w-3 h-3" />
+              Delete
             </button>
           </div>
         )}
@@ -858,137 +889,158 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
         />
       )}
 
-      {/* Enhanced Context Menu */}
-      {contextMenu.isOpen && (
-        <div
-          className="fixed z-50 bg-primary border border-tertiary rounded-md shadow-lg py-2 min-w-[180px]"
-          style={{ left: contextMenu.position.x, top: contextMenu.position.y }}
-        >
-          {!contextMenu.isFolder && contextMenu.documentId && (
-            <>
-              <button
-                onClick={() => {
-                  const doc = documents.find(d => d.id === contextMenu.documentId);
-                  if (doc) setPdfViewer({ isOpen: true, document: doc });
-                  setContextMenu({ ...contextMenu, isOpen: false });
-                }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
-              >
-                <Eye className="w-4 h-4" />
-                View PDF
-              </button>
-              <button
-                onClick={() => {
-                  onDocumentSelect?.(contextMenu.documentId!);
-                  setContextMenu({ ...contextMenu, isOpen: false });
-                }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
-              >
-                <MessageSquare className="w-4 h-4" />
-                Open in Chat
-              </button>
-              <button
-                onClick={() => {
-                  const doc = documents.find(d => d.id === contextMenu.documentId);
-                  if (doc) {
-                    handleShowMoveToModal([doc]);
-                  }
-                  setContextMenu({ ...contextMenu, isOpen: false });
-                }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
-              >
-                <Move className="w-4 h-4" />
-                Move To
-              </button>
-              <button
-                onClick={() => {
-                  const doc = documents.find(d => d.id === contextMenu.documentId);
-                  if (doc) {
-                    handleShowRenameModal(doc, 'document');
-                  }
-                  setContextMenu({ ...contextMenu, isOpen: false });
-                }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
-              >
-                <Edit className="w-4 h-4" />
-                Rename
-              </button>
-              <button
-                onClick={() => {
-                  const doc = documents.find(d => d.id === contextMenu.documentId);
-                  if (doc) setFileDetails({ isOpen: true, document: doc, folder: null });
-                  setContextMenu({ ...contextMenu, isOpen: false });
-                }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
-              >
-                <Info className="w-4 h-4" />
-                View Details
-              </button>
-              <div className="border-t border-tertiary my-1"></div>
-              <button
-                onClick={() => {
-                  if (contextMenu.documentId) deleteDocument(contextMenu.documentId);
-                  setContextMenu({ ...contextMenu, isOpen: false });
-                }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-destructive"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete
-              </button>
-            </>
-          )}
-          
-          {contextMenu.isFolder && contextMenu.folderId && (
-            <>
-              <button
-                onClick={() => {
-                  navigateToFolder(contextMenu.folderId!);
-                  setContextMenu({ ...contextMenu, isOpen: false });
-                }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
-              >
-                <Folder className="w-4 h-4" />
-                Open Folder
-              </button>
-              <button
-                onClick={() => {
-                  const folder = folders.find(f => f.id === contextMenu.folderId);
-                  if (folder) {
-                    handleShowRenameModal(folder, 'folder');
-                  }
-                  setContextMenu({ ...contextMenu, isOpen: false });
-                }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
-              >
-                <Edit className="w-4 h-4" />
-                Rename Folder
-              </button>
-              <button
-                onClick={() => {
-                  const folder = folders.find(f => f.id === contextMenu.folderId);
-                  if (folder) setFileDetails({ isOpen: true, document: null, folder });
-                  setContextMenu({ ...contextMenu, isOpen: false });
-                }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
-              >
-                <Info className="w-4 h-4" />
-                Folder Details
-              </button>
-              <div className="border-t border-tertiary my-1"></div>
-              <button
-                onClick={() => {
-                  if (contextMenu.folderId) deleteFolder(contextMenu.folderId);
-                  setContextMenu({ ...contextMenu, isOpen: false });
-                }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-destructive"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete Folder
-              </button>
-            </>
-          )}
-        </div>
-      )}
+             {/* Enhanced Context Menu */}
+       {contextMenu.isOpen && (
+         <div
+           className="fixed z-50 bg-primary border border-tertiary rounded-md shadow-lg py-2 min-w-[180px]"
+           style={{ left: contextMenu.position.x, top: contextMenu.position.y }}
+           onClick={(e) => e.stopPropagation()}
+         >
+           {!contextMenu.isFolder && contextMenu.documentId && (
+             <>
+               <button
+                 onClick={(e) => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   const doc = documents.find(d => d.id === contextMenu.documentId);
+                   if (doc) setPdfViewer({ isOpen: true, document: doc });
+                   setContextMenu({ ...contextMenu, isOpen: false });
+                 }}
+                 className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+               >
+                 <Eye className="w-4 h-4" />
+                 View PDF
+               </button>
+               <button
+                 onClick={(e) => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   onDocumentSelect?.(contextMenu.documentId!);
+                   setContextMenu({ ...contextMenu, isOpen: false });
+                 }}
+                 className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+               >
+                 <MessageSquare className="w-4 h-4" />
+                 Open in Chat
+               </button>
+               <button
+                 onClick={(e) => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   const doc = documents.find(d => d.id === contextMenu.documentId);
+                   if (doc) {
+                     handleShowMoveToModal([doc]);
+                   }
+                   setContextMenu({ ...contextMenu, isOpen: false });
+                 }}
+                 className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+               >
+                 <Move className="w-4 h-4" />
+                 Move To
+               </button>
+               <button
+                 onClick={(e) => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   const doc = documents.find(d => d.id === contextMenu.documentId);
+                   if (doc) {
+                     handleShowRenameModal(doc, 'document');
+                   }
+                   setContextMenu({ ...contextMenu, isOpen: false });
+                 }}
+                 className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+               >
+                 <Edit className="w-4 h-4" />
+                 Rename
+               </button>
+               <button
+                 onClick={(e) => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   const doc = documents.find(d => d.id === contextMenu.documentId);
+                   if (doc) setFileDetails({ isOpen: true, document: doc, folder: null });
+                   setContextMenu({ ...contextMenu, isOpen: false });
+                 }}
+                 className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+               >
+                 <Info className="w-4 h-4" />
+                 View Details
+               </button>
+               <div className="border-t border-tertiary my-1"></div>
+               <button
+                 onClick={(e) => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   if (contextMenu.documentId) deleteDocument(contextMenu.documentId);
+                   setContextMenu({ ...contextMenu, isOpen: false });
+                 }}
+                 className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-destructive"
+               >
+                 <Trash2 className="w-4 h-4" />
+                 Delete
+               </button>
+             </>
+           )}
+           
+           {contextMenu.isFolder && contextMenu.folderId && (
+             <>
+               <button
+                 onClick={(e) => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   navigateToFolder(contextMenu.folderId!);
+                   setContextMenu({ ...contextMenu, isOpen: false });
+                 }}
+                 className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+               >
+                 <Folder className="w-4 h-4" />
+                 Open Folder
+               </button>
+               <button
+                 onClick={(e) => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   const folder = folders.find(f => f.id === contextMenu.folderId);
+                   if (folder) {
+                     handleShowRenameModal(folder, 'folder');
+                   }
+                   setContextMenu({ ...contextMenu, isOpen: false });
+                 }}
+                 className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+               >
+                 <Edit className="w-4 h-4" />
+                 Rename Folder
+               </button>
+               <button
+                 onClick={(e) => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   const folder = folders.find(f => f.id === contextMenu.folderId);
+                   if (folder) setFileDetails({ isOpen: true, document: null, folder });
+                   setContextMenu({ ...contextMenu, isOpen: false });
+                 }}
+                 className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-foreground"
+               >
+                 <Info className="w-4 h-4" />
+                 Folder Details
+               </button>
+               <div className="border-t border-tertiary my-1"></div>
+               <button
+                 onClick={(e) => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   if (contextMenu.folderId) deleteFolder(contextMenu.folderId);
+                   setContextMenu({ ...contextMenu, isOpen: false });
+                 }}
+                 className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 text-destructive"
+               >
+                 <Trash2 className="w-4 h-4" />
+                 Delete Folder
+               </button>
+             </>
+           )}
+         </div>
+       )}
 
       {/* Click outside to close context menu */}
       {contextMenu.isOpen && (

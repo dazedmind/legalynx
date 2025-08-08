@@ -231,7 +231,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
               >
                 <div className="flex justify-between items-start">
                   {/* Selection checkbox */}
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className={`opacity-0 ${selectedDocs.has(folder.id) ? "opacity-100" : ""} group-hover:opacity-100 transition-opacity`}>
                     <input
                       type="checkbox"
                       checked={selectedDocs.has(folder.id)}
@@ -309,15 +309,14 @@ export const FileGrid: React.FC<FileGridProps> = ({
                     ? "opacity-50"
                     : ""
                 }`}
-                onClick={() => onDocumentSelect?.(doc.id)}
                 onContextMenu={(e) => onDocumentContextMenu(e, doc.id)}
                 onDragStart={(e) => handleDragStart(e, doc.id)}
                 onDragEnd={handleDragEnd}
-                onDoubleClick={() => onViewPDF(doc)} // Double-click to view PDF
+                onDoubleClick={() => onDocumentSelect?.(doc.id)} // Double-click to view PDF
               >
                 <div className="flex justify-between items-center">
                   {/* Selection checkbox */}
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className={`opacity-0 ${selectedDocs.has(doc.id) ? "opacity-100" : ""} group-hover:opacity-100 transition-opacity`}>
                     <input
                       type="checkbox"
                       checked={selectedDocs.has(doc.id)}
@@ -336,35 +335,53 @@ export const FileGrid: React.FC<FileGridProps> = ({
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onViewPDF(doc)}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        onViewPDF(doc);
+                      }}>
                         <Eye className="w-4 h-4" />
                         View PDF
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => onDocumentSelect?.(doc.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDocumentSelect?.(doc.id);
+                        }}
                       >
                         <MessageSquare className="w-4 h-4" />
                         Open in Chat
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleSingleDocumentMoveToModal(doc)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSingleDocumentMoveToModal(doc);
+                        }}
                       >
                         <Move className="w-4 h-4" />
                         Move To
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => onShowRenameModal?.(doc, "document")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onShowRenameModal?.(doc, "document");
+                        }}
                       >
                         <Edit className="w-4 h-4" />
                         Rename
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onViewDetails(doc)}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDetails(doc);
+                      }}>
                         <Info className="w-4 h-4" />
                         View Details
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        onClick={() => onDocumentDelete(doc.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDocumentDelete(doc.id);
+                        }}
                         className="text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -444,7 +461,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
               onDrop={(e) => handleDrop(e, folder.id)}
             >
               <div className="flex items-center space-x-3 flex-1 min-w-0">
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className={`opacity-0 ${selectedDocs.has(folder.id) ? "opacity-100" : ""} group-hover:opacity-100 transition-opacity`}>
                   <input
                     type="checkbox"
                     checked={selectedDocs.has(folder.id)}
@@ -527,14 +544,13 @@ export const FileGrid: React.FC<FileGridProps> = ({
                   ? "opacity-50"
                   : ""
               }`}
-              onClick={() => onDocumentSelect?.(doc.id)}
               onContextMenu={(e) => onDocumentContextMenu(e, doc.id)}
               onDragStart={(e) => handleDragStart(e, doc.id)}
               onDragEnd={handleDragEnd}
-              onDoubleClick={() => onViewPDF(doc)} // Double-click to view PDF
+              onDoubleClick={() => onDocumentSelect?.(doc.id)} // Double-click to view PDF
             >
               <div className="flex items-center space-x-3 flex-1 min-w-0">
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className={`opacity-0 ${selectedDocs.has(doc.id) ? "opacity-100" : ""} group-hover:opacity-100 transition-opacity`}>
                   <input
                     type="checkbox"
                     checked={selectedDocs.has(doc.id)}
@@ -577,35 +593,53 @@ export const FileGrid: React.FC<FileGridProps> = ({
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onViewPDF(doc)}>
+                    <DropdownMenuItem onClick={(e) => {
+                      e.stopPropagation();
+                      onViewPDF(doc);
+                    }}>
                       <Eye className="w-4 h-4" />
                       View PDF
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => onDocumentSelect?.(doc.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDocumentSelect?.(doc.id);
+                      }}
                     >
                       <MessageSquare className="w-4 h-4" />
                       Open in Chat
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => handleSingleDocumentMoveToModal(doc)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSingleDocumentMoveToModal(doc);
+                      }}
                     >
                       <Move className="w-4 h-4" />
                       Move To
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => onShowRenameModal?.(doc, "document")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onShowRenameModal?.(doc, "document");
+                      }}
                     >
                       <Edit className="w-4 h-4" />
                       Rename
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onViewDetails(doc)}>
+                    <DropdownMenuItem onClick={(e) => {
+                      e.stopPropagation();
+                      onViewDetails(doc);
+                    }}>
                       <Info className="w-4 h-4" />
                       View Details
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      onClick={() => onDocumentDelete(doc.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDocumentDelete(doc.id);
+                      }}
                       className="text-destructive"
                     >
                       <Trash2 className="w-4 h-4" />

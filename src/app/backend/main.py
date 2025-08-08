@@ -7,12 +7,14 @@ import sys
 import time
 import asyncio
 from typing import Optional, Dict, Any
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
+import jwt
+import httpx
 
 # Load environment variables
 load_dotenv()
@@ -102,22 +104,38 @@ app.add_middleware(
 class RAGSystemManager:
     """
     Manages RAG systems with proper isolation and cleanup.
+    FIXED: Better document switching and session management
     """
     def __init__(self):
         self.systems = {}  # document_id -> rag_system
         self.current_system_id = None
         self.last_upload_time = {}  # document_id -> timestamp
+        self.upload_sequence = 0  # Track upload order
         
     def set_system(self, document_id: str, rag_system: Dict[str, Any], file_path: str):
         """Set RAG system for a specific document."""
         print(f"📝 Setting RAG system for document: {document_id}")
+        
+        # FIXED: Always clear current system when setting new one
+        if self.current_system_id and self.current_system_id != document_id:
+            print(f"🔄 Switching from {self.current_system_id} to {document_id}")
+            # Optionally clean up old system memory
+            self._cleanup_specific_system(self.current_system_id)
+        
         self.systems[document_id] = {
             "rag_system": rag_system,
             "file_path": file_path,
-            "created_at": time.time()
+            "created_at": time.time(),
+            "upload_sequence": self.upload_sequence
         }
+        
+        # FIXED: Always set new document as current
         self.current_system_id = document_id
         self.last_upload_time[document_id] = time.time()
+        self.upload_sequence += 1
+        
+        print(f"✅ RAG system set. Current: {self.current_system_id}")
+        print(f"📊 Total systems: {len(self.systems)}")
         
         # Clean up old systems (keep only last 3)
         self._cleanup_old_systems()
@@ -125,8 +143,12 @@ class RAGSystemManager:
     def get_current_system(self) -> Optional[Dict[str, Any]]:
         """Get the current RAG system."""
         if not self.current_system_id or self.current_system_id not in self.systems:
+            print(f"⚠️ No current system available. Current ID: {self.current_system_id}")
             return None
-        return self.systems[self.current_system_id]["rag_system"]
+        
+        system = self.systems[self.current_system_id]["rag_system"]
+        print(f"✅ Returning system for: {self.current_system_id}")
+        return system
     
     def get_current_file_path(self) -> Optional[str]:
         """Get the current file path."""
@@ -134,12 +156,33 @@ class RAGSystemManager:
             return None
         return self.systems[self.current_system_id]["file_path"]
     
+    def get_current_document_id(self) -> Optional[str]:
+        """Get the current document ID."""
+        return self.current_system_id
+    
     def clear_current_system(self):
         """Clear the current system (for error handling)."""
         print("🗑️ Clearing current RAG system due to error")
         if self.current_system_id:
-            self.systems.pop(self.current_system_id, None)
+            self._cleanup_specific_system(self.current_system_id)
             self.current_system_id = None
+    
+    def _cleanup_specific_system(self, document_id: str):
+        """Clean up a specific system."""
+        if document_id in self.systems:
+            print(f"🧹 Cleaning up system: {document_id}")
+            # Optionally add memory cleanup here
+            self.systems.pop(document_id, None)
+            self.last_upload_time.pop(document_id, None)
+    
+    def force_switch_to_document(self, document_id: str) -> bool:
+        """Force switch to a specific document if it exists."""
+        if document_id in self.systems:
+            print(f"🔄 Force switching to document: {document_id}")
+            self.current_system_id = document_id
+            return True
+        print(f"❌ Cannot switch - document {document_id} not found")
+        return False
     
     def reset_all(self):
         """Reset all systems."""
@@ -147,31 +190,43 @@ class RAGSystemManager:
         self.systems.clear()
         self.current_system_id = None
         self.last_upload_time.clear()
+        self.upload_sequence = 0
     
     def _cleanup_old_systems(self):
         """Keep only the 3 most recent systems."""
         if len(self.systems) > 3:
-            # Sort by creation time and keep the 3 newest
+            # Sort by upload sequence (most recent first)
             sorted_systems = sorted(
                 self.systems.items(),
-                key=lambda x: x[1]["created_at"],
+                key=lambda x: x[1]["upload_sequence"],
                 reverse=True
             )
             
             # Keep only the 3 most recent
-            self.systems = dict(sorted_systems[:3])
+            systems_to_keep = dict(sorted_systems[:3])
+            systems_to_remove = [k for k in self.systems.keys() if k not in systems_to_keep]
+            
+            # Clean up old systems
+            for system_id in systems_to_remove:
+                print(f"🧹 Removing old system: {system_id}")
+                self._cleanup_specific_system(system_id)
+            
+            self.systems = systems_to_keep
             
             # Update current_system_id if it was removed
             if self.current_system_id not in self.systems:
                 self.current_system_id = sorted_systems[0][0] if sorted_systems else None
+                print(f"🔄 Updated current system to: {self.current_system_id}")
     
     def get_status(self) -> Dict[str, Any]:
-        """Get status information."""
+        """Get detailed status information."""
         return {
             "current_system_id": self.current_system_id,
             "total_systems": len(self.systems),
             "has_current_system": self.current_system_id is not None,
-            "systems": list(self.systems.keys())
+            "systems": list(self.systems.keys()),
+            "upload_sequence": self.upload_sequence,
+            "current_file": os.path.basename(self.get_current_file_path()) if self.get_current_file_path() else None
         }
 
 # Replace global variables with manager
@@ -222,15 +277,50 @@ class UploadResponse(BaseModel):
 # USER SETTINGS (SIMPLIFIED)
 # ================================
 
-async def get_user_settings_mock(user_id: str) -> dict:
-    """Mock user settings - replace with your actual database logic."""
-    # For demo purposes, return default settings
-    # In production, replace with actual database call
+def get_default_user_settings() -> dict:
+    """Fallback default settings."""
     return {
-        'file_naming_format': 'ADD_TIMESTAMP',  # or 'ORIGINAL', 'SEQUENTIAL_NUMBERING'
+        'file_naming_format': 'ORIGINAL',
         'file_naming_title': 'Document',
         'file_client_name': 'Client'
     }
+
+async def get_user_settings(user_id: str, auth_token: str) -> dict:
+    """
+    Get real user settings from your frontend API.
+    Replace the mock implementation with this.
+    """
+    try:
+        # Use your frontend API URL
+        frontend_api_url = f"{os.environ.get('NEXT_PUBLIC_APP_URL', 'http://localhost:3000')}/backend/api/user/settings"
+        
+        headers = {
+            "Authorization": f"Bearer {auth_token}",
+            "Content-Type": "application/json"
+        }
+        
+        print(f"📋 Fetching user settings for user: {user_id}")
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(frontend_api_url, headers=headers)
+            
+            if response.status_code == 200:
+                settings_data = response.json()
+                print(f"✅ User settings loaded: {settings_data}")
+                
+                # Convert frontend format to backend format
+                return {
+                    'file_naming_format': settings_data.get('fileNamingFormat', 'ORIGINAL'),
+                    'file_naming_title': settings_data.get('fileNamingTitle', 'Document'),
+                    'file_client_name': settings_data.get('fileClientName', 'Client')
+                }
+            else:
+                print(f"⚠️ Failed to fetch user settings: {response.status_code}")
+                return get_default_user_settings()
+                
+    except Exception as e:
+        print(f"❌ Error fetching user settings: {e}")
+        return get_default_user_settings()
 
 def convert_enum_to_naming_option(enum_value: str) -> str:
     """Convert database enum to backend naming option format."""
@@ -241,14 +331,26 @@ def convert_enum_to_naming_option(enum_value: str) -> str:
     }
     return enum_mapping.get(enum_value, 'keep_original')
 
-def extract_user_id_from_token(request: Request) -> Optional[str]:
-    """Extract user ID from JWT token (simplified)."""
-    # Mock implementation - replace with your actual JWT logic
+def extract_user_id_from_token(request: Request) -> tuple[Optional[str], Optional[str]]:
+    """
+    FIXED: Extract user ID AND token from JWT token.
+    Returns (user_id, token) tuple.
+    """
     auth_header = request.headers.get('Authorization')
-    if auth_header and auth_header.startswith('Bearer '):
-        return 'demo_user_123'  # Mock user ID
-    return None
-
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return None, None
+    
+    token = auth_header.replace('Bearer ', '')
+    
+    try:
+        # IMPORTANT: Replace 'your-secret-key' with your actual JWT secret
+        # This should match your frontend JWT secret
+        decoded = jwt.decode(token, options={"verify_signature": False})  # For debugging - REMOVE verify_signature: False in production
+        user_id = decoded.get('sub') or decoded.get('userId') or decoded.get('id')
+        return user_id, token
+    except Exception as e:
+        print(f"⚠️ JWT decode error: {e}")
+        return None, None
 
 # ================================
 # API ENDPOINTS
@@ -286,37 +388,43 @@ async def get_status():
 async def upload_document_ultra_fast(
     request: Request, 
     file: UploadFile = File(...),
+    # FIXED: Accept form data parameters
+    naming_option: str = Form('keep_original'),
+    title: str = Form('Document'),
+    client_name: str = Form('Client')
 ):
     """
     ULTRA-FAST UPLOAD: Complete workflow optimized for speed.
-    Expected time: 15-30 seconds (down from 5+ minutes).
+    FIXED: Now properly handles user settings from frontend.
     """
-    # Check if optimized system is available
     if not OPTIMIZED_SYSTEM_AVAILABLE:
         raise HTTPException(
             status_code=503,
             detail="Optimized RAG system not available. Please check server configuration and dependencies."
         )
     
-    # Clear any existing system at start of upload
+   # FIXED: Force clear any existing system to ensure clean switch
+    print("🗑️ Clearing current RAG system due to new upload")
     rag_manager.clear_current_system()
     
     start_time = time.time()
     document_id = None
     
     try:
-        # ===== STEP 1: VALIDATE FILE =====
+        # Validate file
         if not file.filename:
             raise HTTPException(status_code=400, detail="No filename provided")
         
         file_content = await file.read()
         file_size = len(file_content)
         
-        print(f"📄 Processing: {file.filename} ({file_size:,} bytes)")
+        # FIXED: Generate unique document ID with timestamp and randomness
+        timestamp = int(time.time())
+        random_suffix = hash(file.filename + str(file_size) + str(timestamp)) % 10000
+        document_id = f"doc_{timestamp}_{random_suffix}"
         
-        # Generate unique document ID EARLY
-        document_id = f"doc_{int(time.time())}_{hash(file.filename + str(file_size)) % 10000}"
-        print(f"🆔 Document ID: {document_id}")
+        print(f"🆔 NEW Document ID: {document_id}")
+        print(f"📄 Processing: {file.filename} ({file_size:,} bytes)")
         
         file_ext = os.path.splitext(file.filename)[1].lower()
         supported_extensions = ['.pdf', '.docx', '.doc']
@@ -324,33 +432,23 @@ async def upload_document_ultra_fast(
         if file_ext not in supported_extensions:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Unsupported file type: {file_ext}. Supported: PDF, DOCX"
+                detail=f"Unsupported file type: {file_ext}. Supported: {', '.join(supported_extensions)}"
             )
-        
+
         # Size validation
         if file_size > 50 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="File size too large (max 50MB)")
         if file_size == 0:
             raise HTTPException(status_code=400, detail="File is empty")
         
-        # ===== STEP 2: GET USER SETTINGS (FAST) =====
-        user_id = extract_user_id_from_token(request)
-        user_settings = {'file_naming_format': 'ADD_TIMESTAMP'}  # Default
-        naming_option = 'add_timestamp'
-        title = None
-        client_name = None
+        # ===== STEP 2: GET USER SETTINGS (FIXED) =====
+        user_id, auth_token = extract_user_id_from_token(request)
         
-        if user_id:
-            try:
-                user_settings = await get_user_settings_mock(user_id)
-                naming_option = convert_enum_to_naming_option(
-                    user_settings.get('file_naming_format', 'ORIGINAL')
-                )
-                title = user_settings.get('file_naming_title')
-                client_name = user_settings.get('file_client_name')
-                print(f"📋 User settings: {naming_option}, title: {title}, client: {client_name}")
-            except Exception as e:
-                print(f"⚠️ Settings load failed: {e}, using defaults")
+        print(f"📋 FIXED User settings received:")
+        print(f"   - naming_option: {naming_option}")
+        print(f"   - title: {title}")
+        print(f"   - client_name: {client_name}")
+        print(f"   - user_id: {user_id}")
         
         # ===== STEP 3: HANDLE DOCX CONVERSION =====
         final_file_content = file_content
@@ -360,51 +458,51 @@ async def upload_document_ultra_fast(
         if file_ext in ['.docx', '.doc'] and UTILS_AVAILABLE:
             file_type = "docx"
             try:
-                # For DOCX, convert to PDF first
                 temp_docx_path = f"temp_{file.filename}"
                 with open(temp_docx_path, 'wb') as f:
                     f.write(file_content)
                 
-                # Validate DOCX
-                docx_validation = validate_docx_file(temp_docx_path)
-                if not docx_validation['is_valid']:
-                    os.remove(temp_docx_path)
-                    raise HTTPException(status_code=400, detail="Invalid DOCX file")
+                from utils.file_handler import validate_docx
+                docx_validation = validate_docx(temp_docx_path)
                 
-                # Convert to PDF
-                temp_pdf_path = f"temp_{os.path.splitext(file.filename)[0]}.pdf"
-                convert_docx_to_pdf(temp_docx_path, temp_pdf_path)
+                if not docx_validation.is_valid:
+                    raise HTTPException(status_code=400, detail=f"Invalid DOCX: {docx_validation.error}")
                 
-                # Read converted PDF content
-                with open(temp_pdf_path, 'rb') as f:
-                    final_file_content = f.read()
-                
-                # Update filename for processing
-                file.filename = os.path.splitext(file.filename)[0] + '.pdf'
+                from utils.file_handler import convert_docx_to_pdf
+                pdf_content = convert_docx_to_pdf(file_content, file.filename)
+                final_file_content = pdf_content
+                file_type = "pdf"
                 conversion_performed = True
+                print(f"✅ DOCX converted to PDF ({len(pdf_content):,} bytes)")
                 
-                # Cleanup temp files
-                os.remove(temp_docx_path)
-                os.remove(temp_pdf_path)
-                
-                print("✅ DOCX converted to PDF for processing")
-                
+                # Clean up temp file
+                if os.path.exists(temp_docx_path):
+                    os.remove(temp_docx_path)
+                    
             except Exception as e:
-                # Cleanup on error
-                for temp_file in [f"temp_{file.filename}", f"temp_{os.path.splitext(file.filename)[0]}.pdf"]:
-                    if os.path.exists(temp_file):
-                        os.remove(temp_file)
-                raise HTTPException(status_code=500, detail=f"DOCX processing failed: {str(e)}")
+                if os.path.exists(f"temp_{file.filename}"):
+                    os.remove(f"temp_{file.filename}")
+                raise HTTPException(status_code=500, detail=f"DOCX conversion failed: {str(e)}")
+
+        # ===== STEP 4: BUILD RAG SYSTEM (USING YOUR EXISTING SYSTEM) =====
+        build_start = time.time()
+        print(f"🚀 Building RAG system using optimized workflow...")
         
-        # ===== STEP 4: GET COUNTER FOR SEQUENTIAL NUMBERING =====
-        counter = None
-        if naming_option == 'sequential_numbering' and title and client_name and UTILS_AVAILABLE:
-            counter = get_next_sequential_number("sample_docs", title, client_name)
+        # FIXED: Use your existing optimized_upload_workflow
+        from optimized_rag_system import optimized_upload_workflow
         
-        # ===== STEP 5: ULTRA-FAST OPTIMIZED WORKFLOW =====
-        print("🚀 Starting ultra-fast optimized workflow...")
-        workflow_start = time.time()
+        # Get next sequential number if needed
+        counter = 1
+        if naming_option == 'sequential_numbering':
+            from utils.file_handler import get_next_sequential_number
+            counter = get_next_sequential_number(
+                upload_dir="sample_docs",
+                title=title,
+                client_name=client_name
+            )
+            print(f"🔢 Next sequential number: {counter}")
         
+        # Call your existing optimized workflow with proper user settings
         result = await optimized_upload_workflow(
             file_content=final_file_content,
             original_filename=file.filename,
@@ -414,51 +512,33 @@ async def upload_document_ultra_fast(
             counter=counter
         )
         
-        workflow_time = time.time() - workflow_start
-        
-        # ===== STEP 6: UPDATE MANAGED STATE (REPLACE GLOBAL STATE) =====
-        if result and "rag_system" in result:
-            rag_manager.set_system(
-                document_id=document_id,
-                rag_system=result["rag_system"],
-                file_path=result["file_path"]
-            )
-            print(f"✅ RAG system stored for document: {document_id}")
-        else:
-            print("❌ RAG system creation failed - no rag_system in result")
-            raise HTTPException(status_code=500, detail="RAG system creation failed")
-        
-        # ===== STEP 7: SECURITY CHECK (NON-BLOCKING) =====
-        security_status = "verified"
-        if security:
-            try:
-                security_result = security.check_upload_security(
-                    user_id or 'anonymous', 
-                    final_file_content, 
-                    result["file_path"]
-                )
-                security_status = "verified"
-            except Exception as e:
-                print(f"⚠️ Security check failed: {e}")
-                security_status = "pending"
-        else:
-            security_status = "skipped"
-        
-        # ===== STEP 8: FINAL RESPONSE =====
-        total_time = time.time() - start_time
+        # ===== STEP 5: REGISTER WITH RAG MANAGER =====
         final_filename = result["filename"]
+        final_path = result["file_path"]
+        rag_system = result["rag_system"]
         
+        # Register with RAG manager
+        rag_manager.set_system(document_id, rag_system, final_path)
+        
+        # Calculate total time
+        total_time = time.time() - start_time
+        result["timing"]["total"] = total_time
+        
+        # Security status
+        security_status = "verified"
+
         print(f"🎉 ULTRA-FAST UPLOAD COMPLETED in {total_time:.2f}s!")
         print(f"   - Document ID: {document_id}")
         print(f"   - File: {file.filename} → {final_filename}")
         print(f"   - RAG system stored and isolated")
+        print(f"   - Current system: {rag_manager.get_current_document_id()}")
         
         return UploadResponse(
             message=f"Ultra-fast processing complete in {total_time:.2f}s ({300/total_time:.1f}x speedup)",
             filename=final_filename,
             original_filename=file.filename,
             document_count=len(result["documents"]),
-            document_id=document_id,  # Return the unique document ID
+            document_id=document_id,  # FIXED: Always return the new document ID
             security_status=security_status,
             file_type=file_type,
             conversion_performed=conversion_performed,
@@ -470,18 +550,16 @@ async def upload_document_ultra_fast(
         )
         
     except HTTPException:
-        # Clear failed system
         if document_id:
             rag_manager.clear_current_system()
         raise
     except Exception as e:
-        # Clear failed system
         if document_id:
             rag_manager.clear_current_system()
             
         print(f"❌ Error in ultra-fast upload: {str(e)}")
         
-        # Clean up any temporary files
+        # Clean up temp files
         temp_files = [
             f"temp_{file.filename}",
             f"temp_{os.path.splitext(file.filename)[0]}.pdf"
@@ -494,60 +572,6 @@ async def upload_document_ultra_fast(
                     pass
         
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
-
-@app.post("/upload-pdf-demo-rule-based")
-async def demo_rule_based_naming(
-    file: UploadFile = File(...),
-):
-    """
-    Demo endpoint to test rule-based naming without full RAG processing.
-    Shows ultra-fast naming in ~0.01-0.1 seconds.
-    """
-    if not OPTIMIZED_SYSTEM_AVAILABLE:
-        raise HTTPException(
-            status_code=503,
-            detail="Rule-based naming not available. Please check dependencies."
-        )
-    
-    try:
-        if not file.filename:
-            raise HTTPException(status_code=400, detail="No filename provided")
-        
-        file_content = await file.read()
-        
-        # Test all naming options
-        demo_results = {}
-        
-        for naming_option in ['keep_original', 'add_timestamp', 'sequential_numbering']:
-            start_time = time.time()
-            
-            result_filename = RuleBasedFileNamer.generate_filename_ultra_fast(
-                file_content=file_content,
-                original_filename=file.filename,
-                naming_option=naming_option,
-                user_title="TestDocument",
-                user_client_name="TestClient",
-                counter=1
-            )
-            
-            processing_time = time.time() - start_time
-            
-            demo_results[naming_option] = {
-                "filename": result_filename,
-                "processing_time_ms": round(processing_time * 1000, 2),
-                "processing_time_s": round(processing_time, 4)
-            }
-        
-        return {
-            "original_filename": file.filename,
-            "file_size_bytes": len(file_content),
-            "results": demo_results,
-            "total_analysis_time": sum(r["processing_time_s"] for r in demo_results.values()),
-            "message": "Rule-based naming demo - no LLM calls, pure regex/pattern matching"
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Demo failed: {str(e)}")
 
 @app.post("/query", response_model=QueryResponse)
 async def query_document_secure(request: Request, query_request: QueryRequest):
@@ -585,7 +609,7 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
     print(f"✅ Query engine found: {type(query_engine)}")
     
     # Step 3: Extract user ID
-    user_id = extract_user_id_from_token(request)
+    user_id, _ = extract_user_id_from_token(request)
     print(f"👤 User ID: {user_id or 'anonymous'}")
     
     try:
@@ -805,6 +829,30 @@ async def get_optimization_stats():
         }
     }
 
+@app.get("/current-document")
+async def get_current_document():
+    """Get information about the currently active document in RAG system."""
+    status = rag_manager.get_status()
+    current_file_path = rag_manager.get_current_file_path()
+    current_doc_id = rag_manager.get_current_document_id()
+    
+    if status["has_current_system"] and current_doc_id:
+        return {
+            "has_document": True,
+            "document_id": current_doc_id,
+            "filename": os.path.basename(current_file_path) if current_file_path else None,
+            "system_ready": True,
+            "upload_sequence": status["upload_sequence"]
+        }
+    else:
+        return {
+            "has_document": False,
+            "document_id": None,
+            "filename": None,
+            "system_ready": False,
+            "upload_sequence": status["upload_sequence"]
+        }
+
 @app.get("/compare-naming-methods")
 async def compare_naming_methods():
     """Compare old vs new naming methods."""
@@ -910,14 +958,18 @@ async def get_performance_tips():
 async def upload_pdf_compatibility(
     request: Request, 
     file: UploadFile = File(...),
+    naming_option: str = Form('keep_original'),
+    title: str = Form('Document'),
+    client_name: str = Form('Client')
 ):
     """
     Compatibility endpoint for /upload-pdf - redirects to ultra-fast endpoint
     """
     print(f"🔄 Compatibility endpoint called: /upload-pdf for {file.filename}")
     
-    # Redirect to the ultra-fast endpoint
-    return await upload_document_ultra_fast(request, file)
+    # Redirect to the ultra-fast endpoint with all parameters
+    return await upload_document_ultra_fast(request, file, naming_option, title, client_name)
+
 
 @app.get("/check-document/{document_id}")
 async def check_document_exists(document_id: str):

@@ -1,4 +1,3 @@
-
 import {
   Upload,
   FileText,
@@ -22,6 +21,7 @@ import {
 interface UploadPageProps {
   onUploadSuccess: (response: UploadResponse) => void;
   handleNewChat?: () => void;
+  onClearPreviousSession?: () => void;
 }
 
 interface UploadOptions {
@@ -41,7 +41,11 @@ interface UserSettings {
   client_name?: string;
 }
 
-function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
+function UploadComponent({
+  onUploadSuccess,
+  handleNewChat,
+  onClearPreviousSession,
+}: UploadPageProps) {
   const { isAuthenticated, user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -106,9 +110,10 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
         if (response.ok) {
           const settings = await response.json();
           setUserSettings({
-            file_naming_format: settings.file_naming_format || "ORIGINAL",
-            title: settings.title,
-            client_name: settings.client_name,
+            // API returns camelCase keys; map to our local shape
+            file_naming_format: settings.fileNamingFormat || "ORIGINAL",
+            title: settings.fileNamingTitle || undefined,
+            client_name: settings.fileClientName || undefined,
           });
           console.log("✅ Loaded user settings:", settings);
         } else {
@@ -217,16 +222,58 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
     }
   };
 
+  const verifyDocumentIsActive = async (documentId: string) => {
+    try {
+      const isDevelopment = process.env.NODE_ENV === "development";
+      const RAG_BASE_URL = isDevelopment
+        ? "http://localhost:8000"
+        : process.env.NEXT_PUBLIC_RAG_API_URL;
+
+      const response = await fetch(`${RAG_BASE_URL}/current-document`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        const currentDoc = await response.json();
+        console.log("📄 Current document on backend:", currentDoc);
+
+        if (currentDoc.document_id !== documentId) {
+          console.warn(
+            `⚠️ Document ID mismatch! Expected: ${documentId}, Current: ${currentDoc.document_id}`
+          );
+          // Could implement retry logic here
+        } else {
+          console.log(
+            `✅ Document ${documentId} verified as active on backend`
+          );
+        }
+      } else {
+        console.warn("⚠️ Could not verify document is active on backend");
+      }
+    } catch (error) {
+      console.warn("⚠️ Document verification failed:", error);
+      // Don't fail the upload for verification issues
+    }
+  };
+
   const uploadToRagSystem = async (file: File): Promise<any> => {
     try {
       console.log("🚀 Uploading to RAG system...");
-      
-      const isDevelopment = process.env.NODE_ENV === 'development';
+
+      if (onClearPreviousSession) {
+        console.log("🧹 Clearing previous frontend session state");
+        onClearPreviousSession();
+      }
+
+      const isDevelopment = process.env.NODE_ENV === "development";
       // Use the same URL consistently
-      const RAG_BASE_URL = isDevelopment ? "http://localhost:8000" : process.env.NEXT_PUBLIC_RAG_API_URL;
-  
+      const RAG_BASE_URL = isDevelopment
+        ? "http://localhost:8000"
+        : process.env.NEXT_PUBLIC_RAG_API_URL;
+
       console.log("🔗 Using RAG URL:", RAG_BASE_URL);
-  
+
       // Convert enum to string format expected by backend
       const getNamingOption = (format: string) => {
         switch (format) {
@@ -240,7 +287,7 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
             return "keep_original";
         }
       };
-  
+
       // Prepare form data with user settings
       const formData = new FormData();
       formData.append("file", file);
@@ -248,45 +295,35 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
         "naming_option",
         getNamingOption(userSettings?.file_naming_format || "ORIGINAL")
       );
-  
-      // Add title and client name from user settings if available
+
       if (userSettings?.title?.trim()) {
         formData.append("title", userSettings.title.trim());
       }
       if (userSettings?.client_name?.trim()) {
         formData.append("client_name", userSettings.client_name.trim());
       }
-  
+
       // 🔥 FIXED: Use the single consolidated endpoint
-      const response = await fetch(`${RAG_BASE_URL}/upload-pdf`, {
+      const response = await fetch(`${RAG_BASE_URL}/upload-pdf-ultra-fast`, {
         method: "POST",
         body: formData,
         headers: getAuthHeaders(),
       });
-  
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || "Upload failed");
       }
-  
+
       const ragResponse = await response.json();
       console.log("✅ RAG upload successful:", ragResponse);
+      console.log(`🆔 NEW Document ID: ${ragResponse.document_id}`);
       console.log(
         `⚡ Processing time: ${ragResponse.processing_time?.toFixed(2)}s`
       );
-      console.log(`🎯 Optimization used: ${ragResponse.optimization_used}`);
-  
-      // Show performance improvement in toast
-      if (ragResponse.processing_time) {
-        const oldTime = 300; // 5 minutes
-        const speedup = oldTime / ragResponse.processing_time;
-        toast.success(
-          `Processing complete! ${speedup.toFixed(
-            1
-          )}x faster than before`
-        );
-      }
-  
+
+      await verifyDocumentIsActive(ragResponse.document_id);
+
       return ragResponse;
     } catch (error) {
       console.error("❌ RAG upload failed:", error);
@@ -335,6 +372,21 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
             ragResponse.filename
           );
 
+          // FIXED: Clear old localStorage data for this user to prevent confusion
+          const storageKey = `uploaded_documents_${user.id}`;
+          const existingDocs = JSON.parse(
+            localStorage.getItem(storageKey) || "[]"
+          );
+
+          // Remove any documents with the same name to prevent duplicates
+          const filteredDocs = existingDocs.filter(
+            (doc: any) =>
+              doc.fileName !== ragResponse.filename &&
+              doc.originalFileName !== ragResponse.original_filename
+          );
+
+          localStorage.setItem(storageKey, JSON.stringify(filteredDocs));
+
           // Calculate and display performance
           const processingTime = (Date.now() - startTime) / 1000;
           const estimatedOldTime = 300; // 5 minutes
@@ -381,9 +433,7 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
           // For non-security errors, try fallback to RAG only (no database save)
           console.log("Trying RAG-only fallback after database error:", error);
           try {
-            setStatusMessage(
-              "Preparing the Document..."
-            );
+            setStatusMessage("Preparing the Document...");
             ragResponse = await uploadToRagSystem(file);
 
             const processingTime = (Date.now() - startTime) / 1000;
@@ -455,13 +505,12 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
 
       // ✅ FIXED: Use the correct filename from RAG response
       const uploadResponse: UploadResponse = {
-        documentId:
-          documentInfo?.documentId || documentInfo?.id || Date.now().toString(),
+        documentId: ragResponse?.document_id || Date.now().toString(), // Use backend document ID
         fileName: ragResponse?.filename || file.name,
         originalFileName: ragResponse?.original_filename || file.name,
         fileSize: file.size,
         uploadedAt: documentInfo?.uploadedAt || new Date().toISOString(),
-        pageCount: ragResponse?.pages_processed || 1, // ✅ FIXED: Use pages_processed
+        pageCount: ragResponse?.pages_processed || 1,
         status: documentInfo ? "TEMPORARY" : "TEMPORARY",
         securityStatus: ragResponse?.security_status || "verified",
         mimeType:
@@ -470,38 +519,45 @@ function UploadComponent({ onUploadSuccess, handleNewChat }: UploadPageProps) {
         conversionPerformed: ragResponse?.conversion_performed || false,
       };
 
-      // ✅ FIXED: Save to localStorage with correct field names from RAG response
+      // FIXED: Save to localStorage with the correct document ID from backend
       const storageKey =
         isAuthenticated && user?.id
           ? `uploaded_documents_${user.id}`
           : "uploaded_documents";
-
       const existingDocs = JSON.parse(localStorage.getItem(storageKey) || "[]");
+
       const documentForStorage = {
-        // Use field names that ChatViewer expects with RAG response data
-        id: uploadResponse.documentId,
+        // FIXED: Use the backend document ID consistently
+        id: ragResponse?.document_id || Date.now().toString(),
+        documentId: ragResponse?.document_id || Date.now().toString(),
         fileName: ragResponse?.filename || file.name,
         originalFileName: ragResponse?.original_filename || file.name,
-        original_file_name: ragResponse?.original_filename || file.name, // Backward compatibility
+        original_file_name: ragResponse?.original_filename || file.name,
         fileSize: uploadResponse.fileSize,
-        file_size: uploadResponse.fileSize, // Backward compatibility
-        pageCount: ragResponse?.pages_processed || 1, // ✅ FIXED: Use pages_processed directly
-        page_count: ragResponse?.pages_processed || 1, // ✅ FIXED: Use pages_processed directly
+        file_size: uploadResponse.fileSize,
+        pageCount: ragResponse?.pages_processed || 1,
+        page_count: ragResponse?.pages_processed || 1,
         status: uploadResponse.status,
         uploadedAt: uploadResponse.uploadedAt,
-        uploaded_at: uploadResponse.uploadedAt, // Backward compatibility
+        uploaded_at: uploadResponse.uploadedAt,
 
-        // Additional properties for compatibility
+        // Additional properties
         databaseId: documentInfo?.documentId || documentInfo?.id,
         processingTime: ragResponse?.processing_time,
         optimizationUsed: ragResponse?.optimization_used,
         mimeType: uploadResponse.mimeType,
         securityStatus: uploadResponse.securityStatus,
         conversionPerformed: uploadResponse.conversionPerformed,
+
+        // FIXED: Add timestamp to help with ordering
+        uploadSequence: Date.now(),
       };
 
-      existingDocs.push(documentForStorage);
-      localStorage.setItem(storageKey, JSON.stringify(existingDocs));
+      existingDocs.unshift(documentForStorage);
+
+      // Keep only last 5 documents to prevent localStorage from growing too large
+      const recentDocs = existingDocs.slice(0, 5);
+      localStorage.setItem(storageKey, JSON.stringify(recentDocs));
 
       // Call success callback
       onUploadSuccess(uploadResponse);

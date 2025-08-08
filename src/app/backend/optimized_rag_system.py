@@ -10,6 +10,10 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 import fitz  # PyMuPDF
+import sys
+import os
+if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # ================================
 # GLOBAL SINGLETON MODEL MANAGER
@@ -605,50 +609,65 @@ async def optimized_upload_workflow(
     """
     total_start_time = time.time()
     
-    # STEP 1: Ultra-fast naming (0.01-0.1 seconds)
-    print("⚡ Step 1: Ultra-fast rule-based naming...")
-    naming_start = time.time()
-    
-    intelligent_filename = RuleBasedFileNamer.generate_filename_ultra_fast(
-        file_content=file_content,
-        original_filename=original_filename,
-        naming_option=naming_option,
-        user_title=user_title,
-        user_client_name=user_client_name,
-        counter=counter
-    )
-    
-    naming_time = time.time() - naming_start
-    
-    # STEP 2: Save file immediately
-    print("💾 Step 2: Saving file...")
-    save_start = time.time()
-    
-    os.makedirs("sample_docs", exist_ok=True)
-    file_path = os.path.join("sample_docs", intelligent_filename)
-    
-    # Handle conflicts
-    if os.path.exists(file_path):
-        base_name, ext = os.path.splitext(intelligent_filename)
-        conflict_counter = 1
-        while os.path.exists(file_path):
-            file_path = os.path.join("sample_docs", f"{base_name}_{conflict_counter}{ext}")
-            conflict_counter += 1
-        intelligent_filename = os.path.basename(file_path)
-    
-    # Save file
-    with open(file_path, 'wb') as f:
-        f.write(file_content)
-    
-    save_time = time.time() - save_start
-    
-    # STEP 3: Process for vectorized RAG
-    print("🔄 Step 3: Processing for vectorized RAG...")
-    rag_start = time.time()
-    
     try:
-        # Extract text
-        from utils.file_handler import extract_text_from_pdf, validate_pdf_content
+        # STEP 1: Ultra-fast naming (0.01-0.1 seconds)
+        print("⚡ Step 1: Ultra-fast rule-based naming...")
+        naming_start = time.time()
+        
+        intelligent_filename = RuleBasedFileNamer.generate_filename_ultra_fast(
+            file_content=file_content,
+            original_filename=original_filename,
+            naming_option=naming_option,
+            user_title=user_title,
+            user_client_name=user_client_name,
+            counter=counter
+        )
+        
+        naming_time = time.time() - naming_start
+        
+        # STEP 2: Save file immediately
+        print("💾 Step 2: Saving file...")
+        save_start = time.time()
+        
+        os.makedirs("sample_docs", exist_ok=True)
+        file_path = os.path.join("sample_docs", intelligent_filename)
+        
+        # Handle conflicts
+        if os.path.exists(file_path):
+            base_name, ext = os.path.splitext(intelligent_filename)
+            conflict_counter = 1
+            while os.path.exists(file_path):
+                file_path = os.path.join("sample_docs", f"{base_name}_{conflict_counter}{ext}")
+                conflict_counter += 1
+            intelligent_filename = os.path.basename(file_path)
+        
+        # Save file
+        with open(file_path, 'wb') as f:
+            f.write(file_content)
+        
+        save_time = time.time() - save_start
+        
+        # STEP 3: Process for vectorized RAG
+        print("🔄 Step 3: Processing for vectorized RAG...")
+        rag_start = time.time()
+        
+        try:
+            from utils.file_handler import extract_text_from_pdf, validate_pdf_content
+        except ImportError:
+            # Try alternative import path
+            import importlib.util
+            import sys
+            
+            file_handler_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'utils', 'file_handler.py')
+            if os.path.exists(file_handler_path):
+                spec = importlib.util.spec_from_file_location("file_handler", file_handler_path)
+                file_handler = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(file_handler)
+                
+                extract_text_from_pdf = file_handler.extract_text_from_pdf
+                validate_pdf_content = file_handler.validate_pdf_content
+            else:
+                raise ImportError("Cannot find utils.file_handler module")        
         
         validation = validate_pdf_content(file_path)
         if not validation.get("is_valid", False):
@@ -692,7 +711,7 @@ async def optimized_upload_workflow(
     except Exception as e:
         print(f"❌ Vectorized RAG processing failed: {e}")
         # Clean up the saved file on failure
-        if os.path.exists(file_path):
+        if 'file_path' in locals() and os.path.exists(file_path):
             try:
                 os.remove(file_path)
                 print(f"🗑️ Cleaned up file: {file_path}")

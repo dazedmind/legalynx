@@ -50,7 +50,7 @@ interface CombinedComponentProps {
   selectedSessionId?: string;
   handleNewChat?: () => void;
   handleVoiceChat?: () => void;
-  currentDocumentId?: string;
+  currentDocumentId?: string | null;
 }
 
 type LoadingStage = 'loading_session' | 'loading_document' | 'loading_rag' | 'preparing_chat';
@@ -62,11 +62,16 @@ export default function ChatViewer({
   selectedSessionId, 
   handleNewChat,
   handleVoiceChat,
-  currentDocumentId
-}: CombinedComponentProps) {
+  currentDocumentId,
+  onClearStateCallback // NEW: Add this prop
+}: CombinedComponentProps & { onClearStateCallback?: (clearFn: () => void) => void }) {
   const { isAuthenticated, user } = useAuth();
   const ragCache = useRAGCache();
   
+  // FIXED: Add state to track if we're processing a new upload
+  const [isProcessingNewUpload, setIsProcessingNewUpload] = useState(false);
+  const [lastProcessedDocumentId, setLastProcessedDocumentId] = useState<string | null>(null);
+
   // Document and session states
   const [currentDocument, setCurrentDocument] = useState<any>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -113,6 +118,24 @@ export default function ChatViewer({
       allowTemporary?: boolean; // For features that can fallback to temporary
     }
   } | null>(null);
+
+  // FIXED: Clear all session state when new document is uploaded
+  const clearAllSessionState = () => {
+    console.log("🧹 Clearing all session state for new upload");
+    setCurrentSessionId(null);
+    setChatHistory([]);
+    setCurrentDocument(null);
+    setQuery('');
+    setError('');
+    setDocumentExists(true); // Reset to true for new document
+    setIsLoadingSession(false);
+    setLoadingSessionId(null);
+    setHasUnsavedChanges(false);
+    setIsVoiceChat(false);
+    
+    // Clear any cached RAG data
+    ragCache.clearAll();
+  };
 
   // Handler to open confirmation modal
   const openConfirmationModal = (
@@ -187,10 +210,11 @@ export default function ChatViewer({
       currentDocument: currentDocument !== null,
       isResetting,
       user: !!user,
-      uploadCompleted
+      uploadCompleted,
+      isProcessingNewUpload
     });
     
-    if ((currentDocument === null && !isResetting) || uploadCompleted) {
+    if ((currentDocument === null && !isResetting && !isProcessingNewUpload) || uploadCompleted) {
       console.log('📄 Loading current document...');
       loadCurrentDocument();
       
@@ -198,7 +222,41 @@ export default function ChatViewer({
         setUploadCompleted(false);
       }
     }
-  }, [user, isResetting, currentDocument, uploadCompleted]);
+  }, [user, isResetting, currentDocument, uploadCompleted, isProcessingNewUpload]);
+
+    // Register clear function with parent
+    useEffect(() => {
+      if (onClearStateCallback) {
+        onClearStateCallback(clearAllSessionState);
+      }
+    }, [onClearStateCallback]);
+    
+  useEffect(() => {
+    console.log('🔍 Upload success effect:', {
+      isSystemReady,
+      isProcessingNewUpload,
+      currentDocumentId,
+      lastProcessedDocumentId
+    });
+    
+    // If we have a new document ID that differs from last processed, handle the upload
+    if (currentDocumentId && 
+        currentDocumentId !== lastProcessedDocumentId && 
+        !isProcessingNewUpload) {
+      
+      console.log('📄 New document uploaded:', currentDocumentId);
+      setIsProcessingNewUpload(true);
+      setLastProcessedDocumentId(currentDocumentId);
+      
+      // Clear all previous state
+      clearAllSessionState();
+      
+      // Load the new document
+      loadCurrentDocument().finally(() => {
+        setIsProcessingNewUpload(false);
+      });
+    }
+  }, [currentDocumentId, lastProcessedDocumentId, isProcessingNewUpload]);
 
   useEffect(() => {
     console.log('🔍 Upload success effect triggered');
@@ -221,10 +279,11 @@ export default function ChatViewer({
   }, [selectedSessionId, currentSessionId, loadingSessionId, isLoadingSession, isResetting]);
 
   useEffect(() => {
-    if (currentDocument && user && !currentSessionId && documentExists && !isResetting) {
+    if (currentDocument && user && !currentSessionId && documentExists && !isResetting && !isProcessingNewUpload) {
+      console.log('📝 Document loaded, creating/loading session...');
       loadOrCreateSession();
     }
-  }, [currentDocument, user, currentSessionId, documentExists, isResetting]);
+  }, [currentDocument, user, currentSessionId, documentExists, isResetting, isProcessingNewUpload]);
 
   useEffect(() => {
     if (user && isAuthenticated && currentDocument && documentExists && !isResetting) {
@@ -273,10 +332,11 @@ export default function ChatViewer({
       isResetting,
       hasCurrentDocument: currentDocument !== null,
       isAuthenticated,
-      userId: user?.id
+      userId: user?.id,
+      isProcessingNewUpload
     });
     
-    if (isResetting) {
+    if (isResetting && !isProcessingNewUpload) {
       console.log('🚫 Skipping document load - currently resetting');
       return;
     }
@@ -293,13 +353,20 @@ export default function ChatViewer({
           console.log('📄 API documents response:', data);
           
           if (data.documents && data.documents.length > 0) {
-            const mostRecent = data.documents[0];
+            // FIXED: Sort by most recent upload time or ID
+            const sortedDocs = data.documents.sort((a: any, b: any) => {
+              const timeA = new Date(a.uploadedAt || a.created_at || 0).getTime();
+              const timeB = new Date(b.uploadedAt || b.created_at || 0).getTime();
+              return timeB - timeA;
+            });
+            
+            const mostRecent = sortedDocs[0];
             console.log('📄 Most recent from API:', mostRecent);
             
             const exists = await checkDocumentExists(mostRecent.id);
             console.log('📄 Document exists check:', exists);
             
-            if (exists && !isResetting) {
+            if (exists && (!isResetting || isProcessingNewUpload)) {
               const documentInfo = {
                 id: mostRecent.id,
                 fileName: mostRecent.fileName,
@@ -327,7 +394,7 @@ export default function ChatViewer({
         }
       }
       
-      // Check localStorage for both authenticated and non-authenticated users
+      // FIXED: Check localStorage with proper sorting for most recent document
       console.log('💿 Checking localStorage...');
       const storageKey = isAuthenticated && user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
       console.log('💿 Storage key:', storageKey);
@@ -339,8 +406,15 @@ export default function ChatViewer({
         const docs = JSON.parse(savedDocs);
         console.log('💿 Parsed docs:', docs);
         
-        if (docs.length > 0 && !isResetting) {
+        if (docs.length > 0 && (!isResetting || isProcessingNewUpload)) {
+          // FIXED: Sort by uploadSequence if available, otherwise by uploadedAt
           const sortedDocs = docs.sort((a: any, b: any) => {
+            // First try uploadSequence (most recent uploads will have this)
+            if (a.uploadSequence && b.uploadSequence) {
+              return b.uploadSequence - a.uploadSequence;
+            }
+            
+            // Fallback to uploadedAt
             const timeA = new Date(a.uploadedAt || a.uploaded_at || 0).getTime();
             const timeB = new Date(b.uploadedAt || b.uploaded_at || 0).getTime();
             return timeB - timeA;
@@ -374,6 +448,7 @@ export default function ChatViewer({
       setDocumentExists(false);
     }
   };
+
 
   const loadSpecificSession = async (sessionId: string) => {
     if (!user || isLoadingSession || loadingSessionId === sessionId) {
@@ -664,6 +739,12 @@ export default function ChatViewer({
   const loadOrCreateSession = async () => {
     if (!user || !currentDocument || isCreatingSession || !documentExists) return;
 
+    // FIXED: Skip session loading if we're processing a new upload
+    if (isProcessingNewUpload) {
+      console.log('⏸️ Skipping session load - processing new upload');
+      return;
+    }
+
     try {
       setIsCreatingSession(true);
       const documentId = currentDocument.databaseId || currentDocument.id;
@@ -700,7 +781,7 @@ export default function ChatViewer({
             
             const formattedMessages = messages.map((msg: any) => ({
               id: msg.id,
-              type: msg.role.toLowerCase(),
+              type: msg.role.toUpperCase(),
               content: msg.content,
               createdAt: new Date(msg.createdAt || msg.created_at),
               sourceNodes: msg.sourceNodes || msg.source_nodes,
@@ -715,17 +796,21 @@ export default function ChatViewer({
         }
         
       } else if (response.status === 404) {
-        // ✅ FIXED: Immediately create session when none exists
-        console.log('📝 No existing session found - creating new session immediately');
-        const newSessionId = await createNewSession(documentId);
-        
-        if (!newSessionId) {
-          console.error('❌ Failed to create new session');
-          setDocumentExists(false);
-          handleDocumentDeleted();
+        // FIXED: For new uploads, immediately create session
+        if (isProcessingNewUpload || lastProcessedDocumentId === documentId) {
+          console.log('📝 New upload detected - creating fresh session immediately');
+          const newSessionId = await createNewSession(documentId);
+          
+          if (!newSessionId) {
+            console.error('❌ Failed to create new session');
+            setDocumentExists(false);
+            handleDocumentDeleted();
+          } else {
+            console.log('✅ Created fresh session for new upload:', newSessionId);
+            setChatHistory([]);
+          }
         } else {
-          console.log('✅ Created new session:', newSessionId);
-          setChatHistory([]);
+          console.log('📝 No existing session found for existing document');
         }
         
       } else {
@@ -741,6 +826,7 @@ export default function ChatViewer({
       setIsCreatingSession(false);
     }
   };
+
     
   // ✅ FIXED: Return session ID and handle async session creation properly
   const createNewSession = async (documentId?: string): Promise<string | null> => {
@@ -1089,7 +1175,37 @@ export default function ChatViewer({
         return;
     }
 
-    // ✅ FIXED: Proper session creation with synchronous check
+    // FIXED: Verify we have current document loaded in RAG system
+    if (!currentDocument) {
+        setError('No document loaded. Please upload a document first.');
+        return;
+    }
+
+    // FIXED: Double-check that backend has the right document
+    try {
+        const isDevelopment = process.env.NODE_ENV === 'development';
+        const RAG_BASE_URL = isDevelopment ? "http://localhost:8000" : process.env.NEXT_PUBLIC_RAG_API_URL;
+        
+        const statusResponse = await fetch(`${RAG_BASE_URL}/current-document`, {
+            headers: getAuthHeaders(),
+        });
+        
+        if (statusResponse.ok) {
+            const currentDoc = await statusResponse.json();
+            if (!currentDoc.has_document) {
+                setError('No document loaded in AI system. Please refresh and re-upload.');
+                return;
+            }
+            
+            // Log for debugging
+            console.log('🔍 Backend current document:', currentDoc.document_id);
+            console.log('🔍 Frontend current document:', currentDocument.id);
+        }
+    } catch (error) {
+        console.warn('Could not verify backend document status:', error);
+        // Continue with query - don't fail for verification issues
+    }
+
     let sessionId = currentSessionId;
     
     if (!sessionId && user && currentDocument) {
@@ -1122,7 +1238,6 @@ export default function ChatViewer({
     try {
         const result = await apiService.queryDocuments(currentQuery);
         
-        // Check for security feedback
         let assistantMessage = result.response;
         let securityNotice = '';
         
@@ -1141,29 +1256,24 @@ export default function ChatViewer({
     } catch (error) {
         console.error('Query error:', error);
         
-        // Handle security errors specifically
         if (isSecurityError(error)) {
             const securityErrorMessage = getSecurityErrorMessage(error);
             setError(securityErrorMessage);
             
-            let userFriendlyMessage = '';
             let assistantResponse = '';
             
             switch (error.type) {
                 case 'rate_limit':
-                    userFriendlyMessage = 'Query limit reached. Please wait before asking another question.';
                     assistantResponse = '⏱️ I\'m temporarily unavailable due to rate limiting. Please wait a moment before asking your next question.';
                     toast.error('Query rate limit exceeded');
                     break;
                     
                 case 'injection':
-                    userFriendlyMessage = 'Query blocked: Please rephrase your question using normal language.';
                     assistantResponse = '🛡️ I detected potentially harmful content in your query. Please rephrase your question using normal, conversational language and I\'ll be happy to help.';
                     toast.warning('Query was blocked for security reasons');
                     break;
                     
                 default:
-                    userFriendlyMessage = securityErrorMessage;
                     assistantResponse = `🔒 Security Error: ${securityErrorMessage}`;
                     toast.error('Security error occurred');
             }
@@ -1175,7 +1285,6 @@ export default function ChatViewer({
             });
             
         } else {
-            // Handle regular API errors
             const errorMessage = handleApiError(error);
             setError(errorMessage);
             
@@ -1360,6 +1469,8 @@ export default function ChatViewer({
       />
     );
   }
+
+  const getClearSessionCallback = () => clearAllSessionState;
 
   return (
     <div className="h-full flex flex-col">
