@@ -48,33 +48,6 @@ function Header() {
               </div>  
             </Link>
               
-            <HoverCard>
-              <HoverCardTrigger className='cursor-pointer flex items-center gap-1 hover:text-foreground transition-colors'>
-                Solutions <ChevronDown className='w-4 h-4' />
-              </HoverCardTrigger>
-              <HoverCardContent align='end' className='flex flex-col gap-2 text-sm'>
-                <div className='flex items-center gap-2 p-2 hover:bg-accent rounded-md cursor-pointer transition-colors'>
-                  <span className='p-2 bg-accent rounded-md'>
-                    <PiSuitcaseSimple className='w-4 h-4' />
-                  </span>
-                  <p>Paralegals</p>
-                </div>
-
-                <div className='flex items-center gap-2 p-2 hover:bg-accent rounded-md cursor-pointer transition-colors'>
-                  <span className='p-2 bg-accent rounded-md'>
-                    <PiNetwork className='w-4 h-4' />
-                  </span>
-                  <p>Social Media Managers</p>
-                </div>
-
-                <div className='flex items-center gap-2 p-2 hover:bg-accent rounded-md cursor-pointer transition-colors'>
-                  <span className='p-2 bg-accent rounded-md'>
-                    <GoLaw className='w-4 h-4' />
-                  </span>
-                  <p>Lawyers</p>
-                </div>
-              </HoverCardContent>
-            </HoverCard>
 
             <Link href="/frontend/login">
               <button className='cursor-pointer bg-gradient-to-tr from-yellow-500 to-yellow-300 hover:brightness-110 transition-all duration-300 text-white font-bold px-4 py-2 rounded-md'>
@@ -121,45 +94,6 @@ function Header() {
                 <span className="text-lg font-medium text-muted-foreground">Pricing</span>
               </div>
             </Link>
-
-            <Accordion type="single" collapsible>
-              <AccordionItem value="item-1">
-                <AccordionTrigger className="text-lg font-medium text-muted-foreground px-4 py-2">Solutions</AccordionTrigger>
-                <AccordionContent>
-                  <div>
-                  <div className='flex items-center gap-3 p-4 hover:bg-accent rounded-lg cursor-pointer transition-colors'>
-                    <span className='p-2 bg-accent rounded-md'>
-                      <PiSuitcaseSimple className='w-5 h-5' />
-                    </span>
-                    <div>
-                      <p className="font-medium text-muted-foreground">Paralegals</p>
-                      <p className="text-sm text-muted-foreground">Streamline document review</p>
-                    </div>
-                  </div>
-
-                  <div className='flex items-center gap-3 p-4 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors'>
-                    <span className='p-2 bg-accent rounded-md'>
-                      <PiNetwork className='w-5 h-5' />
-                    </span>
-                    <div>
-                      <p className="font-medium text-muted-foreground">Social Media Managers</p>
-                      <p className="text-sm text-muted-foreground">Content compliance tools</p>
-                    </div>
-                  </div>
-
-                  <div className='flex items-center gap-3 p-4 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors'>
-                    <span className='p-2 bg-accent rounded-md'>
-                      <GoLaw className='w-5 h-5' />
-                    </span>
-                    <div>
-                      <p className="font-medium text-muted-foreground">Lawyers</p>
-                      <p className="text-sm text-muted-foreground">AI-powered legal analysis</p>
-                    </div>
-                  </div>
-                </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
           </div>
 
           {/* Sign In Button - Pushed to bottom */}

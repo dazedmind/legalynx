@@ -185,26 +185,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="py-16 bg-primary border-t border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-muted-foreground mb-8">Trusted by leading legal professionals worldwide</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 opacity-60">
-            <div className="flex items-center justify-center">
-              <div className="text-2xl font-bold text-muted-foreground hover:text-gray-700 cursor-pointer">BigLaw Corp</div>
-            </div>
-            <div className="flex items-center justify-center">
-              <div className="text-2xl font-bold text-muted-foreground hover:text-gray-700 cursor-pointer">Legal Partners</div>
-            </div>
-            <div className="flex items-center justify-center">
-              <div className="text-2xl font-bold text-muted-foreground hover:text-gray-700 cursor-pointer">Justice & Co</div>
-            </div>
-            <div className="flex items-center justify-center">
-              <div className="text-2xl font-bold text-muted-foreground hover:text-gray-700 cursor-pointer">Law Firm Plus</div>
-            </div>
-          </div>
-        </div>
-      </section>
+     
 
       {/* Features Section */}
       <section className="py-24 bg-primary">
@@ -262,7 +243,7 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mx-8 md:mx-0">
             <div>
               <h3 className="text-3xl font-bold font-serif text-foreground mb-8">
-                Why Legal Professionals Choose LegalynX
+                Why Professionals Choose LegalynX?
               </h3>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
@@ -271,7 +252,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h4 className="text-xl font-semibold text-foreground mb-2">80% Time Reduction</h4>
-                    <p className="text-muted-foreground">Dramatically reduce document review time from hours to minutes with AI-powered analysis.</p>
+                    <p className="text-muted-foreground">Dramatically reduce document review time from hours to minutes</p>
                   </div>
                 </div>
                 
@@ -281,7 +262,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h4 className="text-xl font-semibold text-foreground mb-2">Enterprise Security</h4>
-                    <p className="text-muted-foreground">Bank-grade encryption and compliance with legal industry security standards.</p>
+                    <p className="text-muted-foreground">Bank-grade encryption with legal industry security standards.</p>
                   </div>
                 </div>
                 
@@ -290,8 +271,8 @@ export default function Home() {
                     <Users className="w-6 h-6 text-yellow" />
                   </div>
                   <div>
-                    <h4 className="text-xl font-semibold text-foreground mb-2">Team Collaboration</h4>
-                    <p className="text-muted-foreground">Seamless collaboration tools designed for legal teams of all sizes.</p>
+                    <h4 className="text-xl font-semibold text-foreground mb-2">24/7 Support</h4>
+                    <p className="text-muted-foreground">24/7 Support for all your legal needs.</p>
                   </div>
                 </div>
               </div>
@@ -314,44 +295,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-24 bg-gradient-to-r from-blue to-dark-blue">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-4xl font-bold font-serif text-white mb-16">What Legal Professionals Say</h3>
-          
-          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20 mx-8 md:mx-0">
-            <div className="mb-8">
-              <div className="flex justify-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-6 h-6 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <blockquote className="text-xl lg:text-2xl text-white font-light leading-relaxed">
-                "{testimonials[currentTestimonial].quote}"
-              </blockquote>
-            </div>
-            
-            <div className="text-white">
-              <div className="font-semibold text-lg">{testimonials[currentTestimonial].author}</div>
-              <div className="text-blue-200">{testimonials[currentTestimonial].role}</div>
-              <div className="text-blue-300 text-sm">{testimonials[currentTestimonial].company}</div>
-            </div>
-          </div>
-          
-          <div className="flex justify-center mt-8 gap-2">
-            {testimonials.map((_, index) => (
-              <button
-                key={index}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  index === currentTestimonial ? 'bg-white' : 'bg-white/40'
-                }`}
-                onClick={() => setCurrentTestimonial(index)}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="py-24 bg-gray-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -368,9 +311,6 @@ export default function Home() {
                 Start Free Trial
               </button>
             </Link>
-            <button className="px-10 py-4 text-lg font-semibold border-2 border-white text-white rounded-xl transition-all duration-300 cursor-pointer">
-              Contact Sales
-            </button>
           </div>
           
           <p className="text-gray-400 mt-6 text-sm">
@@ -400,14 +340,12 @@ export default function Home() {
                 <li><Link href="/features" className="hover:text-blue-600 transition-colors">Features</Link></li>
                 <li><Link href="/frontend/pricing" className="hover:text-blue-600 transition-colors">Pricing</Link></li>
                 <li><Link href="/security" className="hover:text-blue-600 transition-colors">Security</Link></li>
-                <li><Link href="/integrations" className="hover:text-blue-600 transition-colors">Integrations</Link></li>
               </ul>
             </div>
             
             <div>
               <h5 className="font-semibold text-foreground mb-4">Company</h5>
               <ul className="space-y-2 text-muted-foreground">
-                <li><Link href="/about" className="hover:text-blue-600 transition-colors">About</Link></li>
                 <li><Link href="/contact" className="hover:text-blue-600 transition-colors">Contact</Link></li>
                 <li><Link href="/frontend/privacy-policy" className="hover:text-blue-600 transition-colors">Privacy</Link></li>
                 <li><Link href="/terms" className="hover:text-blue-600 transition-colors">Terms</Link></li>

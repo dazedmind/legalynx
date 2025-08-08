@@ -41,6 +41,65 @@ interface UserSettings {
   client_name?: string;
 }
 
+// Progress Bar Component
+interface ProgressStepProps {
+  currentStep: number;
+  steps: string[];
+  stepProgress: number; // 0-100 for current step
+}
+
+const ProgressSteps: React.FC<ProgressStepProps> = ({ currentStep, steps, stepProgress }) => {
+  const getStepColor = (stepIndex: number) => {
+    switch(stepIndex) {
+      case 0: return 'bg-blue-600'; // Initializing - Blue
+      case 1: return 'bg-purple-600'; // Processing - Purple  
+      case 2: return 'bg-yellow-500'; // Preparing - Yellow
+      default: return 'bg-blue-600';
+    }
+  };
+
+  const getTextColor = (stepIndex: number) => {
+    switch(stepIndex) {
+      case 0: return 'text-blue-600'; // Initializing - Blue
+      case 1: return 'text-purple-600'; // Processing - Purple
+      case 2: return 'text-yellow-600'; // Preparing - Yellow
+      default: return 'text-blue-600';
+    }
+  };
+
+  return (
+    <div className="w-full space-y-2">
+      {/* Progress Bar */}
+      <div className="w-full bg-tertiary rounded-full h-2 overflow-hidden">
+        <div 
+          className={`h-full rounded-full transition-all duration-700 ease-out ${getStepColor(currentStep)}`}
+          style={{ 
+            width: `${stepProgress}%` 
+          }}
+        />
+      </div>
+      
+      {/* Step Labels */}
+      <div className="flex justify-between text-xs">
+        {steps.map((step, index) => (
+          <span 
+            key={index}
+            className={`transition-colors duration-300 ${
+              index === currentStep 
+                ? `${getTextColor(index)} font-medium` 
+                : index < currentStep
+                ? 'text-muted-foreground font-medium'
+                : 'text-muted-foreground'
+            }`}
+          >
+            {step}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 function UploadComponent({
   onUploadSuccess,
   handleNewChat,
@@ -56,6 +115,11 @@ function UploadComponent({
   >("idle");
   const [warning, setWarning] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
+  
+  // Progress tracking
+  const [currentProgressStep, setCurrentProgressStep] = useState(-1); // Start at -1 so no step is active initially
+  const [stepProgress, setStepProgress] = useState(0); // 0-100 for current step
+  const progressSteps = ["Initializing", "Processing", "Preparing"];
 
   // User settings and upload options
   const [uploadOptions, setUploadOptions] = useState<UploadOptions>({
@@ -160,6 +224,8 @@ function UploadComponent({
         setUploadStatus("idle");
         setStatusMessage(null);
         setWarning(null);
+        setCurrentProgressStep(-1); // Reset progress
+        setStepProgress(0); // Reset step progress
 
         // Check file size
         const maxSizeMB = uploadOptions?.max_file_size_mb || 50;
@@ -179,6 +245,7 @@ function UploadComponent({
       }
     }
   };
+  
   // ✅ NEW: Modified database save function that accepts the RAG filename
   const saveDocumentToDatabaseWithFilename = async (
     file: File,
@@ -346,7 +413,22 @@ function UploadComponent({
 
     setIsUploading(true);
     setUploadStatus("processing");
-    setStatusMessage("Starting ultra-fast processing...");
+    setCurrentProgressStep(0); // Start with initializing
+    setStepProgress(0);
+    setStatusMessage("Initializing ultra-fast processing...");
+
+    // Animate initializing step
+    const initializeStep = () => {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        setStepProgress(progress);
+        if (progress >= 100) {
+          clearInterval(interval);
+        }
+      }, 50); // Complete in 500ms
+    };
+    initializeStep();
 
     const startTime = Date.now();
 
@@ -362,11 +444,49 @@ function UploadComponent({
 
         try {
           // Step 1: Upload to ULTRA-FAST RAG system FIRST
-          setStatusMessage("Processing document...");
+          setTimeout(() => {
+            setCurrentProgressStep(1);
+            setStepProgress(0);
+            setStatusMessage("Processing document...");
+            
+            // Animate processing step
+            const processStep = () => {
+              let progress = 0;
+              const interval = setInterval(() => {
+                progress += 5;
+                setStepProgress(progress);
+                if (progress >= 100) {
+                  clearInterval(interval);
+                }
+              }, 25); // Complete in ~500ms
+            };
+            processStep();
+          }, 600); // Wait for initialize to complete
+          
+          await new Promise(resolve => setTimeout(resolve, 600)); // Wait for initializing
           ragResponse = await uploadToRagSystem(file);
 
           // Step 2: Save to database using the filename from RAG response
-          setStatusMessage("Preparing document...");
+          setTimeout(() => {
+            setCurrentProgressStep(2);
+            setStepProgress(0);
+            setStatusMessage("Preparing document...");
+            
+            // Animate preparing step
+            const prepareStep = () => {
+              let progress = 0;
+              const interval = setInterval(() => {
+                progress += 8;
+                setStepProgress(progress);
+                if (progress >= 100) {
+                  clearInterval(interval);
+                }
+              }, 30); // Complete in ~375ms
+            };
+            prepareStep();
+          }, 100); // Small delay before preparing
+          
+          await new Promise(resolve => setTimeout(resolve, 500)); // Wait for processing animation
           documentInfo = await saveDocumentToDatabaseWithFilename(
             file,
             ragResponse.filename
@@ -433,7 +553,26 @@ function UploadComponent({
           // For non-security errors, try fallback to RAG only (no database save)
           console.log("Trying RAG-only fallback after database error:", error);
           try {
-            setStatusMessage("Preparing the Document...");
+            setTimeout(() => {
+              setCurrentProgressStep(2);
+              setStepProgress(0);
+              setStatusMessage("Preparing the Document...");
+              
+              // Animate preparing step for fallback
+              const prepareStep = () => {
+                let progress = 0;
+                const interval = setInterval(() => {
+                  progress += 10;
+                  setStepProgress(progress);
+                  if (progress >= 100) {
+                    clearInterval(interval);
+                  }
+                }, 40);
+              };
+              prepareStep();
+            }, 100);
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
             ragResponse = await uploadToRagSystem(file);
 
             const processingTime = (Date.now() - startTime) / 1000;
@@ -473,8 +612,47 @@ function UploadComponent({
           "👥 Non-authenticated user - ultra-fast RAG processing only"
         );
 
-        setStatusMessage("Processing with ultra-fast AI system...");
+        setTimeout(() => {
+          setCurrentProgressStep(1);
+          setStepProgress(0);
+          setStatusMessage("Processing with ultra-fast AI system...");
+          
+          // Animate processing step for non-auth users
+          const processStep = () => {
+            let progress = 0;
+            const interval = setInterval(() => {
+              progress += 6;
+              setStepProgress(progress);
+              if (progress >= 100) {
+                clearInterval(interval);
+              }
+            }, 30); // Complete in ~500ms
+          };
+          processStep();
+        }, 600); // Wait for initialize to complete
+        
+        await new Promise(resolve => setTimeout(resolve, 600));
         ragResponse = await uploadToRagSystem(file);
+
+        setTimeout(() => {
+          setCurrentProgressStep(2);
+          setStepProgress(0);
+          
+          // Animate preparing step for non-auth users
+          const prepareStep = () => {
+            let progress = 0;
+            const interval = setInterval(() => {
+              progress += 12;
+              setStepProgress(progress);
+              if (progress >= 100) {
+                clearInterval(interval);
+              }
+            }, 25);
+          };
+          prepareStep();
+        }, 100);
+
+        await new Promise(resolve => setTimeout(resolve, 400));
 
         const processingTime = (Date.now() - startTime) / 1000;
         const speedup = 300 / processingTime;
@@ -564,6 +742,8 @@ function UploadComponent({
 
       // Reset form
       setFile(null);
+      setCurrentProgressStep(-1);
+      setStepProgress(0);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -592,6 +772,8 @@ function UploadComponent({
       }
     } finally {
       setIsUploading(false);
+      setCurrentProgressStep(-1);
+      setStepProgress(0);
     }
   };
 
@@ -612,6 +794,8 @@ function UploadComponent({
         setFile(droppedFile);
         setUploadStatus("idle");
         setStatusMessage(null);
+        setCurrentProgressStep(-1);
+        setStepProgress(0);
       } else {
         setUploadStatus("error");
         setStatusMessage(
@@ -708,6 +892,17 @@ function UploadComponent({
             "Upload File"
           )}
         </button>
+      )}
+
+      {/* Progress Bar - Only show when uploading */}
+      {isUploading && currentProgressStep >= 0 && (
+        <div className="mt-3">
+          <ProgressSteps 
+            currentStep={currentProgressStep} 
+            steps={progressSteps} 
+            stepProgress={stepProgress}
+          />
+        </div>
       )}
 
       {/* Session Mode Notice */}

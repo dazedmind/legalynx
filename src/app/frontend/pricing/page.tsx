@@ -30,7 +30,7 @@ function EnhancedPricing() {
         { text: "Voice mode", included: false }
       ],
       ctaText: "Get Started Free",
-      ctaStyle: "bg-accent text-foreground hover:brightness-105 hover:bg-accent/10 hover:border hover:border-foreground"
+      ctaStyle: `${theme === 'dark' ? 'bg-neutral-600' : 'bg-neutral-200 text-foreground'}`
     },
     {
       name: "Standard",
@@ -297,9 +297,6 @@ function EnhancedPricing() {
                 Start Free Trial
               </button>
             </Link>
-            <button className="w-fit px-10 py-4 text-lg font-semibold border-2 border-tertiary text-foreground rounded-xl hover:bg-accent transition-all duration-300 cursor-pointer">
-              Contact Sales
-            </button>
           </div>
           
           <p className="text-muted-foreground mt-6 text-sm">

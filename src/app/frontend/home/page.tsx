@@ -13,16 +13,14 @@ import {
   UploadResponse,
 } from "../lib/api";
 import {
-  GoArchive,
   GoComment,
   GoFile,
   GoFileDirectory,
-  GoHistory,
 } from "react-icons/go";
 import NavBar from "../components/NavBar";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { useAuth } from "@/lib/context/AuthContext";
-import { LogOut, Plus, Menu, X, Mic, Lock } from "lucide-react";
+import { LogOut, Menu, X, Lock, Palette } from "lucide-react";
 import UploadPage from "./tabs/chat-viewer/UploadPage";
 import ConfirmationModal, { ModalType } from "../components/ConfirmationModal";
 import { useTheme } from "next-themes";
@@ -32,7 +30,8 @@ type ActiveTab =
   | "documents"
   | "chat_history"
   | "upload"
-  | "voice_chat";
+  | "voice_chat"
+  | "appearance";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("upload");
@@ -377,7 +376,7 @@ export default function Home() {
   };
 
   const menuItems = [
-    { id: "chat_history", label: "Chat History", icon: GoArchive },
+    { id: "chat_history", label: "Chat", icon: GoComment },
     { id: "documents", label: "My Documents", icon: GoFileDirectory },
   ];
 
@@ -450,12 +449,12 @@ export default function Home() {
                 {activeTab === "chat_history" && (
                   <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
                 )}
-                <GoArchive
+                <GoComment
                   className={`${
                     activeTab === "chat_history" ? "ml-2" : "ml-0"
                   } transition-all duration-300 w-5 h-5 flex-shrink-0`}
                 />
-                <span className="truncate">Chat History</span>
+                <span className="truncate">Chat</span>
               </button>
 
               <button
@@ -481,6 +480,27 @@ export default function Home() {
                       <Lock className="w-4 h-4 flex-shrink-0 text-white" />
                     </div>
                   )}
+                </span>
+              </button>
+
+              <button
+                onClick={() => handleTabClick("appearance")}
+                className={`w-full relative cursor-pointer flex  items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                  activeTab === "appearance"
+                    ? "bg-blue/20 text-blue-700 font-semibold rounded-r-lg"
+                    : "text-foreground hover:bg-accent"
+                }`}
+              >
+                {activeTab === "appearance" && (
+                  <div className="h-full w-1 bg-blue-700  absolute left-0 overflow-hidden rounded-full"></div>
+                )}
+                <Palette
+                  className={`${
+                    activeTab === "appearance" ? "ml-2" : "ml-0"
+                  } transition-all duration-300 w-5 h-5 flex-shrink-0`}
+                />
+                <span className="truncate flex items-center justify-between w-full">
+                  Appearance
                 </span>
               </button>
             </div>
@@ -551,6 +571,7 @@ export default function Home() {
                   handleNewChat={handleNewChat}
                 />
               )}
+
             </div>
           </section>
         </main>

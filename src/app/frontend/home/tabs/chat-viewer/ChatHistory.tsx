@@ -255,25 +255,23 @@ export default function SavedChatHistory({
         
         <span className='flex items-center gap-2'>
           <button
-            onClick={loadSavedSessions}
-            disabled={isLoading}
-            className="flex items-center px-3 py-2 text-sm bg-yellow-100/20 text-yellow-500 rounded-md hover:bg-yellow/20 transition-colors disabled:opacity-50 cursor-pointer"
-            title="Refresh chat history"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Refresh
-          </button>
-
-          <button
             onClick={() => handleNewChat?.()}
             disabled={isLoading}
-            className="md:flex items-center px-3 py-2 gap-2 text-sm bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-md hover:bg-blue-200 disabled:opacity-50 cursor-pointer"
+            className="md:flex items-center px-3 py-2 gap-2 text-md bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-md hover:bg-blue-200 disabled:opacity-50 cursor-pointer"
             title="Add a new chat"
           >
             <MessageSquarePlus className="w-4 h-4" />
             <span className="hidden md:block">New Chat</span>
           </button>
-       
+
+          <button
+            onClick={loadSavedSessions}
+            disabled={isLoading}
+            className="flex items-center px-4 py-3 text-md bg-yellow-100/20 text-yellow-500 rounded-md hover:bg-yellow/20 transition-colors disabled:opacity-50 cursor-pointer"
+            title="Refresh chat history"
+          >
+            <RotateCcw className="w-5 h-5 " />
+          </button>
         </span>
    
       </div>

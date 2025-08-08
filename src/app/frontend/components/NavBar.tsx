@@ -1,5 +1,5 @@
 'use client'
-import { LogOut, Settings } from 'lucide-react'
+import { LogOut, Settings, User } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import avatar from '../img/user.png'
@@ -212,19 +212,19 @@ export default function NavBar() {
                             </DropdownMenuLabel>
                             
                             <DropdownMenuSeparator />
-                     
-                            <Link href="/frontend/settings?tab=subscription" className='cursor-pointer'>
-                                <DropdownMenuItem className='cursor-pointer p-2 px-3'>
-                                    <GoGift className='w-4 h-4' />
-                                    Manage Subscription
-                                </DropdownMenuItem>
-                            </Link>
                             <Link href="/frontend/settings" className='cursor-pointer'>
                                 <DropdownMenuItem className='cursor-pointer p-2 px-3'>
                                     <Settings className='w-4 h-4' />
                                     Settings
                                 </DropdownMenuItem>
                             </Link>
+                            <Link href="/frontend/settings?tab=subscription" className='cursor-pointer'>
+                                <DropdownMenuItem className='cursor-pointer p-2 px-3'>
+                                    <GoGift className='w-4 h-4' />
+                                    Manage Subscription
+                                </DropdownMenuItem>
+                            </Link>
+                      
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={handleLogout} className='cursor-pointer p-2 px-3'>
                                 <LogOut className='w-4 h-4' />
