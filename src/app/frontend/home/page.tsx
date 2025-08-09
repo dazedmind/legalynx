@@ -67,7 +67,8 @@ export default function Home() {
   const { theme } = useTheme();
   const [subscriptionStatus, setSubscriptionStatus] = useState("");
   
-  // FIXED: Add ref to ChatViewer for direct state clearing
+  const [lastUploadedDocumentId, setLastUploadedDocumentId] = useState<string | null>(null);
+
   const chatViewerRef = useRef<any>(null);
 
   // Modal state for confirmation
@@ -86,6 +87,11 @@ export default function Home() {
       allowTemporary?: boolean;
     };
   } | null>(null);
+
+  const clearLastUploadedDocument = () => {
+    console.log('🧹 Clearing last uploaded document tracking');
+    setLastUploadedDocumentId(null);
+  };
 
   // NEW: Load storage information
   const loadStorageInfo = async () => {
@@ -283,6 +289,8 @@ export default function Home() {
       if (selectedDoc) {
         setActiveTab("chat");
         setIsMobileSidebarOpen(false);
+
+        clearLastUploadedDocument();
       }
     }
   };
@@ -355,6 +363,8 @@ export default function Home() {
 
     console.log("📄 Document stored in localStorage:", documentForStorage);
 
+    setLastUploadedDocumentId(response.documentId || '');
+
     // FIXED: Set current document ID and tracking
     setCurrentDocumentId(response.documentId || "");
     setLastProcessedDocumentId(response.documentId || "");
@@ -396,7 +406,10 @@ export default function Home() {
     // Switch to upload tab
     setActiveTab("upload");
     setIsMobileSidebarOpen(false);
-    
+
+    // Clear last uploaded tracking when starting a new chat
+    clearLastUploadedDocument();
+
     console.log('✅ New chat state cleared');
   };
 
@@ -409,15 +422,22 @@ export default function Home() {
     // Defer clearing ChatViewer until after this render commit
     // to avoid setState during parent render warnings.
     console.log('🧹 Scheduling ChatViewer state clear');
-    setPendingClearChatViewer(true);
+    // Double defer: schedule flag in next tick to avoid firing during render
+    setTimeout(() => setPendingClearChatViewer(true), 0);
   };
 
-  // Perform the actual clear after render commit
+  // Perform the actual clear after render commit (scheduled to avoid cross-render updates)
   useEffect(() => {
     if (pendingClearChatViewer && clearChatViewerFn) {
-      console.log('🧹 Executing deferred ChatViewer state clear');
-      clearChatViewerFn();
-      setPendingClearChatViewer(false);
+      const timeoutId = setTimeout(() => {
+        console.log('🧹 Executing deferred ChatViewer state clear');
+        try {
+          clearChatViewerFn();
+        } finally {
+          setPendingClearChatViewer(false);
+        }
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [pendingClearChatViewer, clearChatViewerFn]);
 
@@ -464,6 +484,8 @@ export default function Home() {
     setCurrentSessionId(sessionId);
     setActiveTab("chat");
     setIsMobileSidebarOpen(false);
+
+    clearLastUploadedDocument();
   };
 
   const handleSignOut = () => {
@@ -479,6 +501,8 @@ export default function Home() {
         logout();
       }
     );
+
+    clearLastUploadedDocument();
   };
 
   const toggleMobileSidebar = () => {
@@ -757,6 +781,7 @@ export default function Home() {
                     }
                   }}
                   onClearStateCallback={setClearChatViewerFn}
+                  lastUploadedDocumentId={lastUploadedDocumentId || ''}
                 />
               )}
 

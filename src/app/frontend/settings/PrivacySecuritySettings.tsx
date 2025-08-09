@@ -591,54 +591,6 @@ export default function PrivacySecuritySettings() {
         </div>
       </section>
 
-      {/* Privacy Settings */}
-      <section className="mx-4 p-6 rounded-lg border border-tertiary bg-primary">
-        <div className="flex items-center gap-3 mb-4">
-          <Shield className="w-6 h-6 text-yellow-500" />
-          <div>
-            <h2 className="text-xl font-semibold">Privacy Preferences</h2>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <Separator className="my-4"/>
-
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Analytics & Usage Data</h3>
-              <p className="text-sm text-muted-foreground">Help improve our service by sharing anonymous usage data</p>
-            </div>
-            <Switch 
-              checked={privacySettings.analytics_consent}
-              onCheckedChange={(checked) => handlePrivacySettingChange('analytics_consent', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Marketing Emails</h3>
-              <p className="text-sm text-muted-foreground">Receive emails about new features and updates</p>
-            </div>
-            <Switch 
-              checked={privacySettings.marketing_emails}
-              onCheckedChange={(checked) => handlePrivacySettingChange('marketing_emails', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Data Sharing</h3>
-              <p className="text-sm text-muted-foreground">Allow sharing anonymized data with research partners</p>
-            </div>
-            <Switch 
-              checked={privacySettings.data_sharing_consent}
-              onCheckedChange={(checked) => handlePrivacySettingChange('data_sharing_consent', checked)}
-            />
-          </div>
-        </div>
-      </section>
-
       {/* Danger Zone */}
       <section className="mx-4 p-6 mb-8 rounded-lg border border-tertiary bg-destructive/5">
         <div className="flex items-center gap-3 mb-4">

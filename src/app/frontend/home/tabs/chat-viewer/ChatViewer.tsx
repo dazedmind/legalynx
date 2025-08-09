@@ -51,6 +51,7 @@ interface CombinedComponentProps {
   handleNewChat?: () => void;
   handleVoiceChat?: () => void;
   currentDocumentId?: string | null;
+  lastUploadedDocumentId?: string;
 }
 
 type LoadingStage = 'loading_session' | 'loading_document' | 'loading_rag' | 'preparing_chat';
@@ -63,7 +64,8 @@ export default function ChatViewer({
   handleNewChat,
   handleVoiceChat,
   currentDocumentId,
-  onClearStateCallback // NEW: Add this prop
+  onClearStateCallback,
+  lastUploadedDocumentId 
 }: CombinedComponentProps & { onClearStateCallback?: (clearFn: () => void) => void }) {
   const { isAuthenticated, user } = useAuth();
   const ragCache = useRAGCache();
@@ -85,6 +87,7 @@ export default function ChatViewer({
   const [isSaving, setIsSaving] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [documentExists, setDocumentExists] = useState(true);
+  const [isLoadingDocument, setIsLoadingDocument] = useState(true);
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [savedSessions, setSavedSessions] = useState<SavedChatSession[]>([]);
@@ -101,6 +104,7 @@ export default function ChatViewer({
   // Chat states
   const [query, setQuery] = useState('');
   const [isQuerying, setIsQuerying] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string>('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -221,7 +225,10 @@ export default function ChatViewer({
     
     if ((currentDocument === null && !isResetting && !isProcessingNewUpload) || uploadCompleted) {
       console.log('📄 Loading current document...');
-      loadCurrentDocument();
+      setIsLoadingDocument(true);
+      setTimeout(() => {
+        loadCurrentDocument().finally(() => setIsLoadingDocument(false));
+      }, 0);
       
       if (uploadCompleted) {
         setUploadCompleted(false);
@@ -253,13 +260,19 @@ export default function ChatViewer({
       setIsProcessingNewUpload(true);
       setLastProcessedDocumentId(currentDocumentId);
       
-      // Clear all previous state
-      clearAllSessionState();
+      // Clear all previous state (defer to next tick to avoid cross-render state updates)
+      setTimeout(() => {
+        clearAllSessionState();
+      }, 0);
       
-      // Load the new document
-      loadCurrentDocument().finally(() => {
-        setIsProcessingNewUpload(false);
-      });
+      // Load the new document (defer to next tick)
+      setIsLoadingDocument(true);
+      setTimeout(() => {
+        loadCurrentDocument().finally(() => {
+          setIsProcessingNewUpload(false);
+          setIsLoadingDocument(false);
+        });
+      }, 0);
     }
   }, [currentDocumentId, lastProcessedDocumentId, isProcessingNewUpload]);
 
@@ -409,11 +422,29 @@ export default function ChatViewer({
       hasCurrentDocument: currentDocument !== null,
       isAuthenticated,
       userId: user?.id,
-      isProcessingNewUpload
+      isProcessingNewUpload,
+      lastUploadedDocumentId
     });
     
     if (isResetting && !isProcessingNewUpload) {
       console.log('🚫 Skipping document load - currently resetting');
+      return;
+    }
+
+    let documentFound = false;
+
+    if (currentDocumentId) {
+      console.log('🎯 Loading specific document by ID:', currentDocumentId);
+      await loadSpecificDocument(currentDocumentId);
+      documentFound = true; // loadSpecificDocument will set state appropriately
+      return;
+    }
+
+    // 🔥 FIXED: If we have a lastUploadedDocumentId, prioritize that
+    if (lastUploadedDocumentId) {
+      console.log('🎯 Loading last uploaded document:', lastUploadedDocumentId);
+      await loadSpecificDocument(lastUploadedDocumentId);
+      documentFound = true;
       return;
     }
     
@@ -429,20 +460,13 @@ export default function ChatViewer({
           console.log('📄 API documents response:', data);
           
           if (data.documents && data.documents.length > 0) {
-            // FIXED: Sort by most recent upload time or ID
-            const sortedDocs = data.documents.sort((a: any, b: any) => {
-              const timeA = new Date(a.uploadedAt || a.created_at || 0).getTime();
-              const timeB = new Date(b.uploadedAt || b.created_at || 0).getTime();
-              return timeB - timeA;
-            });
-            
-            const mostRecent = sortedDocs[0];
+            const mostRecent = data.documents[0];
             console.log('📄 Most recent from API:', mostRecent);
             
             const exists = await checkDocumentExists(mostRecent.id);
             console.log('📄 Document exists check:', exists);
             
-            if (exists && (!isResetting || isProcessingNewUpload)) {
+            if (exists && !isResetting) {
               const documentInfo = {
                 id: mostRecent.id,
                 fileName: mostRecent.fileName,
@@ -457,10 +481,11 @@ export default function ChatViewer({
               console.log('✅ Loading document from API:', documentInfo.originalFileName);
               setCurrentDocument(documentInfo);
               setDocumentExists(true);
+              documentFound = true;
               return;
             } else {
-              console.log('❌ Most recent document no longer exists or resetting, clearing state');
-              setDocumentExists(false);
+              console.log('❌ Most recent document no longer exists or resetting');
+              // Do not set documentExists=false yet to avoid UI flicker; try localStorage next
             }
           } else {
             console.log('📄 No documents found in API');
@@ -470,9 +495,10 @@ export default function ChatViewer({
         }
       }
       
-      // FIXED: Check localStorage with proper sorting for most recent document
+      // Check localStorage for both authenticated and non-authenticated users
       console.log('💿 Checking localStorage...');
-      const storageKey = isAuthenticated && user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+      const storageKey = isAuthenticated && user?.id ?
+        `uploaded_documents_${user.id}` : 'uploaded_documents';
       console.log('💿 Storage key:', storageKey);
       
       const savedDocs = localStorage.getItem(storageKey);
@@ -482,15 +508,8 @@ export default function ChatViewer({
         const docs = JSON.parse(savedDocs);
         console.log('💿 Parsed docs:', docs);
         
-        if (docs.length > 0 && (!isResetting || isProcessingNewUpload)) {
-          // FIXED: Sort by uploadSequence if available, otherwise by uploadedAt
+        if (docs.length > 0 && !isResetting) {
           const sortedDocs = docs.sort((a: any, b: any) => {
-            // First try uploadSequence (most recent uploads will have this)
-            if (a.uploadSequence && b.uploadSequence) {
-              return b.uploadSequence - a.uploadSequence;
-            }
-            
-            // Fallback to uploadedAt
             const timeA = new Date(a.uploadedAt || a.uploaded_at || 0).getTime();
             const timeB = new Date(b.uploadedAt || b.uploaded_at || 0).getTime();
             return timeB - timeA;
@@ -513,6 +532,7 @@ export default function ChatViewer({
           console.log('✅ Final document info from localStorage:', documentInfo);
           setCurrentDocument(documentInfo);
           setDocumentExists(true);
+          documentFound = true;
         } else {
           console.log('💿 No documents in localStorage or resetting');
         }
@@ -521,10 +541,91 @@ export default function ChatViewer({
       }
     } catch (error) {
       console.error('❌ Failed to load current document:', error);
+      // Only set to false on errors after all checks
       setDocumentExists(false);
+    }
+
+    // If after all checks nothing was found, mark as not existing to avoid stale state
+    if (!documentFound && !isResetting) {
+      setDocumentExists(false);
+      setCurrentDocument(null);
     }
   };
 
+  // 🔥 NEW: Load a specific document by ID
+  const loadSpecificDocument = async (documentId: string) => {
+    console.log('🎯 Loading specific document:', documentId);
+    
+    try {
+      // First check localStorage
+      const storageKey = isAuthenticated && user?.id ?
+        `uploaded_documents_${user.id}` : 'uploaded_documents';
+      
+      const savedDocs = localStorage.getItem(storageKey);
+      if (savedDocs) {
+        const docs = JSON.parse(savedDocs);
+        const specificDoc = docs.find((doc: any) => 
+          doc.id === documentId || doc.documentId === documentId
+        );
+        
+        if (specificDoc) {
+          console.log('✅ Found specific document in localStorage:', specificDoc);
+          
+          const documentInfo = {
+            id: specificDoc.id || specificDoc.documentId,
+            fileName: specificDoc.fileName || specificDoc.filename,
+            originalFileName: specificDoc.originalFileName || specificDoc.original_file_name || specificDoc.originalName,
+            fileSize: specificDoc.fileSize || specificDoc.file_size || specificDoc.size,
+            uploadedAt: specificDoc.uploadedAt || specificDoc.uploaded_at,
+            pageCount: specificDoc.pageCount || specificDoc.page_count || specificDoc.pages_processed,
+            status: specificDoc.status || 'TEMPORARY',
+            databaseId: specificDoc.databaseId || specificDoc.id
+          };
+          
+          setCurrentDocument(documentInfo);
+          setDocumentExists(true);
+          return;
+        }
+      }
+
+      // If not found in localStorage and user is authenticated, check API
+      if (isAuthenticated && user) {
+        console.log('🔍 Checking API for specific document:', documentId);
+        const response = await fetch(`/backend/api/documents/${documentId}`, {
+          headers: getAuthHeaders()
+        });
+        
+        if (response.ok) {
+          const documentData = await response.json();
+          console.log('✅ Found specific document in API:', documentData);
+          
+          const documentInfo = {
+            id: documentData.id,
+            fileName: documentData.fileName,
+            originalFileName: documentData.originalFileName,
+            fileSize: documentData.fileSize,
+            uploadedAt: documentData.uploadedAt,
+            pageCount: documentData.pageCount,
+            status: documentData.status,
+            databaseId: documentData.id
+          };
+          
+          setCurrentDocument(documentInfo);
+          setDocumentExists(true);
+          return;
+        }
+      }
+      
+      console.log('❌ Specific document not found:', documentId);
+      setDocumentExists(false);
+      setCurrentDocument(null);
+      
+    } catch (error) {
+      console.error('❌ Failed to load specific document:', error);
+      setDocumentExists(false);
+      setCurrentDocument(null);
+    }
+  };
 
   const loadSpecificSession = async (sessionId: string) => {
     if (!user || isLoadingSession || loadingSessionId === sessionId) {
@@ -1259,6 +1360,7 @@ export default function ChatViewer({
   };
 
   const handleQuery = async (queryText?: string) => {
+    if (isSubmittingRef.current || isQuerying) return;
     const currentQuery = queryText || query;
     
     if (!currentQuery.trim()) {
@@ -1302,6 +1404,12 @@ export default function ChatViewer({
         // Continue with query - don't fail for verification issues
     }
 
+    // Immediately lock UI and clear input to prevent double-submit
+    isSubmittingRef.current = true;
+    setIsQuerying(true);
+    setError('');
+    setQuery('');
+
     let sessionId = currentSessionId;
     
     if (!sessionId && user && currentDocument) {
@@ -1327,9 +1435,7 @@ export default function ChatViewer({
         query: currentQuery
     }, sessionId || undefined);
 
-    setIsQuerying(true);
-    setError('');
-    setQuery('');
+    // already set querying and cleared input above
 
     try {
         const result = await apiService.queryDocuments(currentQuery);
@@ -1394,13 +1500,16 @@ export default function ChatViewer({
         }
     } finally {
         setIsQuerying(false);
+        isSubmittingRef.current = false;
     }
   };
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      handleQuery();
+      if (!isQuerying && !isSubmittingRef.current) {
+        handleQuery();
+      }
     }
   };
 
@@ -1577,7 +1686,22 @@ export default function ChatViewer({
     <div className="h-full flex flex-col">
       {/* Fixed Document Header */}
       <div className="flex-shrink-0 bg-primary p-4">
-        {currentDocument ? (
+        {isLoadingDocument ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FileText className="w-8 h-8 text-blue-600" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm md:text-base mb-1 font-semibold text-foreground">Loading document...</h3>
+                </div>
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></span>
+                  Please wait while we prepare your document
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : currentDocument ? (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {!documentExists && (
@@ -1657,7 +1781,7 @@ export default function ChatViewer({
                 <span className="hidden md:block">New Chat</span>
               </button>
             </div>
-          </div>  
+          </div>
         ) : null}
       </div>
       
@@ -1676,16 +1800,6 @@ export default function ChatViewer({
       
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {!documentExists && (
-          <div className="flex-shrink-0 bg-destructive/10 border-b border-destructive p-4">
-            <div className="flex items-center text-destructive">
-              <AlertCircle className="w-5 h-5 mr-2" />
-              <span className="text-sm">
-                This document no longer exists. You can view the chat history but cannot ask new questions.
-              </span>
-            </div>
-          </div>
-        )}
 
         {/* Chat Messages Container */}
         <ChatContainer

@@ -242,6 +242,7 @@ function UploadComponent({
             .join(", ")
             .toUpperCase()}`
         );
+        toast.error("Unsupported file type. Please select a valid PDF or DOCX file.");
       }
     }
   };
@@ -569,17 +570,21 @@ function UploadComponent({
     ) || ["pdf", "docx"];
   
     if (!supportedExts.includes(fileExt || "")) {
-      return `Unsupported file type. Supported: ${supportedExts
+      const msg = `Unsupported file type. Supported: ${supportedExts
         .join(", ")
         .toUpperCase()}`;
+      toast.error("Unsupported file type. Please select a valid PDF or DOCX file.");
+      return msg;
     }
   
     const maxSizeMB = uploadOptions?.max_file_size_mb || 50;
     if (file.size > maxSizeMB * 1024 * 1024) {
+      toast.error(`File is too large. Maximum allowed is ${maxSizeMB}MB.`);
       return `File size too large. Maximum: ${maxSizeMB}MB`;
     }
   
     if (file.size === 0) {
+      toast.error("File is empty. Please choose a non-empty file.");
       return "File is empty";
     }
   
@@ -969,6 +974,7 @@ function UploadComponent({
             .join(", ")
             .toUpperCase()}`
         );
+        toast.error("Invalid file. Only PDF and DOCX are supported.");
       }
     }
   };
@@ -1041,7 +1047,7 @@ function UploadComponent({
           disabled={!file || isUploading || loadingSettings}
           className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
             !file || isUploading || loadingSettings
-              ? "bg-tertiary text-muted-foreground cursor-not-allowed"
+              ? "bg-tertiary text-muted-foreground cursor-not-allowed hidden"
               : "bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
           }`}
         >

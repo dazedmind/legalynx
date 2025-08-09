@@ -7,7 +7,7 @@ import NavBar from '../components/NavBar';
 import FileSettings from './FileSettings'
 import ProfileSettings from './ProfileSettings'
 import SubscriptionPage from './SubscriptionPage'
-import SecuritySettings from './SecuritySettings'
+import SecuritySettings from './SecurityLogSettings'
 import PrivacySecuritySettings from './PrivacySecuritySettings'
 import { useSearchParams, useRouter } from 'next/navigation';
 
