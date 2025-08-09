@@ -220,21 +220,71 @@ export default function ChatViewer({
       isResetting,
       user: !!user,
       uploadCompleted,
-      isProcessingNewUpload
+      isProcessingNewUpload,
+      currentDocumentId,        // 🔥 NEW: Added for tracking
+      lastUploadedDocumentId    // 🔥 NEW: Added for tracking
     });
     
-    if ((currentDocument === null && !isResetting && !isProcessingNewUpload) || uploadCompleted) {
+    // 🔥 FIXED: Only load if we don't have a current document and not resetting
+    if ((currentDocument === null && !isResetting && !isProcessingNewUpload) || 
+        uploadCompleted || 
+        (currentDocumentId && currentDocument?.id !== currentDocumentId) ||
+        (lastUploadedDocumentId && currentDocument?.id !== lastUploadedDocumentId)) {
       console.log('📄 Loading current document...');
-      setIsLoadingDocument(true);
-      setTimeout(() => {
-        loadCurrentDocument().finally(() => setIsLoadingDocument(false));
-      }, 0);
+      loadCurrentDocument();
       
       if (uploadCompleted) {
         setUploadCompleted(false);
       }
     }
-  }, [user, isResetting, currentDocument, uploadCompleted, isProcessingNewUpload]);
+  }, [user, isResetting, currentDocument, uploadCompleted, isProcessingNewUpload, currentDocumentId, lastUploadedDocumentId]);
+
+
+  useEffect(() => {
+    console.log('🔍 Upload tracking effect:', {
+      isSystemReady,
+      isProcessingNewUpload,
+      currentDocumentId,
+      lastProcessedDocumentId,
+      lastUploadedDocumentId
+    });
+    
+    // 🔥 NEW: If we have a new document ID that differs from last processed, handle the upload
+    if (currentDocumentId && 
+        currentDocumentId !== lastProcessedDocumentId && 
+        !isProcessingNewUpload) {
+      
+      console.log('📄 New document uploaded:', currentDocumentId);
+      setIsProcessingNewUpload(true);
+      setLastProcessedDocumentId(currentDocumentId);
+      
+      // Clear all previous state
+      clearAllSessionState();
+      
+      // Load the new document
+      loadCurrentDocument().finally(() => {
+        setIsProcessingNewUpload(false);
+      });
+    }
+
+     // 🔥 NEW: Also handle lastUploadedDocumentId changes
+  if (lastUploadedDocumentId && 
+    lastUploadedDocumentId !== lastProcessedDocumentId && 
+    !isProcessingNewUpload) {
+  
+  console.log('📄 Last uploaded document changed:', lastUploadedDocumentId);
+  setIsProcessingNewUpload(true);
+  setLastProcessedDocumentId(lastUploadedDocumentId);
+  
+  // Clear all previous state
+  clearAllSessionState();
+  
+  // Load the new document
+  loadCurrentDocument().finally(() => {
+    setIsProcessingNewUpload(false);
+  });
+}
+}, [currentDocumentId, lastProcessedDocumentId, isProcessingNewUpload, lastUploadedDocumentId]);
 
     // Register clear function with parent
     useEffect(() => {
