@@ -741,7 +741,6 @@ export default function Home() {
                   }}
                   onClearStateCallback={setClearChatViewerFn}
                   lastUploadedDocumentId={lastUploadedDocumentId || ''}
-                  onDocumentDeleted={clearDocumentTracking}
                 />
               )}
 
