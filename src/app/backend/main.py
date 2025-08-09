@@ -103,131 +103,139 @@ app.add_middleware(
 # Global state
 class RAGSystemManager:
     """
-    Manages RAG systems with proper isolation and cleanup.
-    FIXED: Better document switching and session management
+    Manages RAG systems with proper user/session isolation and cleanup.
     """
     def __init__(self):
         self.systems = {}  # document_id -> rag_system
-        self.current_system_id = None
+        self.user_sessions = {}  # user_id -> current_document_id  
+        self.session_systems = {}  # session_id -> current_document_id (for anonymous users)
         self.last_upload_time = {}  # document_id -> timestamp
-        self.upload_sequence = 0  # Track upload order
         
-    def set_system(self, document_id: str, rag_system: Dict[str, Any], file_path: str):
-        """Set RAG system for a specific document."""
-        print(f"📝 Setting RAG system for document: {document_id}")
-        
-        # FIXED: Always clear current system when setting new one
-        if self.current_system_id and self.current_system_id != document_id:
-            print(f"🔄 Switching from {self.current_system_id} to {document_id}")
-            # Optionally clean up old system memory
-            self._cleanup_specific_system(self.current_system_id)
+    def set_system(self, document_id: str, rag_system: Dict[str, Any], file_path: str, user_id: Optional[str] = None, session_id: Optional[str] = None):
+        """Set RAG system for a specific document and user/session."""
+        print(f"📝 Setting RAG system for document: {document_id}, user: {user_id}, session: {session_id}")
         
         self.systems[document_id] = {
             "rag_system": rag_system,
             "file_path": file_path,
             "created_at": time.time(),
-            "upload_sequence": self.upload_sequence
+            "user_id": user_id,
+            "session_id": session_id
         }
         
-        # FIXED: Always set new document as current
-        self.current_system_id = document_id
+        # Track current system per user/session
+        if user_id:
+            self.user_sessions[user_id] = document_id
+        elif session_id:
+            self.session_systems[session_id] = document_id
+            
         self.last_upload_time[document_id] = time.time()
-        self.upload_sequence += 1
         
-        print(f"✅ RAG system set. Current: {self.current_system_id}")
-        print(f"📊 Total systems: {len(self.systems)}")
-        
-        # Clean up old systems (keep only last 3)
-        self._cleanup_old_systems()
+        # Clean up old systems (keep only last 5 per user)
+        self._cleanup_old_systems(user_id, session_id)
     
-    def get_current_system(self) -> Optional[Dict[str, Any]]:
-        """Get the current RAG system."""
-        if not self.current_system_id or self.current_system_id not in self.systems:
-            print(f"⚠️ No current system available. Current ID: {self.current_system_id}")
+    def get_current_system(self, user_id: Optional[str] = None, session_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Get the current RAG system for a specific user/session."""
+        current_document_id = None
+        
+        # Find current document for this user/session
+        if user_id and user_id in self.user_sessions:
+            current_document_id = self.user_sessions[user_id]
+        elif session_id and session_id in self.session_systems:
+            current_document_id = self.session_systems[session_id]
+            
+        if not current_document_id or current_document_id not in self.systems:
             return None
+            
+        return self.systems[current_document_id]["rag_system"]
+    
+    def get_current_file_path(self, user_id: Optional[str] = None, session_id: Optional[str] = None) -> Optional[str]:
+        """Get the current file path for a specific user/session."""
+        current_document_id = None
         
-        system = self.systems[self.current_system_id]["rag_system"]
-        print(f"✅ Returning system for: {self.current_system_id}")
-        return system
-    
-    def get_current_file_path(self) -> Optional[str]:
-        """Get the current file path."""
-        if not self.current_system_id or self.current_system_id not in self.systems:
+        if user_id and user_id in self.user_sessions:
+            current_document_id = self.user_sessions[user_id]
+        elif session_id and session_id in self.session_systems:
+            current_document_id = self.session_systems[session_id]
+            
+        if not current_document_id or current_document_id not in self.systems:
             return None
-        return self.systems[self.current_system_id]["file_path"]
+            
+        return self.systems[current_document_id]["file_path"]
     
-    def get_current_document_id(self) -> Optional[str]:
-        """Get the current document ID."""
-        return self.current_system_id
+    def clear_current_system(self, user_id: Optional[str] = None, session_id: Optional[str] = None):
+        """Clear the current system for a specific user/session (for error handling)."""
+        print(f"🗑️ Clearing current RAG system for user: {user_id}, session: {session_id}")
+        
+        current_document_id = None
+        if user_id and user_id in self.user_sessions:
+            current_document_id = self.user_sessions[user_id]
+            del self.user_sessions[user_id]
+        elif session_id and session_id in self.session_systems:
+            current_document_id = self.session_systems[session_id]
+            del self.session_systems[session_id]
+            
+        if current_document_id:
+            self.systems.pop(current_document_id, None)
     
-    def clear_current_system(self):
-        """Clear the current system (for error handling)."""
-        print("🗑️ Clearing current RAG system due to error")
-        if self.current_system_id:
-            self._cleanup_specific_system(self.current_system_id)
-            self.current_system_id = None
-    
-    def _cleanup_specific_system(self, document_id: str):
-        """Clean up a specific system."""
-        if document_id in self.systems:
-            print(f"🧹 Cleaning up system: {document_id}")
-            # Optionally add memory cleanup here
-            self.systems.pop(document_id, None)
-            self.last_upload_time.pop(document_id, None)
-    
-    def force_switch_to_document(self, document_id: str) -> bool:
-        """Force switch to a specific document if it exists."""
-        if document_id in self.systems:
-            print(f"🔄 Force switching to document: {document_id}")
-            self.current_system_id = document_id
-            return True
-        print(f"❌ Cannot switch - document {document_id} not found")
-        return False
+    def get_status(self, user_id: Optional[str] = None, session_id: Optional[str] = None) -> Dict[str, Any]:
+        """Get status for a specific user/session."""
+        current_system = self.get_current_system(user_id, session_id)
+        return {
+            "has_current_system": current_system is not None,
+            "total_systems": len(self.systems),
+            "user_sessions": len(self.user_sessions),
+            "anonymous_sessions": len(self.session_systems)
+        }
     
     def reset_all(self):
-        """Reset all systems."""
+        """Reset all systems (admin function)."""
         print("🗑️ Resetting all RAG systems")
         self.systems.clear()
-        self.current_system_id = None
+        self.user_sessions.clear()
+        self.session_systems.clear()
         self.last_upload_time.clear()
-        self.upload_sequence = 0
-    
-    def _cleanup_old_systems(self):
-        """Keep only the 3 most recent systems."""
-        if len(self.systems) > 3:
-            # Sort by upload sequence (most recent first)
-            sorted_systems = sorted(
-                self.systems.items(),
-                key=lambda x: x[1]["upload_sequence"],
-                reverse=True
-            )
+
+    def get_current_document_id(self, user_id: Optional[str] = None, session_id: Optional[str] = None) -> Optional[str]:
+        """Get the current document ID for a specific user/session."""
+        if user_id and user_id in self.user_sessions:
+            return self.user_sessions[user_id]
+        elif session_id and session_id in self.session_systems:
+            return self.session_systems[session_id]
+        return None
+
+    def _cleanup_old_systems(self, user_id: Optional[str] = None, session_id: Optional[str] = None):
+        """Keep only the 5 most recent systems per user/session."""
+        if len(self.systems) <= 10:  # Don't cleanup if we have few systems
+            return
             
-            # Keep only the 3 most recent
-            systems_to_keep = dict(sorted_systems[:3])
-            systems_to_remove = [k for k in self.systems.keys() if k not in systems_to_keep]
+        # Sort by creation time and keep only recent ones
+        sorted_systems = sorted(
+            self.systems.items(),
+            key=lambda x: x[1]["created_at"],
+            reverse=True
+        )
+        
+        # Keep only the most recent systems, but ensure current user's system is preserved
+        systems_to_keep = {}
+        current_user_doc = self.user_sessions.get(user_id) if user_id else None
+        current_session_doc = self.session_systems.get(session_id) if session_id else None
+        
+        # Always keep current user/session document
+        for doc_id, system_data in sorted_systems[:15]:  # Keep top 15 most recent
+            systems_to_keep[doc_id] = system_data
             
-            # Clean up old systems
-            for system_id in systems_to_remove:
-                print(f"🧹 Removing old system: {system_id}")
-                self._cleanup_specific_system(system_id)
+        # Ensure current documents are preserved
+        if current_user_doc and current_user_doc in self.systems:
+            systems_to_keep[current_user_doc] = self.systems[current_user_doc]
+        if current_session_doc and current_session_doc in self.systems:
+            systems_to_keep[current_session_doc] = self.systems[current_session_doc]
             
+        # Update systems dict
+        removed_count = len(self.systems) - len(systems_to_keep)
+        if removed_count > 0:
+            print(f"🗑️ Cleaned up {removed_count} old RAG systems")
             self.systems = systems_to_keep
-            
-            # Update current_system_id if it was removed
-            if self.current_system_id not in self.systems:
-                self.current_system_id = sorted_systems[0][0] if sorted_systems else None
-                print(f"🔄 Updated current system to: {self.current_system_id}")
-    
-    def get_status(self) -> Dict[str, Any]:
-        """Get detailed status information."""
-        return {
-            "current_system_id": self.current_system_id,
-            "total_systems": len(self.systems),
-            "has_current_system": self.current_system_id is not None,
-            "systems": list(self.systems.keys()),
-            "upload_sequence": self.upload_sequence,
-            "current_file": os.path.basename(self.get_current_file_path()) if self.get_current_file_path() else None
-        }
 
 # Replace global variables with manager
 rag_manager = RAGSystemManager()
@@ -333,25 +341,54 @@ def convert_enum_to_naming_option(enum_value: str) -> str:
 
 def extract_user_id_from_token(request: Request) -> tuple[Optional[str], Optional[str]]:
     """
-    FIXED: Extract user ID AND token from JWT token.
-    Returns (user_id, token) tuple.
+    Extract user ID and token from the Authorization header.
+    Verifies the JWT using HS256 and the configured secret when available.
+    Returns (user_id, token) where either may be None if not present/valid.
     """
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
         return None, None
-    
-    token = auth_header.replace('Bearer ', '')
-    
+
+    token = auth_header.replace('Bearer ', '').strip()
+
+    # Prefer JWT_SECRET, fallback to JWT_SECRET_KEY for compatibility
+    jwt_secret = os.environ.get('JWT_SECRET') or os.environ.get('JWT_SECRET_KEY')
+    jwt_algorithms = ["HS256"]
+
     try:
-        # IMPORTANT: Replace 'your-secret-key' with your actual JWT secret
-        # This should match your frontend JWT secret
-        decoded = jwt.decode(token, options={"verify_signature": False})  # For debugging - REMOVE verify_signature: False in production
-        user_id = decoded.get('sub') or decoded.get('userId') or decoded.get('id')
+        if jwt_secret:
+            decoded = jwt.decode(token, jwt_secret, algorithms=jwt_algorithms)
+        else:
+            # If no secret configured, do not fail hard; treat as anonymous
+            print("⚠️ JWT secret not configured. Skipping verification.")
+            decoded = jwt.decode(token, options={"verify_signature": False})
+
+        user_id = decoded.get('userId') or decoded.get('sub') or decoded.get('id')
         return user_id, token
-    except Exception as e:
-        print(f"⚠️ JWT decode error: {e}")
+    except jwt.ExpiredSignatureError:
+        print("⚠️ JWT token has expired")
+        return None, None
+    except jwt.InvalidTokenError as e:
+        print(f"⚠️ Invalid JWT token: {e}")
         return None, None
 
+def extract_session_id_from_request(request: Request) -> str:
+    """Extract or generate session ID for anonymous users."""
+    # Try to get session ID from headers first
+    session_id = request.headers.get('X-Session-Id')
+    if session_id:
+        return session_id
+        
+    # Fallback to IP + User-Agent hash for anonymous sessions
+    client_ip = request.client.host if request.client else 'unknown'
+    user_agent = request.headers.get('User-Agent', 'unknown')
+    
+    # Create a session identifier (in production, use proper session management)
+    import hashlib
+    session_data = f"{client_ip}:{user_agent}:{int(time.time() / 3600)}"  # Changes every hour
+    session_id = hashlib.md5(session_data.encode()).hexdigest()[:12]
+    
+    return f"anon_{session_id}"
 # ================================
 # API ENDPOINTS
 # ================================
@@ -362,11 +399,16 @@ async def root():
     return {"message": "Ultra-Fast RAG Pipeline API is running"}
 
 @app.get("/status", response_model=SystemStatus)
-async def get_status():
+async def get_status(request: Request):
     """Get system status with proper state management."""
-    manager_status = rag_manager.get_status()
-    current_file_path = rag_manager.get_current_file_path()
+
+    # Extract user/session identifiers
+    user_id, _ = extract_user_id_from_token(request)
+    session_id = extract_session_id_from_request(request)
     
+    manager_status = rag_manager.get_status(user_id=user_id, session_id=session_id)
+    current_file_path = rag_manager.get_current_file_path(user_id=user_id, session_id=session_id)
+
     # Safe model cache status check
     model_cache_status = "cold"
     if OPTIMIZED_SYSTEM_AVAILABLE:
@@ -397,18 +439,20 @@ async def upload_document_ultra_fast(
     ULTRA-FAST UPLOAD: Complete workflow optimized for speed.
     FIXED: Now properly handles user settings from frontend.
     """
+
+    user_id, _ = extract_user_id_from_token(request)
+    session_id = extract_session_id_from_request(request)
+
+    print(f"🔑 Processing upload for user: {user_id}, session: {session_id}")
+
     if not OPTIMIZED_SYSTEM_AVAILABLE:
         raise HTTPException(
             status_code=503,
-            detail="Optimized RAG system not available. Please check server configuration and dependencies."
+            detail="RAG system not available. Please check server configuration and dependencies."
         )
     
-   # FIXED: Force clear any existing system to ensure clean switch
-    print("🗑️ Clearing current RAG system due to new upload")
-    rag_manager.clear_current_system()
-    
     start_time = time.time()
-    document_id = None
+    document_id = f"doc_{int(time.time() * 1000)}_{user_id or session_id}"
     
     try:
         # Validate file
@@ -518,8 +562,19 @@ async def upload_document_ultra_fast(
         rag_system = result["rag_system"]
         
         # Register with RAG manager
-        rag_manager.set_system(document_id, rag_system, final_path)
-        
+        if result and "rag_system" in result:
+            rag_manager.set_system(
+                document_id=document_id,
+                rag_system=result["rag_system"],
+                file_path=result["file_path"],
+                user_id=user_id,
+                session_id=session_id
+            )
+            print(f"✅ RAG system stored for document: {document_id}")
+        else:
+            print("❌ RAG system creation failed - no rag_system in result")
+            raise HTTPException(status_code=500, detail="RAG system creation failed")
+
         # Calculate total time
         total_time = time.time() - start_time
         result["timing"]["total"] = total_time
@@ -531,8 +586,7 @@ async def upload_document_ultra_fast(
         print(f"   - Document ID: {document_id}")
         print(f"   - File: {file.filename} → {final_filename}")
         print(f"   - RAG system stored and isolated")
-        print(f"   - Current system: {rag_manager.get_current_document_id()}")
-        
+
         return UploadResponse(
             message=f"Ultra-fast processing complete in {total_time:.2f}s ({300/total_time:.1f}x speedup)",
             filename=final_filename,
@@ -548,14 +602,14 @@ async def upload_document_ultra_fast(
             timing_breakdown=result["timing"],
             optimization_used="ultra_fast_rule_based_singleton"
         )
-        
+
     except HTTPException:
         if document_id:
-            rag_manager.clear_current_system()
+            rag_manager.clear_current_system(user_id=user_id, session_id=session_id)
         raise
     except Exception as e:
         if document_id:
-            rag_manager.clear_current_system()
+            rag_manager.clear_current_system(user_id=user_id, session_id=session_id)
             
         print(f"❌ Error in ultra-fast upload: {str(e)}")
         
@@ -570,28 +624,37 @@ async def upload_document_ultra_fast(
                     os.remove(temp_file)
                 except:
                     pass
-        
+        rag_manager.clear_current_system(user_id=user_id, session_id=session_id)
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
+        
 
 @app.post("/query", response_model=QueryResponse)
 async def query_document_secure(request: Request, query_request: QueryRequest):
     """Query the RAG system with enhanced error handling and proper isolation."""
     
+    user_id, _ = extract_user_id_from_token(request)
+    session_id = extract_session_id_from_request(request)
+
     print(f"🔍 Query received: '{query_request.query}'")
     print(f"🔍 Query length: {len(query_request.query)} characters")
     
     # Step 1: Get current RAG system from manager
-    rag_system = rag_manager.get_current_system()
+    rag_system = rag_manager.get_current_system(user_id=user_id, session_id=session_id)
     
     if not rag_system:
-        print("❌ No RAG system available")
-        print(f"📊 Manager status: {rag_manager.get_status()}")
+        print(f"❌ No RAG system available for user: {user_id}, session: {session_id}")
+        print(f"📊 Manager status: {rag_manager.get_status(user_id, session_id)}")
         raise HTTPException(
             status_code=400, 
             detail="No document has been uploaded and indexed yet. Please upload a document first."
         )
     
-    print(f"✅ Using RAG system: {rag_manager.current_system_id}")
+    current_doc_id = None
+    if user_id and user_id in rag_manager.user_sessions:
+        current_doc_id = rag_manager.user_sessions[user_id]
+    elif session_id and session_id in rag_manager.session_systems:
+        current_doc_id = rag_manager.session_systems[session_id]
+    print(f"✅ Using RAG system: {current_doc_id}")
     print(f"✅ RAG system keys: {list(rag_system.keys())}")
     
     # Step 2: Check if query engine exists
@@ -599,7 +662,7 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
         print("❌ No query engine in RAG system")
         print(f"❌ Available RAG system keys: {list(rag_system.keys())}")
         # Clear broken system
-        rag_manager.clear_current_system()
+        rag_manager.clear_current_system(user_id=user_id, session_id=session_id)
         raise HTTPException(
             status_code=500, 
             detail="Query engine not properly initialized. Please re-upload your document."
@@ -609,7 +672,6 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
     print(f"✅ Query engine found: {type(query_engine)}")
     
     # Step 3: Extract user ID
-    user_id, _ = extract_user_id_from_token(request)
     print(f"👤 User ID: {user_id or 'anonymous'}")
     
     try:
@@ -675,7 +737,7 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
                 response_text = "I apologize, but I couldn't generate a meaningful response to your query. Please try rephrasing your question or check if the document contains relevant information."
             
             print(f"✅ Returning response with {len(response_text)} characters and {source_count} sources")
-            print(f"📋 Document: {rag_manager.current_system_id}")
+            print(f"📋 Document: {current_doc_id}")
             
             return QueryResponse(
                 query=query_request.query,
@@ -698,7 +760,7 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
             
             if "assertionerror" in error_str:
                 print("❌ Vector store assertion error detected - clearing system")
-                rag_manager.clear_current_system()
+                rag_manager.clear_current_system(user_id=user_id, session_id=session_id)
                 raise HTTPException(
                     status_code=500,
                     detail="Document index error. Please re-upload your document."
@@ -729,7 +791,7 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
                 )
             elif "index" in error_str or "retriever" in error_str:
                 print("❌ Index/Retriever error detected")
-                rag_manager.clear_current_system()
+                rag_manager.clear_current_system(user_id=user_id, session_id=session_id)
                 raise HTTPException(
                     status_code=500,
                     detail="Document index error. Please try re-uploading your document."
@@ -830,11 +892,14 @@ async def get_optimization_stats():
     }
 
 @app.get("/current-document")
-async def get_current_document():
+async def get_current_document(request: Request):
     """Get information about the currently active document in RAG system."""
-    status = rag_manager.get_status()
-    current_file_path = rag_manager.get_current_file_path()
-    current_doc_id = rag_manager.get_current_document_id()
+    user_id, _ = extract_user_id_from_token(request)
+    session_id = extract_session_id_from_request(request)
+    
+    status = rag_manager.get_status(user_id=user_id, session_id=session_id)
+    current_file_path = rag_manager.get_current_file_path(user_id=user_id, session_id=session_id)
+    current_doc_id = rag_manager.get_current_document_id(user_id=user_id, session_id=session_id)
     
     if status["has_current_system"] and current_doc_id:
         return {
@@ -842,7 +907,6 @@ async def get_current_document():
             "document_id": current_doc_id,
             "filename": os.path.basename(current_file_path) if current_file_path else None,
             "system_ready": True,
-            "upload_sequence": status["upload_sequence"]
         }
     else:
         return {
@@ -850,7 +914,6 @@ async def get_current_document():
             "document_id": None,
             "filename": None,
             "system_ready": False,
-            "upload_sequence": status["upload_sequence"]
         }
 
 @app.get("/compare-naming-methods")
@@ -899,10 +962,13 @@ async def reset_system():
     }
 
 @app.get("/health")
-async def health_check():
+async def health_check(request: Request):
     """Health check endpoint for Railway deployment."""
-    manager_status = rag_manager.get_status()
-    current_file_path = rag_manager.get_current_file_path()
+    user_id, _ = extract_user_id_from_token(request)
+    session_id = extract_session_id_from_request(request)
+    
+    manager_status = rag_manager.get_status(user_id=user_id, session_id=session_id)
+    current_file_path = rag_manager.get_current_file_path(user_id=user_id, session_id=session_id)
     
     # Safe model cache status check
     model_cache_status = "cold"
@@ -972,14 +1038,17 @@ async def upload_pdf_compatibility(
 
 
 @app.get("/check-document/{document_id}")
-async def check_document_exists(document_id: str):
+async def check_document_exists(request: Request, document_id: str):
     """
     Check if a document exists in the RAG system
     """
     print(f"🔍 Checking document existence: {document_id}")
     
-    manager_status = rag_manager.get_status()
-    current_file_path = rag_manager.get_current_file_path()
+    user_id, _ = extract_user_id_from_token(request)
+    session_id = extract_session_id_from_request(request)
+
+    manager_status = rag_manager.get_status(user_id=user_id, session_id=session_id)
+    current_file_path = rag_manager.get_current_file_path(user_id=user_id, session_id=session_id)
     
     # Check if this specific document exists
     document_exists = document_id in rag_manager.systems
@@ -987,7 +1056,10 @@ async def check_document_exists(document_id: str):
     # If no specific document, check if any document is loaded
     if not document_exists and manager_status["has_current_system"]:
         document_exists = True
-        document_id = rag_manager.current_system_id
+        if user_id and user_id in rag_manager.user_sessions:
+            document_id = rag_manager.user_sessions[user_id]
+        elif session_id and session_id in rag_manager.session_systems:
+            document_id = rag_manager.session_systems[session_id]
     
     if document_exists and current_file_path:
         return {
@@ -995,7 +1067,7 @@ async def check_document_exists(document_id: str):
             "document_id": document_id,
             "rag_id": document_id,
             "filename": os.path.basename(current_file_path),
-            "current_system_id": rag_manager.current_system_id
+            "current_system_id": document_id
         }
     else:
         return {

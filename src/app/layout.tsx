@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import './appearance.css'
+
 import { AuthProvider } from '@/lib/context/AuthContext'
 import { ThemeProvider } from './frontend/components/ThemeProvider';
 
@@ -20,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="light" themes={["light", "dark", "sunset"]} enableSystem>
           <AuthProvider>
             {children}
           </AuthProvider>

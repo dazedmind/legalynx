@@ -1,8 +1,8 @@
 // Updated ChatViewer.tsx with FIXED session creation workflow
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { FileText, AlertCircle, Plus, ArrowUp, Cloud } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FileText, AlertCircle, Plus, ArrowUp, Cloud, DiamondPlus } from 'lucide-react';
 import { apiService, handleApiError, UploadResponse, isSecurityError, getSecurityErrorMessage, profileService } from '../../../lib/api';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
@@ -68,7 +68,12 @@ export default function ChatViewer({
   const { isAuthenticated, user } = useAuth();
   const ragCache = useRAGCache();
   
-  // FIXED: Add state to track if we're processing a new upload
+  // ✅ FIXED: Add refs for better state management
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSaveAttemptRef = useRef<number>(0);
+  const pendingMessagesRef = useRef<ChatMessage[]>([]);
+
+  // Add state to track if we're processing a new upload
   const [isProcessingNewUpload, setIsProcessingNewUpload] = useState(false);
   const [lastProcessedDocumentId, setLastProcessedDocumentId] = useState<string | null>(null);
 
@@ -299,6 +304,77 @@ export default function ChatViewer({
       return () => clearTimeout(timeoutId);
     }
   }, [chatHistory, currentSessionId, documentExists]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab is becoming hidden - save immediately
+        console.log('📱 Tab becoming hidden - saving session');
+        if (hasUnsavedChanges && currentSessionId && chatHistory.length > 0) {
+          saveSessionToDatabase(true); // Force save
+        }
+      } else {
+        // Tab is becoming visible - check if we need to save
+        console.log('📱 Tab becoming visible - checking for unsaved changes');
+        if (hasUnsavedChanges && currentSessionId && chatHistory.length > 0) {
+          // Short delay to allow for state stabilization
+          setTimeout(() => {
+            saveSessionToDatabase(true);
+          }, 100);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Also handle beforeunload for browser close/refresh
+    const handleBeforeUnload = () => {
+      if (hasUnsavedChanges && currentSessionId && chatHistory.length > 0) {
+        // Use sendBeacon for more reliable saving on page unload
+        const payload = JSON.stringify({
+          title: chatHistory.find(m => m.type === 'USER')?.content.substring(0, 50) || 'Chat',
+          updatedAt: new Date().toISOString(),
+          isSaved: true
+        });
+        
+        navigator.sendBeacon(
+          `/backend/api/chat-sessions/${currentSessionId}`,
+          new Blob([payload], { type: 'application/json' })
+        );
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges, currentSessionId, chatHistory.length]);
+
+  useEffect(() => {
+    // Clear any existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+
+    if (chatHistory.length > 0 && currentSessionId && user && documentExists && hasUnsavedChanges) {
+      console.log('⏱️ Scheduling save in 2 seconds...');
+      
+      saveTimeoutRef.current = setTimeout(() => {
+        console.log('⏰ Auto-save timeout triggered');
+        saveSessionToDatabase();
+      }, 2000); // Increased to 2 seconds for better stability
+    }
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+    };
+  }, [chatHistory.length, currentSessionId, documentExists, hasUnsavedChanges]); // Removed user from deps to prevent unnecessary re-triggers
 
   const getAuthHeaders = (): Record<string, string> => {
     const token = authUtils.getToken();
@@ -683,7 +759,10 @@ export default function ChatViewer({
     }
   };
 
-  const addMessage = async (message: Omit<ChatMessage, 'id' | 'createdAt'>) => {
+  const addMessage = async (
+    message: Omit<ChatMessage, 'id' | 'createdAt'>,
+    sessionIdOverride?: string
+  ) => {
     if (!documentExists) {
       console.warn('Cannot add message - document does not exist');
       return;
@@ -695,14 +774,16 @@ export default function ChatViewer({
       createdAt: new Date()
     };
 
+    // ✅ FIXED: Update state first
     setChatHistory(prev => [...prev, newMessage]);
     setHasUnsavedChanges(true);
 
-    const sessionIdToUse = currentSessionId;
+    // ✅ FIXED: Save individual message immediately to database
+    const sessionIdToUse = sessionIdOverride ?? currentSessionId;
     
     if (sessionIdToUse && typeof sessionIdToUse === 'string' && sessionIdToUse.trim() !== '') {
       try {
-        console.log('💾 Saving message to session:', sessionIdToUse);
+        console.log('💾 Saving message to session immediately:', sessionIdToUse);
         const response = await fetch('/backend/api/chat-messages', {
           method: 'POST',
           headers: getAuthHeaders(),
@@ -718,7 +799,13 @@ export default function ChatViewer({
 
         if (response.ok) {
           const savedMessage = await response.json();
-          console.log('✅ Message saved successfully:', savedMessage.messageId || savedMessage.id);
+          console.log('✅ Message saved immediately:', savedMessage.messageId || savedMessage.id);
+          
+          // ✅ FIXED: Update session metadata immediately after message save
+          setTimeout(() => {
+            saveSessionToDatabase(true);
+          }, 100);
+          
         } else if (response.status === 404) {
           console.log('❌ Session not found, document may have been deleted');
           setDocumentExists(false);
@@ -889,7 +976,7 @@ export default function ChatViewer({
     }
   };
 
-  const saveSessionToDatabase = async () => {
+  const saveSessionToDatabase = async (force = false) => {
     if (!currentSessionId || !user || chatHistory.length === 0 || !documentExists) {
       console.log('Skipping save - missing requirements:', {
         currentSessionId: !!currentSessionId,
@@ -905,6 +992,14 @@ export default function ChatViewer({
       return;
     }
 
+    // ✅ FIXED: Prevent rapid successive saves
+    const now = Date.now();
+    if (!force && (now - lastSaveAttemptRef.current) < 500) {
+      console.log('Skipping save - too soon after last attempt');
+      return;
+    }
+    lastSaveAttemptRef.current = now;
+
     try {
       setIsSaving(true);
       
@@ -913,10 +1008,11 @@ export default function ChatViewer({
         ? `${firstUserMessage.content.substring(0, 50)}${firstUserMessage.content.length > 50 ? '...' : ''}`
         : `Chat with ${currentDocument?.originalName || 'Document'}`;
 
-      console.log('Saving session:', {
+      console.log('💾 Saving session:', {
         sessionId: currentSessionId,
         title,
-        messageCount: chatHistory.length
+        messageCount: chatHistory.length,
+        force
       });
 
       const response = await fetch(`/backend/api/chat-sessions/${currentSessionId}`, {
@@ -941,13 +1037,13 @@ export default function ChatViewer({
       }
 
       const result = await response.json();
-      console.log('Session saved successfully:', result);
+      console.log('✅ Session saved successfully:', result);
       
       setHasUnsavedChanges(false);
       setLastSaveTimestamp(Date.now());
 
     } catch (error) {
-      console.error('Failed to save session to database:', error);
+      console.error('❌ Failed to save session to database:', error);
       if (error instanceof Error && error.message.includes('not found')) {
         setDocumentExists(false);
         handleDocumentDeleted();
@@ -1229,7 +1325,7 @@ export default function ChatViewer({
         type: 'USER',
         content: currentQuery,
         query: currentQuery
-    });
+    }, sessionId || undefined);
 
     setIsQuerying(true);
     setError('');
@@ -1251,7 +1347,7 @@ export default function ChatViewer({
             content: assistantMessage + securityNotice,
             query: currentQuery,
             sourceCount: result.sourceCount
-        });
+        }, sessionId || undefined);
         
     } catch (error) {
         console.error('Query error:', error);
@@ -1282,7 +1378,7 @@ export default function ChatViewer({
                 type: 'ASSISTANT',
                 content: assistantResponse,
                 query: currentQuery
-            });
+            }, sessionId || undefined);
             
         } else {
             const errorMessage = handleApiError(error);
@@ -1292,7 +1388,7 @@ export default function ChatViewer({
                 type: 'ASSISTANT',
                 content: `❌ Sorry, I encountered an error: ${errorMessage}`,
                 query: currentQuery
-            });
+            }, sessionId || undefined);
             
             toast.error('Query failed: ' + errorMessage);
         }
@@ -1458,6 +1554,11 @@ export default function ChatViewer({
       setIsSaving(false);
     }
   };
+  
+  const truncateString = (str: string, maxLength: number) => {
+    if (str.length <= maxLength) return str;
+    return str.slice(0, maxLength) + '...';
+  }
 
   // Show SessionLoader when loading a session
   if (isLoadingSession && loadingSessionId) {
@@ -1485,8 +1586,13 @@ export default function ChatViewer({
               <FileText className={`w-8 h-8 ${documentExists ? 'text-blue-600' : 'text-gray-400'}`} />
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className={`text-sm md:text-base font-semibold ${documentExists ? 'text-foreground' : 'text-muted-foreground'}`}>
-                    {currentDocument.fileName}
+                  <h3 className={`text-sm md:text-base mb-1 font-semibold ${documentExists ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    <span className="block md:hidden">
+                      {truncateString(currentDocument.fileName, 20)}
+                    </span>
+                    <span className="hidden md:block">
+                      {currentDocument.fileName}
+                    </span>
                     {!documentExists && ' (Document Deleted)'}
                   </h3>
                 </div>
@@ -1547,7 +1653,7 @@ export default function ChatViewer({
                 ) : () => {if (handleNewChat) {handleNewChat()}}}
                 className="flex items-center cursor-pointer p-2 px-3 gap-1 text-sm bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-lg"
               >
-                <Plus className="w-4 h-4" />
+                <DiamondPlus className="w-4 h-4" />
                 <span className="hidden md:block">New Chat</span>
               </button>
             </div>

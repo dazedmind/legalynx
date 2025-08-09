@@ -1,15 +1,10 @@
 import React, { useState, useEffect } from "react";
-import InputField from "../components/ui/InputField";
 import {
   ChevronDown,
   HardDrive,
-  Save,
   AlertCircle,
   Loader2,
-  File,
-  Cloud,
   Sparkle,
-  Undo,
 } from "lucide-react";
 import { GoCloud } from "react-icons/go";
 import { Progress } from "@/components/ui/progress";

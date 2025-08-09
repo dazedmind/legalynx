@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Calendar, MessageSquare, AlertCircle, Eye, Trash2, RotateCcw, MessageSquarePlus } from 'lucide-react';
+import { FileText, Calendar, MessageSquare, AlertCircle, Eye, Trash2, RotateCcw, MessageSquarePlus, DiamondPlus } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -100,27 +100,33 @@ export default function SavedChatHistory({
       }
       
       const data = await response.json();
-      const sessions = data.sessions || [];
+      const sessionsData = Array.isArray(data)
+        ? data
+        : (Array.isArray(data?.sessions) ? data.sessions : []);
+
+      if (!Array.isArray(sessionsData)) {
+        throw new Error('Invalid response format for sessions');
+      }
+
+      console.log(`📊 Loaded ${sessionsData.length} saved sessions`);
       
-      console.log(`📊 Loaded ${sessions.length} saved sessions`);
-      
-      // Transform to our simplified format
-      const formattedSessions: SavedChatSession[] = sessions.map((session: any) => ({
+      // Transform to our simplified format (robust to shape differences)
+      const formattedSessions: SavedChatSession[] = sessionsData.map((session: any) => ({
         id: session.id,
         title: session.title || `Chat with ${session.documentName}`,
         documentId: session.documentId,
         documentName: session.documentName,
-        fileName: session.document.fileName,
-        messageCount: session.messages?.length || 0,
+        fileName: session.document?.fileName || session.document?.filename || '',
+        messageCount: Array.isArray(session.messages) ? session.messages.length : 0,
         lastMessage: session.lastMessage || session.messages?.[0]?.content || null,
         createdAt: new Date(session.createdAt),
         updatedAt: new Date(session.updatedAt),
         document: {
-          id: session.documentId,
-          originalFileName: session.documentName,
-          fileSize: session.document?.fileSize || 0,
-          pageCount: session.document?.pageCount || 0,
-          status: session.document.status
+          id: session.document?.id || session.documentId,
+          originalFileName: session.document?.originalFileName || session.documentName,
+          fileSize: session.document?.fileSize || session.document?.size || 0,
+          pageCount: session.document?.pageCount || session.document?.pages || 0,
+          status: session.document?.status || 'UNKNOWN'
         }
       }));
       
@@ -260,7 +266,7 @@ export default function SavedChatHistory({
             className="md:flex items-center px-3 py-2 gap-2 text-md bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-md hover:bg-blue-200 disabled:opacity-50 cursor-pointer"
             title="Add a new chat"
           >
-            <MessageSquarePlus className="w-4 h-4" />
+            <DiamondPlus className="w-5 h-5" />
             <span className="hidden md:block">New Chat</span>
           </button>
 

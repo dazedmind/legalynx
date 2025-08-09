@@ -1,19 +1,16 @@
+// Fixed version of the UploadComponent with proper state management
 import {
   Upload,
   FileText,
-  AlertCircle,
-  CheckCircle2,
   MessageSquareDashed,
-  Info,
 } from "lucide-react";
-import React, { useRef, useState, useEffect } from "react";
-import { apiService, handleApiError, UploadResponse } from "../../../lib/api";
+import React, { useRef, useState, useEffect, useCallback } from "react";
+import { handleApiError, UploadResponse } from "../../../lib/api";
 import { useAuth } from "@/lib/context/AuthContext";
 import { toast } from "sonner";
 import { authUtils } from "@/lib/auth";
 import BlurText from "../../../components/reactbits/BlurText";
 import {
-  SecurityError,
   getSecurityErrorMessage,
   isSecurityError,
 } from "../../../lib/api";
@@ -88,7 +85,7 @@ const ProgressSteps: React.FC<ProgressStepProps> = ({ currentStep, steps, stepPr
               index === currentStep 
                 ? `${getTextColor(index)} font-medium` 
                 : index < currentStep
-                ? 'text-muted-foreground font-medium'
+                ? 'text-muted-foreground opacity-50 font-medium'
                 : 'text-muted-foreground'
             }`}
           >
@@ -117,8 +114,8 @@ function UploadComponent({
   const [startTime, setStartTime] = useState<number>(Date.now());
   
   // Progress tracking
-  const [currentProgressStep, setCurrentProgressStep] = useState(-1); // Start at -1 so no step is active initially
-  const [stepProgress, setStepProgress] = useState(0); // 0-100 for current step
+  const [currentProgressStep, setCurrentProgressStep] = useState(-1);
+  const [stepProgress, setStepProgress] = useState(0);
   const progressSteps = ["Initializing", "Processing", "Preparing"];
 
   // User settings and upload options
@@ -153,11 +150,20 @@ function UploadComponent({
   });
   const [loadingSettings, setLoadingSettings] = useState(false);
 
+  // ✅ FIX: Create a memoized callback to prevent unnecessary re-renders
+  const clearPreviousSession = useCallback(() => {
+    if (onClearPreviousSession) {
+      // ✅ FIX: Use setTimeout to defer the state update until after render
+      setTimeout(() => {
+        onClearPreviousSession();
+      }, 0);
+    }
+  }, [onClearPreviousSession]);
+
   // Load upload options and user settings on component mount
   useEffect(() => {
     const loadUserSettings = async () => {
       if (!isAuthenticated || !user) {
-        // For non-authenticated users, use default settings
         setUserSettings({
           file_naming_format: "ORIGINAL",
         });
@@ -166,7 +172,6 @@ function UploadComponent({
 
       setLoadingSettings(true);
       try {
-        // Try to fetch user settings from your API
         const response = await fetch("/backend/api/user/settings", {
           headers: getAuthHeaders(),
         });
@@ -174,21 +179,18 @@ function UploadComponent({
         if (response.ok) {
           const settings = await response.json();
           setUserSettings({
-            // API returns camelCase keys; map to our local shape
             file_naming_format: settings.fileNamingFormat || "ORIGINAL",
             title: settings.fileNamingTitle || undefined,
             client_name: settings.fileClientName || undefined,
           });
           console.log("✅ Loaded user settings:", settings);
         } else {
-          // Fallback to default settings
           setUserSettings({
             file_naming_format: "ORIGINAL",
           });
         }
       } catch (error) {
         console.error("Failed to load user settings:", error);
-        // Fallback to default settings
         setUserSettings({
           file_naming_format: "ORIGINAL",
         });
@@ -213,21 +215,19 @@ function UploadComponent({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      // Check file type - use safe access with fallback
       const fileExt = selectedFile.name.toLowerCase().split(".").pop();
       const supportedExts = uploadOptions?.supported_file_types?.map((t) =>
         t.extension.replace(".", "")
-      ) || ["pdf", "docx"]; // Fallback to default supported types
+      ) || ["pdf", "docx"];
 
       if (supportedExts.includes(fileExt || "")) {
         setFile(selectedFile);
         setUploadStatus("idle");
         setStatusMessage(null);
         setWarning(null);
-        setCurrentProgressStep(-1); // Reset progress
-        setStepProgress(0); // Reset step progress
+        setCurrentProgressStep(-1);
+        setStepProgress(0);
 
-        // Check file size
         const maxSizeMB = uploadOptions?.max_file_size_mb || 50;
         if (selectedFile.size > maxSizeMB * 1024 * 1024) {
           setUploadStatus("error");
@@ -246,7 +246,6 @@ function UploadComponent({
     }
   };
   
-  // ✅ NEW: Modified database save function that accepts the RAG filename
   const saveDocumentToDatabaseWithFilename = async (
     file: File,
     ragFilename: string
@@ -261,8 +260,6 @@ function UploadComponent({
 
       const formData = new FormData();
       formData.append("file", file);
-
-      // ✅ CRITICAL: Pass the RAG filename to the backend
       formData.append("intelligent_filename", ragFilename);
 
       const response = await fetch("/backend/api/documents/upload", {
@@ -295,21 +292,27 @@ function UploadComponent({
       const RAG_BASE_URL = isDevelopment
         ? "http://localhost:8000"
         : process.env.NEXT_PUBLIC_RAG_API_URL;
-
+  
+      const sessionId = getSessionId();
+  
       const response = await fetch(`${RAG_BASE_URL}/current-document`, {
         method: "GET",
-        headers: getAuthHeaders(),
+        headers: {
+          // Include authentication if available
+          ...(isAuthenticated ? getAuthHeaders() : {}),
+          // Include session ID for proper isolation
+          'X-Session-Id': sessionId,
+        },
       });
-
+  
       if (response.ok) {
         const currentDoc = await response.json();
         console.log("📄 Current document on backend:", currentDoc);
-
+  
         if (currentDoc.document_id !== documentId) {
           console.warn(
             `⚠️ Document ID mismatch! Expected: ${documentId}, Current: ${currentDoc.document_id}`
           );
-          // Could implement retry logic here
         } else {
           console.log(
             `✅ Document ${documentId} verified as active on backend`
@@ -320,27 +323,39 @@ function UploadComponent({
       }
     } catch (error) {
       console.warn("⚠️ Document verification failed:", error);
-      // Don't fail the upload for verification issues
     }
+  };
+
+  const getSessionId = () => {
+    // Try to get existing session ID from localStorage or generate new one
+    let sessionId = localStorage.getItem('rag_session_id');
+    if (!sessionId) {
+      // Generate a unique session ID
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('rag_session_id', sessionId);
+    }
+    return sessionId;
   };
 
   const uploadToRagSystem = async (file: File): Promise<any> => {
     try {
       console.log("🚀 Uploading to RAG system...");
-
+  
+      // [Unverified] Move the session clearing to be asynchronous to prevent setState during render
       if (onClearPreviousSession) {
         console.log("🧹 Clearing previous frontend session state");
-        onClearPreviousSession();
+        // Use setTimeout to prevent setState during render
+        setTimeout(() => onClearPreviousSession(), 0);
       }
-
+  
       const isDevelopment = process.env.NODE_ENV === "development";
-      // Use the same URL consistently
+      // Use the same URL consistently - MODIFY: Update to use correct port
       const RAG_BASE_URL = isDevelopment
-        ? "http://localhost:8000"
+        ? "http://localhost:8000"  // Updated to match Railway backend port
         : process.env.NEXT_PUBLIC_RAG_API_URL;
-
+  
       console.log("🔗 Using RAG URL:", RAG_BASE_URL);
-
+  
       // Convert enum to string format expected by backend
       const getNamingOption = (format: string) => {
         switch (format) {
@@ -354,7 +369,7 @@ function UploadComponent({
             return "keep_original";
         }
       };
-
+  
       // Prepare form data with user settings
       const formData = new FormData();
       formData.append("file", file);
@@ -362,35 +377,42 @@ function UploadComponent({
         "naming_option",
         getNamingOption(userSettings?.file_naming_format || "ORIGINAL")
       );
-
+  
       if (userSettings?.title?.trim()) {
         formData.append("title", userSettings.title.trim());
       }
       if (userSettings?.client_name?.trim()) {
         formData.append("client_name", userSettings.client_name.trim());
       }
-
-      // 🔥 FIXED: Use the single consolidated endpoint
+  
+      // ADD: Include session ID for proper isolation
+      const sessionId = getSessionId();
+  
       const response = await fetch(`${RAG_BASE_URL}/upload-pdf-ultra-fast`, {
         method: "POST",
         body: formData,
-        headers: getAuthHeaders(),
+        headers: {
+          // Include authentication if available
+          ...(isAuthenticated ? getAuthHeaders() : {}),
+          // Include session ID for anonymous users
+          'X-Session-Id': sessionId,
+        },
       });
-
+  
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || "Upload failed");
       }
-
+  
       const ragResponse = await response.json();
       console.log("✅ RAG upload successful:", ragResponse);
       console.log(`🆔 NEW Document ID: ${ragResponse.document_id}`);
       console.log(
         `⚡ Processing time: ${ragResponse.processing_time?.toFixed(2)}s`
       );
-
+  
       await verifyDocumentIsActive(ragResponse.document_id);
-
+  
       return ragResponse;
     } catch (error) {
       console.error("❌ RAG upload failed:", error);
@@ -398,6 +420,173 @@ function UploadComponent({
     }
   };
 
+  const sendQueryToRAG = async (query: string) => {
+    try {
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const RAG_BASE_URL = isDevelopment ?
+        'http://localhost:8000' :
+        process.env.NEXT_PUBLIC_RAG_API_URL;
+  
+      const sessionId = getSessionId();
+  
+      const response = await fetch(`${RAG_BASE_URL}/query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Include authentication if available
+          ...(isAuthenticated ? getAuthHeaders() : {}),
+          // Include session ID for proper isolation
+          'X-Session-Id': sessionId,
+        },
+        body: JSON.stringify({ query }),
+      });
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `Query failed (${response.status})`;
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.detail || errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
+        
+        throw new Error(errorMessage);
+      }
+  
+      return await response.json();
+    } catch (error) {
+      console.error("❌ RAG query failed:", error);
+      throw error;
+    }
+  };
+  
+  // ADD: Function to check RAG status with session management
+  const checkRAGStatus = async () => {
+    try {
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const RAG_BASE_URL = isDevelopment ?
+        'http://localhost:8000' :
+        process.env.NEXT_PUBLIC_RAG_API_URL;
+  
+      const sessionId = getSessionId();
+  
+      const response = await fetch(`${RAG_BASE_URL}/status`, {
+        method: 'GET',
+        headers: {
+          // Include authentication if available
+          ...(isAuthenticated ? getAuthHeaders() : {}),
+          // Include session ID for proper isolation
+          'X-Session-Id': sessionId,
+        },
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Status check failed (${response.status})`);
+      }
+  
+      return await response.json();
+    } catch (error) {
+      console.error("❌ RAG status check failed:", error);
+      throw error;
+    }
+  };
+
+  const resetRAGSession = async () => {
+    try {
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const RAG_BASE_URL = isDevelopment ?
+        'http://localhost:8000' :
+        process.env.NEXT_PUBLIC_RAG_API_URL;
+  
+      const sessionId = getSessionId();
+  
+      const response = await fetch(`${RAG_BASE_URL}/reset`, {
+        method: 'DELETE',
+        headers: {
+          // Include authentication if available
+          ...(isAuthenticated ? getAuthHeaders() : {}),
+          // Include session ID for proper isolation
+          'X-Session-Id': sessionId,
+        },
+      });
+  
+      if (response.ok) {
+        console.log("✅ RAG session reset successfully");
+        // Generate new session ID for fresh start
+        localStorage.removeItem('rag_session_id');
+        return true;
+      } else {
+        console.warn("⚠️ RAG session reset failed");
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ RAG session reset error:", error);
+      return false;
+    }
+  };
+  
+  // ADD: Function to clean up session on component unmount
+  useEffect(() => {
+    // Cleanup function when component unmounts
+    return () => {
+      // Optional: Clean up session if needed
+      console.log("🧹 UploadComponent unmounting");
+    };
+  }, []);
+  
+  // ADD: Function to handle session conflicts
+  const handleSessionConflict = async () => {
+    console.log("🔄 Handling session conflict");
+    
+    // Clear current session
+    localStorage.removeItem('rag_session_id');
+    
+    // Reset any existing state
+    setFile(null);
+    setUploadStatus("idle");
+    setStatusMessage(null);
+    setCurrentProgressStep(-1);
+    setStepProgress(0);
+    
+    // Clear previous session if callback provided
+    if (onClearPreviousSession) {
+      onClearPreviousSession();
+    }
+    
+    // Reset RAG backend session
+    await resetRAGSession();
+    
+    toast.info("Session refreshed for better isolation");
+  };
+  
+  // ADD: Function to validate file before upload
+  const validateFileForUpload = (file: File): string | null => {
+    const fileExt = file.name.toLowerCase().split(".").pop();
+    const supportedExts = uploadOptions?.supported_file_types?.map((t) =>
+      t.extension.replace(".", "")
+    ) || ["pdf", "docx"];
+  
+    if (!supportedExts.includes(fileExt || "")) {
+      return `Unsupported file type. Supported: ${supportedExts
+        .join(", ")
+        .toUpperCase()}`;
+    }
+  
+    const maxSizeMB = uploadOptions?.max_file_size_mb || 50;
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      return `File size too large. Maximum: ${maxSizeMB}MB`;
+    }
+  
+    if (file.size === 0) {
+      return "File is empty";
+    }
+  
+    return null; // File is valid
+  };
+
+  
   const handleUpload = async () => {
     if (!file) {
       setUploadStatus("error");
@@ -413,7 +602,7 @@ function UploadComponent({
 
     setIsUploading(true);
     setUploadStatus("processing");
-    setCurrentProgressStep(0); // Start with initializing
+    setCurrentProgressStep(0);
     setStepProgress(0);
     setStatusMessage("Initializing ultra-fast processing...");
 
@@ -426,7 +615,7 @@ function UploadComponent({
         if (progress >= 100) {
           clearInterval(interval);
         }
-      }, 50); // Complete in 500ms
+      }, 50);
     };
     initializeStep();
 
@@ -437,7 +626,6 @@ function UploadComponent({
       let ragResponse: any = null;
 
       if (isAuthenticated && user) {
-        // ✅ NEW WORKFLOW: RAG processing FIRST, then database save
         console.log(
           "👤 Authenticated user - RAG-first workflow with ultra-fast processing"
         );
@@ -449,7 +637,6 @@ function UploadComponent({
             setStepProgress(0);
             setStatusMessage("Processing document...");
             
-            // Animate processing step
             const processStep = () => {
               let progress = 0;
               const interval = setInterval(() => {
@@ -458,12 +645,12 @@ function UploadComponent({
                 if (progress >= 100) {
                   clearInterval(interval);
                 }
-              }, 25); // Complete in ~500ms
+              }, 25);
             };
             processStep();
-          }, 600); // Wait for initialize to complete
+          }, 600);
           
-          await new Promise(resolve => setTimeout(resolve, 600)); // Wait for initializing
+          await new Promise(resolve => setTimeout(resolve, 600));
           ragResponse = await uploadToRagSystem(file);
 
           // Step 2: Save to database using the filename from RAG response
@@ -472,7 +659,6 @@ function UploadComponent({
             setStepProgress(0);
             setStatusMessage("Preparing document...");
             
-            // Animate preparing step
             const prepareStep = () => {
               let progress = 0;
               const interval = setInterval(() => {
@@ -481,24 +667,23 @@ function UploadComponent({
                 if (progress >= 100) {
                   clearInterval(interval);
                 }
-              }, 30); // Complete in ~375ms
+              }, 30);
             };
             prepareStep();
-          }, 100); // Small delay before preparing
+          }, 100);
           
-          await new Promise(resolve => setTimeout(resolve, 500)); // Wait for processing animation
+          await new Promise(resolve => setTimeout(resolve, 500));
           documentInfo = await saveDocumentToDatabaseWithFilename(
             file,
             ragResponse.filename
           );
 
-          // FIXED: Clear old localStorage data for this user to prevent confusion
+          // Clear old localStorage data for this user to prevent confusion
           const storageKey = `uploaded_documents_${user.id}`;
           const existingDocs = JSON.parse(
             localStorage.getItem(storageKey) || "[]"
           );
 
-          // Remove any documents with the same name to prevent duplicates
           const filteredDocs = existingDocs.filter(
             (doc: any) =>
               doc.fileName !== ragResponse.filename &&
@@ -509,10 +694,9 @@ function UploadComponent({
 
           // Calculate and display performance
           const processingTime = (Date.now() - startTime) / 1000;
-          const estimatedOldTime = 300; // 5 minutes
+          const estimatedOldTime = 300;
           const speedup = estimatedOldTime / processingTime;
 
-          // Enhanced success messages with performance info
           let successMessage = `Document processed in ${processingTime.toFixed(
             1
           )}s (${speedup.toFixed(1)}x faster)!`;
@@ -523,7 +707,6 @@ function UploadComponent({
             successMessage += `\nRenamed: ${ragResponse.original_filename} → ${ragResponse.filename}`;
           }
 
-          // Check for security feedback
           if (ragResponse?.security_status === "sanitized") {
             toast.warning(
               "Document content was sanitized for security reasons"
@@ -542,15 +725,13 @@ function UploadComponent({
         } catch (error) {
           console.error("RAG-first workflow failed:", error);
 
-          // Handle security errors specifically
           if (isSecurityError(error)) {
             setUploadStatus("error");
             setStatusMessage(getSecurityErrorMessage(error));
-            // Don't fallback for security errors
             return;
           }
 
-          // For non-security errors, try fallback to RAG only (no database save)
+          // For non-security errors, try fallback to RAG only
           console.log("Trying RAG-only fallback after database error:", error);
           try {
             setTimeout(() => {
@@ -558,7 +739,6 @@ function UploadComponent({
               setStepProgress(0);
               setStatusMessage("Preparing the Document...");
               
-              // Animate preparing step for fallback
               const prepareStep = () => {
                 let progress = 0;
                 const interval = setInterval(() => {
@@ -617,7 +797,6 @@ function UploadComponent({
           setStepProgress(0);
           setStatusMessage("Processing with ultra-fast AI system...");
           
-          // Animate processing step for non-auth users
           const processStep = () => {
             let progress = 0;
             const interval = setInterval(() => {
@@ -626,10 +805,10 @@ function UploadComponent({
               if (progress >= 100) {
                 clearInterval(interval);
               }
-            }, 30); // Complete in ~500ms
+            }, 30);
           };
           processStep();
-        }, 600); // Wait for initialize to complete
+        }, 600);
         
         await new Promise(resolve => setTimeout(resolve, 600));
         ragResponse = await uploadToRagSystem(file);
@@ -638,7 +817,6 @@ function UploadComponent({
           setCurrentProgressStep(2);
           setStepProgress(0);
           
-          // Animate preparing step for non-auth users
           const prepareStep = () => {
             let progress = 0;
             const interval = setInterval(() => {
@@ -681,9 +859,8 @@ function UploadComponent({
         setUploadStatus("success");
       }
 
-      // ✅ FIXED: Use the correct filename from RAG response
       const uploadResponse: UploadResponse = {
-        documentId: ragResponse?.document_id || Date.now().toString(), // Use backend document ID
+        documentId: ragResponse?.document_id || Date.now().toString(),
         fileName: ragResponse?.filename || file.name,
         originalFileName: ragResponse?.original_filename || file.name,
         fileSize: file.size,
@@ -697,7 +874,6 @@ function UploadComponent({
         conversionPerformed: ragResponse?.conversion_performed || false,
       };
 
-      // FIXED: Save to localStorage with the correct document ID from backend
       const storageKey =
         isAuthenticated && user?.id
           ? `uploaded_documents_${user.id}`
@@ -705,7 +881,6 @@ function UploadComponent({
       const existingDocs = JSON.parse(localStorage.getItem(storageKey) || "[]");
 
       const documentForStorage = {
-        // FIXED: Use the backend document ID consistently
         id: ragResponse?.document_id || Date.now().toString(),
         documentId: ragResponse?.document_id || Date.now().toString(),
         fileName: ragResponse?.filename || file.name,
@@ -718,26 +893,19 @@ function UploadComponent({
         status: uploadResponse.status,
         uploadedAt: uploadResponse.uploadedAt,
         uploaded_at: uploadResponse.uploadedAt,
-
-        // Additional properties
         databaseId: documentInfo?.documentId || documentInfo?.id,
         processingTime: ragResponse?.processing_time,
         optimizationUsed: ragResponse?.optimization_used,
         mimeType: uploadResponse.mimeType,
         securityStatus: uploadResponse.securityStatus,
         conversionPerformed: uploadResponse.conversionPerformed,
-
-        // FIXED: Add timestamp to help with ordering
         uploadSequence: Date.now(),
       };
 
       existingDocs.unshift(documentForStorage);
-
-      // Keep only last 5 documents to prevent localStorage from growing too large
       const recentDocs = existingDocs.slice(0, 5);
       localStorage.setItem(storageKey, JSON.stringify(recentDocs));
 
-      // Call success callback
       onUploadSuccess(uploadResponse);
 
       // Reset form
@@ -750,13 +918,11 @@ function UploadComponent({
     } catch (error) {
       console.error("❌ Upload failed completely:", error);
 
-      // Handle security errors at the top level
       if (isSecurityError(error)) {
         setUploadStatus("error");
         setStatusMessage(getSecurityErrorMessage(error));
         toast.error(getSecurityErrorMessage(error));
       } else {
-        // Enhanced error handling
         let errorMessage = handleApiError(error);
         if (errorMessage.includes("conversion")) {
           errorMessage =
@@ -917,15 +1083,6 @@ function UploadComponent({
         </span>
       </div>
 
-      {/* Warnings */}
-      {warning && (
-        <div className="mb-4 p-3 bg-yellow-100/20 border border-yellow-200 rounded-md">
-          <div className="flex items-center gap-2 text-yellow-500">
-            <AlertCircle className="w-4 h-4" />
-            <span className="text-sm">{warning}</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -173,7 +173,7 @@ export default function NavBar() {
                 </div>
 
                 <div className="flex items-center space-x-4">
-                    <ThemeToggle />
+                    {/* <ThemeToggle /> */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <div className="relative">
