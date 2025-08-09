@@ -11,6 +11,7 @@ import {
   SystemStatus,
   UploadResponse,
 } from "../lib/api";
+import { authUtils } from '@/lib/auth';
 import {
   GoFileDirectory,
   GoComment
@@ -93,26 +94,31 @@ export default function Home() {
     setLastUploadedDocumentId(null);
   };
 
+  const getAuthHeaders = (): HeadersInit => {
+    const token = authUtils.getToken();
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+  };
+
   // NEW: Load storage information
   const loadStorageInfo = async () => {
     if (!user) return;
-    
     setIsLoadingStorage(true);
     try {
-      // [Unverified] Assuming these API endpoints exist based on FileSettings page
       const [storageResponse, profileResponse] = await Promise.all([
-        fetch('/backend/api/user/storage', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
+        fetch('/backend/api/user-settings/storage', {
+          method: 'GET',
+          headers: getAuthHeaders(),
         }),
-        profileService.getProfile()
+        profileService.getProfile(),
       ]);
 
       let storageData = { used: 0, total: 0 };
       if (storageResponse.ok) {
         storageData = await storageResponse.json();
+      } else {
+        console.warn('Failed to fetch storage info:', storageResponse.status);
       }
 
       const planType = profileResponse.subscription?.plan_type?.toUpperCase() || 'BASIC';
@@ -270,147 +276,99 @@ export default function Home() {
   };
 
   const handleDocumentSelect = async (docId: string) => {
-    console.log('🔄 Document selected:', docId);
-    
-    // FIXED: Clear previous document state when selecting different document
-    if (docId !== currentDocumentId) {
-      console.log('📄 Switching documents - clearing previous state');
-      setCurrentSessionId(null);
-      clearChatViewerState();
-    }
-    
+    // 🔥 FIXED: Clear last uploaded tracking when manually selecting a document
+    setLastUploadedDocumentId(null);
     setCurrentDocumentId(docId);
-
-    const savedDocs = localStorage.getItem("uploaded_documents");
+    
+    const savedDocs = localStorage.getItem('uploaded_documents');
     if (savedDocs) {
       const docs = JSON.parse(savedDocs);
       const selectedDoc = docs.find((doc: any) => doc.id === docId);
-
+      
       if (selectedDoc) {
-        setActiveTab("chat");
+        setActiveTab('chat');
         setIsMobileSidebarOpen(false);
-
-        clearLastUploadedDocument();
       }
     }
   };
 
   // FIXED: Enhanced upload success handler with proper document switching
   const handleUploadSuccess = (response: UploadResponse) => {
-    console.log("🎉 MAIN COMPONENT - Upload success:", response);
-    console.log("📄 New document ID:", response.documentId);
-
-    // FIXED: Set processing state
-    setIsProcessingNewUpload(true);
+    console.log('🎉 MAIN COMPONENT - Upload success:', response);
     
-    // FIXED: Clear any existing document state immediately
-    if (currentDocumentId && currentDocumentId !== response.documentId) {
-      console.log('🧹 Clearing previous document state for new upload');
-      clearChatViewerState();
-    }
-
+    // ✅ FIXED: Add debug logging to see what we receive
+    console.log('📄 Response fields:', {
+      documentId: response.documentId,
+      fileName: response.fileName,
+      originalFileName: response.originalFileName,
+      fileSize: response.fileSize,
+      pageCount: response.pageCount,
+      pages_processed: response.pageCount,
+      uploadedAt: response.uploadedAt,
+      status: response.status
+    });
+    
     // Store in localStorage with correct field names for ChatViewer
-    const storageKey = user?.id
-      ? `uploaded_documents_${user.id}`
-      : "uploaded_documents";
-
-    const existingDocs = JSON.parse(localStorage.getItem(storageKey) || "[]");
-
-    // FIXED: Remove any existing document with same name or ID to prevent duplicates
-    const filteredDocs = existingDocs.filter(
-      (doc: any) => 
-        doc.id !== response.documentId && 
-        doc.fileName !== response.fileName &&
-        doc.originalFileName !== response.originalFileName
-    );
-
-    // FIXED: Add the new document with correct field mapping and upload sequence
+    const storageKey = user?.id ?
+      `uploaded_documents_${user.id}` : 'uploaded_documents';
+    
+    const existingDocs = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    
+    // Remove any existing document with same ID
+    const filteredDocs = existingDocs.filter((doc: any) => doc.id !== response.documentId);
+    
+    // ✅ FIXED: Add the new document with correct field mapping from response
     const documentForStorage = {
       id: response.documentId,
-      documentId: response.documentId, // Ensure both fields exist
       fileName: response.fileName,
       originalFileName: response.originalFileName,
       original_file_name: response.originalFileName,
       fileSize: response.fileSize,
       file_size: response.fileSize,
-      pageCount: response.pageCount || 1,
-      page_count: response.pageCount || 1,
-      status: response.status || "TEMPORARY",
+      pageCount: response.pageCount || response.pageCount || 1,
+      page_count: response.pageCount || response.pageCount || 1,
+      status: response.status || 'TEMPORARY',
       uploadedAt: response.uploadedAt,
       uploaded_at: response.uploadedAt,
       databaseId: response.documentId,
       mimeType: response.mimeType,
       securityStatus: response.securityStatus,
       conversionPerformed: response.conversionPerformed,
-      
-      // FIXED: Add upload tracking
-      uploadSequence: Date.now(),
-      isLatestUpload: true
     };
-
-    // FIXED: Mark all other documents as not latest
-    const updatedDocs = filteredDocs.map((doc: any) => ({
-      ...doc,
-      isLatestUpload: false
-    }));
-
-    // Add new document at the beginning
-    updatedDocs.unshift(documentForStorage);
     
-    // Keep only last 10 documents to prevent localStorage bloat
-    const recentDocs = updatedDocs.slice(0, 10);
-    localStorage.setItem(storageKey, JSON.stringify(recentDocs));
-
-    console.log("📄 Document stored in localStorage:", documentForStorage);
-
+    filteredDocs.unshift(documentForStorage);
+    localStorage.setItem(storageKey, JSON.stringify(filteredDocs));
+    
+    console.log('📄 Document stored in localStorage:', documentForStorage);
+    
+    // 🔥 FIXED: Set the last uploaded document ID to ensure ChatViewer loads the correct document
     setLastUploadedDocumentId(response.documentId || '');
-
-    // FIXED: Set current document ID and tracking
-    setCurrentDocumentId(response.documentId || "");
-    setLastProcessedDocumentId(response.documentId || "");
-    setCurrentSessionId(null); // Clear any previous session
-    setActiveTab("chat");
+    
+    // 🔥 FIXED: Clear any previous currentDocumentId to prevent conflicts
+    setCurrentDocumentId(response.documentId || '');
+    setActiveTab('chat');
     setIsMobileSidebarOpen(false);
-    setUploadCompleted(true);
-
-    console.log("🔄 Switched to chat tab with document ID:", response.documentId);
     
-    // Refresh storage info after upload
-    loadStorageInfo();
-    
-    // FIXED: Reset processing state after a short delay
-    setTimeout(() => {
-      setIsProcessingNewUpload(false);
-      setUploadCompleted(false);
-    }, 1000);
+    console.log('🔄 Switched to chat tab with document ID:', response.documentId);
+  };
+  
+  const clearDocumentTracking = () => {
+    console.log('🧹 Clearing document tracking');
+    setCurrentDocumentId(null);
+    setLastUploadedDocumentId(null);
   };
 
   // FIXED: Enhanced new chat handler with proper state clearing
   const handleNewChat = () => {
-    console.log('🆕 Starting new chat - clearing all state');
-    
-    // Clear all document-related state
-    setCurrentDocumentId(null);
+    setActiveTab('upload');
     setCurrentSessionId(null);
-    setLastProcessedDocumentId(null);
-    setIsProcessingNewUpload(false);
-    setUploadCompleted(false);
     
-    // Clear ChatViewer state
-    clearChatViewerState();
+    // 🔥 FIXED: Clear document tracking when starting a new chat
+    clearDocumentTracking();
     
-    // Clear localStorage to prevent confusion
-    const storageKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
-    localStorage.removeItem(storageKey);
-    
-    // Switch to upload tab
-    setActiveTab("upload");
     setIsMobileSidebarOpen(false);
-
-    // Clear last uploaded tracking when starting a new chat
-    clearLastUploadedDocument();
-
-    console.log('✅ New chat state cleared');
+    
+    console.log('🔄 Started new chat, cleared all tracking');
   };
 
   // If using the callback approach, update your Home component like this:
@@ -479,13 +437,13 @@ export default function Home() {
     setIsMobileSidebarOpen(false);
   };
 
-  const handleSessionSelect = async (sessionId: string) => {
-    console.log('📝 Session selected:', sessionId);
+  const handleSessionSelect = (sessionId: string) => {
     setCurrentSessionId(sessionId);
-    setActiveTab("chat");
+    setActiveTab('chat');
     setIsMobileSidebarOpen(false);
-
-    clearLastUploadedDocument();
+    
+    // 🔥 FIXED: Clear document tracking when selecting a session
+    clearDocumentTracking();
   };
 
   const handleSignOut = () => {
@@ -502,6 +460,7 @@ export default function Home() {
       }
     );
 
+    clearDocumentTracking();
     clearLastUploadedDocument();
   };
 
@@ -782,6 +741,7 @@ export default function Home() {
                   }}
                   onClearStateCallback={setClearChatViewerFn}
                   lastUploadedDocumentId={lastUploadedDocumentId || ''}
+                  onDocumentDeleted={clearDocumentTracking}
                 />
               )}
 

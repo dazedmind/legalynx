@@ -1048,21 +1048,10 @@ function UploadComponent({
           className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
             !file || isUploading || loadingSettings
               ? "bg-tertiary text-muted-foreground cursor-not-allowed hidden"
-              : "bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
+              : "bg-yellow text-white hover:brightness-105 cursor-pointer"
           }`}
         >
-          {isUploading ? (
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-              {uploadStatus === "processing"
-                ? statusMessage
-                : "Processing document..."}
-            </div>
-          ) : loadingSettings ? (
-            "Loading settings..."
-          ) : (
-            "Upload File"
-          )}
+          Upload File
         </button>
       )}
 
