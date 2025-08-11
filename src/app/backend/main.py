@@ -1088,25 +1088,131 @@ async def check_document_exists(request: Request, document_id: str):
 
 @app.post("/activate-document/{document_id}")
 async def activate_document_for_session(request: Request, document_id: str):
-    """Activate an existing RAG system document for the current user/session without re-uploading."""
-    user_id, _ = extract_user_id_from_token(request)
+    """Activate a document for the current user/session, re-uploading to RAG system if necessary."""
+    user_id, auth_token = extract_user_id_from_token(request)
     session_id = extract_session_id_from_request(request)
 
-    # 🔥 SIMPLIFIED: RAG system now uses database cuid IDs directly
-    # Ensure the document exists in the RAG manager
-    if document_id not in rag_manager.systems:
-        raise HTTPException(status_code=404, detail=f"Document {document_id} not found in RAG system. Document may need to be re-uploaded.")
+    print(f"🔄 Attempting to activate document: {document_id}")
+    print(f"📋 Available documents in RAG system: {list(rag_manager.systems.keys())}")
 
-    # Point the user's/session's current mapping to this document
-    if user_id:
-        rag_manager.user_sessions[user_id] = document_id
-    elif session_id:
-        rag_manager.session_systems[session_id] = document_id
+    # 🔥 FIXED: If document exists in RAG system, just activate it
+    if document_id in rag_manager.systems:
+        print(f"✅ Document {document_id} found in RAG system, activating...")
+        
+        # Point the user's/session's current mapping to this document
+        if user_id:
+            rag_manager.user_sessions[user_id] = document_id
+            print(f"✅ Activated existing document {document_id} for user {user_id}")
+        elif session_id:
+            rag_manager.session_systems[session_id] = document_id
+            print(f"✅ Activated existing document {document_id} for session {session_id}")
 
-    return {
-        "message": "Document activated for current session",
-        "document_id": document_id
-    }
+        return {
+            "message": "Document activated for current session",
+            "document_id": document_id,
+            "status": "activated_existing"
+        }
+
+    # 🔥 FIXED: If document doesn't exist in RAG system, fetch from database and re-upload
+    print(f"📤 Document {document_id} not in RAG system, fetching from database...")
+    
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Authentication required to fetch document")
+    
+    try:
+        # Fetch document from database via Next.js API
+        import aiohttp
+        async with aiohttp.ClientSession() as session:
+            # Get document metadata
+            doc_response = await session.get(
+                f"http://localhost:3000/backend/api/documents/{document_id}",
+                headers={"Authorization": f"Bearer {auth_token}"}
+            )
+            
+            if doc_response.status != 200:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"Document {document_id} not found in database"
+                )
+            
+            doc_data = await doc_response.json()
+            print(f"📄 Found document in database: {doc_data.get('originalFileName', 'Unknown')}")
+            
+            # Get document file
+            file_response = await session.get(
+                f"http://localhost:3000/backend/api/documents/{document_id}/file",
+                headers={"Authorization": f"Bearer {auth_token}"}
+            )
+            
+            if file_response.status != 200:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"Document file {document_id} not found or not accessible"
+                )
+            
+            file_content = await file_response.read()
+            filename = doc_data.get('originalFileName', f'document_{document_id}.pdf')
+            
+            print(f"📁 Retrieved file: {filename} ({len(file_content)} bytes)")
+            
+            # Create temporary file for RAG processing
+            import tempfile
+            import os
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+                temp_file.write(file_content)
+                temp_path = temp_file.name
+            
+            try:
+                # Process document with RAG system
+                if not OPTIMIZED_SYSTEM_AVAILABLE:
+                    raise HTTPException(status_code=503, detail="RAG system not available")
+                
+                result = await optimized_upload_workflow(
+                    temp_path,
+                    filename,
+                    naming_option='keep_original',
+                    title='Document',
+                    client_name='Client'
+                )
+                
+                if result and "rag_system" in result:
+                    # Register with RAG manager
+                    rag_manager.set_system(
+                        document_id=document_id,
+                        rag_system=result["rag_system"],
+                        file_path=result["file_path"],
+                        user_id=user_id,
+                        session_id=session_id
+                    )
+                    
+                    print(f"✅ Document {document_id} re-uploaded and activated in RAG system")
+                    
+                    return {
+                        "message": "Document re-uploaded and activated for current session",
+                        "document_id": document_id,
+                        "status": "re_uploaded_and_activated",
+                        "filename": filename,
+                        "processing_time": result.get("timing", {}).get("total", 0)
+                    }
+                else:
+                    raise HTTPException(status_code=500, detail="Failed to process document with RAG system")
+                    
+            finally:
+                # Clean up temporary file
+                try:
+                    os.unlink(temp_path)
+                except:
+                    pass
+                    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error re-uploading document: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to re-upload document to RAG system: {str(e)}"
+        )
 
 # ================================
 # MAIN FUNCTION - FIXED FOR RAILWAY

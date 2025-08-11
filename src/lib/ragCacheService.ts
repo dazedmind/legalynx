@@ -182,11 +182,34 @@ class RAGCacheService {
           this.markAsLoaded(documentId, filename, documentId);
           // Activate this document for current session/user without re-upload
           try {
-            await fetch(`${this.RAG_BASE_URL}/activate-document/${documentId}`, {
+            const activateResponse = await fetch(`${this.RAG_BASE_URL}/activate-document/${documentId}`, {
               method: 'POST',
               headers: this.getRagHeaders(true)
             });
-            console.log(`✅ Activated existing document ${documentId} for current session`);
+            
+            if (activateResponse.ok) {
+              const activateResult = await activateResponse.json();
+              console.log(`✅ Document activation result:`, activateResult);
+              
+              if (activateResult.status === 'activated_existing') {
+                console.log(`✅ Activated existing document ${documentId} for current session`);
+                return; // Successfully activated existing document
+              } else if (activateResult.status === 're_uploaded_and_activated') {
+                console.log(`✅ Document ${documentId} was re-uploaded and activated (processing time: ${activateResult.processing_time}s)`);
+                // Mark as loaded since it was successfully re-uploaded
+                this.markAsLoaded(documentId, filename, documentId);
+                return; // Successfully re-uploaded and activated
+              } else {
+                console.log(`✅ Document ${documentId} activated with status: ${activateResult.status}`);
+                return; // Successfully activated with unknown status
+              }
+            } else {
+              const errorText = await activateResponse.text();
+              console.warn(`⚠️ Failed to activate document (${activateResponse.status}):`, errorText);
+              // Continue with upload as fallback
+              console.log('🔄 Continuing with document upload due to activation failure');
+              this.clearDocument(documentId);
+            }
           } catch (e) {
             console.warn('⚠️ Failed to activate existing document for session:', e);
             // If activation fails, continue with upload to ensure document is available
@@ -194,7 +217,7 @@ class RAGCacheService {
             // Clear the cache entry since it's outdated
             this.clearDocument(documentId);
           }
-          return;
+          // If we reach here, activation failed, so continue with upload
         }
       } else {
         console.log(`⚠️ Document check failed (${checkResponse.status}), proceeding with upload`);
@@ -255,13 +278,28 @@ class RAGCacheService {
 
       // Ensure activation after upload
       try {
-        await fetch(`${this.RAG_BASE_URL}/activate-document/${documentId}`, {
+        const activateResponse = await fetch(`${this.RAG_BASE_URL}/activate-document/${documentId}`, {
           method: 'POST',
           headers: this.getRagHeaders(true)
         });
-        console.log(`✅ Activated uploaded document ${documentId} for current session`);
+        
+        if (activateResponse.ok) {
+          const activateResult = await activateResponse.json();
+          console.log(`✅ Post-upload activation result:`, activateResult);
+          
+          if (activateResult.status === 'activated_existing') {
+            console.log(`✅ Activated uploaded document ${documentId} for current session`);
+          } else if (activateResult.status === 're_uploaded_and_activated') {
+            console.log(`⚠️ Document was re-uploaded during activation - this shouldn't happen after upload`);
+          }
+        } else {
+          const errorText = await activateResponse.text();
+          console.warn(`⚠️ Failed to activate uploaded document (${activateResponse.status}):`, errorText);
+          // Don't throw error - document is uploaded, activation is just optimization
+        }
       } catch (e) {
         console.warn('⚠️ Failed to activate uploaded document for session:', e);
+        // Don't throw error - document is uploaded, activation is just optimization
       }
 
     } catch (error) {
