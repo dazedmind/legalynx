@@ -1017,8 +1017,8 @@ function UploadComponent({
       }
 
       const uploadResponse: UploadResponse = {
-        // 🔥 SIMPLIFIED: Always use database cuid ID
-        documentId: documentInfo?.documentId || documentInfo?.id,
+        // 🔥 FIXED: Use database cuid ID if available, otherwise use RAG document_id as fallback
+        documentId: documentInfo?.documentId || documentInfo?.id || ragResponse?.document_id,
         fileName: ragResponse?.filename || file.name,
         originalFileName: ragResponse?.original_filename || file.name,
         fileSize: file.size,
@@ -1039,9 +1039,9 @@ function UploadComponent({
       const existingDocs = JSON.parse(localStorage.getItem(storageKey) || "[]");
 
       const documentForStorage = {
-        // 🔥 SIMPLIFIED: Use database cuid ID consistently throughout
-        id: documentInfo?.documentId || documentInfo?.id,
-        documentId: documentInfo?.documentId || documentInfo?.id,
+        // 🔥 FIXED: Use database cuid ID if available, otherwise use RAG document_id as fallback
+        id: documentInfo?.documentId || documentInfo?.id || ragResponse?.document_id,
+        documentId: documentInfo?.documentId || documentInfo?.id || ragResponse?.document_id,
         fileName: ragResponse?.filename || file.name,
         originalFileName: ragResponse?.original_filename || file.name,
         original_file_name: ragResponse?.original_filename || file.name,
@@ -1052,7 +1052,7 @@ function UploadComponent({
         status: uploadResponse.status,
         uploadedAt: uploadResponse.uploadedAt,
         uploaded_at: uploadResponse.uploadedAt,
-        databaseId: documentInfo?.documentId || documentInfo?.id,
+        databaseId: documentInfo?.documentId || documentInfo?.id || ragResponse?.document_id,
         // No more separate RAG ID - everything uses database ID
         processingTime: ragResponse?.processing_time,
         optimizationUsed: ragResponse?.optimization_used,

@@ -469,7 +469,7 @@ export default function ChatViewer({
 
   // 🔥 NEW: Helper to resolve temporary doc_ IDs to database cuid IDs
   const resolveToDatabaseID = async (documentId?: string | null): Promise<string | null> => {
-    if (!documentId) return null;
+    if (!documentId || typeof documentId !== 'string') return null;
     
     // If already a database ID (cuid format), return as-is
     if (!documentId.startsWith('doc_')) {
@@ -1074,7 +1074,7 @@ export default function ChatViewer({
       }
       
       // For temporary documents, skip the blob loading and focus on RAG system
-      if (documentId.startsWith('doc_')) {
+      if (documentId && typeof documentId === 'string' && documentId.startsWith('doc_')) {
         console.log('📝 Temporary document - checking RAG system directly');
         
         try {

@@ -167,21 +167,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Save file with intelligent name if available
-    const { filePath, fileName, cutFilePath } = await saveFileToDisk(
-      file, 
-      user.id, 
-      finalFilename
-    );
+    console.log('📁 Using final filename:', finalFilename);
 
-    console.log('📁 Using final filename:', fileName);
-
-    // Create document record
+    // Create document record (no file saving needed - RAG system handles file storage)
     const document = await prisma.document.create({
       data: {
-        file_name: fileName,
+        file_name: finalFilename,
         original_file_name: file.name,
-        file_path: cutFilePath,
+        file_path: '', // Empty - RAG system handles storage
         file_size: file.size,
         mime_type: file.type,
         status: 'TEMPORARY',
@@ -201,7 +194,7 @@ export async function POST(request: NextRequest) {
       data: {
         user_id: user.id,
         action: 'DOCUMENT_UPLOAD',
-        details: `Uploaded: ${file.name} → ${fileName}`,
+        details: `Uploaded: ${file.name} → ${finalFilename}`,
         ip_address: request.headers.get('x-forwarded-for') || 'unknown',
         user_agent: request.headers.get('user-agent') || 'unknown'
       }
