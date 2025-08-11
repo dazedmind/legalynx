@@ -43,16 +43,25 @@ class GlobalModelManager:
                     print("🔄 Initializing models with vector embeddings (SINGLETON - ONCE ONLY)...")
                     start_time = time.time()
                     
-                    # Import here to avoid circular imports
-                    from rag_pipeline.embedder import EmbeddingManager
-                    
-                    # Initialize ONCE
-                    cls._embedding_manager = EmbeddingManager()
-                    cls._is_initialized = True
-                    
-                    init_time = time.time() - start_time
-                    print(f"✅ Models with vector embeddings initialized in {init_time:.2f}s (will be reused)")
+                    try:
+                        # Import here to avoid circular imports
+                        from rag_pipeline.embedder import EmbeddingManager
+                        
+                        # Initialize ONCE
+                        cls._embedding_manager = EmbeddingManager()
+                        cls._is_initialized = True
+                        
+                        init_time = time.time() - start_time
+                        print(f"✅ Models with vector embeddings initialized in {init_time:.2f}s (will be reused)")
+                    except Exception as e:
+                        print(f"❌ Failed to initialize embedding manager: {e}")
+                        print("🔄 This may be due to PyTorch compatibility issues or missing dependencies")
+                        # Don't set _is_initialized to True so we can retry later
+                        raise RuntimeError(f"Embedding manager initialization failed: {e}")
         
+        if cls._embedding_manager is None:
+            raise RuntimeError("Embedding manager is not initialized")
+            
         print("⚡ Using cached models with vector embeddings (FAST)")
         return cls._embedding_manager
 

@@ -1,4 +1,5 @@
 import os
+import torch
 from typing import List
 from llama_index.core import VectorStoreIndex, Settings
 from llama_index.core.schema import TextNode
@@ -17,6 +18,11 @@ class EmbeddingManager:
         """
         Initialize the embedding manager with LLM and embedding models.
         """
+        # ✅ FIXED: Configure PyTorch settings to avoid meta tensor issues
+        torch.set_default_dtype(torch.float32)
+        if hasattr(torch, '_C') and hasattr(torch._C, '_set_print_sparse'):
+            torch._C._set_print_sparse(False)
+        
         self.google_api_key = os.getenv("GOOGLE_API_KEY")
         self.embed_model = None
         self.llm = None
@@ -28,11 +34,59 @@ class EmbeddingManager:
         """
         # Initialize the HuggingFace embedding model for vector operations
         print("🔄 Initializing embedding model...")
-        self.embed_model = HuggingFaceEmbedding(
-            model_name=MODEL_CONFIG["embedding_model"]
-        )
-        Settings.embed_model = self.embed_model
-        print(f"✅ Embedding model loaded: {MODEL_CONFIG['embedding_model']}")
+        try:
+            # ✅ FIXED: Add device configuration and PyTorch compatibility settings
+            self.embed_model = HuggingFaceEmbedding(
+                model_name=MODEL_CONFIG["embedding_model"],
+                device="cpu",  # Force CPU to avoid device transfer issues
+                trust_remote_code=True,
+                model_kwargs={
+                    "torch_dtype": "float32",  # Use float32 instead of auto
+                    "device_map": None,  # Disable automatic device mapping
+                }
+            )
+            Settings.embed_model = self.embed_model
+            print(f"✅ Embedding model loaded: {MODEL_CONFIG['embedding_model']}")
+        except Exception as e:
+            print(f"❌ Primary embedding model failed: {e}")
+            print("🔄 Trying fallback embedding model...")
+            try:
+                # Fallback to a simpler, more compatible model
+                self.embed_model = HuggingFaceEmbedding(
+                    model_name="sentence-transformers/all-MiniLM-L6-v2",  # Simpler, more compatible model
+                    device="cpu",
+                    trust_remote_code=True
+                )
+                Settings.embed_model = self.embed_model
+                print("✅ Fallback embedding model loaded: sentence-transformers/all-MiniLM-L6-v2")
+            except Exception as fallback_error:
+                print(f"❌ Fallback embedding model also failed: {fallback_error}")
+                print("🔄 Trying minimal embedding model as last resort...")
+                try:
+                    # Last resort: Use a very simple embedding model with minimal dependencies
+                    import sentence_transformers
+                    print("📦 Using sentence-transformers directly...")
+                    
+                    # Create a minimal wrapper that works with LlamaIndex
+                    class MinimalEmbeddingWrapper:
+                        def __init__(self):
+                            self.model = sentence_transformers.SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
+                        
+                        def get_text_embedding(self, text: str) -> list:
+                            return self.model.encode(text).tolist()
+                        
+                        def get_text_embeddings(self, texts: list) -> list:
+                            return [self.model.encode(text).tolist() for text in texts]
+                    
+                    self.embed_model = MinimalEmbeddingWrapper()
+                    print("✅ Minimal embedding model loaded successfully")
+                    
+                except Exception as minimal_error:
+                    print(f"❌ All embedding models failed. Errors:")
+                    print(f"   Primary: {e}")
+                    print(f"   Fallback: {fallback_error}")
+                    print(f"   Minimal: {minimal_error}")
+                    raise RuntimeError("Could not initialize any embedding model. This may be due to PyTorch compatibility issues or missing dependencies.")
         
         # Validate API key
         if not self.google_api_key:

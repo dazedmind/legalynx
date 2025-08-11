@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/context/AuthContext';
@@ -56,6 +56,12 @@ function Login() {
 
     }
 
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            handleLogin();
+        }
+    }
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value })
         
@@ -86,6 +92,7 @@ function Login() {
                             placeholder='Enter your email'
                             value={formData.email}
                             onChange={handleChange}
+                            onKeyDown={handleKeyPress}
                             className={
                                 formData.email && !emailValidation(formData.email)
                                     ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
@@ -98,7 +105,7 @@ function Login() {
                     </span>
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
                         <p className='text-sm text-muted-foreground'>Password</p>
-                        <Input name='password' type='password' placeholder='Enter your password' value={formData.password} onChange={handleChange} />
+                        <Input name='password' type='password' placeholder='Enter your password' value={formData.password} onChange={handleChange} onKeyDown={handleKeyPress} />
                     </span>
 
 
