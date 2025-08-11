@@ -169,12 +169,45 @@ export async function POST(request: NextRequest) {
 
     console.log('📁 Using final filename:', finalFilename);
 
-    // Create document record (no file saving needed - RAG system handles file storage)
+    // Save file to S3 for persistent storage
+    let s3Key = '';
+    let s3Url = '';
+    
+    try {
+      console.log('☁️ Uploading file to S3...');
+      const { S3Service } = await import('@/lib/s3');
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
+      
+      const s3Result = await S3Service.uploadFile(
+        fileBuffer,
+        finalFilename,
+        file.type,
+        user.id,
+        'documents'
+      );
+      
+      s3Key = s3Result.key;
+      s3Url = s3Result.url;
+      
+      console.log('✅ File uploaded to S3:', {
+        key: s3Key,
+        size: s3Result.size
+      });
+    } catch (s3Error) {
+      console.error('❌ S3 upload failed:', s3Error);
+      // Continue without S3 - document will still be created but file won't be accessible
+    }
+
+    // Determine status based on whether file was successfully stored
+    const documentStatus = s3Key ? 'UPLOADED' : 'TEMPORARY';
+    
+    // Create document record with S3 storage info
     const document = await prisma.document.create({
       data: {
         file_name: finalFilename,
         original_file_name: file.name,
-        file_path: '', // Empty - RAG system handles storage
+        file_path: s3Url || '', // S3 URL for file access, empty if S3 failed
+        s3_key: s3Key || null, // S3 key for direct access, null if S3 failed
         file_size: file.size,
         mime_type: file.type,
         status: 'TEMPORARY',
@@ -209,7 +242,10 @@ export async function POST(request: NextRequest) {
       pageCount: document.page_count,
       status: document.status,
       uploadedAt: document.uploaded_at,
-      mimeType: document.mime_type
+      mimeType: document.mime_type,
+      s3Key: document.s3_key,
+      filePath: document.file_path,
+      storageStatus: s3Key ? 'S3_STORED' : 'STORAGE_FAILED'
     });
 
   } catch (error) {

@@ -91,10 +91,25 @@ export async function GET(
     let fileBuffer: Buffer = Buffer.alloc(0);
     let fileSource = '';
 
-    // Try multiple approaches to get the file
+    // Try multiple approaches to get the file (S3 first, then fallback)
     try {
-      // Method 1: Try local file system first
-      if (document.file_path && !document.file_path.startsWith('http')) {
+      // Method 1: Try S3 first (primary storage)
+      if (document.s3_key) {
+        console.log('☁️ Trying S3 file:', document.s3_key);
+        try {
+          // Import S3Service dynamically
+          const { S3Service } = await import('@/lib/s3');
+          const s3Result = await S3Service.downloadFile(document.s3_key);
+          fileBuffer = Buffer.from(s3Result.buffer);
+          fileSource = `S3: ${document.s3_key}`;
+          console.log(`✅ Retrieved from S3, size: ${fileBuffer.length} bytes`);
+        } catch (s3Error) {
+          console.log('❌ S3 access failed:', s3Error);
+          throw s3Error;
+        }
+      }
+      // Method 2: Try local file system as fallback
+      else if (document.file_path && !document.file_path.startsWith('http')) {
         console.log('📁 Trying local file path:', document.file_path);
         
         let fullPath = document.file_path;
@@ -112,54 +127,38 @@ export async function GET(
           throw new Error(`Local file not found: ${fullPath}`);
         }
       } else {
-        throw new Error('No local file path available');
+        throw new Error('No S3 key or local file path available');
       }
     } catch (primaryError) {
-      console.log('⚠️ Local file access failed:', primaryError);
+      console.log('⚠️ Primary storage access failed:', primaryError);
       
-      // Method 2: Try S3 if available
-      if (document.s3_key) {
-        try {
-          console.log('☁️ Trying S3 file:', document.s3_key);
-          // Import S3Service dynamically
-          const { S3Service } = await import('@/lib/s3');
-          const s3Result = await S3Service.downloadFile(document.s3_key);
-          fileBuffer = Buffer.from(s3Result.buffer);
-          fileSource = `S3: ${document.s3_key}`;
-          console.log(`✅ Retrieved from S3, size: ${fileBuffer.length} bytes`);
-        } catch (s3Error) {
-          console.log('❌ S3 access failed:', s3Error);
-          throw s3Error;
-        }
-      } else {
-        // Method 3: Try common upload locations
-        const possiblePaths = [
-          path.join(process.cwd(), 'uploads', user.id, document.file_name),
-          path.join(process.cwd(), 'uploads', document.file_name),
-          path.join(process.cwd(), 'uploads', document.original_file_name),
-        ];
+      // Method 3: Try common upload locations as last resort
+      const possiblePaths = [
+        path.join(process.cwd(), 'uploads', user.id, document.file_name),
+        path.join(process.cwd(), 'uploads', document.file_name),
+        path.join(process.cwd(), 'uploads', document.original_file_name),
+      ];
 
-        let found = false;
-        for (const testPath of possiblePaths) {
-          if (fs.existsSync(testPath)) {
-            fileBuffer = fs.readFileSync(testPath);
-            fileSource = `Fallback: ${testPath}`;
-            console.log(`✅ Retrieved from fallback location, size: ${fileBuffer.length} bytes`);
-            found = true;
-            break;
-          }
+      let found = false;
+      for (const testPath of possiblePaths) {
+        if (fs.existsSync(testPath)) {
+          fileBuffer = fs.readFileSync(testPath);
+          fileSource = `Fallback: ${testPath}`;
+          console.log(`✅ Retrieved from fallback location, size: ${fileBuffer.length} bytes`);
+          found = true;
+          break;
         }
+      }
 
-        if (!found) {
-          console.error('❌ File not found in any location');
-          return NextResponse.json(
-            { 
-              error: 'Document file not found',
-              details: 'The file may have been moved or deleted from storage'
-            }, 
-            { status: 404 }
-          );
-        }
+      if (!found) {
+        console.error('❌ File not found in any location');
+        return NextResponse.json(
+          { 
+            error: 'Document file not found',
+            details: `The file may have been moved or deleted from storage. Document status: ${document.status}, S3 key: ${document.s3_key || 'none'}, File path: ${document.file_path || 'none'}`
+          }, 
+          { status: 404 }
+        );
       }
     }
 

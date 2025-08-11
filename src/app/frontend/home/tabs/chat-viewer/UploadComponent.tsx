@@ -1019,8 +1019,8 @@ function UploadComponent({
       const uploadResponse: UploadResponse = {
         // 🔥 FIXED: Use database cuid ID if available, otherwise use RAG document_id as fallback
         documentId: documentInfo?.documentId || documentInfo?.id || ragResponse?.document_id,
-        fileName: ragResponse?.filename || file.name,
-        originalFileName: ragResponse?.original_filename || file.name,
+        fileName: ragResponse?.filename || file.name, // RAG-generated intelligent filename
+        originalFileName: file.name, // ✅ FIXED: Always use the actual original file name from user
         fileSize: file.size,
         uploadedAt: documentInfo?.uploadedAt || new Date().toISOString(),
         pageCount: ragResponse?.pages_processed || 1,
@@ -1042,9 +1042,9 @@ function UploadComponent({
         // 🔥 FIXED: Use database cuid ID if available, otherwise use RAG document_id as fallback
         id: documentInfo?.documentId || documentInfo?.id || ragResponse?.document_id,
         documentId: documentInfo?.documentId || documentInfo?.id || ragResponse?.document_id,
-        fileName: ragResponse?.filename || file.name,
-        originalFileName: ragResponse?.original_filename || file.name,
-        original_file_name: ragResponse?.original_filename || file.name,
+        fileName: ragResponse?.filename || file.name, // RAG-generated intelligent filename
+        originalFileName: file.name, // ✅ FIXED: Always use the actual original file name from user
+        original_file_name: file.name, // ✅ FIXED: Always use the actual original file name from user
         fileSize: uploadResponse.fileSize,
         file_size: uploadResponse.fileSize,
         pageCount: ragResponse?.pages_processed || 1,

@@ -188,11 +188,29 @@ export async function POST(request: NextRequest) {
         console.log(`📄 Found document:`, {
           original: document.original_file_name,
           ragGenerated: document.file_name,
-          status: document.status
+          status: document.status,
+          hasS3Key: !!document.s3_key,
+          hasFilePath: !!document.file_path
         });
 
-        // Upload to S3 and update status to INDEXED
-        const savedDocument = await saveDocumentToS3(document);
+        let savedDocument;
+
+        // Check if document is already stored in S3 (new workflow)
+        if (document.s3_key && document.file_path) {
+            console.log('📁 Document already stored in S3, updating status only');
+            // Document is already in S3, just update the status
+            savedDocument = await prisma.document.update({
+                where: { id: document.id },
+                data: {
+                    status: 'INDEXED',
+                    updated_at: new Date()
+                }
+            });
+        } else {
+            // Legacy workflow - upload to S3 from local temp file
+            console.log('📁 Legacy document, uploading to S3 from temp file');
+            savedDocument = await saveDocumentToS3(document);
+        }
 
         await StorageTracker.updateStorageUsage(user.id);
 
@@ -288,7 +306,8 @@ export async function GET(request: NextRequest) {
                 original_file_name: true,
                 status: true,
                 updated_at: true,
-                file_path: true
+                file_path: true,
+                s3_key: true
             }
         });
 
@@ -300,6 +319,7 @@ export async function GET(request: NextRequest) {
 
         const canSave = document.status === 'TEMPORARY';
         const tempFileExists = document.file_path ? fs.existsSync(document.file_path) : false;
+        const isAlreadyInS3 = !!(document.s3_key || (document.file_path && document.file_path.includes('s3')));
 
         return NextResponse.json({
             id: document.id,
@@ -307,10 +327,13 @@ export async function GET(request: NextRequest) {
             originalFileName: document.original_file_name,
             status: document.status,
             updatedAt: document.updated_at,
-            canSave: canSave && tempFileExists,
+            canSave: canSave && (tempFileExists || isAlreadyInS3),
             tempFileExists: tempFileExists,
+            isAlreadyInS3: isAlreadyInS3,
             message: canSave 
-                ? (tempFileExists ? `Document can be saved with intelligent filename: ${document.file_name}` : 'Temporary file expired, please re-upload')
+                ? (isAlreadyInS3 ? `Document can be saved (already in cloud storage): ${document.file_name}` 
+                   : tempFileExists ? `Document can be saved with intelligent filename: ${document.file_name}` 
+                   : 'Temporary file expired, please re-upload')
                 : 'Document is already saved or cannot be saved'
         });
 
