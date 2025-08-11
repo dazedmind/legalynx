@@ -453,8 +453,10 @@ async def upload_document_ultra_fast(
         )
     
     start_time = time.time()
-    # Use provided document_id if supplied; otherwise create a new one
+    # 🔥 SIMPLIFIED: Use database cuid ID instead of temporary doc_ ID
+    # The document_id will be provided by the frontend after database creation
     if not document_id:
+        # Fallback only - frontend should provide the database ID
         document_id = f"doc_{int(time.time() * 1000)}_{user_id or session_id}"
     
     try:
@@ -1052,6 +1054,7 @@ async def check_document_exists(request: Request, document_id: str):
     user_id, _ = extract_user_id_from_token(request)
     session_id = extract_session_id_from_request(request)
 
+    # 🔥 SIMPLIFIED: RAG system now uses database cuid IDs directly
     manager_status = rag_manager.get_status(user_id=user_id, session_id=session_id)
     current_file_path = rag_manager.get_current_file_path(user_id=user_id, session_id=session_id)
     
@@ -1070,7 +1073,7 @@ async def check_document_exists(request: Request, document_id: str):
         return {
             "exists": True,
             "document_id": document_id,
-            "rag_id": document_id,
+            "rag_id": document_id,  # Same as document_id now
             "filename": os.path.basename(current_file_path),
             "current_system_id": document_id
         }
@@ -1089,9 +1092,10 @@ async def activate_document_for_session(request: Request, document_id: str):
     user_id, _ = extract_user_id_from_token(request)
     session_id = extract_session_id_from_request(request)
 
+    # 🔥 SIMPLIFIED: RAG system now uses database cuid IDs directly
     # Ensure the document exists in the RAG manager
     if document_id not in rag_manager.systems:
-        raise HTTPException(status_code=404, detail="Document not found in RAG system")
+        raise HTTPException(status_code=404, detail=f"Document {document_id} not found in RAG system. Document may need to be re-uploaded.")
 
     # Point the user's/session's current mapping to this document
     if user_id:

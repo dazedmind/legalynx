@@ -467,6 +467,41 @@ export default function ChatViewer({
     }
   };
 
+  // 🔥 NEW: Helper to resolve temporary doc_ IDs to database cuid IDs
+  const resolveToDatabaseID = async (documentId?: string | null): Promise<string | null> => {
+    if (!documentId) return null;
+    
+    // If already a database ID (cuid format), return as-is
+    if (!documentId.startsWith('doc_')) {
+      return documentId;
+    }
+    
+    // For temporary doc_ IDs, look up the database ID from localStorage
+    try {
+      const storageKey = isAuthenticated && user?.id ?
+        `uploaded_documents_${user.id}` : 'uploaded_documents';
+      
+      const savedDocs = localStorage.getItem(storageKey);
+      if (savedDocs) {
+        const docs = JSON.parse(savedDocs);
+        const doc = docs.find((d: any) => 
+          d.id === documentId || d.documentId === documentId
+        );
+        
+        if (doc && doc.databaseId) {
+          console.log(`🔄 Resolved temp ID ${documentId} to database ID ${doc.databaseId}`);
+          return doc.databaseId;
+        }
+      }
+      
+      console.warn(`⚠️ Could not resolve temporary ID ${documentId} to database ID`);
+      return null;
+    } catch (error) {
+      console.error('❌ Error resolving document ID:', error);
+      return null;
+    }
+  };
+
   const loadCurrentDocument = async () => {
     console.log('🔍 LOAD DOCUMENT STARTING:', {
       isResetting,
@@ -486,19 +521,22 @@ export default function ChatViewer({
     setIsLoadingDocument(true);
     let documentFound = false;
 
-    if (currentDocumentId) {
-      console.log('🎯 Loading specific document by ID:', currentDocumentId);
-      await loadSpecificDocument(currentDocumentId);
+    // 🔥 STANDARDIZE: Always resolve to database ID before loading
+    const resolvedDocumentId = await resolveToDatabaseID(currentDocumentId);
+    if (resolvedDocumentId) {
+      console.log('🎯 Loading specific document by resolved ID:', resolvedDocumentId);
+      await loadSpecificDocument(resolvedDocumentId);
       documentFound = true; // loadSpecificDocument will set state appropriately
       // ✅ FIXED: Clear loading state before early return
       setIsLoadingDocument(false);
       return;
     }
 
-    // 🔥 FIXED: If we have a lastUploadedDocumentId, prioritize that
-    if (lastUploadedDocumentId) {
-      console.log('🎯 Loading last uploaded document:', lastUploadedDocumentId);
-      await loadSpecificDocument(lastUploadedDocumentId);
+    // 🔥 STANDARDIZE: Resolve lastUploadedDocumentId to database ID
+    const resolvedLastUploadedId = await resolveToDatabaseID(lastUploadedDocumentId);
+    if (resolvedLastUploadedId) {
+      console.log('🎯 Loading last uploaded document by resolved ID:', resolvedLastUploadedId);
+      await loadSpecificDocument(resolvedLastUploadedId);
       documentFound = true;
       // ✅ FIXED: Clear loading state before early return
       setIsLoadingDocument(false);
@@ -608,7 +646,14 @@ export default function ChatViewer({
             console.log('✅ Document loaded into RAG system successfully');
           } catch (ragError) {
             console.error('❌ Failed to load document into RAG system:', ragError);
-            // Don't fail the whole operation, just log the error
+            // 🔥 GRACEFUL FALLBACK: If RAG loading fails, continue but warn user
+            if (ragError instanceof Error && ragError.message.includes('Could not find RAG ID')) {
+              console.warn('⚠️ Document exists in database but not in RAG system. User can still view it but queries may not work until re-upload.');
+              // Don't prevent the document from loading - user can still see it exists
+            } else {
+              // For other RAG errors, still don't fail the whole operation
+              console.warn('⚠️ RAG system error, continuing with document load');
+            }
           }
           
           documentFound = true;
@@ -976,22 +1021,23 @@ export default function ChatViewer({
     forceReload: boolean = false
   ): Promise<void> => {
     const getFileBlob = async (): Promise<Blob> => {
-      // For temporary documents, don't check database existence
-      if (documentId.startsWith('doc_')) {
-        console.log('🔍 Temporary document detected, skipping database check');
+      // 🔥 STANDARDIZE: Always resolve to database ID for file operations
+      const resolvedDocumentId = await resolveToDatabaseID(documentId);
+      if (!resolvedDocumentId) {
+        console.log('🔍 Could not resolve document ID, checking if temporary RAG document');
         
         // For temporary documents, we need to get them from the RAG system or localStorage
         // This is a placeholder - you might need to implement a different approach
         // for temporary documents that aren't in your database
-        throw new Error('Temporary documents should already be in RAG system');
+        throw new Error('Could not find RAG ID for database document. Document may need to be re-uploaded to work with AI features.');
       }
       
-      const exists = await checkDocumentExists(documentId);
+      const exists = await checkDocumentExists(resolvedDocumentId);
       if (!exists) {
         throw new Error('Document no longer exists in database');
       }
       
-      const documentResponse = await fetch(`/backend/api/documents/${documentId}`, {
+      const documentResponse = await fetch(`/backend/api/documents/${resolvedDocumentId}`, {
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -1004,7 +1050,7 @@ export default function ChatViewer({
         throw new Error(errorData.error || 'Failed to get document details');
       }
       
-      const fileResponse = await fetch(`/backend/api/documents/${documentId}/file`, {
+      const fileResponse = await fetch(`/backend/api/documents/${resolvedDocumentId}/file`, {
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -1229,7 +1275,15 @@ export default function ChatViewer({
 
     try {
       setIsCreatingSession(true);
-      const documentId = currentDocument.databaseId || currentDocument.id;
+      // 🔥 STANDARDIZE: Always use database ID for session operations
+      const documentId = await resolveToDatabaseID(currentDocument.databaseId || currentDocument.id);
+      
+      if (!documentId) {
+        console.error('❌ Could not resolve document ID for session creation');
+        setDocumentExists(false);
+        handleDocumentDeleted();
+        return;
+      }
       
       console.log('🔍 Looking for existing session for document:', documentId);
       
@@ -1292,12 +1346,30 @@ export default function ChatViewer({
             setChatHistory([]);
           }
         } else {
-          console.log('📝 No existing session found for existing document');
+          console.log('📝 No existing session found for existing document - this is normal for documents without chat history');
+          // Don't create a session automatically for existing documents
+          // Let the user start chatting to create one
+          setCurrentSessionId(null);
+          setChatHistory([]);
         }
         
       } else {
-        console.error('Error checking for session:', await response.text());
-        handleDocumentDeleted();
+        try {
+          const errorText = await response.text();
+          console.error('❌ Session lookup error details:', errorText);
+        } catch (e) {
+          console.error('❌ Session lookup failed with status:', response.status);
+        }
+        
+        // Don't immediately delete document on session errors
+        // The document might still be valid, just no sessions exist
+        if (response.status === 500) {
+          console.warn('⚠️ Server error during session lookup, but document may still be valid');
+          setCurrentSessionId(null);
+          setChatHistory([]);
+        } else {
+          handleDocumentDeleted();
+        }
       }
       
     } catch (error) {
@@ -1314,14 +1386,16 @@ export default function ChatViewer({
   const createNewSession = async (documentId?: string): Promise<string | null> => {
     if (!user || !currentDocument || isCreatingSession || !documentExists) return null;
     
-    if (!currentDocument.databaseId) {
-      toast.error('Document is not saved to your account');
-      return null;
-    }
-    
     try {
       setIsCreatingSession(true);
-      const useDocumentId = documentId || currentDocument.databaseId || currentDocument.id;
+      // 🔥 STANDARDIZE: Always resolve to database ID for session creation
+      const useDocumentId = await resolveToDatabaseID(documentId || currentDocument.databaseId || currentDocument.id);
+      
+      if (!useDocumentId) {
+        console.error('❌ Could not resolve document ID for new session');
+        toast.error('Document is not available for session creation');
+        return null;
+      }
       
       console.log('🆕 Creating new session for document:', useDocumentId);
       
@@ -2067,10 +2141,10 @@ export default function ChatViewer({
                 <div className="flex items-center gap-2">
                   <h3 className={`text-sm md:text-base mb-1 font-semibold ${documentExists ? 'text-foreground' : 'text-muted-foreground'}`}>
                     <span className="block md:hidden">
-                      {truncateString(currentDocument.fileName, 20)}
+                      {truncateString(currentDocument.originalFileName, 20)}
                     </span>
                     <span className="hidden md:block">
-                      {currentDocument.fileName}
+                      {currentDocument.originalFileName}
                     </span>
                     {!documentExists && ' (Document Deleted)'}
                   </h3>

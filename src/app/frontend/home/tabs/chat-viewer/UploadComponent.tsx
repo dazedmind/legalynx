@@ -287,6 +287,53 @@ function UploadComponent({
     }
   };
 
+  const updateDocumentFilenameAfterRag = async (
+    documentId: string,
+    ragFilename: string
+  ): Promise<any> => {
+    if (!isAuthenticated || !user) {
+      console.log("👤 User not authenticated, skipping filename update");
+      return null;
+    }
+
+    try {
+      console.log("🔄 Updating document filename after RAG processing:", {
+        documentId,
+        ragFilename
+      });
+
+      const response = await fetch(`/backend/api/documents/${documentId}/rename`, {
+        method: "PATCH",
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          newName: ragFilename,
+          updateProcessedName: true // Flag to indicate this is from RAG processing
+        }),
+      });
+
+      if (response.ok) {
+        const updatedDocument = await response.json();
+        console.log(
+          "✅ Document filename updated after RAG processing:",
+          updatedDocument
+        );
+        return updatedDocument;
+      } else {
+        const errorData = await response.json();
+        console.error("❌ Document filename update failed:", errorData);
+        // Don't throw error - this is not critical for the upload flow
+        return null;
+      }
+    } catch (error) {
+      console.error("❌ Document filename update error:", error);
+      // Don't throw error - this is not critical for the upload flow
+      return null;
+    }
+  };
+
   const verifyDocumentIsActive = async (documentId: string) => {
     try {
       const isDevelopment = process.env.NODE_ENV === "development";
@@ -336,6 +383,95 @@ function UploadComponent({
       localStorage.setItem('rag_session_id', sessionId);
     }
     return sessionId;
+  };
+
+  const uploadToRagSystemWithId = async (file: File, documentId: string): Promise<any> => {
+    try {
+      console.log(`🚀 Uploading to RAG system with database ID: ${documentId}...`);
+  
+      // [Unverified] Move the session clearing to be asynchronous to prevent setState during render
+      if (onClearPreviousSession) {
+        console.log("🧹 Clearing previous frontend session state");
+        // Use setTimeout to prevent setState during render
+        setTimeout(() => onClearPreviousSession(), 0);
+      }
+  
+      const isDevelopment = process.env.NODE_ENV === "development";
+      // Use the same URL consistently - MODIFY: Update to use correct port
+      const RAG_BASE_URL = isDevelopment
+        ? "http://localhost:8000"  // Updated to match Railway backend port
+        : process.env.NEXT_PUBLIC_RAG_API_URL;
+  
+      console.log("🔗 Using RAG URL:", RAG_BASE_URL);
+  
+      // Convert enum to string format expected by backend
+      const getNamingOption = (format: string) => {
+        switch (format) {
+          case "ORIGINAL":
+            return "keep_original";
+          case "ADD_TIMESTAMP":
+            return "add_timestamp";
+          case "SEQUENTIAL_NUMBERING":
+            return "sequential_numbering";
+          default:
+            return "keep_original";
+        }
+      };
+  
+      // Prepare form data with user settings and database ID
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("document_id", documentId); // 🔥 Pass database cuid ID
+      formData.append(
+        "naming_option",
+        getNamingOption(userSettings?.file_naming_format || "ORIGINAL")
+      );
+  
+      if (userSettings?.title?.trim()) {
+        formData.append("title", userSettings.title.trim());
+      }
+      if (userSettings?.client_name?.trim()) {
+        formData.append("client_name", userSettings.client_name.trim());
+      }
+
+      // ADD: Include session ID for proper isolation
+      const sessionId = typeof window !== 'undefined' 
+        ? (localStorage.getItem('rag_session_id') || `sess_${Date.now()}`)
+        : `sess_${Date.now()}`;
+      
+      if (typeof window !== 'undefined' && !localStorage.getItem('rag_session_id')) {
+        localStorage.setItem('rag_session_id', sessionId);
+      }
+
+      const response = await fetch(`${RAG_BASE_URL}/upload-pdf-ultra-fast`, {
+        method: "POST",
+        headers: {
+          // Don't set Content-Type - let browser set it with boundary for FormData
+          Authorization: `Bearer ${authUtils.getToken()}`,
+          'X-Session-Id': sessionId
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ RAG upload failed:", errorText);
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.detail || errorData.message || errorText);
+        } catch (parseError) {
+          throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+        }
+      }
+
+      const result = await response.json();
+      console.log("✅ RAG system upload successful:", result);
+      return result;
+    } catch (error) {
+      console.error("❌ RAG system upload error:", error);
+      throw error;
+    }
   };
 
   const uploadToRagSystem = async (file: File): Promise<any> => {
@@ -636,11 +772,11 @@ function UploadComponent({
         );
 
         try {
-          // Step 1: Upload to ULTRA-FAST RAG system FIRST
+          // Step 1: Save to database FIRST to get cuid ID
           setTimeout(() => {
             setCurrentProgressStep(1);
             setStepProgress(0);
-            setStatusMessage("Processing document...");
+            setStatusMessage("Saving document...");
             
             const processStep = () => {
               let progress = 0;
@@ -656,13 +792,14 @@ function UploadComponent({
           }, 600);
           
           await new Promise(resolve => setTimeout(resolve, 600));
-          ragResponse = await uploadToRagSystem(file);
+          // Save to database first to get the cuid ID
+          documentInfo = await saveDocumentToDatabaseWithFilename(file, file.name);
 
-          // Step 2: Save to database using the filename from RAG response
+          // Step 2: Upload to RAG system using the database cuid ID
           setTimeout(() => {
             setCurrentProgressStep(2);
             setStepProgress(0);
-            setStatusMessage("Preparing document...");
+            setStatusMessage("Processing with AI...");
             
             const prepareStep = () => {
               let progress = 0;
@@ -678,10 +815,25 @@ function UploadComponent({
           }, 100);
           
           await new Promise(resolve => setTimeout(resolve, 500));
-          documentInfo = await saveDocumentToDatabaseWithFilename(
-            file,
-            ragResponse.filename
-          );
+          // Upload to RAG system with database ID
+          ragResponse = await uploadToRagSystemWithId(file, documentInfo.documentId || documentInfo.id);
+
+          // Step 3: Update database with RAG-processed filename if it changed
+          if (ragResponse?.filename && ragResponse.filename !== file.name) {
+            console.log("🔄 RAG system renamed file, updating database:", {
+              original: file.name,
+              ragProcessed: ragResponse.filename
+            });
+            
+            try {
+              await updateDocumentFilenameAfterRag(
+                documentInfo.documentId || documentInfo.id, 
+                ragResponse.filename
+              );
+            } catch (updateError) {
+              console.warn("⚠️ Failed to update filename in database (non-critical):", updateError);
+            }
+          }
 
           // Clear old localStorage data for this user to prevent confusion
           const storageKey = `uploaded_documents_${user.id}`;
@@ -865,7 +1017,8 @@ function UploadComponent({
       }
 
       const uploadResponse: UploadResponse = {
-        documentId: ragResponse?.document_id || Date.now().toString(),
+        // 🔥 SIMPLIFIED: Always use database cuid ID
+        documentId: documentInfo?.documentId || documentInfo?.id,
         fileName: ragResponse?.filename || file.name,
         originalFileName: ragResponse?.original_filename || file.name,
         fileSize: file.size,
@@ -886,8 +1039,9 @@ function UploadComponent({
       const existingDocs = JSON.parse(localStorage.getItem(storageKey) || "[]");
 
       const documentForStorage = {
-        id: ragResponse?.document_id || Date.now().toString(),
-        documentId: ragResponse?.document_id || Date.now().toString(),
+        // 🔥 SIMPLIFIED: Use database cuid ID consistently throughout
+        id: documentInfo?.documentId || documentInfo?.id,
+        documentId: documentInfo?.documentId || documentInfo?.id,
         fileName: ragResponse?.filename || file.name,
         originalFileName: ragResponse?.original_filename || file.name,
         original_file_name: ragResponse?.original_filename || file.name,
@@ -899,6 +1053,7 @@ function UploadComponent({
         uploadedAt: uploadResponse.uploadedAt,
         uploaded_at: uploadResponse.uploadedAt,
         databaseId: documentInfo?.documentId || documentInfo?.id,
+        // No more separate RAG ID - everything uses database ID
         processingTime: ragResponse?.processing_time,
         optimizationUsed: ragResponse?.optimization_used,
         mimeType: uploadResponse.mimeType,

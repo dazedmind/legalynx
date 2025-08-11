@@ -403,7 +403,7 @@ export default function SavedChatHistory({
                     <div className="flex items-center text-sm text-muted-foreground space-x-4">
                       <div className="flex items-center">
                         <FileText className="w-4 h-4 mr-1" />
-                        <span className="truncate max-w-[150px] sm:max-w-none">{session.fileName}</span>
+                        <span className="truncate max-w-[150px] sm:max-w-none">{session.document.originalFileName}</span>
                       </div>
                     </div>
                   </div>

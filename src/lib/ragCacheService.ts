@@ -54,6 +54,8 @@ class RAGCacheService {
     return headers;
   }
 
+  // 🔥 SIMPLIFIED: No more RAG ID mapping needed - everything uses database cuid IDs
+
   /**
    * Check if document is already loaded in RAG system
    */
@@ -167,7 +169,7 @@ class RAGCacheService {
         throw new Error('RAG system is not available. Please ensure the FastAPI backend is running on http://localhost:8000');
       }
 
-      // Check if RAG system already has this document
+      // 🔥 SIMPLIFIED: Use database cuid ID directly for RAG system calls
       console.log(`🔍 Checking if document ${documentId} already exists in RAG system...`);
       const checkResponse = await fetch(`${this.RAG_BASE_URL}/check-document/${documentId}`, {
         headers: this.getRagHeaders()
@@ -177,7 +179,7 @@ class RAGCacheService {
         const checkData = await checkResponse.json();
         if (checkData.exists) {
           console.log(`✅ Document ${filename} already exists in RAG system`);
-          this.markAsLoaded(documentId, filename, checkData.ragId);
+          this.markAsLoaded(documentId, filename, documentId);
           // Activate this document for current session/user without re-upload
           try {
             await fetch(`${this.RAG_BASE_URL}/activate-document/${documentId}`, {
@@ -187,11 +189,20 @@ class RAGCacheService {
             console.log(`✅ Activated existing document ${documentId} for current session`);
           } catch (e) {
             console.warn('⚠️ Failed to activate existing document for session:', e);
+            // If activation fails, continue with upload to ensure document is available
+            console.log('🔄 Continuing with document upload due to activation failure');
+            // Clear the cache entry since it's outdated
+            this.clearDocument(documentId);
           }
           return;
         }
       } else {
         console.log(`⚠️ Document check failed (${checkResponse.status}), proceeding with upload`);
+        // If document check fails, clear any stale cache entry
+        if (checkResponse.status === 404) {
+          console.log('🧹 Clearing stale cache entry due to 404');
+          this.clearDocument(documentId);
+        }
       }
 
       // Get file blob
@@ -348,6 +359,25 @@ class RAGCacheService {
     this.loadingPromises.clear();
     this.saveCacheToStorage();
     console.log(`🗑️ Cleared all RAG cache`);
+  }
+
+  /**
+   * Clear all cache and force fresh start - useful during ID system transitions
+   */
+  clearAllAndReset(): void {
+    console.log('🔄 Clearing all RAG cache and resetting for ID system transition');
+    this.cache.clear();
+    this.loadingPromises.clear();
+    this.saveCacheToStorage();
+    
+    // Also clear the RAG session to start fresh
+    if (typeof window !== 'undefined') {
+      const oldSessionId = localStorage.getItem('rag_session_id');
+      if (oldSessionId) {
+        console.log(`🔄 Clearing old RAG session: ${oldSessionId}`);
+        localStorage.removeItem('rag_session_id');
+      }
+    }
   }
 
   /**
