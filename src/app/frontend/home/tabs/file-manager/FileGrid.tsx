@@ -399,7 +399,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
                     className="font-medium text-foreground mb-1"
                     title={doc.originalFileName}
                   >
-                    {truncateString(doc.fileName, 25)}
+                    {truncateString(doc.originalFileName, 25)}
                   </h3>
                   <div className="space-y-1 text-xs text-muted-foreground">
                     <p>{formatFileSize(doc.size)}</p>

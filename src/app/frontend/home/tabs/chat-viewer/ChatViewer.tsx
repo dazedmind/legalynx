@@ -118,6 +118,9 @@ export default function ChatViewer({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaveTimestamp, setLastSaveTimestamp] = useState(Date.now());
   const [uploadCompleted, setUploadCompleted] = useState(false);
+  
+  // ✅ NEW: Typing animation state
+  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
 
   // Modal state for confirmation
   const [confirmationModalConfig, setConfirmationModalConfig] = useState<{
@@ -153,6 +156,9 @@ export default function ChatViewer({
     // ✅ NEW: Clear RAG loading state
     setIsLoadingRagSystem(false);
     setRagLoadingInfo({});
+    
+    // ✅ NEW: Clear typing animation state
+    setTypingMessageId(null);
     
     // Clear any cached RAG data
     ragCache.clearAll();
@@ -245,8 +251,11 @@ export default function ChatViewer({
       console.log('📄 Loading current document...');
       loadCurrentDocument();
       
+      // 🔥 FIXED: Defer state update to avoid setState during render
       if (uploadCompleted) {
-        setUploadCompleted(false);
+        setTimeout(() => {
+          setUploadCompleted(false);
+        }, 0);
       }
     }
   }, [user, isResetting, currentDocument, uploadCompleted, isProcessingNewUpload, currentDocumentId, lastUploadedDocumentId]);
@@ -261,40 +270,48 @@ export default function ChatViewer({
       lastUploadedDocumentId
     });
     
-    // 🔥 NEW: If we have a new document ID that differs from last processed, handle the upload
+    // 🔥 FIXED: Defer state updates to avoid setState during render
     if (currentDocumentId && 
         currentDocumentId !== lastProcessedDocumentId && 
         !isProcessingNewUpload) {
       
       console.log('📄 New document uploaded:', currentDocumentId);
-      setIsProcessingNewUpload(true);
-      setLastProcessedDocumentId(currentDocumentId);
       
-      // Clear all previous state
-      clearAllSessionState();
-      
-      // Load the new document
-      loadCurrentDocument().finally(() => {
-        setIsProcessingNewUpload(false);
-      });
+      // Defer state updates to next tick to avoid setState during render
+      setTimeout(() => {
+        setIsProcessingNewUpload(true);
+        setLastProcessedDocumentId(currentDocumentId);
+        
+        // Clear all previous state
+        clearAllSessionState();
+        
+        // Load the new document
+        loadCurrentDocument().finally(() => {
+          setIsProcessingNewUpload(false);
+        });
+      }, 0);
     }
 
-     // 🔥 NEW: Also handle lastUploadedDocumentId changes
+     // 🔥 FIXED: Also handle lastUploadedDocumentId changes with deferred state updates
   if (lastUploadedDocumentId && 
     lastUploadedDocumentId !== lastProcessedDocumentId && 
     !isProcessingNewUpload) {
   
   console.log('📄 Last uploaded document changed:', lastUploadedDocumentId);
-  setIsProcessingNewUpload(true);
-  setLastProcessedDocumentId(lastUploadedDocumentId);
   
-  // Clear all previous state
-  clearAllSessionState();
-  
-  // Load the new document
-  loadCurrentDocument().finally(() => {
-    setIsProcessingNewUpload(false);
-  });
+  // Defer state updates to next tick to avoid setState during render
+  setTimeout(() => {
+    setIsProcessingNewUpload(true);
+    setLastProcessedDocumentId(lastUploadedDocumentId);
+    
+    // Clear all previous state
+    clearAllSessionState();
+    
+    // Load the new document
+    loadCurrentDocument().finally(() => {
+      setIsProcessingNewUpload(false);
+    });
+  }, 0);
 }
 }, [currentDocumentId, lastProcessedDocumentId, isProcessingNewUpload, lastUploadedDocumentId]);
 
@@ -1236,6 +1253,11 @@ export default function ChatViewer({
       id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date()
     };
+
+    // ✅ NEW: Start typing animation for assistant messages
+    if (message.type === 'ASSISTANT') {
+      setTypingMessageId(newMessage.id);
+    }
 
     // ✅ FIXED: Update state first
     setChatHistory(prev => [...prev, newMessage]);
@@ -2267,6 +2289,8 @@ export default function ChatViewer({
           isQuerying={isQuerying}
           documentExists={documentExists}
           onMessageAction={handleMessageAction}
+          typingMessageId={typingMessageId}
+          onTypingComplete={() => setTypingMessageId(null)}
         />
 
         {/* Input Area */}

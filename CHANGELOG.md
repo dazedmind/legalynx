@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-08-11
+
+### Added
+- **Live Usability Testing**: Deployed production testing environment on Vercel
+- **Collapsible Icon Feature**: Added collapsible interface elements for improved navigation
+- **Layout Rearrangement**: Enhanced UI layout for better user experience
+- **Appearance Tab**: New appearance customization options in settings
+- **Single Document ID Implementation**: Streamlined document identification system
+
+### Fixed
+- **Message Persistence**: Resolved bug where messages weren't saving on initial file upload
+- **File Upload Selection**: Fixed issue where recently uploaded files were incorrectly auto-selected
+- **Session Management**: Fixed bug where temporary sessions weren't saved to chat history when switching tabs
+
+### Changed
+- **RAG Pipeline Hosting**: Migrated RAG backend to Railway for improved performance and reliability
+
+### Removed
+- **Privacy Settings**: Removed privacy preferences settings for simplified user experience
+
 ## [0.1.9] - 2025-08-05 - Pre-Alpha
 
 ### Added

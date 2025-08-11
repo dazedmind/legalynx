@@ -20,13 +20,17 @@ interface ChatContainerProps {
   isQuerying: boolean;
   documentExists: boolean;
   onMessageAction: (action: string, messageId: string, content?: string) => void;
+  typingMessageId?: string | null;
+  onTypingComplete?: () => void;
 }
 
 export function ChatContainer({ 
   chatHistory, 
   isQuerying, 
   documentExists, 
-  onMessageAction 
+  onMessageAction,
+  typingMessageId,
+  onTypingComplete
 }: ChatContainerProps) {
 
   // Use ref for scroll container
@@ -184,7 +188,16 @@ export function ChatContainer({
                 </div>
               ) : (
                 <div className="whitespace-pre-wrap break-words text-md leading-relaxed">
-                  {message.content}
+                  {/* ✅ NEW: Use typing animation for new assistant messages */}
+                  {message.type === 'ASSISTANT' && typingMessageId === message.id ? (
+                    <TypingAnimation 
+                      text={message.content} 
+                      delay={30}
+                      onComplete={onTypingComplete}
+                    />
+                  ) : (
+                    message.content
+                  )}
                 </div>
               )}
 

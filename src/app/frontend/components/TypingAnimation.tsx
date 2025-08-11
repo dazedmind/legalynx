@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 
-const TypingAnimation = ({ text, delay }: { text: string, delay: number }) => {
+interface TypingAnimationProps {
+  text: string;
+  delay: number;
+  onComplete?: () => void;
+}
+
+const TypingAnimation = ({ text, delay, onComplete }: TypingAnimationProps) => {
   const [displayedText, setDisplayedText] = useState('');
   const [index, setIndex] = useState(0);
 
@@ -11,8 +17,11 @@ const TypingAnimation = ({ text, delay }: { text: string, delay: number }) => {
         setIndex((prev) => prev + 1);
       }, delay);
       return () => clearTimeout(timeoutId);
+    } else if (index === text.length && onComplete) {
+      // Call onComplete when typing is finished
+      onComplete();
     }
-  }, [index, text, delay]);
+  }, [index, text, delay, onComplete]);
 
   return <span>{displayedText}</span>;
 };

@@ -462,9 +462,7 @@ export default function SavedChatHistory({
                       <Calendar className="w-3 h-3 mr-1" />
                       <span>{formatDate(session.updatedAt)}</span>
                     </div>
-                    {session.document.fileSize > 0 && (
-                      <span>{formatFileSize(session.document.fileSize)}</span>
-                    )}
+              
                     {session.document.pageCount > 0 && (
                       <span>{session.document.pageCount} pages</span>
                     )}
