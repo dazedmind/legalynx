@@ -58,6 +58,19 @@ ragApi.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Ensure a stable session id is always sent to the RAG API
+  try {
+    if (typeof window !== 'undefined') {
+      let sessionId = localStorage.getItem('rag_session_id');
+      if (!sessionId) {
+        sessionId = `sess_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+        localStorage.setItem('rag_session_id', sessionId);
+      }
+      (config.headers as any)['X-Session-Id'] = sessionId;
+    }
+  } catch {
+    // no-op
+  }
   return config;
 });
 

@@ -1,4 +1,5 @@
 // src/lib/ragCacheService.ts - RAG Pipeline Cache Management
+import { authUtils } from '@/lib/auth';
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 export interface CachedDocument {
@@ -22,6 +23,35 @@ class RAGCacheService {
     
     // Clean up expired entries every 5 minutes
     setInterval(() => this.cleanExpiredEntries(), 5 * 60 * 1000);
+  }
+
+  private getOrCreateRagSessionId(): string {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return 'default';
+      }
+      let sessionId = localStorage.getItem('rag_session_id');
+      if (!sessionId) {
+        sessionId = `sess_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+        localStorage.setItem('rag_session_id', sessionId);
+      }
+      return sessionId;
+    } catch {
+      return 'default';
+    }
+  }
+
+  private getRagHeaders(includeJson: boolean = false): HeadersInit {
+    const headers: HeadersInit = {};
+    const token = authUtils.getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    headers['X-Session-Id'] = this.getOrCreateRagSessionId();
+    if (includeJson) {
+      headers['Content-Type'] = 'application/json';
+    }
+    return headers;
   }
 
   /**
@@ -101,6 +131,7 @@ class RAGCacheService {
     try {
       const response = await fetch(`${this.RAG_BASE_URL}/health`, {
         method: 'GET',
+        headers: this.getRagHeaders(),
         signal: AbortSignal.timeout(5000) // 5 second timeout
       });
       return response.ok;
@@ -138,13 +169,25 @@ class RAGCacheService {
 
       // Check if RAG system already has this document
       console.log(`🔍 Checking if document ${documentId} already exists in RAG system...`);
-      const checkResponse = await fetch(`${this.RAG_BASE_URL}/check-document/${documentId}`);
+      const checkResponse = await fetch(`${this.RAG_BASE_URL}/check-document/${documentId}`, {
+        headers: this.getRagHeaders()
+      });
       
       if (checkResponse.ok) {
         const checkData = await checkResponse.json();
         if (checkData.exists) {
           console.log(`✅ Document ${filename} already exists in RAG system`);
           this.markAsLoaded(documentId, filename, checkData.ragId);
+          // Activate this document for current session/user without re-upload
+          try {
+            await fetch(`${this.RAG_BASE_URL}/activate-document/${documentId}`, {
+              method: 'POST',
+              headers: this.getRagHeaders(true)
+            });
+            console.log(`✅ Activated existing document ${documentId} for current session`);
+          } catch (e) {
+            console.warn('⚠️ Failed to activate existing document for session:', e);
+          }
           return;
         }
       } else {
@@ -163,7 +206,7 @@ class RAGCacheService {
       // Create File object
       const file = new File([fileBlob], filename, { type: 'application/pdf' });
 
-      // Upload to RAG system
+      // Upload to RAG system (fallback only when not found)
       console.log(`📤 Uploading ${filename} to RAG system...`);
       const formData = new FormData();
       formData.append('file', file);
@@ -171,6 +214,7 @@ class RAGCacheService {
 
       const ragResponse = await fetch(`${this.RAG_BASE_URL}/upload-pdf`, {
         method: 'POST',
+        headers: this.getRagHeaders(),
         body: formData
       });
 
@@ -197,6 +241,17 @@ class RAGCacheService {
 
       // Mark as successfully loaded
       this.markAsLoaded(documentId, filename, ragResult.id || ragResult.document_id);
+
+      // Ensure activation after upload
+      try {
+        await fetch(`${this.RAG_BASE_URL}/activate-document/${documentId}`, {
+          method: 'POST',
+          headers: this.getRagHeaders(true)
+        });
+        console.log(`✅ Activated uploaded document ${documentId} for current session`);
+      } catch (e) {
+        console.warn('⚠️ Failed to activate uploaded document for session:', e);
+      }
 
     } catch (error) {
       console.error(`❌ Failed to load document ${filename}:`, error);

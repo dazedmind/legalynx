@@ -24,6 +24,8 @@ interface SavedChatSession {
   lastMessage?: string;
   createdAt: Date;
   updatedAt: Date;
+  hasSession: boolean; // New field to indicate if this document has a chat session
+  sessionId?: string; // Optional session ID
   document: {
     id: string;
     originalFileName: string;
@@ -87,56 +89,83 @@ export default function SavedChatHistory({
     setError('');
     
     try {
-      console.log('📚 Loading saved chat sessions...');
+      console.log('📚 Loading all documents and chat sessions...');
       
-      // Get chat sessions - API already filters for INDEXED documents
-      const response = await fetch('/backend/api/chat', {
-        method: 'GET',
-        headers: getAuthHeaders()
+      // Fetch both documents and sessions in parallel
+      const [documentsResponse, sessionsResponse] = await Promise.all([
+        fetch('/backend/api/documents', {
+          method: 'GET',
+          headers: getAuthHeaders()
+        }),
+        fetch('/backend/api/chat', {
+          method: 'GET',
+          headers: getAuthHeaders()
+        })
+      ]);
+      
+      if (!documentsResponse.ok) {
+        throw new Error(`HTTP ${documentsResponse.status}: Failed to load documents`);
+      }
+      
+      if (!sessionsResponse.ok) {
+        throw new Error(`HTTP ${sessionsResponse.status}: Failed to load sessions`);
+      }
+      
+      const documentsData = await documentsResponse.json();
+      const sessionsData = await sessionsResponse.json();
+      
+      const documents = Array.isArray(documentsData?.documents) ? documentsData.documents : [];
+      const sessions = Array.isArray(sessionsData?.sessions) ? sessionsData.sessions : [];
+
+      console.log(`📊 Loaded ${documents.length} documents and ${sessions.length} sessions`);
+      
+      // Create a map of sessions by document ID for quick lookup
+      const sessionsByDocumentId = new Map();
+      sessions.forEach((session: any) => {
+        sessionsByDocumentId.set(session.documentId, session);
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to load sessions`);
-      }
+      // Transform all documents to our format, including session info if available
+      const formattedSessions: SavedChatSession[] = documents.map((doc: any) => {
+        const session = sessionsByDocumentId.get(doc.id);
+        const hasSession = !!session;
+        
+        return {
+          id: hasSession ? session.id : `doc_${doc.id}`, // Use session ID if available, otherwise create a document-based ID
+          title: hasSession ? session.title : `${doc.originalFileName}`,
+          documentId: doc.id,
+          documentName: doc.originalFileName,
+          fileName: doc.fileName,
+          messageCount: hasSession ? (Array.isArray(session.messages) ? session.messages.length : 0) : 0,
+          lastMessage: hasSession ? (session.lastMessage || session.messages?.[0]?.content || null) : null,
+          createdAt: hasSession ? new Date(session.createdAt) : new Date(doc.uploadedAt),
+          updatedAt: hasSession ? new Date(session.updatedAt) : new Date(doc.uploadedAt),
+          hasSession,
+          sessionId: hasSession ? session.id : undefined,
+          document: {
+            id: doc.id,
+            originalFileName: doc.originalFileName,
+            fileSize: doc.fileSize || 0,
+            pageCount: doc.pageCount || 0,
+            status: doc.status || 'UNKNOWN'
+          }
+        };
+      });
       
-      const data = await response.json();
-      const sessionsData = Array.isArray(data)
-        ? data
-        : (Array.isArray(data?.sessions) ? data.sessions : []);
-
-      if (!Array.isArray(sessionsData)) {
-        throw new Error('Invalid response format for sessions');
-      }
-
-      console.log(`📊 Loaded ${sessionsData.length} saved sessions`);
-      
-      // Transform to our simplified format (robust to shape differences)
-      const formattedSessions: SavedChatSession[] = sessionsData.map((session: any) => ({
-        id: session.id,
-        title: session.title || `Chat with ${session.documentName}`,
-        documentId: session.documentId,
-        documentName: session.documentName,
-        fileName: session.document?.fileName || session.document?.filename || '',
-        messageCount: Array.isArray(session.messages) ? session.messages.length : 0,
-        lastMessage: session.lastMessage || session.messages?.[0]?.content || null,
-        createdAt: new Date(session.createdAt),
-        updatedAt: new Date(session.updatedAt),
-        document: {
-          id: session.document?.id || session.documentId,
-          originalFileName: session.document?.originalFileName || session.documentName,
-          fileSize: session.document?.fileSize || session.document?.size || 0,
-          pageCount: session.document?.pageCount || session.document?.pages || 0,
-          status: session.document?.status || 'UNKNOWN'
-        }
-      }));
-      
-      // Sort by most recent first
-      formattedSessions.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+      // Sort by most recent first (prioritize sessions with messages, then by upload/update time)
+      formattedSessions.sort((a, b) => {
+        // First, prioritize documents with sessions
+        if (a.hasSession && !b.hasSession) return -1;
+        if (!a.hasSession && b.hasSession) return 1;
+        
+        // Then sort by most recent activity
+        return b.updatedAt.getTime() - a.updatedAt.getTime();
+      });
       
       setSavedSessions(formattedSessions);
       setError('');
     } catch (error) {
-      console.error('Failed to load saved sessions:', error);
+      console.error('Failed to load documents and sessions:', error);
       setError('Failed to load chat history');
       setSavedSessions([]);
     } finally {
@@ -144,61 +173,99 @@ export default function SavedChatHistory({
     }
   };
 
-  // ✅ Fixed: Proper session click handler that calls the parent's onSessionSelect
+  // ✅ Fixed: Proper session/document click handler
   const handleSessionClick = async (session: SavedChatSession) => {
     try {
-      console.log(`🔄 Opening session: ${session.title}`);
+      console.log(`🔄 Opening ${session.hasSession ? 'session' : 'document'}: ${session.title}`);
+      console.log('📊 Session details:', {
+        hasSession: session.hasSession,
+        sessionId: session.sessionId,
+        documentId: session.documentId,
+        messageCount: session.messageCount
+      });
       
       // Show loading toast
-      const loadingToastId = toast.loading('Opening chat session...');
+      const loadingToastId = toast.loading(
+        session.hasSession ? 'Opening chat session...' : 'Opening document...'
+      );
       
-      // ✅ Call the session selection handler passed from parent
-      if (onSessionSelect) {
-        onSessionSelect(session.id);
+      if (session.hasSession && session.sessionId) {
+        // If this document has a chat session, load the session
+        console.log('📞 Calling onSessionSelect with:', session.sessionId);
+        if (onSessionSelect) {
+          onSessionSelect(session.sessionId);
+        }
+        toast.success('Chat session opened', { id: loadingToastId });
+      } else {
+        // If this document doesn't have a session, load the document directly
+        console.log('📞 Calling onDocumentSelect with:', session.documentId);
+        if (onDocumentSelect) {
+          onDocumentSelect(session.documentId);
+        }
+        toast.success('Document opened', { id: loadingToastId });
       }
       
-      // Success message
-      toast.success('Chat session opened', { id: loadingToastId });
-      
     } catch (error) {
-      console.error('Failed to open session:', error);
-      toast.error('Failed to open chat session');
+      console.error('Failed to open:', error);
+      toast.error('Failed to open item');
     }
   };
 
-  const handleDeleteSession = async (sessionId: string, event: React.MouseEvent) => {
+  const handleDeleteItem = async (itemId: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent triggering the session click
     
-    const session = savedSessions.find(s => s.id === sessionId);
-    if (!session) return;
+    const item = savedSessions.find(s => s.id === itemId);
+    if (!item) return;
     
-    const confirmed = confirm(
-      `Are you sure you want to delete the chat session "${session.title}"? This action cannot be undone.`
-    );
+    // ✅ FIXED: Always offer to delete the entire document (which includes any sessions)
+    // For temp files, users typically want to delete the whole thing
+    const confirmMessage = `Are you sure you want to delete "${item.title}"? This will remove the document and all associated chat history. This action cannot be undone.`;
     
+    const confirmed = confirm(confirmMessage);
     if (!confirmed) return;
     
     try {
-      const response = await fetch(`/backend/api/chat-sessions/${sessionId}`, {
+      // ✅ FIXED: Always delete the document (which will cascade delete sessions)
+      const response = await fetch(`/backend/api/documents?id=${item.documentId}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
       
       if (response.ok) {
+        // Notify parent component about session deletion if there was a session
+        if (item.hasSession && item.sessionId) {
+          onSessionDelete?.(item.sessionId);
+        }
+        
+        // ✅ FIXED: Also remove from localStorage
+        try {
+          const storageKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
+          const savedDocs = localStorage.getItem(storageKey);
+          if (savedDocs) {
+            const docs = JSON.parse(savedDocs);
+            const filteredDocs = docs.filter((doc: any) => 
+              doc.id !== item.documentId && doc.documentId !== item.documentId
+            );
+            localStorage.setItem(storageKey, JSON.stringify(filteredDocs));
+            console.log('✅ Removed document from localStorage');
+          }
+        } catch (localStorageError) {
+          console.warn('Failed to remove from localStorage:', localStorageError);
+        }
+        
+        toast.success('Document and chat history deleted successfully');
+        
         // Remove from local state
-        setSavedSessions(prev => prev.filter(s => s.id !== sessionId));
+        setSavedSessions(prev => prev.filter(s => s.id !== itemId));
         
-        // Notify parent component
-        onSessionDelete?.(sessionId);
-        
-        toast.success('Chat session deleted successfully');
       } else {
-        throw new Error('Failed to delete session');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete document');
       }
       
     } catch (error) {
-      console.error('Failed to delete session:', error);
-      toast.error('Failed to delete chat session');
+      console.error('Failed to delete document:', error);
+      toast.error('Failed to delete document and chat history');
       
       // Refresh the list in case of error
       await loadSavedSessions();
@@ -305,10 +372,10 @@ export default function SavedChatHistory({
         <div className="flex-1 flex items-center justify-center text-muted-foreground">
           <div className="text-center">
             <MessageSquare className="mx-auto w-16 h-16 mb-4 opacity-50" />
-            <p className="text-lg font-medium mb-2">No saved chats yet</p>
-            <p className="text-sm">Upload and save documents to start chatting</p>
+            <p className="text-lg font-medium mb-2">No documents yet</p>
+            <p className="text-sm">Upload documents to start chatting</p>
             <p className="text-xs text-muted-foreground mt-2">
-              Only conversations with saved documents will appear here
+              All your uploaded documents will appear here
             </p>
           </div>
         </div>
@@ -354,17 +421,17 @@ export default function SavedChatHistory({
                       <Eye className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={(e) => handleDeleteSession(session.id, e)}
+                      onClick={(e) => handleDeleteItem(session.id, e)}
                       className="p-2 text-destructive hover:bg-destructive/20 rounded-full transition-colors cursor-pointer"
-                      title="Delete chat session"
+                      title={session.hasSession ? "Delete chat session" : "Delete document"}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
 
-                {/* Last Message Preview */}
-                {session.lastMessage && (
+                {/* Last Message Preview or Status */}
+                {session.hasSession && session.lastMessage ? (
                   <div className="mb-3">
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {session.lastMessage.length > 150 
@@ -373,7 +440,13 @@ export default function SavedChatHistory({
                       }
                     </p>
                   </div>
-                )}
+                ) : !session.hasSession ? (
+                  <div className="mb-3">
+                    <p className="text-sm text-muted-foreground italic">
+                      No chat messages yet - Click to start chatting
+                    </p>
+                  </div>
+                ) : null}
 
                 {/* Session Footer */}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">

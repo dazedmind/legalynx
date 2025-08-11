@@ -93,6 +93,7 @@ export default function ChatViewer({
   const [savedSessions, setSavedSessions] = useState<SavedChatSession[]>([]);
   const [isVoiceChat, setIsVoiceChat] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState('');
+  const ragLoadingDocIdRef = useRef<string | null>(null);
 
   // Loading stage tracking
   const [loadingStage, setLoadingStage] = useState<LoadingStage>('loading_session');
@@ -481,12 +482,16 @@ export default function ChatViewer({
       return;
     }
 
+    // ✅ FIXED: Set loading state at the beginning
+    setIsLoadingDocument(true);
     let documentFound = false;
 
     if (currentDocumentId) {
       console.log('🎯 Loading specific document by ID:', currentDocumentId);
       await loadSpecificDocument(currentDocumentId);
       documentFound = true; // loadSpecificDocument will set state appropriately
+      // ✅ FIXED: Clear loading state before early return
+      setIsLoadingDocument(false);
       return;
     }
 
@@ -495,6 +500,8 @@ export default function ChatViewer({
       console.log('🎯 Loading last uploaded document:', lastUploadedDocumentId);
       await loadSpecificDocument(lastUploadedDocumentId);
       documentFound = true;
+      // ✅ FIXED: Clear loading state before early return
+      setIsLoadingDocument(false);
       return;
     }
     
@@ -531,6 +538,17 @@ export default function ChatViewer({
               console.log('✅ Loading document from API:', documentInfo.originalFileName);
               setCurrentDocument(documentInfo);
               setDocumentExists(true);
+              
+              // ✅ FIXED: Load document into RAG system
+              try {
+                console.log('📤 Loading document into RAG system:', documentInfo.originalFileName);
+                await loadPdfIntoRagSystemCached(documentInfo.id, documentInfo.originalFileName);
+                console.log('✅ Document loaded into RAG system successfully');
+              } catch (ragError) {
+                console.error('❌ Failed to load document into RAG system:', ragError);
+                // Don't fail the whole operation, just log the error
+              }
+              
               documentFound = true;
               return;
             } else {
@@ -582,6 +600,17 @@ export default function ChatViewer({
           console.log('✅ Final document info from localStorage:', documentInfo);
           setCurrentDocument(documentInfo);
           setDocumentExists(true);
+          
+          // ✅ FIXED: Load document into RAG system
+          try {
+            console.log('📤 Loading document into RAG system:', documentInfo.originalFileName);
+            await loadPdfIntoRagSystemCached(documentInfo.id, documentInfo.originalFileName);
+            console.log('✅ Document loaded into RAG system successfully');
+          } catch (ragError) {
+            console.error('❌ Failed to load document into RAG system:', ragError);
+            // Don't fail the whole operation, just log the error
+          }
+          
           documentFound = true;
         } else {
           console.log('💿 No documents in localStorage or resetting');
@@ -600,6 +629,9 @@ export default function ChatViewer({
       setDocumentExists(false);
       setCurrentDocument(null);
     }
+    
+    // ✅ FIXED: Always clear loading state at the end
+    setIsLoadingDocument(false);
   };
 
   // 🔥 NEW: Load a specific document by ID
@@ -634,6 +666,17 @@ export default function ChatViewer({
           
           setCurrentDocument(documentInfo);
           setDocumentExists(true);
+          
+          // ✅ FIXED: Load document into RAG system when switching documents
+          try {
+            console.log('📤 Loading document into RAG system:', documentInfo.originalFileName);
+            await loadPdfIntoRagSystemCached(documentInfo.id, documentInfo.originalFileName);
+            console.log('✅ Document loaded into RAG system successfully');
+          } catch (ragError) {
+            console.error('❌ Failed to load document into RAG system:', ragError);
+            // Don't fail the whole operation, just log the error
+          }
+          
           return;
         }
       }
@@ -662,6 +705,17 @@ export default function ChatViewer({
           
           setCurrentDocument(documentInfo);
           setDocumentExists(true);
+          
+          // ✅ FIXED: Load document into RAG system when switching documents
+          try {
+            console.log('📤 Loading document into RAG system:', documentInfo.originalFileName);
+            await loadPdfIntoRagSystemCached(documentInfo.id, documentInfo.originalFileName);
+            console.log('✅ Document loaded into RAG system successfully');
+          } catch (ragError) {
+            console.error('❌ Failed to load document into RAG system:', ragError);
+            // Don't fail the whole operation, just log the error
+          }
+          
           return;
         }
       }
@@ -720,6 +774,22 @@ export default function ChatViewer({
           return;
         }
         
+        // 🔥 FIX: Check if we're switching to a different document
+        const newDocumentId = sessionData.document.id;
+        const isDocumentSwitch = currentDocument && currentDocument.id !== newDocumentId;
+        
+        if (isDocumentSwitch) {
+          console.log('🔄 Document switch detected:', {
+            from: currentDocument.id,
+            to: newDocumentId
+          });
+          
+          // 🔥 FIX: Clear RAG cache for previous document to force reload
+          ragCache.clearDocument(currentDocument.id);
+          
+          console.log('🧹 Cleared RAG cache for document switch');
+        }
+        
         setCurrentSessionId(sessionData.sessionId);
         setDocumentExists(true);
         
@@ -739,7 +809,22 @@ export default function ChatViewer({
         setLoadingStage('loading_rag');
         try {
           console.log('📤 Loading PDF into RAG system...');
-          await loadPdfIntoRagSystemCached(sessionData.document.id, documentInfo.originalFileName);
+
+          // Prevent duplicate loads for same document during fast refresh/double effects
+          if (ragLoadingDocIdRef.current === sessionData.document.id) {
+            console.log('⏳ Skipping duplicate RAG load for document', sessionData.document.id);
+          } else {
+            ragLoadingDocIdRef.current = sessionData.document.id;
+
+            await loadPdfIntoRagSystemCached(
+              sessionData.document.id,
+              documentInfo.originalFileName,
+              isDocumentSwitch // only force when switching
+            );
+
+            ragLoadingDocIdRef.current = null;
+          }
+          
         } catch (pdfError) {
           console.error('❌ Failed to load PDF:', pdfError);
           
@@ -748,6 +833,16 @@ export default function ChatViewer({
           if (errorMessage.includes('not found') || errorMessage.includes('404')) {
             setDocumentExists(false);
           }
+          
+          // Show user-friendly error for document switching issues
+          if (isDocumentSwitch) {
+            toast.error('Failed to switch document. Please try selecting it again.');
+          } else {
+            toast.error('Failed to load document. Please try again.');
+          }
+          
+          // Don't return here - continue to load the session even if RAG loading fails
+          console.log('⚠️ Continuing with session load despite RAG error');
         }
         
         setLoadingStage('preparing_chat');
@@ -764,6 +859,9 @@ export default function ChatViewer({
         setChatHistory(formattedMessages);
         
         await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // ✅ FIXED: Clear document loading state after session is fully loaded
+        setIsLoadingDocument(false);
         
       } else if (response.status === 401) {
         toast.error('Authentication failed. Please sign in again.', { 
@@ -788,11 +886,106 @@ export default function ChatViewer({
       setIsLoadingSession(false);
       setLoadingSessionId(null);
       setLoadingSessionInfo({});
+      // ✅ FIXED: Always clear document loading state when session loading finishes
+      setIsLoadingDocument(false);
     }
   };
 
-  const loadPdfIntoRagSystemCached = async (documentId: string, filename: string): Promise<void> => {
+  // Helper function to get session ID for RAG system
+  const getSessionId = () => {
+    return currentSessionId || `temp_${user?.id || 'anonymous'}_${Date.now()}`;
+  };
+
+  // FIXED: Enhanced document verification and mismatch handling
+  const verifyDocumentIsActive = async (documentId: string, maxRetries: number = 2): Promise<void> => {
+    try {
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const RAG_BASE_URL = isDevelopment
+        ? "http://localhost:8000"
+        : process.env.NEXT_PUBLIC_RAG_API_URL;
+
+      if (!RAG_BASE_URL) {
+        console.warn("⚠️ RAG_BASE_URL not configured, skipping verification");
+        return;
+      }
+
+      const sessionId = typeof window !== 'undefined' ? 
+        (localStorage.getItem('rag_session_id') || 'default') : 'default';
+
+      const response = await fetch(`${RAG_BASE_URL}/current-document`, {
+        method: "GET",
+        headers: {
+          // Avoid authorization for public RAG service to prevent CORS issues
+          'X-Session-Id': sessionId,
+        },
+      });
+
+      if (response.ok) {
+        const currentDoc = await response.json();
+        console.log("📄 RAG system current document:", currentDoc);
+        console.log("📄 Expected document:", documentId);
+
+        if (currentDoc.document_id && currentDoc.document_id !== documentId) {
+          console.warn(
+            `⚠️ Document mismatch! Expected: ${documentId}, Current: ${currentDoc.document_id}`
+          );
+          
+          if (maxRetries > 0) {
+            console.log(`🔄 Attempting to reload correct document (${maxRetries} retries left)`);
+            
+            // Clear cache and try to reload the correct document
+            ragCache.clearDocument(documentId);
+            
+            // Force reload by clearing the document from RAG system first
+            try {
+              await fetch(`${RAG_BASE_URL}/reset`, {
+                method: 'DELETE',
+                headers: { 'X-Session-Id': sessionId }
+              });
+              console.log('🧹 Reset RAG system for clean reload');
+            } catch (resetError) {
+              console.warn('⚠️ Failed to reset RAG system:', resetError);
+            }
+            
+            // Trigger a reload with retry
+            throw new Error('DOCUMENT_MISMATCH_RETRY');
+          } else {
+            console.error('❌ Max retries exceeded for document mismatch');
+            throw new Error('Document mismatch could not be resolved after retries');
+          }
+        } else {
+          console.log(`✅ Document ${documentId} verified as active on backend`);
+        }
+      } else {
+        console.warn("⚠️ Could not verify document on backend, status:", response.status);
+        // Don't throw error for verification failures - allow continued operation
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === 'DOCUMENT_MISMATCH_RETRY') {
+        throw error; // Re-throw retry signal
+      }
+      console.warn("⚠️ Document verification failed:", error);
+      // Don't throw error - allow operation to continue even if verification fails
+    }
+  };
+
+  // FIXED: Enhanced loadPdfIntoRagSystemCached with retry logic
+  const loadPdfIntoRagSystemCached = async (
+    documentId: string, 
+    filename: string, 
+    forceReload: boolean = false
+  ): Promise<void> => {
     const getFileBlob = async (): Promise<Blob> => {
+      // For temporary documents, don't check database existence
+      if (documentId.startsWith('doc_')) {
+        console.log('🔍 Temporary document detected, skipping database check');
+        
+        // For temporary documents, we need to get them from the RAG system or localStorage
+        // This is a placeholder - you might need to implement a different approach
+        // for temporary documents that aren't in your database
+        throw new Error('Temporary documents should already be in RAG system');
+      }
+      
       const exists = await checkDocumentExists(documentId);
       if (!exists) {
         throw new Error('Document no longer exists in database');
@@ -828,7 +1021,55 @@ export default function ChatViewer({
     };
 
     try {
+      // If force reload is requested, clear the cache first
+      if (forceReload) {
+        console.log('🔄 Force reload requested, clearing cache for:', documentId);
+        ragCache.clearDocument(documentId);
+      }
+      
+      // For temporary documents, skip the blob loading and focus on RAG system
+      if (documentId.startsWith('doc_')) {
+        console.log('📝 Temporary document - checking RAG system directly');
+        
+        try {
+          await verifyDocumentIsActive(documentId, 0); // No retries for temp docs
+          console.log('✅ Temporary document verified in RAG system');
+          return;
+        } catch (verifyError) {
+          console.warn('⚠️ Temporary document not in RAG system:', verifyError);
+          // For temporary documents, we can't reload from database
+          // The document should already be in the RAG system from upload
+          toast.warning('Document may need to be re-uploaded. Please try uploading again if queries fail.');
+          return;
+        }
+      }
+      
+      // For database documents, proceed with normal loading
       await ragCache.loadDocument(documentId, filename, getFileBlob);
+      
+      // Verify the document was loaded correctly with retry logic
+      let retryCount = 2;
+      while (retryCount > 0) {
+        try {
+          await verifyDocumentIsActive(documentId, retryCount);
+          break; // Success, exit retry loop
+        } catch (verifyError) {
+          if (verifyError instanceof Error && verifyError.message === 'DOCUMENT_MISMATCH_RETRY') {
+            retryCount--;
+            if (retryCount > 0) {
+              console.log(`🔄 Retrying document load (${retryCount} attempts left)`);
+              // Clear cache and retry
+              ragCache.clearDocument(documentId);
+              await ragCache.loadDocument(documentId, filename, getFileBlob);
+            }
+          } else {
+            // Other errors - log but don't retry
+            console.warn('⚠️ Document verification failed:', verifyError);
+            break;
+          }
+        }
+      }
+      
     } catch (error) {
       console.error('❌ Failed to load PDF into RAG system:', error);
       
@@ -845,6 +1086,9 @@ export default function ChatViewer({
         } else if (error.message.includes('empty') || error.message.includes('corrupted')) {
           userMessage = 'Document file is corrupted or empty. Please re-upload the document.';
           toast.error('Document file is corrupted. Please re-upload.');
+        } else if (error.message.includes('Temporary documents should already be in RAG system')) {
+          userMessage = 'Temporary document not found in AI system. Please re-upload the document.';
+          toast.warning('Please re-upload the document to continue chatting.');
         } else {
           userMessage = error.message;
           toast.error('Failed to load document into AI system');
@@ -1434,8 +1678,18 @@ export default function ChatViewer({
         const isDevelopment = process.env.NODE_ENV === 'development';
         const RAG_BASE_URL = isDevelopment ? "http://localhost:8000" : process.env.NEXT_PUBLIC_RAG_API_URL;
         
+        // Ensure we pass the same X-Session-Id used by uploads/queries
+        let sessionId = typeof window !== 'undefined' ? (localStorage.getItem('rag_session_id') || '') : '';
+        if (!sessionId && typeof window !== 'undefined') {
+          sessionId = `sess_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+          localStorage.setItem('rag_session_id', sessionId);
+        }
+
         const statusResponse = await fetch(`${RAG_BASE_URL}/current-document`, {
-            headers: getAuthHeaders(),
+            headers: {
+              ...getAuthHeaders(),
+              'X-Session-Id': sessionId || 'default'
+            },
         });
         
         if (statusResponse.ok) {
@@ -1730,28 +1984,79 @@ export default function ChatViewer({
     );
   }
 
-  const getClearSessionCallback = () => clearAllSessionState;
+  const handleDiscardAllAndStartNew = async () => {
+    try {
+      console.log('🗑️ Starting discard all process...');
+      
+      // 1. Delete the session if it exists
+      if (currentSessionId) {
+        console.log('🗑️ Deleting session:', currentSessionId);
+        await handleDeleteSession(currentSessionId);
+      }
+      
+      // 2. Delete the document if it exists and is temporary
+      if (currentDocument && currentDocument.status === 'TEMPORARY') {
+        console.log('🗑️ Deleting temporary document:', currentDocument.id);
+        try {
+          const response = await fetch(`/backend/api/documents/${currentDocument.id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+          });
+          
+          if (response.ok) {
+            console.log('✅ Document deleted successfully');
+            toast.success('Document and session deleted');
+          } else if (response.status === 404) {
+            console.log('⚠️ Document already deleted or not found');
+          } else {
+            console.warn('⚠️ Failed to delete document, but continuing...');
+          }
+        } catch (error) {
+          console.warn('⚠️ Error deleting document:', error);
+          // Continue with cleanup even if document deletion fails
+        }
+      }
+      
+      // 3. Clear all local state and storage
+      console.log('🧹 Clearing all state...');
+      clearAllSessionState();
+      
+      // 4. Clear localStorage for current user
+      if (user?.id) {
+        const storageKey = `uploaded_documents_${user.id}`;
+        localStorage.removeItem(storageKey);
+      } else {
+        localStorage.removeItem('uploaded_documents');
+      }
+      
+      // 5. Clear RAG cache
+      ragCache.clearAll();
+      
+      // 6. Start new chat flow
+      if (handleNewChat) {
+        console.log('🆕 Starting new chat...');
+        handleNewChat();
+      }
+      
+      console.log('✅ Discard all process completed');
+      
+    } catch (error) {
+      console.error('❌ Error during discard all process:', error);
+      toast.error('Error occurred while discarding. Some cleanup may be incomplete.');
+      
+      // Still try to clear state even if there were errors
+      clearAllSessionState();
+      if (handleNewChat) {
+        handleNewChat();
+      }
+    }
+  };
 
   return (
     <div className="h-full flex flex-col">
       {/* Fixed Document Header */}
       <div className="flex-shrink-0 bg-primary p-4">
-        {isLoadingDocument ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <FileText className="w-8 h-8 text-blue-600" />
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm md:text-base mb-1 font-semibold text-foreground">Loading document...</h3>
-                </div>
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></span>
-                  Please wait while we prepare your document
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : currentDocument ? (
+        {currentDocument ? (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {!documentExists && (
@@ -1817,12 +2122,7 @@ export default function ChatViewer({
                     type: ModalType.WARNING,
                   },
                   async () => {
-                    if (currentSessionId) {
-                      await handleDeleteSession(currentSessionId);
-                    }
-                    if (handleNewChat) {
-                      handleNewChat();
-                    }
+                    await handleDiscardAllAndStartNew();
                   }
                 ) : () => {if (handleNewChat) {handleNewChat()}}}
                 className="flex items-center cursor-pointer p-2 px-3 gap-1 text-sm bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-lg"

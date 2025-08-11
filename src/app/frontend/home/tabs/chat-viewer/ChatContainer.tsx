@@ -114,12 +114,6 @@ export function ChatContainer({
       return '';
     }
 
-    // Check if date is valid
-    if (isNaN(d.getTime())) {
-      console.warn('Invalid date provided to formatTime:', date);
-      return '';
-    }
-
     // Example: "11:28 AM"
     return d.toLocaleTimeString('en-US', {
       hour: 'numeric',

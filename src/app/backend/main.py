@@ -433,7 +433,8 @@ async def upload_document_ultra_fast(
     # FIXED: Accept form data parameters
     naming_option: str = Form('keep_original'),
     title: str = Form('Document'),
-    client_name: str = Form('Client')
+    client_name: str = Form('Client'),
+    document_id: Optional[str] = Form(None)
 ):
     """
     ULTRA-FAST UPLOAD: Complete workflow optimized for speed.
@@ -452,7 +453,9 @@ async def upload_document_ultra_fast(
         )
     
     start_time = time.time()
-    document_id = f"doc_{int(time.time() * 1000)}_{user_id or session_id}"
+    # Use provided document_id if supplied; otherwise create a new one
+    if not document_id:
+        document_id = f"doc_{int(time.time() * 1000)}_{user_id or session_id}"
     
     try:
         # Validate file
@@ -462,12 +465,13 @@ async def upload_document_ultra_fast(
         file_content = await file.read()
         file_size = len(file_content)
         
-        # FIXED: Generate unique document ID with timestamp and randomness
-        timestamp = int(time.time())
-        random_suffix = hash(file.filename + str(file_size) + str(timestamp)) % 10000
-        document_id = f"doc_{timestamp}_{random_suffix}"
+        # FIXED: Generate unique document ID only if not provided in form
+        if not document_id:
+            timestamp = int(time.time())
+            random_suffix = hash(file.filename + str(file_size) + str(timestamp)) % 10000
+            document_id = f"doc_{timestamp}_{random_suffix}"
         
-        print(f"🆔 NEW Document ID: {document_id}")
+        print(f"🆔 Using Document ID: {document_id}")
         print(f"📄 Processing: {file.filename} ({file_size:,} bytes)")
         
         file_ext = os.path.splitext(file.filename)[1].lower()
@@ -1026,7 +1030,8 @@ async def upload_pdf_compatibility(
     file: UploadFile = File(...),
     naming_option: str = Form('keep_original'),
     title: str = Form('Document'),
-    client_name: str = Form('Client')
+    client_name: str = Form('Client'),
+    document_id: Optional[str] = Form(None)
 ):
     """
     Compatibility endpoint for /upload-pdf - redirects to ultra-fast endpoint
@@ -1034,7 +1039,7 @@ async def upload_pdf_compatibility(
     print(f"🔄 Compatibility endpoint called: /upload-pdf for {file.filename}")
     
     # Redirect to the ultra-fast endpoint with all parameters
-    return await upload_document_ultra_fast(request, file, naming_option, title, client_name)
+    return await upload_document_ultra_fast(request, file, naming_option, title, client_name, document_id)
 
 
 @app.get("/check-document/{document_id}")
@@ -1077,6 +1082,27 @@ async def check_document_exists(request: Request, document_id: str):
             "filename": None,
             "current_system_id": None
         }
+
+@app.post("/activate-document/{document_id}")
+async def activate_document_for_session(request: Request, document_id: str):
+    """Activate an existing RAG system document for the current user/session without re-uploading."""
+    user_id, _ = extract_user_id_from_token(request)
+    session_id = extract_session_id_from_request(request)
+
+    # Ensure the document exists in the RAG manager
+    if document_id not in rag_manager.systems:
+        raise HTTPException(status_code=404, detail="Document not found in RAG system")
+
+    # Point the user's/session's current mapping to this document
+    if user_id:
+        rag_manager.user_sessions[user_id] = document_id
+    elif session_id:
+        rag_manager.session_systems[session_id] = document_id
+
+    return {
+        "message": "Document activated for current session",
+        "document_id": document_id
+    }
 
 # ================================
 # MAIN FUNCTION - FIXED FOR RAILWAY

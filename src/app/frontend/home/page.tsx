@@ -274,22 +274,21 @@ export default function Home() {
       }
     }
   };
-
+  
   const handleDocumentSelect = async (docId: string) => {
-    // 🔥 FIXED: Clear last uploaded tracking when manually selecting a document
+    console.log('🏠 handleDocumentSelect called with docId:', docId);
+    
+    // ✅ FIXED: Clear both tracking states to ensure document loads fresh
     setLastUploadedDocumentId(null);
+    setLastProcessedDocumentId(null);
     setCurrentDocumentId(docId);
     
-    const savedDocs = localStorage.getItem('uploaded_documents');
-    if (savedDocs) {
-      const docs = JSON.parse(savedDocs);
-      const selectedDoc = docs.find((doc: any) => doc.id === docId);
-      
-      if (selectedDoc) {
-        setActiveTab('chat');
-        setIsMobileSidebarOpen(false);
-      }
-    }
+    console.log('🏠 Set currentDocumentId to:', docId);
+    
+    // Always switch to chat tab when selecting a document
+    console.log('🏠 Switching to chat tab');
+    setActiveTab('chat');
+    setIsMobileSidebarOpen(false);
   };
 
   // FIXED: Enhanced upload success handler with proper document switching
@@ -362,13 +361,13 @@ export default function Home() {
   const handleNewChat = () => {
     setActiveTab('upload');
     setCurrentSessionId(null);
-    
-    // 🔥 FIXED: Clear document tracking when starting a new chat
-    clearDocumentTracking();
-    
     setIsMobileSidebarOpen(false);
     
-    console.log('🔄 Started new chat, cleared all tracking');
+    // 🔥 FIXED: Defer document tracking clear to avoid setState during render
+    setTimeout(() => {
+      clearDocumentTracking();
+      console.log('🔄 Started new chat, cleared all tracking');
+    }, 0);
   };
 
   // If using the callback approach, update your Home component like this:
@@ -442,8 +441,8 @@ export default function Home() {
     setActiveTab('chat');
     setIsMobileSidebarOpen(false);
     
-    // 🔥 FIXED: Clear document tracking when selecting a session
-    clearDocumentTracking();
+    // 🔥 FIXED: Defer document tracking clear to avoid setState during render
+    setTimeout(() => clearDocumentTracking(), 0);
   };
 
   const handleSignOut = () => {
@@ -460,8 +459,11 @@ export default function Home() {
       }
     );
 
-    clearDocumentTracking();
-    clearLastUploadedDocument();
+    // 🔥 FIXED: Defer clearing to avoid setState during render
+    setTimeout(() => {
+      clearDocumentTracking();
+      clearLastUploadedDocument();
+    }, 0);
   };
 
   const toggleMobileSidebar = () => {
