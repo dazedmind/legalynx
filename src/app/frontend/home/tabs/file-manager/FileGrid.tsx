@@ -397,7 +397,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
                   </div>
                   <h3
                     className="font-medium text-foreground mb-1"
-                    title={doc.fileName}
+                    title={doc.originalFileName}
                   >
                     {truncateString(doc.fileName, 25)}
                   </h3>
@@ -567,7 +567,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-foreground truncate">
-                      {doc.fileName}
+                      {doc.originalFileName}
                     </p>
                   </div>
                   <p className="text-sm text-muted-foreground">

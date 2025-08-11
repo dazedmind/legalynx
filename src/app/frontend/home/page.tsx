@@ -711,7 +711,7 @@ export default function Home() {
                 <a href="/frontend/privacy-policy" target="_blank" rel="noopener noreferrer">
                   Privacy Policy •
                 </a>
-                <p className="text-xs text-muted-foreground">v 0.1.9 pre-release</p>
+                <p className="text-xs text-muted-foreground">v 0.2.0</p>
               </div>
             )}
           </aside>

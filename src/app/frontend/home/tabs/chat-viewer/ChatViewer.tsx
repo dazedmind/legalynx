@@ -94,6 +94,13 @@ export default function ChatViewer({
   const [isVoiceChat, setIsVoiceChat] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState('');
   const ragLoadingDocIdRef = useRef<string | null>(null);
+  
+  // ✅ NEW: Track RAG system loading state
+  const [isLoadingRagSystem, setIsLoadingRagSystem] = useState(false);
+  const [ragLoadingInfo, setRagLoadingInfo] = useState<{
+    documentName?: string;
+    operation?: 'loading' | 'reactivating' | 'processing';
+  }>({});
 
   // Loading stage tracking
   const [loadingStage, setLoadingStage] = useState<LoadingStage>('loading_session');
@@ -142,6 +149,10 @@ export default function ChatViewer({
     setLoadingSessionId(null);
     setHasUnsavedChanges(false);
     setIsVoiceChat(false);
+    
+    // ✅ NEW: Clear RAG loading state
+    setIsLoadingRagSystem(false);
+    setRagLoadingInfo({});
     
     // Clear any cached RAG data
     ragCache.clearAll();
@@ -1020,6 +1031,13 @@ export default function ChatViewer({
     filename: string, 
     forceReload: boolean = false
   ): Promise<void> => {
+    // ✅ NEW: Set RAG loading state
+    setIsLoadingRagSystem(true);
+    setRagLoadingInfo({
+      documentName: filename,
+      operation: forceReload ? 'reactivating' : 'loading'
+    });
+    
     const getFileBlob = async (): Promise<Blob> => {
       // 🔥 STANDARDIZE: Always resolve to database ID for file operations
       const resolvedDocumentId = await resolveToDatabaseID(documentId);
@@ -1143,6 +1161,10 @@ export default function ChatViewer({
       
       // Re-throw with user-friendly message
       throw new Error(userMessage);
+    } finally {
+      // ✅ NEW: Always clear RAG loading state
+      setIsLoadingRagSystem(false);
+      setRagLoadingInfo({});
     }
   };
 
@@ -2054,6 +2076,20 @@ export default function ChatViewer({
         sessionTitle={loadingSessionInfo.title}
         documentName={loadingSessionInfo.documentName}
         stage={loadingStage}
+      />
+    );
+  }
+
+  // ✅ NEW: Show SessionLoader when loading RAG system
+  if (isLoadingRagSystem) {
+    const ragStage = ragLoadingInfo.operation === 'reactivating' ? 'loading_rag' : 'loading_rag';
+    const operationText = ragLoadingInfo.operation === 'reactivating' ? 'Reactivating' : 'Loading';
+    
+    return (
+      <SessionLoader
+        sessionTitle={`${operationText} Document`}
+        documentName={ragLoadingInfo.documentName || 'Document'}
+        stage={ragStage}
       />
     );
   }
