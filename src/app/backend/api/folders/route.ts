@@ -164,15 +164,13 @@ export async function GET(request: NextRequest) {
         owner_id: user.id,
         folder_id: parentId || null
       },
-      select: {
-        id: true,
-        file_name: true,
-        original_file_name: true,
-        file_size: true,
-        status: true,
-        page_count: true,
-        uploaded_at: true,
-        updated_at: true
+      include: {
+        chat_sessions: {
+          select: {
+            id: true,
+            created_at: true
+          }
+        }
       },
       orderBy: { updated_at: 'desc' }
     });
@@ -218,7 +216,8 @@ export async function GET(request: NextRequest) {
         status: doc.status,
         pages: doc.page_count,
         uploadedAt: doc.uploaded_at,
-        updatedAt: doc.updated_at
+        updatedAt: doc.updated_at,
+        chatSessionsCount: doc.chat_sessions.length
       })),
       breadcrumbs,
       currentFolder: parentId

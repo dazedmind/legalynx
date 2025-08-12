@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import Header from './frontend/components/Header';
 import BlurText from './frontend/components/reactbits/BlurText';
 import Image from 'next/image';
-import heroImg from './frontend/img/document-hero.png'
+import heroImg from './frontend/img/legalynxlogo.png'
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { PiSuitcaseSimple } from 'react-icons/pi';
@@ -148,12 +148,12 @@ export default function Home() {
       {/* Hero Section */}
       <section className="bg-primary relative overflow-hidden">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-30 pb-32">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-16">
+          <div className="flex flex-col-reverse lg:flex-row items-center justify-between md:gap-16">
             <div className="flex-1 text-center lg:text-left">
    
               <BlurText 
                 text="LegalynX" 
-                className="text-5xl lg:text-7xl font-bold text-foreground font-serif mt-30 md:mt-0  mb-2" 
+                className="text-5xl lg:text-7xl font-bold text-foreground font-serif  md:mt-0  mb-2" 
               />
               
               <h2 className="text-1xl lg:text-2xl text-muted-foreground mb-4 font-light">
@@ -172,7 +172,7 @@ export default function Home() {
   
             </div>
             
-            <div className='hidden md:block'>
+            <div className='block'>
               <Image 
               src={heroImg} 
               alt="LegalynX Logo" 
@@ -321,8 +321,8 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="bg-primary border-t">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="max-w-7xl mx-auto px-8 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="col-span-2">
               <h4 className="text-2xl font-bold text-foreground mb-4">LegalynX</h4>
               <p className="text-muted-foreground mb-4 max-w-md">
@@ -334,7 +334,7 @@ export default function Home() {
               </div>
             </div>
             
-            <div>
+            <div className="col-span-1">
               <h5 className="font-semibold text-foreground mb-4">Product</h5>
               <ul className="space-y-2 text-muted-foreground">
                 <li><Link href="/features" className="hover:text-blue-600 transition-colors">Features</Link></li>
@@ -343,7 +343,7 @@ export default function Home() {
               </ul>
             </div>
             
-            <div>
+            <div className="col-span-1">
               <h5 className="font-semibold text-foreground mb-4">Company</h5>
               <ul className="space-y-2 text-muted-foreground">
                 <li><Link href="/contact" className="hover:text-blue-600 transition-colors">Contact</Link></li>

@@ -20,6 +20,10 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { FcFolder, FcOpenedFolder, FcFile } from "react-icons/fc";
+import { TbFileFilled } from "react-icons/tb";
+import { BiSolidFilePdf } from "react-icons/bi";
+
 
 interface DocumentInfo {
   id: string;
@@ -274,13 +278,18 @@ export const FileGrid: React.FC<FileGridProps> = ({
                   </DropdownMenu>
                 </div>
                 <div className="text-center flex flex-col items-center no-select">
-                  <Folder
+                  {/* <Folder
                     className={`w-12 h-12 mb-2 ${
                       dragState.dragOverFolder === folder.id
                         ? "text-blue-600"
                         : "text-blue-500"
                     }`}
-                  />
+                  /> */}
+                  {/* <FcFolder className="w-12 h-12 mb-2" /> */}
+                  {!(folder.document_count && folder.document_count > 0) ?
+                    <FcFolder className="w-12 h-12 mb-2" /> :
+                    <FcOpenedFolder className="w-12 h-12 mb-2" />
+                  }
 
                   <h3 className="font-medium text-foreground truncate mb-1">
                     {truncateString(folder.name, 20)}
@@ -393,7 +402,8 @@ export const FileGrid: React.FC<FileGridProps> = ({
 
                 <div className="text-center flex flex-col items-center">
                   <div>
-                    <FileText className="w-12 h-12 mb-2 text-red-500" />
+                    <BiSolidFilePdf className="w-12 h-12 mb-2 text-red-500" />
+
                   </div>
                   <h3
                     className="font-medium text-foreground mb-1"
@@ -402,11 +412,11 @@ export const FileGrid: React.FC<FileGridProps> = ({
                     {truncateString(doc.originalFileName, 25)}
                   </h3>
                   <div className="space-y-1 text-xs text-muted-foreground">
-                    <p>{formatFileSize(doc.size)}</p>
+                    {/* <p>{formatFileSize(doc.size)}</p> */}
                     <p>{formatDate(doc.uploadedAt)}</p>
                     {doc.chatSessionsCount !== undefined &&
                       doc.chatSessionsCount > 0 && (
-                        <p className="text-blue-600">
+                        <p className="bg-blue/20 p-1 rounded-full text-blue-600">
                           <MessageSquare className="w-3 h-3 inline mr-1" />
                           {doc.chatSessionsCount} chats
                         </p>
@@ -471,13 +481,18 @@ export const FileGrid: React.FC<FileGridProps> = ({
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Folder
+                  {/* <Folder
                     className={`w-6 h-6 flex-shrink-0 ${
                       dragState.dragOverFolder === folder.id
                         ? "text-blue-600"
                         : "text-blue-500"
                     }`}
-                  />
+                  /> */}
+                  {!(folder.document_count && folder.document_count > 0) ?
+                    <FcFolder className="w-6 h-6 flex-shrink-0" /> :
+                    <FcOpenedFolder className="w-6 h-6 flex-shrink-0" />
+                  }
+
                   {dragState.dragOverFolder === folder.id && (
                     <Move className="w-4 h-4 text-blue-600 animate-pulse" />
                   )}
@@ -561,7 +576,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <div>
-                    <FileText className="w-6 h-6 text-red-500 flex-shrink-0" />
+                    <BiSolidFilePdf className="w-6 h-6 text-red-500 flex-shrink-0" />
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -571,7 +586,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
                     </p>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {formatFileSize(doc.size)}
+                    {formatDate(doc.uploadedAt)}
                     {doc.chatSessionsCount !== undefined &&
                       doc.chatSessionsCount > 0 && (
                         <span className="ml-2 text-blue-600">
@@ -582,7 +597,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
                 </div>
               </div>
               <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                <span>{formatDate(doc.uploadedAt)}</span>
+                {/* <span>{formatDate(doc.uploadedAt)}</span> */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button

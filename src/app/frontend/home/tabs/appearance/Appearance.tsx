@@ -317,7 +317,7 @@ export default function Appearance() {
               Adjust the text size for better readability.
             </p>
             
-            <div className="flex gap-3">
+            <div className="flex flex-col md:flex-row gap-3">
               {[
                 { id: 'small', label: 'Small', sample: 'The quick brown fox' },
                 { id: 'medium', label: 'Medium', sample: 'The quick brown fox' },
@@ -334,7 +334,9 @@ export default function Appearance() {
                   disabled={isLoading}
                 >
                   <div className="text-center">
-                    <p className="font-medium text-foreground mb-2">{size.label}</p>
+                    <p className="font-medium text-foreground mb-2">
+                      {size.label}
+                    </p>
                     <p 
                       className={`text-muted-foreground ${
                         size.id === 'small' ? 'text-sm' :
@@ -344,8 +346,8 @@ export default function Appearance() {
                       {size.sample}
                     </p>
                     {settings.fontSize === size.id && (
-                      <Check className="w-5 h-5 text-blue-600 mx-auto mt-2" />
-                    )}
+                        <Check className="w-5 h-5 text-blue-600 mx-auto mt-2" />
+                      )}
                   </div>
                 </button>
               ))}

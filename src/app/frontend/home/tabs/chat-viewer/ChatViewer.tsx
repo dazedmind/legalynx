@@ -14,6 +14,7 @@ import SessionLoader from '../../../components/SessionLoader';
 import { CloudCheck, AudioLines } from 'lucide-react';
 import { ModalType } from '../../../components/ConfirmationModal';
 import VoiceChatComponent from './VoiceChatComponent';
+import { BiSolidFilePdf } from 'react-icons/bi';
 
 interface ChatMessage {
   id: string;
@@ -2190,11 +2191,13 @@ export default function ChatViewer({
       <div className="flex-shrink-0 bg-primary p-4">
         {currentDocument ? (
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {!documentExists && (
                 <AlertCircle className="w-6 h-6 text-red-500" />
               )}
-              <FileText className={`w-8 h-8 ${documentExists ? 'text-blue-600' : 'text-gray-400'}`} />
+              {/* <FileText className={`w-8 h-8 ${documentExists ? 'text-blue-600' : 'text-gray-400'}`} /> */}
+              <BiSolidFilePdf className="w-8 h-8 text-red-500 flex-shrink-0" />
+
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className={`text-sm md:text-base mb-1 font-semibold ${documentExists ? 'text-foreground' : 'text-muted-foreground'}`}>
@@ -2211,11 +2214,11 @@ export default function ChatViewer({
                   {documentExists ? (
                     <span className="flex items-center gap-2">
                       {currentSessionId && currentDocument.status === 'INDEXED' ? (
-                        <span className="px-2 py-1 text-xs bg-blue/20 text-blue-600 rounded-full font-medium">
+                        <span className="px-2 py-0.5 text-xs bg-blue/20 text-blue-600 rounded-full font-medium">
                           Session Saved
                         </span>
                       ):(
-                        <span className="px-2 py-1 text-xs bg-neutral/20 text-muted-foreground border-tertiary border-dashed border-2 rounded-full font-medium">
+                        <span className="px-2 py-0.5 text-xs bg-neutral/20 text-muted-foreground border-tertiary border-dashed border-2 rounded-full font-medium">
                           Temporary Session
                         </span>
                       )}
@@ -2232,7 +2235,7 @@ export default function ChatViewer({
                 disabled={!documentExists || currentDocument?.status === 'INDEXED'}
                 className={`flex items-center p-2 px-3 text-sm rounded-lg transition-all duration-300 ${
                   !documentExists || currentDocument?.status === 'INDEXED'
-                    ? 'bg-tertiary text-muted-foreground cursor-not-allowed'
+                    ? 'bg-tertiary text-muted-foreground cursor-default'
                     : 'text-foreground hover:brightness-105 hover:bg-yellow-200/20 hover:text-yellow-600 cursor-pointer'
                 }`}
               >
@@ -2257,9 +2260,9 @@ export default function ChatViewer({
                     await handleDiscardAllAndStartNew();
                   }
                 ) : () => {if (handleNewChat) {handleNewChat()}}}
-                className="flex items-center cursor-pointer p-2 px-3 gap-1 text-sm bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-lg"
+                className="flex items-center cursor-pointer p-3 px-3 gap-1 text-sm bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-lg"
               >
-                <DiamondPlus className="w-4 h-4" />
+                <DiamondPlus className="w-5 h-5" strokeWidth={1.5} />
                 <span className="hidden md:block">New Chat</span>
               </button>
             </div>
@@ -2294,9 +2297,9 @@ export default function ChatViewer({
         />
 
         {/* Input Area */}
-        <div className="flex-shrink-0 bg-primary border-t border-tertiary p-6">
+        <div className="flex-shrink-0 bg-primary p-6">
           {documentExists && (
-            <div className='flex gap-4 mx-auto w-full relative'>
+            <div className='flex flex-col md:flex-row mx-auto w-full border border-tertiary rounded-lg'>
               <div className="flex-1">
                 <textarea
                   value={query}
@@ -2304,23 +2307,27 @@ export default function ChatViewer({
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Ask a question about the uploaded document..."
                   rows={2}
-                  className="w-full px-3 py-2 h-24 border border-tertiary rounded-xl focus:outline-none resize-none"
+                  className="w-full px-3 py-2 h-24 rounded-xl focus:outline-none resize-none"
                 />
               </div>
-              <button
-                onClick={handleVoiceModeClick}
-                title="Voice Chat with Lynx AI"
-                className="flex items-center absolute right-18 top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-gradient-to-tl from-yellow to-yellow-600 text-white hover:bg-blue-700 h-fit"
-              >
-                <AudioLines className="w-6 h-6"/>
-              </button>
-              <button
-                onClick={() => {handleQuery()}}
-                disabled={isQuerying || !query.trim() || !documentExists}
-                className="flex items-center absolute group right-5 top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed h-fit"
-              >
-                <ArrowUp className="w-6 h-6" />
-              </button>
+              <div className='flex justify-end items-center gap-4 pl-0 px-4 '>
+                <span className='flex items-center gap-2 md:mt-10'>
+                  <button
+                    onClick={handleVoiceModeClick}
+                    title="Voice Chat with Lynx AI"
+                    className="flex items-center  right-18 top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-gradient-to-tl from-yellow to-yellow-600 text-white hover:bg-blue-700 h-fit"
+                  >
+                    <AudioLines className="w-6 h-6"/>
+                  </button>
+                  <button
+                    onClick={() => {handleQuery()}}
+                    disabled={isQuerying || !query.trim() || !documentExists}
+                    className="flex items-center  group top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-foreground text-primary hover:bg-muted-foreground disabled:bg-muted disabled:text-muted-foreground disabled:cursor-default h-fit transition-all duration-300 ease-in-out"
+                  >
+                    <ArrowUp className="w-6 h-6" />
+                  </button>
+                </span>
+              </div>
             </div>
           )}
         </div>

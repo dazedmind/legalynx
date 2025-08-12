@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { toast, Toaster } from 'sonner'
 import logo from '../img/legalynxlogo.png'
 import Image from 'next/image';
+import { Loader2 } from 'lucide-react';
 
 interface ProfileData {
     id: string;
@@ -23,6 +24,7 @@ interface ProfileData {
 function Login() {
     const { login } = useAuth();
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const router = useRouter()
     const [formData, setFormData] = useState({
@@ -36,6 +38,7 @@ function Login() {
     }
 
     const handleLogin = async () => {
+        setIsLoading(true);
         const response = await fetch('/backend/api/login', {
             method: 'POST',
             headers: {
@@ -53,7 +56,7 @@ function Login() {
           } else {
             toast.error(data.message || 'Login failed');
           }
-
+          setIsLoading(false);
     }
 
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -66,6 +69,8 @@ function Login() {
         setFormData({ ...formData, [e.target.name]: e.target.value })
         
     }
+
+
 
   return (
     <div className='h-screen overflow-hidden'>
@@ -112,7 +117,9 @@ function Login() {
                     <span className='text-sm text-muted-foreground'>
                         Forgot Password?
                     </span>
-                    <Button onClick={handleLogin} className='w-full cursor-pointer bg-blue-600 text-white'>Sign In</Button>
+                    <Button onClick={handleLogin} disabled={isLoading} className='w-full cursor-pointer bg-blue-600 text-white'>
+                        {isLoading ? <Loader2 className='w-4 h-4 animate-spin' /> : 'Sign In'}
+                    </Button>
 
                     <span className='text-sm text-muted-foreground'>
                         <Link href="/frontend/register" className='cursor-pointer hover:text-blue-600'>
@@ -124,7 +131,7 @@ function Login() {
                
             </div>
 
-            <div className='hidden md:flex flex-col bg-blue/5 border-l border-tertiary shadow-md border items-center justify-center h-full w-full md:w-1/2 gap-2 relative'>
+            <div className='hidden md:flex flex-col bg-gradient-to-bl from-blue/0 to-blue/20 border-l border-tertiary shadow-md border items-center justify-center h-full w-full md:w-1/2 gap-2 relative'>
                 <Image
                     src={logo}
                     alt="Login"

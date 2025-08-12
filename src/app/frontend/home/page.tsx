@@ -577,7 +577,7 @@ export default function Home() {
                     (activeTab === "chat_history" || activeTab === "chat") && !isDesktopSidebarCollapsed ? "ml-2" : "ml-0"
                   } transition-all duration-300 w-5 h-5 flex-shrink-0`}
                 />
-                {!isDesktopSidebarCollapsed && <span className="truncate text-sm">Chat</span>}
+                {!isDesktopSidebarCollapsed && <span className="truncate">Chat</span>}
               </button>
 
               <button
@@ -711,7 +711,7 @@ export default function Home() {
                 <a href="/frontend/privacy-policy" target="_blank" rel="noopener noreferrer">
                   Privacy Policy •
                 </a>
-                <p className="text-xs text-muted-foreground">v 0.2.0</p>
+                <p className="text-xs text-muted-foreground">v 0.2.1</p>
               </div>
             )}
           </aside>

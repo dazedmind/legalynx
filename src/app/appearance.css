@@ -21,7 +21,7 @@
     --secondary-foreground: #4a5d23;
     --muted: #fef3c7;
     --muted-foreground: #78716c;
-    --accent: #d7982b;
+    --accent: #ffda9b;
     --accent-foreground: #fefce8;
     --destructive: #dc2626;
     --destructive-foreground: #fefce8;
@@ -30,10 +30,10 @@
     --ring: #f59e0b;
     --radius: 0.5rem;
     --tertiary: #f3e8d1;
-    --blue-primary: #1a3aa7;
+    --blue-primary: #cdb620;
     --yellow-secondary: #e4c858;
     --blue-accent: #468aff;
-    --color-blue: var(--yellow-secondary);
+    --color-blue: var(--blue-primary);
     --color-yellow: var(--blue-accent);
     --color-dark-blue: var(--blue-primary);
     --tertiary-foreground: #4a5d23;

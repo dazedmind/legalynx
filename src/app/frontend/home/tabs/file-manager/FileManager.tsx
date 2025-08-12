@@ -331,6 +331,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
       setDocuments(response.documents.map((doc: any) => ({
         ...doc,
         size: doc.fileSize || 0,
+        pages: doc.pageCount || 0,
         status: doc.status
       })) || []);
       setFolders([]);
@@ -701,8 +702,8 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
     let filtered = [...documents];
     let filteredFolderList = [...folders];
 
-    // Filter to show only INDEXED documents
-    filtered = filtered.filter(doc => doc.status === 'INDEXED');
+    // Filter to show documents that can have chat sessions
+    filtered = filtered.filter(doc => ['INDEXED', 'UPLOADED', 'TEMPORARY'].includes(doc.status));
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -800,24 +801,30 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
         
         {/* Bulk Actions */}
         {selectedDocs.size > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
             <span className="text-sm text-muted-foreground">
               {selectedDocs.size} selected
             </span>
-            <button
-              onClick={handleMoveToClick}
-              className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors flex items-center gap-1 cursor-pointer"
-            >
-              <Move className="w-3 h-3" />
-              Move To
-            </button>
-            <button
-              // onClick={() => handleBulkDelete(Array.from(selectedDocs), currentFolderId, false)}
-              className="px-3 py-1 bg-destructive text-primary rounded text-xs hover:bg-destructive/80 transition-colors flex items-center gap-1 cursor-pointer"
-            >
-              <Trash2 className="w-3 h-3" />
-              Delete
-            </button>
+            <span className='flex items-center gap-2'>
+              <button
+                onClick={handleMoveToClick}
+                className="p-3 py-2 bg-blue-600 text-white rounded-md text-xs hover:bg-blue-700 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <Move className="w-4 h-4" />
+                <span className='hidden md:block'>
+                  Move To
+                </span>
+              </button>
+              <button
+                // onClick={() => handleBulkDelete(Array.from(selectedDocs), currentFolderId, false)}
+                className="p-3 py-2 bg-destructive text-primary rounded-md text-xs hover:bg-destructive/80 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span className='hidden md:block'>
+                  Delete
+                </span>
+              </button>
+            </span>
           </div>
         )}
       </div>

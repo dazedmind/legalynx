@@ -140,11 +140,11 @@ export function ChatContainer({
         <div className={`flex ${isUser ? '' : 'flex-row'} items-start gap-3 max-w-[85%]`}>
           
           {/* Avatar */}
-          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${message.type === "ASSISTANT" ? 'bg-gray-700 text-white' : ''}`}>
+          {/* <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${message.type === "ASSISTANT" ? 'bg-gray-700 text-white' : ''}`}>
             {message.type === "ASSISTANT" &&(
               <Bot className="w-4 h-4" />
             )}
-          </div>
+          </div> */}
 
           {/* Message Content */}
           <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} flex-1`}>
@@ -282,7 +282,7 @@ export function ChatContainer({
       ref={chatContainerRef}
       className="flex-1 overflow-y-auto bg-primary chat-container"
     >
-      <div className="mx-auto px-6 py-8">
+      <div className="mx-auto px-6 py-8 pb-0">
         
         {/* Welcome Message */}
         {chatHistory.length === 0 && !isQuerying && (

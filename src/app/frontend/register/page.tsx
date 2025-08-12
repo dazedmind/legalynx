@@ -3,16 +3,19 @@ import React, { useState } from 'react'
 import Header from '../components/Header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Progress } from '@/components/ui/progress'
 import Link from 'next/link'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast , Toaster } from 'sonner'
 import { useRouter } from 'next/navigation'
 import logo from '../img/legalynxlogo.png'
 import Image from 'next/image'
+import { Loader2 } from 'lucide-react'
 
 
 function Register() {
     const router = useRouter()
+    const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -20,6 +23,42 @@ function Register() {
         acceptTerms: false
         })
     
+    const calculatePasswordStrength = (password: string) => {
+        if (!password) return { strength: 0, label: '', color: '' }
+        
+        let score = 0
+        
+        // Length check
+        if (password.length >= 8) score += 1
+        if (password.length >= 12) score += 1
+        
+        // Character variety checks
+        if (/[a-z]/.test(password)) score += 1
+        if (/[A-Z]/.test(password)) score += 1
+        if (/[0-9]/.test(password)) score += 1
+        if (/[^A-Za-z0-9]/.test(password)) score += 1
+        
+        // Determine strength level
+        if (score <= 2) {
+            return { strength: (score / 6) * 100, label: 'Weak', color: 'bg-red-500' }
+        } else if (score <= 4) {
+            return { strength: (score / 6) * 100, label: 'Medium', color: 'bg-yellow-500' }
+        } else if (score <= 5) {
+            return { strength: (score / 6) * 100, label: 'Strong', color: 'bg-green-400' }
+        } else {
+            return { strength: (score / 6) * 100, label: 'Very Strong', color: 'bg-green-500' }
+        }
+    }
+    
+    const passwordStrength = calculatePasswordStrength(formData.password)
+    
+    const validatePassword = (password: string) => {
+        if (formData.password !== formData.confirmPassword) {
+            return false
+        }
+        return true
+    }
+
     const emailValidation = (email: string) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         return emailRegex.test(email)
@@ -38,9 +77,13 @@ function Register() {
             toast.error('You must accept the terms and conditions')
             return false
         }
-        
+        if (formData.password.length < 8) {
+            toast.error('Password must be at least 8 characters long')
+            return false
+        }
         return true
     }
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value })
     }
@@ -51,10 +94,12 @@ function Register() {
 
 
     const handleSubmit = async () => {
+        setIsLoading(true);
         if (!validateForm()) {
+            setIsLoading(false);
             return
         }
-    
+
         try {
             // Store form data in sessionStorage for later use
             sessionStorage.setItem('registrationData', JSON.stringify({
@@ -84,6 +129,8 @@ function Register() {
         } catch (error) {
             toast.error('Something went wrong. Please try again.');
             console.error('Registration error:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -125,23 +172,46 @@ function Register() {
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
                         <p className='text-sm text-muted-foreground'>Password</p>
                         <Input type='password' name='password' placeholder='Enter your password' value={formData.password} onChange={handleChange} />
+                        {formData.password && (
+                            <div className='w-full space-y-2'>
+                                <div className='relative w-full h-2 bg-accent rounded-full overflow-hidden'>
+                                    <div 
+                                        className={`h-full transition-all duration-300 ${passwordStrength.color}`}
+                                        style={{ width: `${passwordStrength.strength}%` }}
+                                    />
+                                </div>
+                                <div className='flex justify-between items-center'>
+                                    <span className={`text-xs font-medium ${
+                                        passwordStrength.label === 'Weak' ? 'text-red-500' :
+                                        passwordStrength.label === 'Medium' ? 'text-yellow-600' :
+                                        passwordStrength.label === 'Strong' ? 'text-green-400' :
+                                        'text-green-500'
+                                    }`}>
+                                        {passwordStrength.label}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                     </span>
 
                     <span className='flex flex-col items-start gap-2 justify-start w-full'>
                         <p className='text-sm text-muted-foreground'>Confirm Password</p>
                         <Input type='password' name='confirmPassword' placeholder='Confirm your password' value={formData.confirmPassword} onChange={handleChange}/>
+                        {formData.confirmPassword && !validatePassword(formData.confirmPassword) && (
+                            <p className='text-destructive text-xs'>Passwords do not match</p>
+                        )}
                     </span>
            
 
                     <span className='text-sm text-muted-foreground flex flex-row justify-start gap-1'>
                         <Checkbox className='w-4 h-4 mr-2' checked={formData.acceptTerms} onCheckedChange={handleCheckboxChange}/>
                         <p className='text-xs text-muted-foreground'>
-                            By creating your account, you agree to the processing of your personal data by LegalynX as described in the <Link href="/frontend/privacy-policy" className='cursor-pointer underline hover:text-blue-600'>Privacy Policy</Link>.
+                            By creating your account, you agree to the processing of your personal data by LegalynX as described in the <Link href="/frontend/privacy-policy" className='cursor-pointer underline text-blue-600 hover:text-blue-600'>Privacy Policy</Link>.
                         </p>
                         
                     </span>
-                    <Button className='w-full cursor-pointer bg-blue-600 text-white' onClick={handleSubmit}>
-                        Sign Up
+                    <Button className='w-full cursor-pointer bg-blue-600 text-white' onClick={handleSubmit} disabled={isLoading}>
+                        {isLoading ? <Loader2 className='w-4 h-4 animate-spin' /> : 'Sign Up'}
                     </Button>
 
 
@@ -155,7 +225,7 @@ function Register() {
                
             </div>
 
-            <div className='hidden md:flex flex-col bg-blue/5 border-l border-tertiary shadow-md border items-center justify-center h-full w-full md:w-1/2 gap-2 relative'>
+            <div className='hidden md:flex flex-col bg-gradient-to-bl from-blue/0 to-blue/20 border-l border-tertiary shadow-md border items-center justify-center h-full w-full md:w-1/2 gap-2 relative'>
                 <Image
                     src={logo}
                     alt="Login"
