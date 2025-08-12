@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025-08-12
+### Added
+- **Password Validation**: Added password strength meter on account creation
+
+### Changed
+- **Hero Image**: Changed hero image on landing page to LegalynX logo
+- **Sign In Buttons**: Added loading animation on button submit for enhanced user feedback
+- **Sunset Theme**: Fixed sunset theme for better readability
+- **Changed Icons**: Changed Folder and File icons for better UI
+
 ## [0.2.0] - 2025-08-11
 
 ### Added
