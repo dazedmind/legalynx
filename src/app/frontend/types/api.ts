@@ -1,7 +1,6 @@
 export interface UploadResponse {
   documentId: string;
   filename: string;          // RAG system uses 'filename' 
-  originalName: string;      // But we also need 'originalName'
   size: number;
   uploadedAt: string;
   pages_processed: number;

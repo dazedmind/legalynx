@@ -655,8 +655,8 @@ export default function ChatViewer({
           
           const documentInfo = {
             id: mostRecentDoc.id || mostRecentDoc.documentId,
-            fileName: mostRecentDoc.fileName || mostRecentDoc.filename,
-            originalFileName: mostRecentDoc.originalFileName || mostRecentDoc.original_file_name || mostRecentDoc.originalName,
+            fileName: mostRecentDoc.fileName,
+            originalFileName: mostRecentDoc.originalFileName || mostRecentDoc.original_file_name,
             fileSize: mostRecentDoc.fileSize || mostRecentDoc.file_size || mostRecentDoc.size,
             uploadedAt: mostRecentDoc.uploadedAt || mostRecentDoc.uploaded_at,
             pageCount: mostRecentDoc.pageCount || mostRecentDoc.page_count || mostRecentDoc.pages_processed,
@@ -730,7 +730,7 @@ export default function ChatViewer({
           const documentInfo = {
             id: specificDoc.id || specificDoc.documentId,
             fileName: specificDoc.fileName || specificDoc.filename,
-            originalFileName: specificDoc.originalFileName || specificDoc.original_file_name || specificDoc.originalName,
+            originalFileName: specificDoc.originalFileName || specificDoc.original_file_name,
             fileSize: specificDoc.fileSize || specificDoc.file_size || specificDoc.size,
             uploadedAt: specificDoc.uploadedAt || specificDoc.uploaded_at,
             pageCount: specificDoc.pageCount || specificDoc.page_count || specificDoc.pages_processed,
@@ -1457,7 +1457,7 @@ export default function ChatViewer({
         body: JSON.stringify({
           userId: user.id,
           documentId: useDocumentId,
-          title: `Chat with ${currentDocument.fileName || currentDocument.originalName}`,
+          title: `Chat with ${currentDocument.fileName}`,
           isSaved: false
         })
       });
@@ -2202,10 +2202,10 @@ export default function ChatViewer({
                 <div className="flex items-center gap-2">
                   <h3 className={`text-sm md:text-base mb-1 font-semibold ${documentExists ? 'text-foreground' : 'text-muted-foreground'}`}>
                     <span className="block md:hidden">
-                      {truncateString(currentDocument.fileName || currentDocument.originalFileName, 20)}
+                      {truncateString(currentDocument.originalFileName, 20)}
                     </span>
                     <span className="hidden md:block">
-                      {currentDocument.fileName || currentDocument.originalFileName}
+                      {currentDocument.originalFileName}
                     </span>
                     {!documentExists && ' (Document Deleted)'}
                   </h3>
@@ -2233,10 +2233,10 @@ export default function ChatViewer({
               <button 
                 onClick={handleSaveFileClick}
                 disabled={!documentExists || currentDocument?.status === 'INDEXED'}
-                className={`flex items-center p-2 px-3 text-sm rounded-lg transition-all duration-300 ${
+                className={`flex items-center p-3 px-3 text-sm rounded-lg transition-all duration-300 ${
                   !documentExists || currentDocument?.status === 'INDEXED'
                     ? 'bg-tertiary text-muted-foreground cursor-default'
-                    : 'text-foreground hover:brightness-105 hover:bg-yellow-200/20 hover:text-yellow-600 cursor-pointer'
+                    : 'text-foreground bg-yellow/20 hover:brightness-105 hover:bg-yellow-200/20 hover:text-yellow-600 cursor-pointer'
                 }`}
               >
                 {!documentExists

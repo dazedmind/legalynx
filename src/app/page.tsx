@@ -272,7 +272,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h4 className="text-xl font-semibold text-foreground mb-2">24/7 Support</h4>
-                    <p className="text-muted-foreground">24/7 Support for all your legal needs.</p>
+                    <p className="text-xs text-muted-foreground">24/7 Support for all your legal needs.</p>
                   </div>
                 </div>
               </div>

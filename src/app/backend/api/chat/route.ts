@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       document: {
         id: chatSession.document.id,
         filename: chatSession.document.file_name,
-        originalName: chatSession.document.original_file_name,
+        originalFileName: chatSession.document.original_file_name,
         filePath: chatSession.document.file_path, // Include file path
         size: chatSession.document.file_size,
         pages: chatSession.document.page_count,

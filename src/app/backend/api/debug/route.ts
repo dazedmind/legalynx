@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
       },
       documents: documents.map(doc => ({
         id: doc.id,
-        originalName: doc.original_file_name,
+        originalFileName: doc.original_file_name,
         fileName: doc.file_name,
         filePath: doc.file_path,
         fileExists: doc.file_path ? fs.existsSync(doc.file_path) : false,

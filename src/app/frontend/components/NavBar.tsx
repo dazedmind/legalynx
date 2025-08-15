@@ -244,7 +244,7 @@ export default function NavBar() {
                 className="cursor-pointer p-2 px-3"
               >
                 <LogOut className="w-4 h-4" />
-                Logout
+                Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -702,8 +702,8 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
     let filtered = [...documents];
     let filteredFolderList = [...folders];
 
-    // Filter to show documents that can have chat sessions
-    filtered = filtered.filter(doc => ['INDEXED', 'UPLOADED', 'TEMPORARY'].includes(doc.status));
+    // Filter to show only INDEXED documents
+    filtered = filtered.filter(doc => doc.status === 'INDEXED');
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();

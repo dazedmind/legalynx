@@ -567,7 +567,7 @@ export default function Home() {
                     ? "bg-blue/20 text-blue-700 font-semibold rounded-r-lg"
                     : " text-foreground hover:bg-accent"
                 }`}
-                title={isDesktopSidebarCollapsed ? "Chat" : ""}
+                title={isDesktopSidebarCollapsed ? "Chat History" : ""}
               >
                 {(activeTab === "chat_history" || activeTab === "chat") && !isDesktopSidebarCollapsed && (
                   <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
@@ -577,7 +577,7 @@ export default function Home() {
                     (activeTab === "chat_history" || activeTab === "chat") && !isDesktopSidebarCollapsed ? "ml-2" : "ml-0"
                   } transition-all duration-300 w-5 h-5 flex-shrink-0`}
                 />
-                {!isDesktopSidebarCollapsed && <span className="truncate">Chat</span>}
+                {!isDesktopSidebarCollapsed && <span className="truncate">Chat History</span>}
               </button>
 
               <button

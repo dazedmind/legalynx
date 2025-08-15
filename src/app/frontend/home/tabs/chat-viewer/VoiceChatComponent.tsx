@@ -117,7 +117,7 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
         body: JSON.stringify({
           userId: user.id,
           documentId: useDocumentId,
-          title: `Chat with ${currentDocument.originalName}`,
+          title: `Chat with ${currentDocument.originalFileName}`,
           isSaved: false
         })
       });
@@ -168,7 +168,7 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
       const firstUserMessage = messages.find(m => m.type === 'USER');
       const title = firstUserMessage 
         ? `${firstUserMessage.content.substring(0, 50)}${firstUserMessage.content.length > 50 ? '...' : ''}`
-        : `Chat with ${currentDocument?.originalName || 'Document'}`;
+        : `Chat with ${currentDocument?.originalFileName || 'Document'}`;
 
       console.log('Saving session:', {
         sessionId: currentSessionId,
