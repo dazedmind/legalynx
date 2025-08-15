@@ -27,7 +27,7 @@ export async function PATCH(
   try {
     const user = await getUserFromToken(request);
     const documentId = (await params).id;
-    const { newName } = await request.json();
+    const { newName, updateProcessedName } = await request.json();
 
     console.log('📝 Rename document request:', {
       documentId,
@@ -104,13 +104,25 @@ export async function PATCH(
       }, { status: 409 });
     }
 
-    // Update the document name
+    // Check if this is a RAG processing update
+    const isRagUpdate = updateProcessedName === true;
+    
+    // Update the document name - RAG updates go to file_name, user renames go to original_file_name
+    const updateData: any = {
+      updated_at: new Date()
+    };
+    
+    if (isRagUpdate) {
+      // RAG processing update: update file_name (intelligent filename)
+      updateData.file_name = trimmedName;
+    } else {
+      // User rename: update original_file_name (display name)
+      updateData.original_file_name = trimmedName;
+    }
+    
     const updatedDocument = await prisma.document.update({
       where: { id: documentId },
-      data: {
-        original_file_name: trimmedName,
-        updated_at: new Date()
-      },
+      data: updateData,
       select: {
         id: true,
         original_file_name: true,

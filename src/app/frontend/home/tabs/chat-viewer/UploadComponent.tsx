@@ -792,8 +792,8 @@ function UploadComponent({
           }, 600);
           
           await new Promise(resolve => setTimeout(resolve, 600));
-          // Save to database first to get the cuid ID
-          documentInfo = await saveDocumentToDatabaseWithFilename(file, file.name);
+          // Save to database with RAG-generated intelligent filename
+          documentInfo = await saveDocumentToDatabaseWithFilename(file, ragResponse?.filename || file.name);
 
           // Step 2: Upload to RAG system using the database cuid ID
           setTimeout(() => {

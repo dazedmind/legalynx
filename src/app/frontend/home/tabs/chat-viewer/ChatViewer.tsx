@@ -655,7 +655,7 @@ export default function ChatViewer({
           
           const documentInfo = {
             id: mostRecentDoc.id || mostRecentDoc.documentId,
-            fileName: mostRecentDoc.fileName,
+            fileName: mostRecentDoc.fileName || mostRecentDoc.filename,
             originalFileName: mostRecentDoc.originalFileName || mostRecentDoc.original_file_name,
             fileSize: mostRecentDoc.fileSize || mostRecentDoc.file_size || mostRecentDoc.size,
             uploadedAt: mostRecentDoc.uploadedAt || mostRecentDoc.uploaded_at,
@@ -2202,10 +2202,10 @@ export default function ChatViewer({
                 <div className="flex items-center gap-2">
                   <h3 className={`text-sm md:text-base mb-1 font-semibold ${documentExists ? 'text-foreground' : 'text-muted-foreground'}`}>
                     <span className="block md:hidden">
-                      {truncateString(currentDocument.originalFileName, 20)}
-                    </span>
+                      {truncateString(currentDocument.fileName, 20)}
+                    </span> 
                     <span className="hidden md:block">
-                      {currentDocument.originalFileName}
+                      {currentDocument.fileName }
                     </span>
                     {!documentExists && ' (Document Deleted)'}
                   </h3>
@@ -2236,7 +2236,7 @@ export default function ChatViewer({
                 className={`flex items-center p-3 px-3 text-sm rounded-lg transition-all duration-300 ${
                   !documentExists || currentDocument?.status === 'INDEXED'
                     ? 'bg-tertiary text-muted-foreground cursor-default'
-                    : 'text-foreground bg-yellow/20 hover:brightness-105 hover:bg-yellow-200/20 hover:text-yellow-600 cursor-pointer'
+                    : 'text-foreground bg-accent hover:brightness-90  cursor-pointer'
                 }`}
               >
                 {!documentExists
