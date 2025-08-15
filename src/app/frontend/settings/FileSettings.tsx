@@ -35,12 +35,12 @@ const renamingFormats = [
   {
     value: "ADD_TIMESTAMP",
     label: "Add timestamp",
-    example: "document_2024-01-15.pdf",
+    example: "20250815_DOCUMENT.pdf",
   },
   {
     value: "SEQUENTIAL_NUMBERING",
     label: "Sequential numbering",
-    example: "document_001.pdf",
+    example: "DOCUMENT_001.pdf",
   },
 ];
 
