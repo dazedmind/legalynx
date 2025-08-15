@@ -33,7 +33,7 @@ interface UploadOptions {
 }
 
 interface UserSettings {
-  file_naming_format: "ORIGINAL" | "ADD_TIMESTAMP" | "SEQUENTIAL_NUMBERING";
+  file_naming_format: "ORIGINAL" | "ADD_TIMESTAMP" | "ADD_CLIENT_NAME";
   title?: string;
   client_name?: string;
 }
@@ -411,8 +411,8 @@ function UploadComponent({
             return "keep_original";
           case "ADD_TIMESTAMP":
             return "add_timestamp";
-          case "SEQUENTIAL_NUMBERING":
-            return "sequential_numbering";
+          case "ADD_CLIENT_NAME":
+            return "add_client_name";
           default:
             return "keep_original";
         }
@@ -500,8 +500,8 @@ function UploadComponent({
             return "keep_original";
           case "ADD_TIMESTAMP":
             return "add_timestamp";
-          case "SEQUENTIAL_NUMBERING":
-            return "sequential_numbering";
+          case "ADD_CLIENT_NAME":
+            return "add_client_name";
           default:
             return "keep_original";
         }

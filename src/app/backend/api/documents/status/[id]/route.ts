@@ -92,7 +92,7 @@ export async function GET(
         uploaded_at: true,
         updated_at: true,
         s3_key: true,
-        s3_bucket: true,
+        // s3_bucket: true,
         file_path: true
       }
     });

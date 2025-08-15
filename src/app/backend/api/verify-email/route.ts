@@ -64,7 +64,6 @@ export async function POST(req: Request) {
           user_settings: {
             create: {
               theme: 'light',
-              language: 'en',
             }
           },
           created_at: new Date(),

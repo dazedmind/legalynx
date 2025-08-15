@@ -100,21 +100,15 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         two_factor_enabled: false,
         two_factor_secret: secret.base32,
-        // Default values
-        voice_enabled: true,
+        // Default values - only include properties that exist in the schema
+        auto_rename_files: false,
+        file_naming_format: 'ORIGINAL',
         login_notifications: true,
         security_alerts: true,
-        analytics_consent: true,
         theme: 'light',
-        language: 'en',
-        timezone: 'UTC',
         date_format: 'MM/DD/YYYY',
         email_notifications: true,
         push_notifications: false,
-        auto_rename_files: false,
-        file_naming_format: 'ORIGINAL',
-        data_sharing_consent: false,
-        marketing_emails: false,
         last_settings_update: new Date(),
       }
     });

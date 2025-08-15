@@ -405,7 +405,7 @@ class RuleBasedFileNamer:
         return None
 
     @classmethod
-    def generate_filename_ultra_fast(
+    async def generate_filename_ultra_fast(
         cls,
         file_content: bytes,
         original_filename: str,
@@ -415,8 +415,9 @@ class RuleBasedFileNamer:
         counter: Optional[int] = None
     ) -> str:
         """
-        Ultra-fast filename generation using rule-based extraction.
-        NO LLM calls, NO API requests - pure regex and pattern matching.
+        LLM-enhanced filename generation with intelligent document analysis.
+        Uses LLM to extract document information for accurate naming.
+        Format: YYYYMMDD_TITLE.pdf (no client name)
         """
         if naming_option == "keep_original":
             return original_filename
@@ -424,63 +425,88 @@ class RuleBasedFileNamer:
         start_time = time.time()
         file_ext = os.path.splitext(original_filename)[1].lower()
         
-        # Extract text from first few pages only
-        text = cls.extract_text_fast(file_content, max_pages=3)
+        print("🧠 Using LLM for document analysis...")
         
-        # Extract information using regex patterns
-        extracted_date = cls.extract_date(text)
-        extracted_person = cls.extract_person(text)
-        extracted_type = cls.extract_document_type(text, original_filename)
+        # Initialize variables to avoid scoping issues
+        extracted_title = None
+        date_part = datetime.now().strftime("%Y%m%d")
         
-        # Apply fallbacks
-        date_part = extracted_date or datetime.now().strftime("%Y%m%d")
-        person_part = extracted_person or user_client_name or cls._extract_name_from_filename(original_filename)
-        type_part = extracted_type or user_title or cls._extract_type_from_filename(original_filename)
-        
-        # Clean components for filename safety
-        if person_part:
-            person_part = re.sub(r'[^\w]', '', person_part)[:20]
-        if type_part:
-            type_part = re.sub(r'[^\w]', '', type_part)[:20]
-        
-        # Build filename based on naming option
-        if naming_option == "add_timestamp":
-            parts = [date_part]
-            if person_part:
-                parts.append(person_part)
-            if type_part:
-                parts.append(type_part)
+        try:
+            # Import and use LLM document extractor
+            from services.llm_document_extractor import extract_document_info
             
-            if len(parts) >= 2:
-                filename = f"{'_'.join(parts)}{file_ext}"
-            else:
-                filename = f"{date_part}_{os.path.splitext(original_filename)[0]}{file_ext}"
-        
-        elif naming_option == "sequential_numbering":
-            seq_num = f"{counter:03d}" if counter else "001"
-            parts = []
-            if person_part:
-                parts.append(person_part)
-            if type_part:
-                parts.append(type_part)
-            parts.append(seq_num)
+            # Extract document information using LLM
+            extracted_info = await extract_document_info(file_content, original_filename)
             
-            if len(parts) >= 2:
-                filename = f"{'_'.join(parts)}{file_ext}"
+            # Get extracted values with fallbacks
+            extracted_type = extracted_info.get('document_type') or user_title or 'Document'
+            extracted_date = extracted_info.get('date')
+            extracted_client = extracted_info.get('client_name')
+            
+            # Clean the document type for filename safety
+            if extracted_type:
+                extracted_type = re.sub(r'[^\w\s-]', '', extracted_type)
+                extracted_type = re.sub(r'\s+', ' ', extracted_type).strip()
+                extracted_type = extracted_type.replace(' ', '_')[:30]  # Keep it shorter
+            
+            # Parse extracted date if available
+            if extracted_date:
+                try:
+                    # Parse date and format as YYYYMMDD
+                    if '-' in extracted_date:
+                        date_obj = datetime.strptime(extracted_date, "%Y-%m-%d")
+                        date_part = date_obj.strftime("%Y%m%d")
+                    else:
+                        date_part = extracted_date[:8] if len(extracted_date) >= 8 else datetime.now().strftime("%Y%m%d")
+                except:
+                    date_part = datetime.now().strftime("%Y%m%d")
+            
+            # Build filename based on naming option
+            if naming_option == "add_timestamp":
+                # Format: YYYYMMDD_DOCUMENTTYPE.ext (no client name)
+                filename = f"{date_part}_{extracted_type}{file_ext}"
+            
+            elif naming_option == "add_client_name":
+                # Format: YYYYMMDD_CLIENTNAME_DOCUMENTTYPE.ext
+                # Prefer LLM-extracted client name, fallback to user-provided, then default
+                client_part = extracted_client or user_client_name or "Client"
+                client_part = re.sub(r'[^\w]', '', client_part)[:20]  # Clean and limit length
+                filename = f"{date_part}_{client_part}_{extracted_type}{file_ext}"
+            
             else:
-                filename = f"{os.path.splitext(original_filename)[0]}_{seq_num}{file_ext}"
-        
-        else:
-            filename = original_filename
-        
-        processing_time = time.time() - start_time
-        print(f"⚡ Rule-based naming completed in {processing_time:.3f}s")
-        print(f"   - Date: {extracted_date} → {date_part}")
-        print(f"   - Person: {extracted_person} → {person_part}")
-        print(f"   - Type: {extracted_type} → {type_part}")
-        print(f"   - Final: {filename}")
-        
-        return filename
+                filename = original_filename
+            
+            processing_time = time.time() - start_time
+            print(f"✅ LLM-enhanced naming completed in {processing_time:.3f}s")
+            print(f"   - Document Type: {extracted_info.get('document_type', 'Unknown')}")
+            print(f"   - Date: {extracted_date}")
+            print(f"   - Client Name: {extracted_client or 'None'}")
+            print(f"   - Final: {filename}")
+            
+            return filename
+            
+        except Exception as e:
+            print(f"⚠️ LLM extraction failed, using fallback: {e}")
+            
+            # Use fallback document type if LLM extraction failed
+            fallback_type = user_title or "Document"
+            fallback_type = re.sub(r'[^\w]', '_', fallback_type)[:20]  # Keep it short
+            
+            # Build filename using fallback logic
+            if naming_option == "add_timestamp":
+                filename = f"{date_part}_{fallback_type}{file_ext}"
+            elif naming_option == "add_client_name":
+                client_part = user_client_name or "Client"
+                client_part = re.sub(r'[^\w]', '', client_part)[:20]  # Clean and limit length
+                filename = f"{date_part}_{client_part}_{fallback_type}{file_ext}"
+            else:
+                filename = original_filename
+            
+            processing_time = time.time() - start_time
+            print(f"⚡ Fallback naming completed in {processing_time:.3f}s")
+            print(f"   - Final: {filename}")
+            
+            return filename
 
     @staticmethod
     def _extract_name_from_filename(filename: str) -> Optional[str]:
@@ -619,11 +645,11 @@ async def optimized_upload_workflow(
     total_start_time = time.time()
     
     try:
-        # STEP 1: Ultra-fast naming (0.01-0.1 seconds)
-        print("⚡ Step 1: Ultra-fast rule-based naming...")
+        # STEP 1: LLM-enhanced naming
+        print("🧠 Step 1: LLM-enhanced intelligent naming...")
         naming_start = time.time()
         
-        intelligent_filename = RuleBasedFileNamer.generate_filename_ultra_fast(
+        intelligent_filename = await RuleBasedFileNamer.generate_filename_ultra_fast(
             file_content=file_content,
             original_filename=original_filename,
             naming_option=naming_option,

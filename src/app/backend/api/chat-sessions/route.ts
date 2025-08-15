@@ -145,7 +145,7 @@ export async function POST(request: Request) {
       data: {
         user_id: user.id,
         document_id: documentId,
-        title: title || `Chat with ${document.original_file_name}`,
+        title: title || `Chat with ${document.file_name}`,
         is_saved: isSaved
       },
       include: {

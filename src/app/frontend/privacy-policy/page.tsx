@@ -168,9 +168,6 @@ const PrivacyPolicy: React.FC = () => {
                 <h3 className="text-xl font-medium text-gray-800 mb-3">5.1 Account Settings</h3>
                 <p className="text-gray-700 mb-3">You have full control over your privacy settings, including:</p>
                 <ul className="list-disc pl-6 space-y-2 text-gray-700">
-                  <li>Data sharing preferences</li>
-                  <li>Analytics consent settings</li>
-                  <li>Marketing email preferences</li>
                   <li>Notification settings</li>
                   <li>Security alert preferences</li>
                 </ul>

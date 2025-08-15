@@ -28,9 +28,7 @@ interface SecuritySettings {
 }
 
 interface PrivacySettings {
-  data_sharing_consent: boolean;
-  analytics_consent: boolean;
-  marketing_emails: boolean;
+  
 }
 
 // Floating Save Changes Bar Component
@@ -107,9 +105,7 @@ export default function PrivacySecuritySettings() {
   });
   
   const [privacySettings, setPrivacySettings] = useState<PrivacySettings>({
-    data_sharing_consent: false,
-    analytics_consent: true,
-    marketing_emails: false,
+    
   });
 
   // Store original settings for discard functionality
@@ -117,12 +113,6 @@ export default function PrivacySecuritySettings() {
     two_factor_enabled: false,
     login_notifications: true,
     security_alerts: true,
-  });
-  
-  const [originalPrivacySettings, setOriginalPrivacySettings] = useState<PrivacySettings>({
-    data_sharing_consent: false,
-    analytics_consent: true,
-    marketing_emails: false,
   });
 
   // 2FA Setup state
@@ -177,9 +167,7 @@ export default function PrivacySecuritySettings() {
         };
 
         const loadedPrivacySettings = {
-          data_sharing_consent: data.data_sharing_consent || false,
-          analytics_consent: data.analytics_consent ?? true,
-          marketing_emails: data.marketing_emails || false,
+          
         };
 
         setSecuritySettings(loadedSecuritySettings);
@@ -187,7 +175,6 @@ export default function PrivacySecuritySettings() {
         
         // Store originals for discard functionality
         setOriginalSecuritySettings(loadedSecuritySettings);
-        setOriginalPrivacySettings(loadedPrivacySettings);
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -231,7 +218,6 @@ export default function PrivacySecuritySettings() {
         
         // Update originals to current values
         setOriginalSecuritySettings({ ...securitySettings });
-        setOriginalPrivacySettings({ ...privacySettings });
         
         toast.success('Settings saved successfully');
       } else {
@@ -249,7 +235,6 @@ export default function PrivacySecuritySettings() {
   const discardChanges = () => {
     // Revert to original settings
     setSecuritySettings({ ...originalSecuritySettings });
-    setPrivacySettings({ ...originalPrivacySettings });
     setHasUnsavedChanges(false);
     toast.info('Changes discarded');
   };

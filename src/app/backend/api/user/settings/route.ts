@@ -36,20 +36,13 @@ export async function GET(request: NextRequest) {
         file_naming_format: true,
         file_naming_title: true,
         file_client_name: true,
-        ai_personality: true,
-        voice_enabled: true,
         file_retention_days: true,
         auto_delete_files: true,
         two_factor_enabled: true,
         two_factor_secret: true,
         login_notifications: true,
         security_alerts: true,
-        data_sharing_consent: true,
-        analytics_consent: true,
-        marketing_emails: true,
         theme: true,
-        language: true,
-        timezone: true,
         date_format: true,
         email_notifications: true,
         push_notifications: true,
@@ -73,8 +66,7 @@ export async function GET(request: NextRequest) {
         autoDeleteFiles: false,
         
         // AI & Chat Settings
-        aiPersonality: null,
-        voiceEnabled: true,
+        
         
         // Security Settings
         twoFactorEnabled: false,
@@ -82,15 +74,10 @@ export async function GET(request: NextRequest) {
         loginNotifications: true,
         securityAlerts: true,
         
-        // Privacy Settings
-        dataSharingConsent: false,
-        analyticsConsent: true,
-        marketingEmails: false,
+        
         
         // UI/UX Preferences
         theme: 'light',
-        language: 'en',
-        timeZone: 'UTC',
         dateFormat: 'MM/DD/YYYY',
         
         // Notification Settings
@@ -117,8 +104,7 @@ export async function GET(request: NextRequest) {
       autoDeleteFiles: userSettings.auto_delete_files,
       
       // AI & Chat Settings
-      aiPersonality: userSettings.ai_personality,
-      voiceEnabled: userSettings.voice_enabled,
+      
       
       // Security Settings
       twoFactorEnabled: userSettings.two_factor_enabled,
@@ -127,14 +113,10 @@ export async function GET(request: NextRequest) {
       securityAlerts: userSettings.security_alerts,
       
       // Privacy Settings
-      dataSharingConsent: userSettings.data_sharing_consent,
-      analyticsConsent: userSettings.analytics_consent,
-      marketingEmails: userSettings.marketing_emails,
+      
       
       // UI/UX Preferences
       theme: userSettings.theme,
-      language: userSettings.language,
-      timeZone: userSettings.timezone, // Note: DB field is 'timezone', not 'time_zone'
       dateFormat: userSettings.date_format,
       
       // Notification Settings
@@ -184,8 +166,7 @@ export async function PATCH(request: NextRequest) {
     if (body.autoDeleteFiles !== undefined) updateData.auto_delete_files = body.autoDeleteFiles;
     
     // AI & Chat Settings
-    if (body.aiPersonality !== undefined) updateData.ai_personality = body.aiPersonality;
-    if (body.voiceEnabled !== undefined) updateData.voice_enabled = body.voiceEnabled;
+    
     
     // Security Settings
     if (body.twoFactorEnabled !== undefined) updateData.two_factor_enabled = body.twoFactorEnabled;
@@ -193,15 +174,10 @@ export async function PATCH(request: NextRequest) {
     if (body.loginNotifications !== undefined) updateData.login_notifications = body.loginNotifications;
     if (body.securityAlerts !== undefined) updateData.security_alerts = body.securityAlerts;
     
-    // Privacy Settings
-    if (body.dataSharingConsent !== undefined) updateData.data_sharing_consent = body.dataSharingConsent;
-    if (body.analyticsConsent !== undefined) updateData.analytics_consent = body.analyticsConsent;
-    if (body.marketingEmails !== undefined) updateData.marketing_emails = body.marketingEmails;
+    
     
     // UI/UX Preferences
     if (body.theme !== undefined) updateData.theme = body.theme;
-    if (body.language !== undefined) updateData.language = body.language;
-    if (body.timeZone !== undefined) updateData.timezone = body.timeZone; // Note: DB field is 'timezone'
     if (body.dateFormat !== undefined) updateData.date_format = body.dateFormat;
     
     // Notification Settings
@@ -225,19 +201,12 @@ export async function PATCH(request: NextRequest) {
         file_naming_format: true,
         file_naming_title: true,
         file_client_name: true,
-        ai_personality: true,
-        voice_enabled: true,
         file_retention_days: true,
         auto_delete_files: true,
         two_factor_enabled: true,
         login_notifications: true,
         security_alerts: true,
-        data_sharing_consent: true,
-        analytics_consent: true,
-        marketing_emails: true,
         theme: true,
-        language: true,
-        timezone: true,
         date_format: true,
         email_notifications: true,
         push_notifications: true,
@@ -258,17 +227,10 @@ export async function PATCH(request: NextRequest) {
         fileClientName: userSettings.file_client_name,
         fileRetentionDays: userSettings.file_retention_days,
         autoDeleteFiles: userSettings.auto_delete_files,
-        aiPersonality: userSettings.ai_personality,
-        voiceEnabled: userSettings.voice_enabled,
         twoFactorEnabled: userSettings.two_factor_enabled,
         loginNotifications: userSettings.login_notifications,
         securityAlerts: userSettings.security_alerts,
-        dataSharingConsent: userSettings.data_sharing_consent,
-        analyticsConsent: userSettings.analytics_consent,
-        marketingEmails: userSettings.marketing_emails,
         theme: userSettings.theme,
-        language: userSettings.language,
-        timeZone: userSettings.timezone,
         dateFormat: userSettings.date_format,
         emailNotifications: userSettings.email_notifications,
         pushNotifications: userSettings.push_notifications,

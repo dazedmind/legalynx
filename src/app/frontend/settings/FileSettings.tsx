@@ -38,15 +38,15 @@ const renamingFormats = [
     example: "20250815_DOCUMENT.pdf",
   },
   {
-    value: "SEQUENTIAL_NUMBERING",
-    label: "Sequential numbering",
-    example: "DOCUMENT_001.pdf",
+    value: "ADD_CLIENT_NAME",
+    label: "Add the Client Name",
+    example: "20250815_CLIENT_DOCUMENT.pdf",
   },
 ];
 
 interface UserSettings {
   auto_rename_files: boolean;
-  file_naming_format: "ORIGINAL" | "ADD_TIMESTAMP" | "SEQUENTIAL_NUMBERING";
+  file_naming_format: "ORIGINAL" | "ADD_TIMESTAMP" | "ADD_CLIENT_NAME";
   file_retention_days: number | null;
   auto_delete_files: boolean;
 }
@@ -435,7 +435,7 @@ export default function FileSettings() {
                           format.value as
                             | "ORIGINAL"
                             | "ADD_TIMESTAMP"
-                            | "SEQUENTIAL_NUMBERING"
+                            | "ADD_CLIENT_NAME"
                         )
                       }
                       className="text-blue-600"

@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     // Create chat session
     const chatSession = await prisma.chatSession.create({
       data: {
-        title: title || `Chat with ${document.original_file_name}`,
+        title: title || `Chat with ${document.file_name}`,
         user_id: user.id,
         document_id: documentId
       },

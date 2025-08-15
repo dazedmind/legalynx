@@ -30,7 +30,6 @@ model User {
   documents          Document[]
   chat_sessions      ChatSession[]     @relation("UserChatSessions")
   security_logs      SecurityLog[]     @relation("UserSecurityLogs")
-  accounts           Account[]
   sessions           Session[]
   verification_tokens VerificationToken[] @relation("UserVerificationTokens")
   token_usage_logs   TokenUsageLog[]
@@ -95,11 +94,6 @@ model UserSettings {
   id              String    @id @default(cuid())
   user_id         String    @unique @map("user_id") // Make unique for one-to-one
   
-  // AI & Chat Settings
-  ai_personality  String?   @db.Text @map("ai_personality")
-  voice_enabled   Boolean   @default(true) @map("voice_enabled")
-  preferred_voice String?   @map("preferred_voice") // Voice selection for TTS
-  
   // File Management Settings
   auto_rename_files Boolean @default(false) @map("auto_rename_files")
   file_naming_format FileNamingFormat @default(ORIGINAL) @map("file_naming_format")
@@ -114,15 +108,9 @@ model UserSettings {
   login_notifications Boolean @default(true) @map("login_notifications")
   security_alerts   Boolean  @default(true) @map("security_alerts")
   
-  // Privacy Settings
-  data_sharing_consent Boolean @default(false) @map("data_sharing_consent")
-  analytics_consent Boolean    @default(true) @map("analytics_consent")
-  marketing_emails  Boolean    @default(false) @map("marketing_emails")
   
   // UI/UX Preferences
   theme             String    @default("light") @map("theme") // "light", "dark", "auto"
-  language          String    @default("en") @map("language")
-  timezone          String    @default("UTC") @map("timezone")
   date_format       String    @default("MM/DD/YYYY") @map("date_format")
   
   // Notification Settings
@@ -148,7 +136,6 @@ model Document {
   original_file_name String
   file_path         String         // S3 URL when INDEXED, empty when UPLOADED
   s3_key           String?         // S3 object key (only when INDEXED)
-  s3_bucket        String?         // S3 bucket name (only when INDEXED)
   file_size         Int
   mime_type         String
   status            DocumentStatus @default(UPLOADED)
@@ -255,28 +242,6 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-model Account {
-  id                String  @id @default(cuid())
-  userId            String  @map("user_id") // Map to snake_case
-  type              String
-  provider          String
-  providerAccountId String  @map("provider_account_id")
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@map("accounts") // Use snake_case table name
-}
-
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique @map("session_token")
@@ -324,7 +289,7 @@ enum MessageRole {
 enum FileNamingFormat {
   ORIGINAL
   ADD_TIMESTAMP
-  SEQUENTIAL_NUMBERING
+  ADD_CLIENT_NAME
 }
 
 enum SecurityAction {

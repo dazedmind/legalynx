@@ -132,26 +132,25 @@ def generate_filename(
         return original_filename
     
     elif naming_option == "add_timestamp":
-        if not title or not client_name:
-            print("⚠️ Missing title or client_name for timestamp naming, using original")
+        if not title:
+            print("⚠️ Missing title for timestamp naming, using original")
             return original_filename
         
-        # Format: TITLE_CLIENTNAME_YYYY-MM-DD.ext
-        date_str = datetime.now().strftime("%Y-%m-%d")
+        # Format: YYYYMMDD_TITLE.ext (no client name)
+        date_str = datetime.now().strftime("%Y%m%d")
         clean_title = clean_for_filename(title)
-        clean_client = clean_for_filename(client_name)
-        return f"{clean_title}_{clean_client}_{date_str}{file_ext}"
+        return f"{date_str}_{clean_title}{file_ext}"
     
-    elif naming_option == "sequential_numbering":
+    elif naming_option == "add_client_name":
         if not title or not client_name:
-            print("⚠️ Missing title or client_name for sequential naming, using original")
+            print("⚠️ Missing title or client_name for client naming, using original")
             return original_filename
         
-        # Use provided counter or default to 001
-        number = counter if counter is not None else 1
+        # Format: YYYYMMDD_CLIENTNAME_TITLE.ext
+        date_str = datetime.now().strftime("%Y%m%d")
         clean_title = clean_for_filename(title)
         clean_client = clean_for_filename(client_name)
-        return f"{clean_title}_{clean_client}_{number:03d}{file_ext}"
+        return f"{date_str}_{clean_client}_{clean_title}{file_ext}"
     
     else:
         print(f"⚠️ Unknown naming option: {naming_option}, using original")
@@ -550,8 +549,8 @@ def create_filename_from_extracted_info(
     
     # Apply fallbacks for missing information
     date_part = info.get('date') or datetime.now().strftime("%Y%m%d")
-    person_part = info.get('person') or user_client_name or extract_name_from_filename(original_filename)
-    type_part = info.get('type') or user_title or extract_type_from_filename(original_filename)
+    person_part = info.get('client_name') or info.get('person') or user_client_name or extract_name_from_filename(original_filename)
+    type_part = info.get('document_type') or info.get('type') or user_title or extract_type_from_filename(original_filename)
     
     # Clean components
     if person_part:
@@ -561,8 +560,8 @@ def create_filename_from_extracted_info(
     
     print(f"🔧 Building filename with fallbacks:")
     print(f"   - Date: {date_part} (extracted: {info.get('date')})")
-    print(f"   - Person: {person_part} (extracted: {info.get('person')})")
-    print(f"   - Type: {type_part} (extracted: {info.get('type')})")
+    print(f"   - Client: {person_part} (extracted: {info.get('client_name') or info.get('person')})")
+    print(f"   - Type: {type_part} (extracted: {info.get('document_type') or info.get('type')})")
     
     # Build filename based on naming option
     if naming_option == "add_timestamp":
@@ -687,14 +686,14 @@ def generate_fallback_filename(
         clean_client = clean_for_filename(user_client_name)
         return f"{date_str}_{clean_client}_{clean_title}{file_ext}"
     
-    elif naming_option == "sequential_numbering" and user_title and user_client_name:
-        seq_num = f"{counter:03d}" if counter else "001"
+    elif naming_option == "add_client_name" and user_title and user_client_name:
+        date_str = datetime.now().strftime("%Y%m%d")
         clean_title = clean_for_filename(user_title)
         clean_client = clean_for_filename(user_client_name)
-        return f"{clean_client}_{clean_title}_{seq_num}{file_ext}"
+        return f"{date_str}_{clean_client}_{clean_title}{file_ext}"
     
     # Ultimate fallback: try to extract from filename, else use original
-    elif naming_option in ["add_timestamp", "sequential_numbering"]:
+    elif naming_option in ["add_timestamp", "add_client_name"]:
         extracted_name = extract_name_from_filename(original_filename)
         extracted_type = extract_type_from_filename(original_filename)
         
@@ -708,14 +707,13 @@ def generate_fallback_filename(
                     parts.append(clean_for_filename(extracted_type))
                 return f"{'_'.join(parts)}{file_ext}"
             
-            elif naming_option == "sequential_numbering":
-                seq_num = f"{counter:03d}" if counter else "001"
-                parts = []
+            elif naming_option == "add_client_name":
+                date_str = datetime.now().strftime("%Y%m%d")
+                parts = [date_str]
                 if extracted_name:
                     parts.append(clean_for_filename(extracted_name))
                 if extracted_type:
                     parts.append(clean_for_filename(extracted_type))
-                parts.append(seq_num)
                 return f"{'_'.join(parts)}{file_ext}"
     
     print(f"⚠️ No valid naming configuration, keeping original: {original_filename}")

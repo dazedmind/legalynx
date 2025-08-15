@@ -130,7 +130,7 @@ async function saveDocumentToS3(document: any): Promise<any> {
         file_name: ragGeneratedFilename || normalizedResult.key,
         file_path: normalizedResult.url, // Update path to S3 URL
         s3_key: normalizedResult.key,    // Store S3 key for reference
-        s3_bucket: 'legalynx',
+        // s3_bucket: 'legalynx',
         status: 'INDEXED',
         s3_uploaded_at: new Date(),
         updated_at: new Date()

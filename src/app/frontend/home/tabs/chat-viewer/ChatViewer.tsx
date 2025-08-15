@@ -833,8 +833,8 @@ export default function ChatViewer({
         console.log('📄 Session data loaded:', sessionData);
         
         setLoadingSessionInfo({
-          title: sessionData.title || `Chat with ${sessionData.document.name}`,
-          documentName: sessionData.document.name
+          title: sessionData.title || `Chat with ${sessionData.document.fileName}`,
+          documentName: sessionData.document.fileName
         });
         
         setLoadingStage('loading_document');
@@ -1457,7 +1457,7 @@ export default function ChatViewer({
         body: JSON.stringify({
           userId: user.id,
           documentId: useDocumentId,
-          title: `Chat with ${currentDocument.originalFileName || currentDocument.originalName}`,
+          title: `Chat with ${currentDocument.fileName || currentDocument.originalName}`,
           isSaved: false
         })
       });
@@ -1520,7 +1520,7 @@ export default function ChatViewer({
       const firstUserMessage = chatHistory.find(m => m.type === 'USER');
       const title = firstUserMessage 
         ? `${firstUserMessage.content.substring(0, 50)}${firstUserMessage.content.length > 50 ? '...' : ''}`
-        : `Chat with ${currentDocument?.originalName || 'Document'}`;
+        : `Chat with ${currentDocument?.fileName || 'Document'}`;
 
       console.log('💾 Saving session:', {
         sessionId: currentSessionId,
@@ -2202,10 +2202,10 @@ export default function ChatViewer({
                 <div className="flex items-center gap-2">
                   <h3 className={`text-sm md:text-base mb-1 font-semibold ${documentExists ? 'text-foreground' : 'text-muted-foreground'}`}>
                     <span className="block md:hidden">
-                      {truncateString(currentDocument.originalFileName, 20)}
+                      {truncateString(currentDocument.fileName || currentDocument.originalFileName, 20)}
                     </span>
                     <span className="hidden md:block">
-                      {currentDocument.originalFileName}
+                      {currentDocument.fileName || currentDocument.originalFileName}
                     </span>
                     {!documentExists && ' (Document Deleted)'}
                   </h3>

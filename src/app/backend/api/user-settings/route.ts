@@ -31,10 +31,6 @@ export async function GET(request: NextRequest) {
     const settings = await prisma.userSettings.findUnique({
       where: { user_id: user.id },
       select: {
-        // AI & Chat Settings
-        ai_personality: true,
-        voice_enabled: true,
-        preferred_voice: true,
         
         // File Management Settings
         auto_rename_files: true,
@@ -49,15 +45,8 @@ export async function GET(request: NextRequest) {
         login_notifications: true,
         security_alerts: true,
         
-        // Privacy Settings
-        data_sharing_consent: true,
-        analytics_consent: true,
-        marketing_emails: true,
-        
         // UI/UX Preferences
         theme: true,
-        language: true,
-        timezone: true,
         date_format: true,
         
         // Notification Settings
@@ -83,9 +72,7 @@ export async function GET(request: NextRequest) {
         auto_delete_files: false,
         
         // AI & Chat Settings defaults
-        ai_personality: null,
-        voice_enabled: true,
-        preferred_voice: null,
+        
         
         // Security Settings defaults
         two_factor_enabled: false,
@@ -93,14 +80,10 @@ export async function GET(request: NextRequest) {
         security_alerts: true,
         
         // Privacy Settings defaults
-        data_sharing_consent: false,
-        analytics_consent: true,
-        marketing_emails: false,
+        
         
         // UI/UX Preferences defaults
         theme: 'light',
-        language: 'en',
-        timezone: 'UTC',
         date_format: 'MM/DD/YYYY',
         
         // Notification Settings defaults
@@ -135,12 +118,10 @@ export async function POST(request: NextRequest) {
 
     // Validate input data
     const allowedFields = [
-      'ai_personality', 'voice_enabled', 'preferred_voice',
       'auto_rename_files', 'file_naming_format', 'file_naming_title', 
       'file_client_name', 'file_retention_days', 'auto_delete_files', 
       'login_notifications', 'security_alerts',
-      'data_sharing_consent', 'analytics_consent', 'marketing_emails',
-      'theme', 'language', 'timezone', 'date_format',
+      'theme', 'date_format',
       'email_notifications', 'push_notifications'
     ];
 

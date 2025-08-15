@@ -335,7 +335,7 @@ def convert_enum_to_naming_option(enum_value: str) -> str:
     enum_mapping = {
         'ORIGINAL': 'keep_original',
         'ADD_TIMESTAMP': 'add_timestamp', 
-        'SEQUENTIAL_NUMBERING': 'sequential_numbering'
+        'ADD_CLIENT_NAME': 'add_client_name'
     }
     return enum_mapping.get(enum_value, 'keep_original')
 
@@ -541,16 +541,8 @@ async def upload_document_ultra_fast(
         # FIXED: Use your existing optimized_upload_workflow
         from optimized_rag_system import optimized_upload_workflow
         
-        # Get next sequential number if needed
+        # No counter needed for the new naming options
         counter = 1
-        if naming_option == 'sequential_numbering':
-            from utils.file_handler import get_next_sequential_number
-            counter = get_next_sequential_number(
-                upload_dir="sample_docs",
-                title=title,
-                client_name=client_name
-            )
-            print(f"🔢 Next sequential number: {counter}")
         
         # Call your existing optimized workflow with proper user settings
         result = await optimized_upload_workflow(
