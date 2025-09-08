@@ -5,9 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-09-08
+
+⚠️ Note: We skipped version 0.2.3 to 0.2.x in order to align with the scope of new features and improvements. The jump reflects a larger set of changes that warranted a minor version bump.
+
+### 🧩 What's new?
+
+- **GPT 5-mini integration:** the pipeline now runs on OpenAI’s GPT 5-nano model (previously Gemini Flash 2.0).  
+- **Smarter responses:** improved verbosity and reasoning making the assistant more helpful and proactive in asking clarifying questions.  
+- **Dynamic markdown rendering:** assistant responses now support bold, italic, and underline formatting.  
+- **Per-message deletion:** users can delete specific messages without losing the full conversation.  
+- **Abort response generation:** added a stop button to cancel outputs mid-response.  
+- **Context timer:** displays elapsed time for better user context-awareness.  
+
+### 🛠️ Fixed
+- **UI polishing:** adjusted sizing, margins, color contrast, and other visual elements for consistency. 
+- **Improved error handling:** error prompts now provide clearer, user-friendly information.  
+
+### ⛔ Removed
+
+- **Response feedback:** thumbs up/down feature removed since feedback isn’t used for training.  
+- **Usage statistics:** simplified subscription page by removing usage tracking.  
+
 ## [0.2.2] - 2025-08-15
 ### 🛠️ Fixed
-- **Auto-rename feature**: The renaming feature now uses LLM (previously using reg-ex) which improves accuracy
+- **Smarter auto-rename:** feature now powered by rule-based pattern matching (previously regex only) for higher accuracy.  
 
 ### 🧩 Changed
 - **Add Client Name Format**: Replaced sequential_numbering with add client name format (20250815_Client_Document.pdf)
