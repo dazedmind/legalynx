@@ -14,12 +14,13 @@ import {
 import { authUtils } from '@/lib/auth';
 import {
   GoFileDirectory,
-  GoComment
+  GoComment,
+  GoStarFill
 } from "react-icons/go";
 import ProtectedRoute from "../components/ProtectedRoute";
 import NavBar from "../components/NavBar";
 import { useAuth } from "@/lib/context/AuthContext";
-import { LogOut, Menu, X, Lock, Palette, PanelRightClose, PanelRightOpen, MessageSquarePlusIcon, HardDrive, DiamondPlus } from "lucide-react";
+import { LogOut, Menu, X, Lock, Palette, PanelRightClose, PanelRightOpen, MessageSquarePlusIcon, HardDrive, DiamondPlus, MessageCircle, Folder, Star } from "lucide-react";
 import { useTheme } from "next-themes";
 import UploadPage from "./tabs/chat-viewer/UploadPage";
 import ConfirmationModal, { ModalType } from "../components/ConfirmationModal";
@@ -470,6 +471,11 @@ export default function Home() {
     setIsMobileSidebarOpen(!isMobileSidebarOpen);
   };
 
+  const menuItems = [
+    { id: 'chat_history', label: 'Chat History', icon: MessageCircle },
+    { id: 'documents', label: 'File Manager', icon: Folder },
+    { id: 'appearance', label: 'Appearance', icon: Palette }
+  ]
 
   const isSystemReady = systemStatus?.pdfLoaded && systemStatus?.indexReady;
 
@@ -560,78 +566,35 @@ export default function Home() {
                 {!isDesktopSidebarCollapsed && <span className="truncate text-md">New Chat</span>}
               </button>
 
-              <button
-                onClick={() => handleTabClick("chat_history")}
-                className={`w-full relative cursor-pointer flex items-center ${isDesktopSidebarCollapsed ? 'justify-center' : 'gap-3'} text-left p-3 rounded-lg transition-colors ${
-                  activeTab === "chat_history" || activeTab === "chat"
-                    ? "bg-blue/20 text-blue-700 font-semibold rounded-r-lg"
-                    : " text-foreground hover:bg-accent"
-                }`}
-                title={isDesktopSidebarCollapsed ? "Chat History" : ""}
-              >
-                {(activeTab === "chat_history" || activeTab === "chat") && !isDesktopSidebarCollapsed && (
-                  <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
-                )}
-                <GoComment
-                  className={`${
-                    (activeTab === "chat_history" || activeTab === "chat") && !isDesktopSidebarCollapsed ? "ml-2" : "ml-0"
-                  } transition-all duration-300 w-5 h-5 flex-shrink-0`}
-                />
-                {!isDesktopSidebarCollapsed && <span className="truncate">Chat History</span>}
-              </button>
-
-              <button
-                onClick={() => handleTabClick("documents")}
-                className={`w-full relative cursor-pointer flex items-center ${isDesktopSidebarCollapsed ? 'justify-center' : 'gap-3'} text-left p-3 rounded-lg transition-colors ${
-                  activeTab === "documents"
-                    ? "bg-blue/20 text-blue-700 font-semibold rounded-r-lg"
-                    : "text-foreground hover:bg-accent"
-                }`}
-                title={isDesktopSidebarCollapsed ? "File Manager" : ""}
-              >
-                {activeTab === "documents" && !isDesktopSidebarCollapsed && (
-                  <div className="h-full w-1 bg-blue-700  absolute left-0 overflow-hidden rounded-full"></div>
-                )}
-                <GoFileDirectory
-                  className={`${
-                    activeTab === "documents" && !isDesktopSidebarCollapsed ? "ml-2" : "ml-0"
-                  } transition-all duration-300 w-5 h-5 flex-shrink-0`}
-                />
-                {!isDesktopSidebarCollapsed && (
-                  <span className="truncate flex items-center justify-between w-full">
-                    File Manager
-                    {subscriptionStatus === "BASIC" && (
-                      <div className="bg-gradient-to-tr from-blue-500 to-blue-400 text-white rounded-full p-2 text-xs">
-                        <Lock className="w-4 h-4 flex-shrink-0 text-white" />
-                      </div>
+              {menuItems.map((item) => {
+                const IconComponent = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTabClick(item.id as ActiveTab)}
+                    className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                      activeTab === item.id
+                        ? 'bg-blue/10 text-blue-700 font-semibold rounded-r-lg '
+                        : 'text-foreground hover:bg-accent'
+                    }`}
+                  >
+                    {activeTab === item.id && (
+                      <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
                     )}
-                  </span>
-                )}
-              </button>
+                    <IconComponent className={`${activeTab === item.id && !isDesktopSidebarCollapsed ? 'ml-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5}/>
+                    <div className="flex items-center justify-between gap-2 w-full">
+                      {!isDesktopSidebarCollapsed && <span className="truncate">{item.label}</span>}
+                      {item.id === "documents" && subscriptionStatus === "BASIC" && (
+                        <div className="bg-gradient-to-tr from-blue-500 to-blue-400 text-white rounded-full p-2 text-xs">
+                          <GoStarFill className="w-4 h-4 flex-shrink-0 text-white" />
+                        </div>
+                      )}
+                    </div>
+                
+                  </button>
+                );
+              })}
 
-              <button
-                onClick={() => handleTabClick("appearance")}
-                className={`w-full relative cursor-pointer flex items-center ${isDesktopSidebarCollapsed ? 'justify-center' : 'gap-3'} text-left p-3 rounded-lg transition-colors ${
-                  activeTab === "appearance"
-                    ? "bg-blue/20 text-blue-700 font-semibold rounded-r-lg"
-                    : "text-foreground hover:bg-accent"
-                }`}
-                title={isDesktopSidebarCollapsed ? "Appearance" : ""}
-              >
-                {activeTab === "appearance" && !isDesktopSidebarCollapsed && (
-                  <div className="h-full w-1 bg-blue-700  absolute left-0 overflow-hidden rounded-full"></div>
-                )}
-                <Palette
-                  className={`${
-                    activeTab === "appearance" && !isDesktopSidebarCollapsed ? "ml-2" : "ml-0"
-                  } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5}
-                />
-                {!isDesktopSidebarCollapsed && (
-                  <span className="truncate flex items-center justify-between w-full">
-                    Appearance
-                  </span>
-                )}
-              </button>
             </div>
 
             <div className="mt-auto space-y-3">
@@ -711,7 +674,7 @@ export default function Home() {
                 <a href="/frontend/privacy-policy" target="_blank" rel="noopener noreferrer">
                   Privacy Policy •
                 </a>
-                <p className="text-xs text-muted-foreground">v 0.2.2</p>
+                <p className="text-xs text-muted-foreground">v 0.3.0</p>
               </div>
             )}
           </aside>

@@ -1,7 +1,7 @@
 // src/app/frontend/components/ConfirmationModal.tsx - Simple Smooth Animations
 import { Save, Loader2, DownloadCloud, Lock, Crown, Zap, Gift, X, Check } from 'lucide-react'
 import React, { useState, useEffect } from 'react'
-import { GoQuestion, GoAlert, GoCheck, GoInfo} from 'react-icons/go';
+import { GoQuestion, GoAlert, GoCheck, GoInfo, GoStarFill} from 'react-icons/go';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -62,7 +62,7 @@ const getIcon = (type: string) => {
     case ModalType.SAVE:
       return <DownloadCloud className="w-8 h-8" />;
     case ModalType.PAYWALL:
-      return <Lock className="w-8 h-8" />;
+      return <GoStarFill className="w-8 h-8" />;
     default:
       return <GoInfo className="w-8 h-8" />;
   }

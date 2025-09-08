@@ -2,8 +2,9 @@ import os
 import torch
 from typing import List
 from llama_index.core import VectorStoreIndex, Settings
+from openai import OpenAI
 from llama_index.core.schema import TextNode
-from llama_index.llms.google_genai import GoogleGenAI
+from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from rag_pipeline.config import MODEL_CONFIG, SYSTEM_PROMPT
 
@@ -23,7 +24,7 @@ class EmbeddingManager:
         if hasattr(torch, '_C') and hasattr(torch._C, '_set_print_sparse'):
             torch._C._set_print_sparse(False)
         
-        self.google_api_key = os.getenv("GOOGLE_API_KEY")
+        self.openai_api_key = os.getenv("OPENAI_API_KEY")
         self.embed_model = None
         self.llm = None
         self._setup_models()
@@ -89,19 +90,33 @@ class EmbeddingManager:
                     raise RuntimeError("Could not initialize any embedding model. This may be due to PyTorch compatibility issues or missing dependencies.")
         
         # Validate API key
-        if not self.google_api_key:
-            raise ValueError("❌ GOOGLE_API_KEY not found! Please set GOOGLE_API_KEY environment variable.")
+        if not self.openai_api_key:
+            raise ValueError("❌ OPENAI_API_KEY not found! Please set OPENAI_API_KEY environment variable.")
         
-        # Initialize the Google LLM
+        # Initialize the LLM (GPT-5 or fallback to OpenAI)
         try:
-            print("🔄 Initializing Google LLM...")
-            self.llm = GoogleGenAI(
-                model=MODEL_CONFIG["llm_model"],
-                api_key=self.google_api_key
-            )
+            print("🔄 Initializing LLM...")
+            
+            # Try to use GPT-5 wrapper first
+            try:
+                from .gpt5_wrapper import create_gpt5_llm
+                self.llm = create_gpt5_llm(
+                    api_key=self.openai_api_key,
+                    temperature=MODEL_CONFIG.get("temperature", 0.1),
+                    max_tokens=MODEL_CONFIG.get("max_output_tokens", 512)
+                )
+                print("✅ Initialized GPT-5 Mini LLM wrapper")
+                
+            except ImportError:
+                print("⚠️ GPT-5 wrapper not available, falling back to OpenAI")
+                self.llm = OpenAI(
+                    model=MODEL_CONFIG["llm_model"],
+                    api_key=self.openai_api_key
+                )
+                print(f"✅ Initialized OpenAI LLM: {MODEL_CONFIG['llm_model']}")
             
             # Test the LLM with a simple call
-            print("🧪 Testing Google LLM connection...")
+            print("🧪 Testing LLM connection...")
             test_response = self.llm.complete("Hello")
             print(f"✅ LLM test successful: {str(test_response)[:50]}...")
             
@@ -110,7 +125,7 @@ class EmbeddingManager:
             print(f"   Model: {MODEL_CONFIG['llm_model']}")
             raise
         
-        print(f"✅ Initialized LLM: {MODEL_CONFIG['llm_model']} (Google)")
+        print(f"✅ Initialized LLM successfully")
     
     def get_embedding_model(self):
         """
@@ -255,7 +270,7 @@ def create_index_from_documents(documents, pdf_path: str) -> tuple:
     from rag_pipeline.chunking import multi_granularity_chunking
     
     print(f"🔄 Creating vector index from documents...")
-    api_key = os.getenv('GOOGLE_API_KEY')
+    api_key = os.getenv('OPENAI_API_KEY')
     
     # Initialize embedding manager
     embedding_manager = EmbeddingManager()

@@ -147,7 +147,7 @@ function SubscriptionPage() {
                     <div className='space-y-2'>
                         <Progress value={tokenPercentage} className="h-2" />
                         {isNearLimit && (
-                            <div className="flex items-center gap-2 p-2 bg-yellow/20 border border-amber-200 rounded text-foreground text-sm mt-4">
+                            <div className="flex items-center gap-2 p-2 bg-yellow/10 border border-yellow rounded text-yellow-700 text-sm mt-4">
                                 <AlertCircle className="w-4 h-4" />
                                 {tokenPercentage === 100
                                     ? 'You\'ve reached your token limit! Consider upgrading your plan.'
@@ -157,25 +157,6 @@ function SubscriptionPage() {
                                 }
                             </div>
                         )}
-                    </div>
-                </div>
-
-                {/* Usage Statistics */}
-                <div className='p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-4'>
-                    <div className='flex items-center gap-2'>
-                        <TrendingUp className='w-5 h-5 text-yellow-500' />
-                        <h1 className='text-lg font-bold'>Usage Statistics</h1>
-                    </div>
-                    
-                    <div className='grid grid-cols-2 gap-4'>
-                        <div className='text-center p-3 border border-tertiary rounded'>
-                            <div className='text-2xl font-bold text-blue-600'>47</div>
-                            <div className='text-xs text-muted-foreground'>Documents</div>
-                        </div>
-                        <div className='text-center p-3 border border-tertiary rounded'>
-                            <div className='text-2xl font-bold text-yellow'>127</div>
-                            <div className='text-xs text-muted-foreground'>Chat Sessions</div>
-                        </div>
                     </div>
                 </div>
 

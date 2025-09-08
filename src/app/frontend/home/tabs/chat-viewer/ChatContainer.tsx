@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Copy, ThumbsUp, ThumbsDown, RotateCcw, User, Bot, Edit, Check, X, Send, ArrowUp } from 'lucide-react';
+import { Copy, ThumbsUp, ThumbsDown, RotateCcw, User, Bot, Edit, Check, X, Send, ArrowUp, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 import TypingAnimation from '../../../components/TypingAnimation';
 
@@ -59,6 +59,17 @@ export function ChatContainer({
     } catch (error) {
       console.error('Failed to copy text:', error);
       toast.error('Failed to copy message');
+    }
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    try {
+      await onMessageAction('delete', messageId);
+      toast.success('Message deleted successfully');
+      
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+      toast.error('Failed to delete message');
     }
   };
 
@@ -138,13 +149,6 @@ export function ChatContainer({
         className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'}`}
       >
         <div className={`flex ${isUser ? '' : 'flex-row'} items-start gap-3 max-w-[85%]`}>
-          
-          {/* Avatar */}
-          {/* <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${message.type === "ASSISTANT" ? 'bg-gray-700 text-white' : ''}`}>
-            {message.type === "ASSISTANT" &&(
-              <Bot className="w-4 h-4" />
-            )}
-          </div> */}
 
           {/* Message Content */}
           <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} flex-1`}>
@@ -192,11 +196,17 @@ export function ChatContainer({
                   {message.type === 'ASSISTANT' && typingMessageId === message.id ? (
                     <TypingAnimation 
                       text={message.content} 
-                      delay={30}
+                      delay={5}
                       onComplete={onTypingComplete}
                     />
                   ) : (
-                    message.content
+                    <div dangerouslySetInnerHTML={{ 
+                      __html: message.content
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                        .replace(/\_(.*?)_/g, '<u>$1</u>')
+                        .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>')
+                    }} />
                   )}
                 </div>
               )}
@@ -236,26 +246,34 @@ export function ChatContainer({
                     <Copy className="w-3 h-3" />
                   </button>
 
+                  <button
+                    onClick={() => deleteMessage(message.id)}
+                    className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
+                    title="Delete message"
+                  >
+                    <Trash className="w-3 h-3" />
+                  </button>
+
                   {/* Assistant-only action buttons */}
                   {isAssistant && (
                     <>
                       {/* Thumbs Up */}
-                      <button
+                      {/* <button
                         onClick={() => onMessageAction('thumbsUp', message.id)}
                         className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
                         title="Good response"
                       >
                         <ThumbsUp className="w-3 h-3" />
-                      </button>
+                      </button> */}
 
                       {/* Thumbs Down */}
-                      <button
+                      {/* <button
                         onClick={() => onMessageAction('thumbsDown', message.id)}
                         className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
                         title="Poor response"
                       >
                         <ThumbsDown className="w-3 h-3" />
-                      </button>
+                      </button> */}
 
                       {/* Regenerate */}
                       <button

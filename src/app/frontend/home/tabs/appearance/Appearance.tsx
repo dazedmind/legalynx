@@ -7,7 +7,10 @@ import {
   Moon, 
   Sunset, 
   Check,
-  RefreshCw
+  RefreshCw,
+  CaseSensitive,
+  Type,
+  RefreshCcw
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/lib/context/AuthContext';
@@ -257,7 +260,7 @@ export default function Appearance() {
           {/* Theme Selection */}
           <section className="bg-primary border border-tertiary rounded-lg p-6">
             <h2 className="text-xl font-semibold font-serif text-foreground mb-4 flex items-center gap-2">
-              <Palette className="w-5 h-5" />
+              <Palette className="w-6 h-6 text-yellow-500" />
               Theme
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
@@ -312,7 +315,11 @@ export default function Appearance() {
 
           {/* Font Size */}
           <section className="bg-primary border border-tertiary rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Font Size</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
+              {/* <CaseSensitive className='w-6 h-6 stroke-2' /> */}
+              <Type className='w-6 h-6 text-yellow-500' />
+              Font Size
+            </h2>
             <p className="text-sm text-muted-foreground mb-6">
               Adjust the text size for better readability.
             </p>
@@ -356,14 +363,18 @@ export default function Appearance() {
 
           {/* Reset Section */}
           <section className="bg-primary border border-tertiary rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Reset Settings</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
+              {/* <CaseSensitive className='w-6 h-6 stroke-2' /> */}
+              <RefreshCw className='w-6 h-6 text-yellow-500' />
+              Reset Settings
+            </h2>
             <p className="text-sm text-muted-foreground mb-4">
               Restore all appearance settings to their default values.
             </p>
             <button
               onClick={resetToDefaults}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 text-foreground rounded-lg hover:bg-yellow-500/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 bg-accent hover:brightness-90 transition-all duration-200 ease-in-out text-foreground rounded-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" />
               Reset to Defaults

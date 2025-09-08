@@ -407,16 +407,16 @@ export const FileGrid: React.FC<FileGridProps> = ({
                   </div>
                   <h3
                     className="font-medium text-foreground mb-1"
-                    title={doc.originalFileName}
+                    title={doc.fileName}
                   >
-                    {truncateString(doc.originalFileName, 25)}
+                    {truncateString(doc.fileName, 25)}
                   </h3>
                   <div className="space-y-1 text-xs text-muted-foreground">
                     {/* <p>{formatFileSize(doc.size)}</p> */}
                     <p>{formatDate(doc.uploadedAt)}</p>
                     {doc.chatSessionsCount !== undefined &&
                       doc.chatSessionsCount > 0 && (
-                        <p className="bg-blue/20 p-1 rounded-full text-blue-600">
+                        <p className="bg-blue/5 p-1 rounded-full text-blue-600">
                           <MessageSquare className="w-3 h-3 inline mr-1" />
                           {doc.chatSessionsCount} chats
                         </p>
@@ -582,7 +582,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-foreground truncate">
-                      {doc.originalFileName}
+                      {doc.fileName}
                     </p>
                   </div>
                   <p className="text-sm text-muted-foreground">

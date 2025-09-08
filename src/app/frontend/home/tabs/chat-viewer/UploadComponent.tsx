@@ -3,17 +3,19 @@ import {
   Upload,
   FileText,
   MessageSquareDashed,
+  AlertCircle,
 } from "lucide-react";
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { handleApiError, UploadResponse } from "../../../lib/api";
 import { useAuth } from "@/lib/context/AuthContext";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 import { authUtils } from "@/lib/auth";
 import BlurText from "../../../components/reactbits/BlurText";
 import {
   getSecurityErrorMessage,
   isSecurityError,
 } from "../../../lib/api";
+import { GoSquareFill } from "react-icons/go";
 
 interface UploadPageProps {
   onUploadSuccess: (response: UploadResponse) => void;
@@ -43,9 +45,28 @@ interface ProgressStepProps {
   currentStep: number;
   steps: string[];
   stepProgress: number; // 0-100 for current step
+  elapsedTime?: number; // Optional elapsed time in seconds
+  isUploading?: boolean; // Whether upload is in progress
+  isStopping?: boolean; // Whether stop is in progress
+  stopUpload?: () => void; // Stop function
 }
 
-const ProgressSteps: React.FC<ProgressStepProps> = ({ currentStep, steps, stepProgress }) => {
+// Helper function to format elapsed time
+const formatElapsedTime = (seconds: number): string => {
+  if (seconds < 60) {
+    return `${seconds.toFixed(1)}s`;
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds.toFixed(1)}s`;
+  } else {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  }
+};
+
+const ProgressSteps: React.FC<ProgressStepProps> = ({ currentStep, steps, stepProgress, elapsedTime, isUploading, isStopping, stopUpload }) => {
   const getStepColor = (stepIndex: number) => {
     switch(stepIndex) {
       case 0: return 'bg-blue-600'; // Initializing - Blue
@@ -76,23 +97,53 @@ const ProgressSteps: React.FC<ProgressStepProps> = ({ currentStep, steps, stepPr
         />
       </div>
       
-      {/* Step Labels */}
-      <div className="flex justify-between text-xs">
-        {steps.map((step, index) => (
-          <span 
-            key={index}
-            className={`transition-colors duration-300 ${
-              index === currentStep 
-                ? `${getTextColor(index)} font-medium` 
-                : index < currentStep
-                ? 'text-muted-foreground opacity-50 font-medium'
-                : 'text-muted-foreground'
-            }`}
-          >
-            {step}
-          </span>
-        ))}
+      {/* Step Labels and Elapsed Time */}
+      <div className="flex justify-between items-center text-xs">
+        <div className="flex justify-between flex-1">
+          {steps.map((step, index) => (
+            <span 
+              key={index}
+              className={`transition-colors duration-300 ${
+                index === currentStep 
+                  ? `${getTextColor(index)} font-medium` 
+                  : index < currentStep
+                  ? 'text-muted-foreground opacity-20 font-medium'
+                  : 'text-muted-foreground opacity-20'
+              }`}
+            >
+              {step}
+            </span>
+          ))}
+        </div>
       </div>
+      <div>
+
+      </div>
+
+      <div className="flex justify-between">
+      {/* Elapsed Time Display */}
+      {elapsedTime !== undefined && elapsedTime > 0 && (
+          <div className="text-muted-foreground font-mono text-xs bg-tertiary py-1 rounded">
+            Time elapsed: {formatElapsedTime(elapsedTime)}
+          </div>
+        )}
+        
+        {isUploading && (
+          <button
+            className={`font-mono text-xs p-1 rounded-full transition-colors ${
+              isStopping 
+                ? 'bg-primary text-foreground cursor-not-allowed' 
+                : 'bg-foreground text-primary hover:bg-red-600 cursor-pointer'
+            }`}
+            onClick={isStopping ? undefined : stopUpload}
+            disabled={isStopping}
+            type="button"
+          >
+            <GoSquareFill className="w-5 h-5"/>
+          </button>
+        )}
+      </div>
+
     </div>
   );
 };
@@ -117,6 +168,35 @@ function UploadComponent({
   const [currentProgressStep, setCurrentProgressStep] = useState(-1);
   const [stepProgress, setStepProgress] = useState(0);
   const progressSteps = ["Initializing", "Processing", "Preparing"];
+  
+  // Time elapsed tracking
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [uploadStartTime, setUploadStartTime] = useState<number | null>(null);
+  
+  // Upload cancellation
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [isStopping, setIsStopping] = useState(false);
+
+  // Real-time elapsed time counter
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    
+    if (uploadStartTime && isUploading) {
+      interval = setInterval(() => {
+        const now = Date.now();
+        const elapsed = (now - uploadStartTime) / 1000; // Convert to seconds
+        setElapsedTime(elapsed);
+      }, 100); // Update every 100ms for smooth display
+    } else {
+      setElapsedTime(0);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [uploadStartTime, isUploading]);
 
   // User settings and upload options
   const [uploadOptions, setUploadOptions] = useState<UploadOptions>({
@@ -215,41 +295,57 @@ function UploadComponent({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
+      // Reset all states when new file is selected
+      setUploadStatus("idle");
+      setStatusMessage(null);
+      setWarning(null);
+      setCurrentProgressStep(-1);
+      setStepProgress(0);
+      setUploadStartTime(null);
+      setElapsedTime(0);
+      
       const fileExt = selectedFile.name.toLowerCase().split(".").pop();
       const supportedExts = uploadOptions?.supported_file_types?.map((t) =>
         t.extension.replace(".", "")
       ) || ["pdf", "docx"];
 
       if (supportedExts.includes(fileExt || "")) {
-        setFile(selectedFile);
-        setUploadStatus("idle");
-        setStatusMessage(null);
-        setWarning(null);
-        setCurrentProgressStep(-1);
-        setStepProgress(0);
-
         const maxSizeMB = uploadOptions?.max_file_size_mb || 50;
         if (selectedFile.size > maxSizeMB * 1024 * 1024) {
+          setFile(null);
           setUploadStatus("error");
-          setStatusMessage(`File size too large. Maximum: ${maxSizeMB}MB`);
+          setStatusMessage(`File is too large. Maximum allowed size is ${maxSizeMB}MB. Please choose a smaller file.`);
+          toast.error(`File is too large. Maximum allowed size is ${maxSizeMB}MB.`);
           return;
         }
+        
+        if (selectedFile.size === 0) {
+          setFile(null);
+          setUploadStatus("error");
+          setStatusMessage("File is empty. Please choose a non-empty file.");
+          toast.error("File is empty. Please choose a non-empty file.");
+          return;
+        }
+        
+        // File is valid
+        setFile(selectedFile);
       } else {
         setFile(null);
         setUploadStatus("error");
         setStatusMessage(
-          `Unsupported file type. Supported: ${supportedExts
+          `Unsupported file type. Supported formats: ${supportedExts
             .join(", ")
-            .toUpperCase()}`
+            .toUpperCase()}. Please choose a valid PDF or DOCX file.`
         );
         toast.error("Unsupported file type. Please select a valid PDF or DOCX file.");
       }
     }
   };
-  
+
   const saveDocumentToDatabaseWithFilename = async (
     file: File,
-    ragFilename: string
+    ragFilename: string,
+    signal?: AbortSignal
   ): Promise<any> => {
     if (!isAuthenticated || !user) {
       console.log("👤 User not authenticated, skipping database save");
@@ -267,6 +363,7 @@ function UploadComponent({
         method: "POST",
         headers: getAuthHeaders(),
         body: formData,
+        signal, // Add abort signal
       });
 
       if (response.ok) {
@@ -277,9 +374,28 @@ function UploadComponent({
         );
         return savedDocument;
       } else {
-        const errorData = await response.json();
-        console.error("❌ Database save failed:", errorData);
-        throw new Error(errorData.error || "Failed to save to database");
+        let errorMessage = `Database save failed: ${response.status} ${response.statusText}`;
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorData.detail || errorMessage;
+        } catch (parseError) {
+          // If we can't parse JSON, provide meaningful error based on status
+          if (response.status === 413) {
+            errorMessage = "File is too large to save to database";
+          } else if (response.status === 415) {
+            errorMessage = "File type not supported for database storage";
+          } else if (response.status === 500) {
+            errorMessage = "Database server error occurred";
+          } else if (response.status === 401) {
+            errorMessage = "Authentication required to save file";
+          } else if (response.status === 403) {
+            errorMessage = "You don't have permission to save this file";
+          }
+        }
+        
+        console.error("❌ Database save failed:", errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error("❌ Database save error:", error);
@@ -289,7 +405,8 @@ function UploadComponent({
 
   const updateDocumentFilenameAfterRag = async (
     documentId: string,
-    ragFilename: string
+    ragFilename: string,
+    signal?: AbortSignal
   ): Promise<any> => {
     if (!isAuthenticated || !user) {
       console.log("👤 User not authenticated, skipping filename update");
@@ -312,6 +429,7 @@ function UploadComponent({
           newName: ragFilename,
           updateProcessedName: true // Flag to indicate this is from RAG processing
         }),
+        signal, // Add abort signal
       });
 
       if (response.ok) {
@@ -385,7 +503,7 @@ function UploadComponent({
     return sessionId;
   };
 
-  const uploadToRagSystemWithId = async (file: File, documentId: string): Promise<any> => {
+  const uploadToRagSystemWithId = async (file: File, documentId: string, signal?: AbortSignal): Promise<any> => {
     try {
       console.log(`🚀 Uploading to RAG system with database ID: ${documentId}...`);
   
@@ -451,18 +569,34 @@ function UploadComponent({
           'X-Session-Id': sessionId
         },
         body: formData,
+        signal, // Add abort signal
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("❌ RAG upload failed:", errorText);
         
+        let errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
+        
         try {
           const errorData = JSON.parse(errorText);
-          throw new Error(errorData.detail || errorData.message || errorText);
+          errorMessage = errorData.detail || errorData.message || errorText;
         } catch (parseError) {
-          throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+          // If we can't parse JSON, use the raw text or create a meaningful message
+          if (errorText.includes("413")) {
+            errorMessage = "File is too large for upload";
+          } else if (errorText.includes("415")) {
+            errorMessage = "Unsupported file type";
+          } else if (errorText.includes("500")) {
+            errorMessage = "Server error occurred during processing";
+          } else if (errorText.includes("timeout")) {
+            errorMessage = "Upload timed out - please try again";
+          } else if (errorText.trim()) {
+            errorMessage = errorText;
+          }
         }
+        
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
@@ -474,7 +608,7 @@ function UploadComponent({
     }
   };
 
-  const uploadToRagSystem = async (file: File): Promise<any> => {
+  const uploadToRagSystem = async (file: File, signal?: AbortSignal): Promise<any> => {
     try {
       console.log("🚀 Uploading to RAG system...");
   
@@ -534,11 +668,29 @@ function UploadComponent({
           // Include session ID for anonymous users
           'X-Session-Id': sessionId,
         },
+        signal, // Add abort signal
       });
   
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || "Upload failed");
+        let errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch (parseError) {
+          // If we can't parse JSON response, provide meaningful error based on status
+          if (response.status === 413) {
+            errorMessage = "File is too large for upload";
+          } else if (response.status === 415) {
+            errorMessage = "Unsupported file type";
+          } else if (response.status === 500) {
+            errorMessage = "Server error occurred during processing";
+          } else if (response.status === 408) {
+            errorMessage = "Upload timed out - please try again";
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
   
       const ragResponse = await response.json();
@@ -698,6 +850,69 @@ function UploadComponent({
     toast.info("Session refreshed for better isolation");
   };
   
+  // Stop upload function
+  const stopUpload = useCallback(async () => {
+    if (!isUploading) return;
+    
+    console.log("🛑 Stopping upload process...");
+    setIsStopping(true);
+    
+    try {
+      // Abort any ongoing fetch requests
+      if (abortController) {
+        abortController.abort();
+        console.log("✅ Fetch requests aborted");
+      }
+      
+      // Reset upload state
+      setIsUploading(false);
+      setUploadStatus("idle");
+      setCurrentProgressStep(-1);
+      setStepProgress(0);
+      setUploadStartTime(null);
+      setElapsedTime(0);
+      setStatusMessage("Upload cancelled");
+      
+      // Clear file selection
+      setFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      
+      // Reset RAG session to clean up any partial processing
+      try {
+        await resetRAGSession();
+        console.log("✅ RAG session reset after cancellation");
+      } catch (error) {
+        console.warn("⚠️ Failed to reset RAG session:", error);
+      }
+      
+      // Clear previous session if callback provided
+      if (onClearPreviousSession) {
+        setTimeout(() => onClearPreviousSession(), 0);
+      }      
+    } catch (error) {
+      console.error("❌ Error during upload cancellation:", error);
+      toast.error("Error cancelling upload");
+    } finally {
+      setIsStopping(false);
+      setAbortController(null);
+    }
+  }, [isUploading, abortController, onClearPreviousSession]);
+
+  // Make stopUpload available globally for the button
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).stopUpload = stopUpload;
+    }
+    
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).stopUpload;
+      }
+    };
+  }, [stopUpload]);
+
   // ADD: Function to validate file before upload
   const validateFileForUpload = (file: File): string | null => {
     const fileExt = file.name.toLowerCase().split(".").pop();
@@ -746,6 +961,16 @@ function UploadComponent({
     setCurrentProgressStep(0);
     setStepProgress(0);
     setStatusMessage("Initializing ultra-fast processing...");
+    setIsStopping(false);
+    
+    // Create abort controller for cancellation
+    const controller = new AbortController();
+    setAbortController(controller);
+    
+    // Start the elapsed time counter
+    const uploadStart = Date.now();
+    setUploadStartTime(uploadStart);
+    setElapsedTime(0);
 
     // Animate initializing step
     const initializeStep = () => {
@@ -793,7 +1018,7 @@ function UploadComponent({
           
           await new Promise(resolve => setTimeout(resolve, 600));
           // Save to database with RAG-generated intelligent filename
-          documentInfo = await saveDocumentToDatabaseWithFilename(file, ragResponse?.filename || file.name);
+          documentInfo = await saveDocumentToDatabaseWithFilename(file, ragResponse?.filename || file.name, controller.signal);
 
           // Step 2: Upload to RAG system using the database cuid ID
           setTimeout(() => {
@@ -816,7 +1041,7 @@ function UploadComponent({
           
           await new Promise(resolve => setTimeout(resolve, 500));
           // Upload to RAG system with database ID
-          ragResponse = await uploadToRagSystemWithId(file, documentInfo.documentId || documentInfo.id);
+          ragResponse = await uploadToRagSystemWithId(file, documentInfo.documentId || documentInfo.id, controller.signal);
 
           // Step 3: Update database with RAG-processed filename if it changed
           if (ragResponse?.filename && ragResponse.filename !== file.name) {
@@ -828,7 +1053,8 @@ function UploadComponent({
             try {
               await updateDocumentFilenameAfterRag(
                 documentInfo.documentId || documentInfo.id, 
-                ragResponse.filename
+                ragResponse.filename,
+                controller.signal
               );
             } catch (updateError) {
               console.warn("⚠️ Failed to update filename in database (non-critical):", updateError);
@@ -910,7 +1136,7 @@ function UploadComponent({
             }, 100);
             
             await new Promise(resolve => setTimeout(resolve, 500));
-            ragResponse = await uploadToRagSystem(file);
+            ragResponse = await uploadToRagSystem(file, controller.signal);
 
             const processingTime = (Date.now() - startTime) / 1000;
             const speedup = 300 / processingTime;
@@ -968,7 +1194,7 @@ function UploadComponent({
         }, 600);
         
         await new Promise(resolve => setTimeout(resolve, 600));
-        ragResponse = await uploadToRagSystem(file);
+        ragResponse = await uploadToRagSystem(file, controller.signal);
 
         setTimeout(() => {
           setCurrentProgressStep(2);
@@ -1078,28 +1304,85 @@ function UploadComponent({
     } catch (error) {
       console.error("❌ Upload failed completely:", error);
 
-      if (isSecurityError(error)) {
-        setUploadStatus("error");
-        setStatusMessage(getSecurityErrorMessage(error));
-        toast.error(getSecurityErrorMessage(error));
-      } else {
-        let errorMessage = handleApiError(error);
-        if (errorMessage.includes("conversion")) {
-          errorMessage =
-            "DOCX conversion failed. Please try a different file or convert manually to PDF.";
-        } else if (errorMessage.includes("extractable text")) {
-          errorMessage =
-            "Document does not contain extractable text. Please ensure it's not a scanned document.";
-        }
-
-        setUploadStatus("error");
-        setStatusMessage(errorMessage);
-        toast.error("Upload failed: " + errorMessage);
+      // Check if the error is due to abort (user cancelled)
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log("🛑 Upload was cancelled by user");
+        setUploadStatus("idle");
+        setStatusMessage("Upload cancelled");
+        toast.info("Upload cancelled");
+        return; // Don't show error for user cancellation
       }
+
+      // Enhanced error handling with specific error types
+      let errorMessage = "Upload failed";
+      let userFriendlyMessage = "An unexpected error occurred during upload";
+      
+      if (isSecurityError(error)) {
+        const securityMessage = getSecurityErrorMessage(error);
+        setUploadStatus("error");
+        setStatusMessage(securityMessage);
+        toast.error(securityMessage);
+        return;
+      }
+
+      // Handle different error types
+      if (error instanceof Error) {
+        const errorText = error.message.toLowerCase();
+        
+        if (errorText.includes("network") || errorText.includes("fetch")) {
+          userFriendlyMessage = "Network error. Please check your internet connection and try again.";
+        } else if (errorText.includes("timeout")) {
+          userFriendlyMessage = "Upload timed out. Please try again with a smaller file or check your connection.";
+        } else if (errorText.includes("file too large") || errorText.includes("size")) {
+          userFriendlyMessage = `File is too large. Maximum allowed size is ${uploadOptions?.max_file_size_mb || 50}MB.`;
+        } else if (errorText.includes("unsupported") || errorText.includes("invalid")) {
+          userFriendlyMessage = "Unsupported file type. Please upload a PDF or DOCX file.";
+        } else if (errorText.includes("conversion")) {
+          userFriendlyMessage = "DOCX conversion failed. Please try converting the file to PDF manually.";
+        } else if (errorText.includes("extractable text") || errorText.includes("text extraction")) {
+          userFriendlyMessage = "Document does not contain extractable text. Please ensure it's not a scanned document.";
+        } else if (errorText.includes("corrupted") || errorText.includes("damaged")) {
+          userFriendlyMessage = "File appears to be corrupted or damaged. Please try a different file.";
+        } else if (errorText.includes("server") || errorText.includes("500")) {
+          userFriendlyMessage = "Server error occurred. Please try again in a few moments.";
+        } else if (errorText.includes("unauthorized") || errorText.includes("401")) {
+          userFriendlyMessage = "Authentication failed. Please sign in again.";
+        } else if (errorText.includes("forbidden") || errorText.includes("403")) {
+          userFriendlyMessage = "You don't have permission to upload this file.";
+        } else if (errorText.includes("not found") || errorText.includes("404")) {
+          userFriendlyMessage = "Upload service not found. Please contact support.";
+        } else if (errorText.includes("invalid argument") || errorText.includes("errno 22")) {
+          userFriendlyMessage = "Invalid file name. Please rename your file to remove special characters and try again.";
+        } else if (error.message && error.message.length > 0) {
+          // Use the original error message if it's descriptive
+          userFriendlyMessage = error.message;
+        }
+        
+        errorMessage = error.message;
+      } else {
+        // Handle non-Error objects
+        const errorStr = String(error);
+        if (errorStr.includes("Failed to fetch")) {
+          userFriendlyMessage = "Unable to connect to server. Please check your internet connection.";
+        }
+        errorMessage = errorStr;
+      }
+
+      console.error("📋 Error details:", {
+        originalError: error,
+        errorMessage,
+        userFriendlyMessage
+      });
+
+      setUploadStatus("error");
+      setStatusMessage(userFriendlyMessage);
+      toast.error(userFriendlyMessage);
     } finally {
       setIsUploading(false);
       setCurrentProgressStep(-1);
       setStepProgress(0);
+      setUploadStartTime(null); // Reset the timer
+      setAbortController(null); // Clean up abort controller
     }
   };
 
@@ -1111,23 +1394,46 @@ function UploadComponent({
     e.preventDefault();
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile) {
+      // Reset states
+      setUploadStatus("idle");
+      setStatusMessage(null);
+      setCurrentProgressStep(-1);
+      setStepProgress(0);
+      setUploadStartTime(null);
+      setElapsedTime(0);
+      
       const fileExt = droppedFile.name.toLowerCase().split(".").pop();
       const supportedExts = uploadOptions?.supported_file_types?.map((t) =>
         t.extension.replace(".", "")
       ) || ["pdf", "docx"];
 
       if (supportedExts.includes(fileExt || "")) {
+        const maxSizeMB = uploadOptions?.max_file_size_mb || 50;
+        if (droppedFile.size > maxSizeMB * 1024 * 1024) {
+          setFile(null);
+          setUploadStatus("error");
+          setStatusMessage(`File is too large. Maximum allowed size is ${maxSizeMB}MB. Please choose a smaller file.`);
+          toast.error(`File is too large. Maximum allowed size is ${maxSizeMB}MB.`);
+          return;
+        }
+        
+        if (droppedFile.size === 0) {
+          setFile(null);
+          setUploadStatus("error");
+          setStatusMessage("File is empty. Please choose a non-empty file.");
+          toast.error("File is empty. Please choose a non-empty file.");
+          return;
+        }
+        
+        // File is valid
         setFile(droppedFile);
-        setUploadStatus("idle");
-        setStatusMessage(null);
-        setCurrentProgressStep(-1);
-        setStepProgress(0);
       } else {
+        setFile(null);
         setUploadStatus("error");
         setStatusMessage(
-          `Please drop a valid file. Supported: ${supportedExts
+          `Unsupported file type. Supported formats: ${supportedExts
             .join(", ")
-            .toUpperCase()}`
+            .toUpperCase()}. Please drop a valid PDF or DOCX file.`
         );
         toast.error("Invalid file. Only PDF and DOCX are supported.");
       }
@@ -1139,7 +1445,7 @@ function UploadComponent({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mx-5 md:mx-0">
       <div>
         <BlurText
           text="To get started, upload a PDF or DOCX document"
@@ -1150,7 +1456,7 @@ function UploadComponent({
 
       {/* Upload Area */}
       <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
+        className={`border-2 border-dashed rounded-lg p-8 mb-4 text-center transition-colors cursor-pointer ${
           uploadStatus === "error"
             ? "border-destructive/20 bg-destructive/10"
             : uploadStatus === "success"
@@ -1180,30 +1486,59 @@ function UploadComponent({
             {file ? file.name : "Upload PDF or DOCX Document"}
           </h3>
 
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-muted-foreground">
             {file
               ? `${(file.size / 1024 / 1024).toFixed(
                   2
                 )} MB • Ready for processing`
-              : "Drag and drop your document here, or click to browse"}
+              : ""}
           </p>
 
           <p className="text-xs text-muted-foreground">
-            Supported: PDF, DOCX • Maximum file size:{" "}
+            Maximum file size:{" "}
             {uploadOptions?.max_file_size_mb || 50}MB
           </p>
         </div>
       </div>
+      {/* Error State with Retry Button */}
+      {file && uploadStatus === "error" && (
+        <div className="space-y-3">
+          <div className="flex gap-3">
+            <button
+              onClick={handleUpload}
+              disabled={isUploading || loadingSettings}
+              className="flex-1 py-3 px-4 rounded-md font-medium bg-yellow-muted text-white hover:brightness-105 cursor-pointer transition-colors disabled:bg-tertiary disabled:text-muted-foreground disabled:cursor-not-allowed"
+            >
+              {isUploading ? "Retrying..." : "Try Again"}
+            </button>
+            <button
+              onClick={() => {
+                setFile(null);
+                setUploadStatus("idle");
+                setStatusMessage(null);
+                setCurrentProgressStep(-1);
+                setStepProgress(0);
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = "";
+                }
+              }}
+              className="px-4 py-3 rounded-md font-medium bg-gray-200 text-gray-800 hover:bg-gray-300 cursor-pointer transition-colors"
+            >
+              Choose Different File
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Upload Button */}
-      {file && (
+      {file && uploadStatus !== "error" && (
         <button
           onClick={handleUpload}
           disabled={!file || isUploading || loadingSettings}
           className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
             !file || isUploading || loadingSettings
               ? "bg-tertiary text-muted-foreground cursor-not-allowed hidden"
-              : "bg-yellow text-white hover:brightness-105 cursor-pointer"
+              : "bg-yellow-muted text-white hover:brightness-105 cursor-pointer"
           }`}
         >
           Upload File
@@ -1217,22 +1552,27 @@ function UploadComponent({
             currentStep={currentProgressStep} 
             steps={progressSteps} 
             stepProgress={stepProgress}
+            elapsedTime={elapsedTime}
+            isUploading={isUploading}
+            isStopping={isStopping}
+            stopUpload={stopUpload}
           />
         </div>
       )}
 
       {/* Session Mode Notice */}
-      <div className="mt-2 p-4 flex gap-4 items-center bg-tertiary border-dashed border-2 border-tertiary rounded-md text-foreground text-sm">
-        <MessageSquareDashed className="w-10 h-10 mt-0.5 flex-shrink-0" />
+      <div className="mt-2 p-4 flex gap-4 items-center bg-tertiary border-dashed border-2 border-yellow rounded-md text-foreground text-sm">
+        <MessageSquareDashed className="w-8 h-8 mt-0.5 flex-shrink-0 text-yellow" />
         <span className="flex flex-col">
-          <p className="font-medium">Temporary Session Mode</p>
-          <p>
+          <p className="font-medium text-yellow">Temporary Session Mode</p>
+          <p className="text-yellow">
             Documents are processed for this session only unless you save them
             permanently.
           </p>
         </span>
       </div>
 
+      <Toaster />
     </div>
   );
 }

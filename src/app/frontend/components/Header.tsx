@@ -1,5 +1,5 @@
 'use client'
-import { ChevronDown, Menu, X } from 'lucide-react'
+import { ArrowUp, ChevronDown, Menu, X } from 'lucide-react'
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
@@ -27,7 +27,7 @@ function Header() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 z-60 bg-primary">
       <div className="flex items-center justify-between ">
         {/* Logo Section */}
         <div className="flex items-center space-x-1">
@@ -67,7 +67,7 @@ function Header() {
               aria-label="Toggle mobile menu"
             >
               {isMobileMenuOpen ? (
-                <X className="w-6 h-6 text-foreground" />
+                <ArrowUp className="w-6 h-6 text-foreground" />
               ) : (
                 <Menu className="w-6 h-6 text-foreground" />
               )}
@@ -85,7 +85,7 @@ function Header() {
 
 
         {/* Mobile Menu Content */}
-        <div className="flex flex-col mt-12 p-6 space-y-6 h-full bg-primary">
+        <div className="flex flex-col mt-12 p-6 space-y-2 h-full bg-primary">
           {/* Navigation Links */}
           <div className="space-y-4">
             {/* Pricing Link */}
@@ -99,7 +99,7 @@ function Header() {
           {/* Sign In Button - Pushed to bottom */}
           <div className="mt-auto">
             <Link href="/frontend/login" onClick={closeMobileMenu}>
-              <button className='w-full bg-gradient-to-tr from-yellow-500 to-yellow-300 hover:brightness-110 transition-all duration-300 text-white font-bold px-6 py-4 rounded-lg text-lg'>
+              <button className='w-full bg-gradient-to-tr from-yellow-500 to-yellow-300 hover:brightness-110 transition-all duration-300 text-white font-bold px-6 py-3 rounded-lg text-lg'>
                 Sign In
               </button>
             </Link>

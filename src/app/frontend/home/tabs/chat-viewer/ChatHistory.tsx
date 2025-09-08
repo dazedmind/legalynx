@@ -340,7 +340,7 @@ export default function SavedChatHistory({
           <button
             onClick={loadSavedSessions}
             disabled={isLoading}
-            className="flex items-center px-4 py-3 text-md bg-yellow-100/20 text-yellow-500 rounded-md hover:bg-yellow/20 transition-colors disabled:opacity-50 cursor-pointer"
+            className="flex items-center px-4 py-3 text-md  text-yellow-500 rounded-md hover:bg-yellow/10 transition-all duration-300 ease-in-out disabled:opacity-50 cursor-pointer"
             title="Refresh chat history"
           >
             <RotateCcw className="w-5 h-5 " />

@@ -616,11 +616,6 @@ def apply_ultra_fast_config():
     try:
         from rag_pipeline.config import rag_config
         rag_config.update(ULTRA_FAST_CONFIG)
-        print("⚡ Applied ULTRA-FAST configuration (Vectorized):")
-        print(f"   - Query expansions: {ULTRA_FAST_CONFIG['num_query_expansions']}")
-        print(f"   - Logical chunking: {ULTRA_FAST_CONFIG['enable_logical_chunking']}")
-        print(f"   - Hybrid retrieval: {ULTRA_FAST_CONFIG['enable_hybrid_retrieval']}")
-        print(f"   - BM25 top_k: {ULTRA_FAST_CONFIG['bm25_similarity_top_k']}")
     except ImportError:
         print("⚠️ Could not import rag_config, using defaults")
 
@@ -760,16 +755,3 @@ async def optimized_upload_workflow(
 
 # Apply ultra-fast config on import
 apply_ultra_fast_config()
-
-print("🚀 ULTRA-FAST VECTORIZED RAG SYSTEM LOADED")
-print("⚡ Optimizations enabled:")
-print("   - Singleton model manager (no re-initialization)")
-print("   - Rule-based naming (no LLM calls)")
-print("   - Hybrid vector + BM25 retrieval")
-print("   - Vector embeddings for semantic search")
-print("   - BM25 for keyword matching")
-print("   - Reduced query expansions (3→1)")
-print("   - Background processing")
-print("   - Model caching")
-print("💡 Expected speedup: 10-20x faster (5min → 15-30sec)")
-print("🔬 Enhanced accuracy with vector semantics + keyword precision")

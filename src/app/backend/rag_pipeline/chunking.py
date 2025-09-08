@@ -41,15 +41,15 @@ def multi_granularity_chunking(documents: List[Document], pdf_path: str, text_th
 
         # Medium chunks (512 tokens) - same content, larger context
         medium_splitter = SentenceSplitter(
-            chunk_size=512,  # Between fine and coarse
-            chunk_overlap=50   # Proportional overlap
+            chunk_size=rag_config["medium_chunk_size"],  # Between fine and coarse
+            chunk_overlap=rag_config["medium_chunk_overlap"]   # Proportional overlap
         )
         medium_chunks = medium_splitter.get_nodes_from_documents([doc])
 
         # Large chunks (1024 tokens) - same content, largest context
         large_splitter = SentenceSplitter(
             chunk_size=rag_config["coarse_chunk_size"],
-            chunk_overlap=100  # Larger overlap for context preservation
+            chunk_overlap=rag_config["coarse_chunk_overlap"]
         )
         large_chunks = large_splitter.get_nodes_from_documents([doc])
 
@@ -119,7 +119,7 @@ def multi_granularity_chunking(documents: List[Document], pdf_path: str, text_th
                 "AMENDMENTS",
                 "NOTICES",
                 "ASSIGNMENT",
-                
+                    
                 # Additional legal document sections
                 "RECITALS",
                 "WHEREAS",
@@ -205,7 +205,158 @@ def multi_granularity_chunking(documents: List[Document], pdf_path: str, text_th
                 "INJUNCTIVE RELIEF",
                 "ATTORNEY FEES",
                 "COSTS OF COLLECTION",
-                "PREVAILING PARTY"
+                "PREVAILING PARTY",
+
+                # =====================
+                # COURT FILINGS & BRIEFS
+                # =====================
+                "CASE CAPTION",
+                "INTRODUCTION",
+                "PRELIMINARY STATEMENT",
+                "JURISDICTION AND VENUE",
+                "STATEMENT OF FACTS",
+                "STATEMENT OF THE CASE",
+                "PROCEDURAL HISTORY",
+                "ISSUES PRESENTED",
+                "QUESTIONS PRESENTED",
+                "STANDARD OF REVIEW",
+                "APPLICABLE STANDARD",
+                "SUMMARY OF ARGUMENT",
+                "ARGUMENT",
+                "LEGAL ANALYSIS",
+                "DISCUSSION",
+                "AUTHORITIES",
+                "CITATIONS",
+                "TABLE OF AUTHORITIES",
+                "TABLE OF CASES",
+                "TABLE OF STATUTES",
+                "POINTS AND AUTHORITIES",
+                "COUNTERARGUMENTS",
+                "RELIEF REQUESTED",
+                "PRAYER FOR RELIEF",
+                "CONCLUSION",
+                "ORDER",
+                "JUDGMENT",
+                "DECREE",
+                "PETITION",
+                "MOTION",
+                "AFFIDAVIT",
+                "DECLARATION",
+                "VERIFICATION",
+                "CERTIFICATE OF SERVICE",
+                "NOTICE OF APPEAL",
+                "APPELLATE JURISDICTION",
+                "APPELLATE PROCEDURE",
+                "APPEAL BRIEF",
+                "RESPONDENT'S BRIEF",
+                "REPLY BRIEF",
+                "SUR-REPLY",
+                "ORAL ARGUMENT",
+                "DOCKET",
+                "EXHIBITS TO MOTION",
+
+                # =====================
+                # WILLS, TRUSTS & ESTATES
+                # =====================
+                "LAST WILL AND TESTAMENT",
+                "DECLARATION",
+                "REVOCATION OF PRIOR WILLS",
+                "APPOINTMENT OF EXECUTOR",
+                "EXECUTOR POWERS",
+                "APPOINTMENT OF TRUSTEE",
+                "TRUSTEE POWERS",
+                "GUARDIANSHIP",
+                "APPOINTMENT OF GUARDIAN",
+                "FUNERAL INSTRUCTIONS",
+                "SPECIFIC BEQUESTS",
+                "GENERAL BEQUESTS",
+                "RESIDUARY ESTATE",
+                "DISTRIBUTION OF ESTATE",
+                "TAX ALLOCATION",
+                "CHARITABLE BEQUESTS",
+                "DISINHERITANCE",
+                "CONDITIONS OF INHERITANCE",
+                "NO CONTEST CLAUSE",
+                "INCAPACITY",
+                "HEALTH CARE DIRECTIVES",
+                "POWER OF ATTORNEY",
+                "LIVING WILL",
+                "TRUST AGREEMENT",
+                "IRREVOCABLE TRUST",
+                "REVOCABLE TRUST",
+                "SPENDTHRIFT CLAUSE",
+                "SUCCESSOR TRUSTEE",
+                "BENEFICIARY DESIGNATIONS",
+                "FIDUCIARY DUTIES",
+                "ACCOUNTING",
+                "DISTRIBUTION PLAN",
+
+                # =====================
+                # STATUTES & REGULATIONS
+                # =====================
+                "TITLE",
+                "CHAPTER",
+                "SECTION",
+                "SUBSECTION",
+                "ARTICLE",
+                "PART",
+                "DIVISION",
+                "SUBPART",
+                "SUBDIVISION",
+                "REGULATION",
+                "RULE",
+                "GENERAL PROVISIONS",
+                "DEFINITIONS AND INTERPRETATION",
+                "LEGISLATIVE INTENT",
+                "POLICY",
+                "APPLICATION",
+                "SCOPE",
+                "EXEMPTIONS",
+                "PROHIBITIONS",
+                "REQUIREMENTS",
+                "ENFORCEMENT",
+                "PENALTIES",
+                "SANCTIONS",
+                "APPEALS",
+                "ADMINISTRATIVE REMEDIES",
+                "HEARINGS",
+                "PUBLIC NOTICE",
+                "COMMENTS",
+                "EFFECTIVE DATE",
+                "SUNSET PROVISION",
+                "AMENDMENT HISTORY",
+                "LEGISLATIVE HISTORY",
+
+                # =====================
+                # CORPORATE GOVERNANCE
+                # =====================
+                "BYLAWS",
+                "ARTICLES OF INCORPORATION",
+                "CERTIFICATE OF FORMATION",
+                "SHAREHOLDER AGREEMENT",
+                "STOCK PURCHASE AGREEMENT",
+                "SUBSCRIPTION AGREEMENT",
+                "OPERATING AGREEMENT",
+                "PARTNERSHIP AGREEMENT",
+                "BOARD OF DIRECTORS",
+                "BOARD RESOLUTIONS",
+                "MEETING MINUTES",
+                "QUORUM",
+                "VOTING RIGHTS",
+                "DIVIDENDS",
+                "CAPITAL CONTRIBUTIONS",
+                "DISSOLUTION",
+                "LIQUIDATION",
+                "MERGERS",
+                "ACQUISITIONS",
+                "CORPORATE APPROVALS",
+                "AUTHORIZED SIGNATORIES",
+                "OFFICER DUTIES",
+                "FIDUCIARY DUTIES",
+                "COMPLIANCE PROGRAMS",
+                "CODE OF CONDUCT",
+                "RISK MANAGEMENT",
+                "INTERNAL CONTROLS"
             ]):
                 if current_chunk:
                     chunk_text = "\n".join(current_chunk)

@@ -55,96 +55,12 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
       {/* Header */}
-      <header className="bg-primary backdrop-blur-md shadow-sm border-b sticky top-0 z-50">
+      <header className="bg-primary backdrop-blur-md shadow-sm border-b sticky top-0 z-60">
         <Header />
       </header>
 
       
- {/* Mobile Menu Slide-out Panel */}
-      <div className={`
-        md:hidden fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white border-l border-gray-200 z-50 shadow-2xl
-        transform transition-transform duration-300 ease-in-out
-        ${isMobileSidebarOpen ? 'translate-x-0' : 'translate-x-full'}
-      `}>
-        {/* Mobile Menu Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
-    
-          <button
-            onClick={toggleMobileSidebar}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            aria-label="Close mobile menu"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
-
-        {/* Mobile Menu Content */}
-        <div className="flex flex-col p-6 space-y-6 h-full bg-white">
-          {/* Navigation Links */}
-          <div className="space-y-4">
-            {/* Pricing Link */}
-            <Link href="/frontend/pricing" onClick={toggleMobileSidebar}>
-              <div className="flex items-center gap-3 p-4 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer border border-gray-200">
-                <span className="text-lg font-medium text-gray-900">Pricing</span>
-              </div>
-            </Link>
-
-            {/* Solutions Section */}
-            <div className="space-y-3">
-              <div className="text-lg font-medium text-gray-900 px-4 py-2">Solutions</div>
-              <div className="space-y-2">
-                <div className='flex items-center gap-3 p-4 hover:bg-gray-100 rounded-lg cursor-pointer border border-gray-200 transition-colors'>
-                  <span className='p-2 bg-gray-100 rounded-md'>
-                    <PiSuitcaseSimple className='w-5 h-5' />
-                  </span>
-                  <div>
-                    <p className="font-medium text-gray-900">Paralegals</p>
-                    <p className="text-sm text-gray-600">Streamline document review</p>
-                  </div>
-                </div>
-
-                <div className='flex items-center gap-3 p-4 hover:bg-gray-100 rounded-lg cursor-pointer border border-gray-200 transition-colors'>
-                  <span className='p-2 bg-gray-100 rounded-md'>
-                    <PiNetwork className='w-5 h-5' />
-                  </span>
-                  <div>
-                    <p className="font-medium text-gray-900">Social Media Managers</p>
-                    <p className="text-sm text-gray-600">Content compliance tools</p>
-                  </div>
-                </div>
-
-                <div className='flex items-center gap-3 p-4 hover:bg-gray-100 rounded-lg cursor-pointer border border-gray-200 transition-colors'>
-                  <span className='p-2 bg-gray-100 rounded-md'>
-                    <GoLaw className='w-5 h-5' />
-                  </span>
-                  <div>
-                    <p className="font-medium text-gray-900">Lawyers</p>
-                    <p className="text-sm text-gray-600">AI-powered legal analysis</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Sign In Button - Pushed to bottom */}
-          <div className="mt-auto pt-6 border-t border-gray-200">
-            <Link href="/frontend/login" onClick={toggleMobileSidebar}>
-              <button className='w-full bg-gradient-to-tr from-yellow-500 to-yellow-300 hover:brightness-110 transition-all duration-300 text-white font-bold px-6 py-4 rounded-lg text-lg'>
-                Sign In
-              </button>
-            </Link>
-            
-            {/* Additional Links */}
-            <div className="mt-4 space-y-2 text-center">
-              <Link href="/frontend/register" onClick={toggleMobileSidebar}>
-                <p className="text-sm text-gray-600 hover:text-gray-900 transition-colors cursor-pointer">
-                  Don't have an account? Sign up
-                </p>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+ 
       {/* Hero Section */}
       <section className="bg-primary relative overflow-hidden">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-30 pb-32">
@@ -202,35 +118,33 @@ export default function Home() {
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="group bg-accent rounded-2xl p-8 mx-8 md:mx-0  transition-all duration-300 border border-tertiary">
-              <div className="bg-yellow w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300">
-                <FileText className="w-8 h-8 text-foreground" />
+              <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300">
+                <Brain className="w-8 h-8 text-white" />
               </div>
-              <h4 className="text-2xl font-bold text-foreground mb-4">Smart PDF Processing</h4>
+              <h4 className="text-2xl font-bold text-foreground mb-4">Smart Processing</h4>
               <p className="text-muted-foreground text-lg leading-relaxed">
                 Advanced OCR and text extraction technology automatically detects document types 
-                and processes both scanned and digital PDFs with 99.5% accuracy.
+                and processes both scanned and digital PDFs.
               </p>
             </div>
             
             <div className="group bg-accent rounded-2xl p-8 mx-8 md:mx-0 transition-all duration-300 border border-tertiary">
-              <div className="bg-yellow w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300">
-                <Brain className="w-8 h-8 text-foreground" />
+              <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300">
+                <Shield className="w-8 h-8 text-white" />
               </div>
-              <h4 className="text-2xl font-bold text-foreground mb-4">Hybrid AI Retrieval</h4>
+              <h4 className="text-2xl font-bold text-foreground mb-4">Privacy Focused</h4>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                Combines vector search, keyword matching (BM25), and semantic chunking 
-                for optimal information retrieval and contextual understanding.
+                All documents uploaded are stored in a secure, private environment not shared to any third parties nor used to train data.
               </p>
             </div>
             
             <div className="group bg-accent rounded-2xl p-8 mx-8 md:mx-0 transition-all duration-300 border border-tertiary">
-              <div className="bg-yellow w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300">
-                <Zap className="w-8 h-8 text-foreground" />
+              <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300">
+                <Zap className="w-8 h-8 text-white" />
               </div>
-              <h4 className="text-2xl font-bold text-foreground mb-4">Advanced Analysis</h4>
+              <h4 className="text-2xl font-bold text-foreground mb-4">Swift Resolution</h4>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                Query analysis with reranking and detailed source attribution provides 
-                transparent, reliable AI responses with legal-grade accuracy.
+                Speeds up legal research and document review by delivering accurate answers instantly, reducing hours of manual work into minutes.
               </p>
             </div>
           </div>
@@ -324,13 +238,13 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-8 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="col-span-2">
-              <h4 className="text-2xl font-bold text-foreground mb-4">LegalynX</h4>
+              <h4 className="text-2xl font-serif font-bold text-foreground mb-4">LegalynX</h4>
               <p className="text-muted-foreground mb-4 max-w-md">
                 Empowering legal professionals with AI-driven document analysis 
                 and intelligent insights for better decision-making.
               </p>
               <div className="text-sm text-muted-foreground">
-                <p>Powered by GPT 4.1 mini</p>
+                <p>Powered by GPT 5 nano</p>
               </div>
             </div>
             

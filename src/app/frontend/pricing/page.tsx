@@ -57,7 +57,7 @@ function EnhancedPricing() {
     },
     {
       name: "Premium",
-      subtitle: "For large legal organizations",
+      subtitle: "For professionals",
       price: {
         monthly: "₱249",
         yearly: "₱2,490"
@@ -202,7 +202,7 @@ function EnhancedPricing() {
                     <div key={featureIndex} className="flex items-start gap-3">
                       <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
                         feature.included 
-                          ? 'bg-green-600/20 text-green-900' 
+                          ? 'bg-green-500/80 text-white' 
                           : 'bg-gray-700/20 text-gray-400'
                       }`}>
                         {feature.included ? (

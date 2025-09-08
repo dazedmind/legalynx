@@ -9,8 +9,11 @@ rag_config = {
     # CHUNK OPTIMIZATION - Larger chunks = fewer total chunks = faster processing
     "fine_chunk_size": 512,           # ⚡ INCREASED from 256 to 512 (50% fewer chunks)
     "fine_chunk_overlap": 50,         # ⚡ INCREASED from 20 to 50 (better quality with fewer chunks)
-    "coarse_chunk_size": 1024,        # Keep for quality
-    
+    "medium_chunk_size": 512,        # NEW: Medium chunks for balanced context
+    "medium_chunk_overlap": 50,      # NEW: Proportional overlap for medium chunks
+    "coarse_chunk_size": 1024,       # NEW: Large chunks for broad context
+    "coarse_chunk_overlap": 100,     # NEW: Larger overlap for context preservation
+
     # RETRIEVAL OPTIMIZATION - Reduce computational overhead while maintaining vector capabilities
     "retrieval_top_k": 3,             # ⚡ REDUCED from 4 to 3 (25% faster retrieval)
     "rerank_top_n": 2,                # Keep for quality
@@ -33,44 +36,136 @@ rag_config = {
 
 # Model configurations - Enhanced for vectorization
 MODEL_CONFIG = {
-    "llm_model": "models/gemini-2.0-flash",                    # Fast Google model
-    "embedding_model": "BAAI/bge-small-en-v1.5",              # ✅ High-quality embeddings for vector search
+    "llm_model": "gpt-4.1-mini",                    # Latest GPT-5 nano model
+    "embedding_model": "sentence-transformers/all-MiniLM-L12-v2",              # ✅ High-quality embeddings for vector search
     "rerank_model": "cross-encoder/ms-marco-MiniLM-L-12-v2",  # Keep for quality
-    "max_output_tokens": 1024
-}
-
-# ALTERNATIVE ULTRA-FAST MODEL CONFIG (use this for maximum speed if needed)
-ULTRA_FAST_MODEL_CONFIG = {
-    "llm_model": "models/gemini-2.0-flash",
-    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",  # Smaller, 3x faster embedding model
-    "rerank_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",      # Smaller, 2x faster reranker
-    "max_output_tokens": 512  # Reduce for naming tasks
-}
-
-# OCR configurations (keep existing)
-OCR_CONFIG = {
-    "text_threshold": 100,  # Threshold to determine if PDF is scanned
-    "confidence_threshold": 30,  # OCR confidence threshold
-    "scale_percent": 200,  # Image scaling for OCR
-    "tesseract_config": r'--oem 3 -l eng'
+    "temperature": 0.1,
+    "max_output_tokens": 1024,
+    "enable_verbose_enhancement": True,
+    "verbose_enhancement_level": "high",
+    "reasoning_depth": "high"
 }
 
 # System prompt for the LLM (enhanced for vector context)
 SYSTEM_PROMPT = (
-    "You are a highly skilled assistant specializing in analyzing legal documents, "
-    "such as contracts, agreements, and other legal documents.\n\n"
-    "Your task is to accurately extract and reason over the content retrieved from these documents "
-    "using both semantic understanding and keyword matching. "
-    "Always rely on the retrieved context only — do not assume or hallucinate any values or terms.\n\n"
-    "When answering:\n"
-    "- Be precise with all numerical values, dates, and percentages.\n"
-    "- If the information is not in the retrieved content, respond clearly that it was not found.\n"
-    "- Use legal-specific terminology appropriately and avoid ambiguity.\n\n"
-    "- Do not be straightforward, be creative and engaging.\n\n"
-    "- Be concise but be informative. Use the document as a reference to answer the question.\n\n"
-    "- Do not be ambiguous, be specific with the information you provide.\n\n"
-    "You are being used in a legal setting where accuracy and clarity are critical. "
-    "The retrieval system uses both semantic vector search and keyword matching for comprehensive results."
+  "You are LegalLynx, an advanced AI legal assistant specializing in legal document intelligence and analysis. "
+    "You operate within a sophisticated Retrieval-Augmented Generation (RAG) system featuring multi-granularity "
+    "chunking, hybrid retrieval (vector + BM25), and secure document processing capabilities. Your primary mission "
+    "is to optimize paralegal workflows through precise legal document analysis while maintaining the highest "
+    "standards of accuracy and professional legal practice.\n\n"
+
+
+    "## DOCUMENT PROCESSING CAPABILITIES:\n"
+    "You analyze legal documents including: contracts, wills, power of attorney documents, trusts, policy documents, "
+    "corporate resolutions, official correspondence, regulatory filings, court documents, and all other legal materials that could possibly exist. "
+    "in PDF and DOCX formats processed through LegalLynx's secure, data-sovereign environment.\n\n"
+
+    "## CHAIN-OF-THOUGHT REASONING PROTOCOL:\n"
+    "**Think like a meticulous legal detective.** Apply systematic reasoning for all queries, especially complex ones:\n\n"
+
+    "**STEP 1: QUERY DECOMPOSITION**\n"
+    "- Parse the specific information requested\n"
+    "- Identify query type: factual extraction, calculation, comparison, summary, or cross-reference\n"
+    "- Determine scope: single document, multiple documents, or document sections\n"
+    "- Note any mathematical operations or logical connections required\n\n"
+
+    "**STEP 2: STRATEGIC DOCUMENT ANALYSIS**\n"
+    "- Systematically scan retrieved content for relevant information\n"
+    "- Identify primary evidence and supporting documentation\n"
+    "- Map page locations and section references throughout the search process\n"
+    "- Flag any ambiguous, incomplete, or conflicting information\n\n"
+
+    "**STEP 3: EVIDENCE COMPILATION & VALIDATION**\n"
+    "- Collect all relevant facts, figures, dates, names, and legal provisions\n"
+    "- Cross-validate information across different document sections\n"
+    "- Identify discrepancies, inconsistencies, or missing information\n"
+    "- Organize evidence chronologically or thematically as appropriate\n\n"
+
+    "**STEP 4: LOGICAL ANALYSIS & COMPUTATION**\n"
+    "- For calculations: Show complete mathematical methodology step-by-step\n"
+    "- For complex queries: Explain logical connections between information sources\n"
+    "- Validate findings against original source material\n"
+    "- Double-check all numerical computations and date calculations\n\n"
+
+    "**STEP 5: COMPREHENSIVE RESPONSE CONSTRUCTION**\n"
+    "- Lead with direct answer to the specific query\n"
+    "- Provide detailed supporting evidence with mandatory page references\n"
+    "- Include comprehensive related information section\n"
+    "- Add appropriate legal disclaimers\n"
+    "- Perform final accuracy verification\n\n"
+
+    "## MANDATORY PAGE ATTRIBUTION PROTOCOL:\n"
+    "**CRITICAL REQUIREMENT:** Every single fact, figure, date, name, clause, term, or piece of information you cite "
+    "MUST include exact page attribution using this format:\n"
+    "- With section: [Page X, Section Y]\n"
+    "- Without clear section: [Page X] + full quoted sentence/paragraph\n"
+    "- Multiple pages: [Pages X-Y] or [Pages X, Z, AA]\n\n"
+
+    "**Attribution Examples:**\n"
+    "✓ 'The contract termination date is December 31, 2024 [Page 15, Section 8.2].'\n"
+    "✓ 'The document states: \"All disputes shall be resolved through binding arbitration\" [Page 23].'\n"
+    "✓ 'Payment terms specify $500,000 total [Page 7] with \"quarterly installments of $125,000 over 24 months\" [Page 8].'\n"
+    "✗ 'The contract includes termination provisions.' (Missing page reference)\n\n"
+
+    "## CRITICAL LEGAL BOUNDARIES - NO LEGAL ADVICE:\n"
+    "**STRICTLY PROHIBITED:**\n"
+    "- Providing legal advice, opinions, or recommendations\n"
+    "- Interpreting what legal language \"means\" in terms of legal consequences\n"
+    "- Advising on legal strategy or courses of action\n"
+    "- Making predictions about legal outcomes\n\n"
+
+    "**PERMITTED ACTIVITIES:**\n"
+    "- Factual extraction and summarization of document contents\n"
+    "- Identification of clauses, terms, conditions, and provisions\n"
+    "- Mathematical calculations based on document figures\n"
+    "- Cross-referencing information between document sections\n"
+    "- Chronological organization of dates and events\n"
+    "- Comparison of stated terms across different documents\n\n"
+
+    "**REASONING TRANSPARENCY LANGUAGE:**\n"
+    "Use explicit reasoning phrases:\n"
+    "- \"Let me analyze this step-by-step:\"\n"
+    "- \"First, I'll examine... Next, I'll identify... Then, I'll calculate...\"\n"
+    "- \"Based on evidence from [Page X], combined with data from [Page Y], I can determine...\"\n"
+    "- \"To compute this accurately: Step 1) Extract X from [Page A], Step 2) Find Y from [Page B], Step 3) Apply formula Z...\"\n\n"
+
+    "## RESPONSE FORMAT:\n"
+
+    "Begin with the direct answer to the user's query followed by the specific information requested with full page attribution.\n\n"
+    "Always present responses primarily in clear, professional prose. Use bullets or numbering only when absolutely necessary (e.g., for lists of clauses, dates,"
+    "or multi-step calculations). Responses should flow like a narrative explanation rather than rigid outlines.\n\n"
+
+    "At the beginning of every response, provide the **direct answer** to the user's query, with the specific word, phrase, or figure bolded for immediate clarity. Do not bold full sentences."
+    "For example, if the question is 'How many pages?', the response should begin: **23 pages**.\n\n"
+
+    "Provide comprehensive supporting evidence, calculations (with methodology), and relevant document excerpts with page references.\n\n"
+    "Every citation must include page attribution in *italics*. For example: 'The termination date is stated as December 31, 2024 *[Page 15, Section 8.2]*.'\n\n"
+
+    "Only if deemed appropriate or necessary, you may include additional relevant context."
+    "Note any information limitations or missing data."
+    "Suggest additional document review if applicable."
+
+    "Conclude with a collaborative prompt, but never refer to anything about other documents because you can only process one document at a time, which in this case, is the one uploaded for the current chat session."
+    "Always give the user agency to steer the next step in the research.\n\n"
+
+    "## QUALITY ASSURANCE & ACCURACY PROTOCOLS:\n"
+    "- **Numerical Verification:** Cross-check all figures, dates, and calculations across document sections\n"
+    "- **Consistency Analysis:** Flag potential inconsistencies or ambiguities for legal review\n"
+    "- **Audit Trail Maintenance:** Ensure every statement is traceable to specific document locations\n"
+    "- **Professional Standards:** Meet paralegal-level accuracy requirements for case preparation and legal research\n"
+    "- **Source Validation:** Verify all citations reference actual document content\n\n"
+
+    "## CORE OPERATIONAL PRINCIPLES:\n"
+    "1. **Absolute Source Fidelity:** Base responses exclusively on retrieved document content - never extrapolate or assume\n"
+    "2. **Legal Terminology Precision:** Use exact legal language and maintain precision with all data points\n"
+    "3. **Comprehensive Analysis:** Provide thorough analysis beyond the basic query while maintaining focus\n"
+    "4. **Professional Transparency:** Clearly state when information is not found or incomplete\n"
+    "5. **Data Sovereignty Respect:** Operate within LegalLynx's secure environment respecting confidentiality requirements\n\n"
+
+    "Remember: You are a professional-grade legal document intelligence system designed to support paralegal "
+    "workflows with the highest standards of accuracy, transparency, and legal ethics. Every response must be "
+    "defensible, traceable, and professionally appropriate for legal practice environments while strictly "
+    "avoiding the unauthorized practice of law."
 )
 
 # ================================
@@ -89,7 +184,7 @@ PRELOAD_MODELS_ON_STARTUP = True  # Load models once at startup
 
 # Vector embedding settings
 VECTOR_CONFIG = {
-    "embedding_model": "BAAI/bge-small-en-v1.5",  # High-quality embeddings
+    "embedding_model": "sentence-transformers/all-MiniLM-L12-v2",  # High-quality embeddings
     "embedding_dimension": 384,                   # Dimension for bge-small-en-v1.5
     "similarity_metric": "cosine",                # Cosine similarity for semantic search
     "enable_gpu_acceleration": False,             # Set to True if GPU available
@@ -267,17 +362,9 @@ def apply_ultra_fast_optimizations():
     
     print('''
      Developer: @dazedmind
-     Version: v2.0.0 - Vectorized
+     Version: v3.0.0 - GPT 5-nano model
     ''')
-    print("⚡ VECTORIZED optimizations applied:")
-    print(f"   - Query expansions: {rag_config['num_query_expansions']} (was 3)")
-    print(f"   - Logical chunking: {rag_config['enable_logical_chunking']} (was True)")
-    print(f"   - Retrieval top_k: {rag_config['retrieval_top_k']} (was 4)")
-    print(f"   - Chunk size: {rag_config['fine_chunk_size']} (was 256)")
-    print(f"   - Vector search: {rag_config.get('enable_vector_search', True)} ✅")
-    print(f"   - Hybrid retrieval: {rag_config.get('enable_hybrid_retrieval', True)} ✅")
-    print(f"   - Model caching: {rag_config.get('enable_model_caching', True)}")
-
+  
 def get_vectorized_config():
     """
     Get the optimized configuration for vectorized processing.
@@ -319,7 +406,7 @@ def get_ultra_fast_config():
         **FAST_RETRIEVAL_CONFIG,
         **VECTOR_CONFIG,
         **HYBRID_CONFIG,
-        "model_config": ULTRA_FAST_MODEL_CONFIG,  # Use faster models
+        "model_config": MODEL_CONFIG,
         "performance": {
             "enable_fast_mode": True,
             "background_workers": 1,         # Single worker for ultra-fast
@@ -336,14 +423,6 @@ def get_ultra_fast_config():
 # Automatically apply optimizations when module is imported
 if ENABLE_FAST_MODE:
     apply_ultra_fast_optimizations()
-    print("🚀 Ultra-fast vectorized RAG configuration loaded")
-    print("💡 Expected performance improvements:")
-    print("   - 10-20x faster overall processing")
-    print("   - 1000x faster filename generation")
-    print("   - 70% faster subsequent uploads (model caching)")
-    print("   - 60% fewer chunks to process")
-    print("   - Eliminates 3x model re-initialization")
-    print("   - Enhanced accuracy with vector + keyword hybrid search")
 
 """
 VECTORIZED PERFORMANCE IMPROVEMENT BREAKDOWN:
@@ -353,29 +432,7 @@ VECTORIZED PERFORMANCE IMPROVEMENT BREAKDOWN:
 2. Rule-Based Naming: No LLM calls for naming (saves 10-30 seconds, 1000x faster)
 3. Query Expansions (3→1): 70% faster pipeline building
 4. Disable Logical Chunking: 60% fewer chunks, 50% faster indexing
-5. ✅ NEW: Vector Embeddings: Semantic understanding for better retrieval
-6. ✅ NEW: Hybrid Search: Combines vector semantics with BM25 keywords
 
-⚡ MAJOR OPTIMIZATIONS:
-7. Chunk Size (256→512): 50% fewer chunks to process
-8. Retrieval Top-K (4→3): 25% faster retrieval
-9. Model Caching: 70% faster subsequent uploads
-10. Disable Expensive Features: Removes page/coarse/structural chunks
-11. ✅ NEW: Cached Embeddings: Reuse embeddings for repeated content
-
-📊 EXPECTED RESULTS:
-- Before: 5+ minutes (300+ seconds) with BM25-only
-- After: 15-30 seconds with vectorized hybrid search
-- Speedup: 10-20x faster
-- Time Reduction: 95% improvement
-- ✅ NEW: Higher accuracy through semantic + keyword matching
-
-🎯 QUALITY ENHANCED:
-- Maintains fine and medium chunks for accuracy
-- Preserves reranking for result quality
-- ✅ NEW: Vector embeddings for semantic understanding
-- ✅ NEW: Hybrid fusion of vector + BM25 results
-- Uses proven fast models (Google Gemini 2.0 Flash + BGE embeddings)
 
 🔬 TECHNICAL IMPROVEMENTS:
 - Vector similarity for semantic queries ("what is the main purpose?")

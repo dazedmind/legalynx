@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, AlertCircle, Plus, ArrowUp, Cloud, DiamondPlus } from 'lucide-react';
+import { FileText, AlertCircle, Plus, ArrowUp, Cloud, DiamondPlus, Square } from 'lucide-react';
 import { apiService, handleApiError, UploadResponse, isSecurityError, getSecurityErrorMessage, profileService } from '../../../lib/api';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
@@ -15,6 +15,7 @@ import { CloudCheck, AudioLines } from 'lucide-react';
 import { ModalType } from '../../../components/ConfirmationModal';
 import VoiceChatComponent from './VoiceChatComponent';
 import { BiSolidFilePdf } from 'react-icons/bi';
+import { GoSquareFill } from 'react-icons/go';
 
 interface ChatMessage {
   id: string;
@@ -102,6 +103,19 @@ export default function ChatViewer({
     documentName?: string;
     operation?: 'loading' | 'reactivating' | 'processing';
   }>({});
+  
+  // ✅ NEW: Token limit checking state
+  const [tokenLimitInfo, setTokenLimitInfo] = useState<{
+    tokensUsed: number;
+    tokenLimit: number;
+    resetTime: string | null;
+    isLimitReached: boolean;
+  }>({
+    tokensUsed: 0,
+    tokenLimit: 0,
+    resetTime: null,
+    isLimitReached: false
+  });
 
   // Loading stage tracking
   const [loadingStage, setLoadingStage] = useState<LoadingStage>('loading_session');
@@ -110,18 +124,21 @@ export default function ChatViewer({
     documentName?: string;
   }>({});
   
-  // Chat states
-  const [query, setQuery] = useState('');
-  const [isQuerying, setIsQuerying] = useState(false);
-  const isSubmittingRef = useRef(false);
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [error, setError] = useState<string>('');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [lastSaveTimestamp, setLastSaveTimestamp] = useState(Date.now());
-  const [uploadCompleted, setUploadCompleted] = useState(false);
-  
-  // ✅ NEW: Typing animation state
-  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
+   // Chat states
+   const [query, setQuery] = useState('');
+   const [isQuerying, setIsQuerying] = useState(false);
+   const isSubmittingRef = useRef(false);
+   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+   const [error, setError] = useState<string>('');
+   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+   const [lastSaveTimestamp, setLastSaveTimestamp] = useState(Date.now());
+   const [uploadCompleted, setUploadCompleted] = useState(false);
+   
+   // ✅ NEW: Typing animation state
+   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
+   
+   // ✅ NEW: AbortController for cancelling queries
+   const [queryAbortController, setQueryAbortController] = useState<AbortController | null>(null);
 
   // Modal state for confirmation
   const [confirmationModalConfig, setConfirmationModalConfig] = useState<{
@@ -183,12 +200,59 @@ export default function ChatViewer({
 
   useEffect(() => {
     const getSubscriptionStatus = async () => {
-      const profile = await profileService.getProfile();
-      setSubscriptionStatus(profile.subscription?.plan_type?.toUpperCase());
+      try {
+        const profile = await profileService.getProfile();
+        setSubscriptionStatus(profile.subscription?.plan_type?.toUpperCase());
+        
+        // Get token limit information
+        if (profile.subscription) {
+          const resetTime = getNextResetTime(profile.subscription.plan_type);
+          setTokenLimitInfo({
+            tokensUsed: profile.subscription.tokens_used || 0,
+            tokenLimit: profile.subscription.token_limit || 0,
+            resetTime,
+            isLimitReached: (profile.subscription.tokens_used || 0) >= (profile.subscription.token_limit || 0)
+          });
+        }
+      } catch (error) {
+        console.error('Failed to get subscription status:', error);
+      }
     };
     getSubscriptionStatus();  
   }, []);
 
+
+  // ✅ NEW: Helper function to calculate next reset time based on subscription plan
+  const getNextResetTime = (planType: string): string => {
+    const now = new Date();
+    let resetTime: Date;
+    
+    switch (planType?.toUpperCase()) {
+      case 'BASIC':
+        // Basic plan resets every 24 hours
+        resetTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        break;
+      case 'STANDARD':
+        // Standard plan resets every 12 hours
+        resetTime = new Date(now.getTime() + 12 * 60 * 60 * 1000);
+        break;
+      case 'PREMIUM':
+        // Premium plan resets every 6 hours
+        resetTime = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+        break;
+      default:
+        // Default to 24 hours reset
+        resetTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    }
+    
+    return resetTime.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   const hasCloudStorageAccess = () => {
     if (!subscriptionStatus) return false;
@@ -1588,6 +1652,10 @@ export default function ChatViewer({
         console.log('Editing message:', messageId);
         await handleEditMessage(messageId, content || '');
         break;
+      case 'delete':
+        console.log('Deleting message:', messageId);
+        await handleDeleteMessage(messageId);
+        break;
       default:
         break;
     }
@@ -1745,6 +1813,33 @@ export default function ChatViewer({
       setIsQuerying(false);
     }
   };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {      
+      // Remove the assistant message we're regenerating
+      setChatHistory(prev => prev.filter(msg => msg.id !== messageId));
+      
+      // Delete from database if we have session
+      if (currentSessionId && user && documentExists) {
+        try {
+          await fetch(`/backend/api/chat-messages/${messageId}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+          });
+        } catch (error) {
+          console.warn('Failed to delete message from database:', error);
+        }
+      }
+      
+      toast.success('Message deleted successfully');
+    } catch (error) {
+      const errorMessage = handleApiError(error);
+      setError(errorMessage);
+      toast.error('Failed to delete message');
+    } finally {
+      setIsQuerying(false);
+    }
+  };
   
   const handleDocumentDeleted = () => {
     console.log('🗑️ Handling document deletion - resetting to upload state');
@@ -1772,28 +1867,70 @@ export default function ChatViewer({
     });
   };
 
-  const handleQuery = async (queryText?: string) => {
-    if (isSubmittingRef.current || isQuerying) return;
+   // ✅ NEW: Function to stop/abort the current query
+   const handleStopQuery = () => {
+     if (queryAbortController) {
+       console.log('🛑 Stopping query...');
+       queryAbortController.abort();
+       setQueryAbortController(null);
+       setIsQuerying(false);
+       isSubmittingRef.current = false;
+       setTypingMessageId(null);
+     }
+   };
+
+   const handleQuery = async (queryText?: string) => {
+    console.log('🚀 handleQuery called!', {
+      isSubmittingRef: isSubmittingRef.current,
+      isQuerying,
+      queryText,
+      query,
+      documentExists,
+      currentDocument: !!currentDocument,
+      currentDocumentId: currentDocument?.id,
+      currentSessionId
+    });
+    
+    if (isSubmittingRef.current || isQuerying) {
+      console.log('⏸️ Query blocked - already submitting or querying');
+      return;
+    }
+    
     const currentQuery = queryText || query;
     
     if (!currentQuery.trim()) {
+        console.log('❌ Query blocked - empty query');
         setError('Please enter a query');
         return;
     }
 
+    // ✅ NEW: Check token limits before proceeding
+    if (tokenLimitInfo.isLimitReached) {
+        console.log('❌ Query blocked - token limit reached');
+        const limitMessage = `Message limit reached. It will refresh by ${tokenLimitInfo.resetTime}`;
+        setError(limitMessage);
+        toast.error(limitMessage);
+        return;
+    }
+
     if (!documentExists) {
+        console.log('❌ Query blocked - document does not exist');
         setError('Document no longer exists. Cannot process queries.');
         return;
     }
 
     // FIXED: Verify we have current document loaded in RAG system
     if (!currentDocument) {
+        console.log('❌ Query blocked - no current document');
         setError('No document loaded. Please upload a document first.');
         return;
     }
 
+    console.log('✅ All checks passed, proceeding with query');
+
     // FIXED: Double-check that backend has the right document
     try {
+        console.log('🔍 Starting backend document verification...');
         const isDevelopment = process.env.NODE_ENV === 'development';
         const RAG_BASE_URL = isDevelopment ? "http://localhost:8000" : process.env.NEXT_PUBLIC_RAG_API_URL;
         
@@ -1813,7 +1950,9 @@ export default function ChatViewer({
         
         if (statusResponse.ok) {
             const currentDoc = await statusResponse.json();
+            console.log('🔍 Backend verification response:', currentDoc);
             if (!currentDoc.has_document) {
+                console.log('❌ Query blocked - no document in AI system');
                 setError('No document loaded in AI system. Please refresh and re-upload.');
                 return;
             }
@@ -1822,21 +1961,29 @@ export default function ChatViewer({
             console.log('🔍 Backend current document:', currentDoc.document_id);
             console.log('🔍 Frontend current document:', currentDocument.id);
         }
+        console.log('✅ Backend document verification completed');
     } catch (error) {
         console.warn('Could not verify backend document status:', error);
         // Continue with query - don't fail for verification issues
     }
 
-    // Immediately lock UI and clear input to prevent double-submit
-    isSubmittingRef.current = true;
-    setIsQuerying(true);
-    setError('');
-    setQuery('');
+     console.log('🔒 Locking UI and starting query...');
+     // Immediately lock UI and clear input to prevent double-submit
+     isSubmittingRef.current = true;
+     setIsQuerying(true);
+     setError('');
+     setQuery('');
+     
+     // ✅ NEW: Create AbortController for this query
+     const abortController = new AbortController();
+     setQueryAbortController(abortController);
 
     let sessionId = currentSessionId;
+    console.log('🔍 Session check:', { currentSessionId, hasUser: !!user, hasCurrentDocument: !!currentDocument });
     
     if (!sessionId && user && currentDocument) {
         if (isCreatingSession) {
+            console.log('❌ Query blocked - already creating session');
             toast.info('Creating session, please wait...');
             return;
         }
@@ -1845,12 +1992,17 @@ export default function ChatViewer({
         sessionId = await createNewSession();
         
         if (!sessionId) {
+            console.log('❌ Query blocked - failed to create session');
             setError('Failed to create chat session');
+            setIsQuerying(false);
+            isSubmittingRef.current = false;
             return;
         }
         
         console.log('✅ Session created successfully:', sessionId);
     }
+
+    console.log('📝 Adding user message...');
 
     await addMessage({
         type: 'USER',
@@ -1860,26 +2012,36 @@ export default function ChatViewer({
 
     // already set querying and cleared input above
 
-    try {
-        const result = await apiService.queryDocuments(currentQuery);
-        
-        let assistantMessage = result.response;
-        let securityNotice = '';
-        
-        if (result.securityStatus === 'sanitized') {
-            securityNotice = '\n\n⚠️ Note: Your query was modified for security reasons.';
-            toast.warning('Your query was modified for security reasons');
-        }
-        
-        await addMessage({
-            type: 'ASSISTANT',
-            content: assistantMessage + securityNotice,
-            query: currentQuery,
-            sourceCount: result.sourceCount
-        }, sessionId || undefined);
-        
-    } catch (error) {
-        console.error('Query error:', error);
+     try {
+         // Use regular query API instead of streaming for now
+         console.log('📡 Starting query...');
+         const result = await apiService.queryDocuments(currentQuery, abortController.signal);
+         
+         let assistantMessage = result.response;
+         let securityNotice = '';
+         
+         if (result.securityStatus === 'sanitized') {
+             securityNotice = '\n\n⚠️ Note: Your query was modified for security reasons.';
+             toast.warning('Your query was modified for security reasons');
+         }
+         
+         await addMessage({
+             type: 'ASSISTANT',
+             content: assistantMessage + securityNotice,
+             query: currentQuery,
+             sourceCount: result.sourceCount
+         }, sessionId || undefined);
+         
+     } catch (error) {
+         setTypingMessageId(null); // Clear typing animation on error
+         
+         // Check if the error is due to abort
+         if (error instanceof Error && (error.name === 'AbortError' || error.message?.includes('aborted'))) {
+             console.log('🛑 Query was aborted by user');
+             return; // Don't show error toast for user-initiated cancellation
+         }
+         
+         console.error('Query error:', error);
         
         if (isSecurityError(error)) {
             const securityErrorMessage = getSecurityErrorMessage(error);
@@ -1912,19 +2074,29 @@ export default function ChatViewer({
         } else {
             const errorMessage = handleApiError(error);
             setError(errorMessage);
-            
-            await addMessage({
-                type: 'ASSISTANT',
-                content: `❌ Sorry, I encountered an error: ${errorMessage}`,
-                query: currentQuery
-            }, sessionId || undefined);
-            
-            toast.error('Query failed: ' + errorMessage);
+
+            if (errorMessage.includes('canceled')) {
+              await addMessage({
+                  type: 'ASSISTANT',
+                  content: `Response generation was canceled`,
+                  query: currentQuery
+              }, sessionId || undefined);
+            } else {
+              await addMessage({
+                  type: 'ASSISTANT',
+                  content: `❌ Sorry, I encountered an error: ${errorMessage}`,
+                  query: currentQuery
+              }, sessionId || undefined);
+
+              toast.error('Query failed: ' + errorMessage);
+
+            }            
         }
-    } finally {
-        setIsQuerying(false);
-        isSubmittingRef.current = false;
-    }
+     } finally {
+         setIsQuerying(false);
+         isSubmittingRef.current = false;
+         setQueryAbortController(null);
+     }
   };
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
@@ -2296,41 +2468,80 @@ export default function ChatViewer({
           onTypingComplete={() => setTypingMessageId(null)}
         />
 
-        {/* Input Area */}
-        <div className="flex-shrink-0 bg-primary p-6">
-          {documentExists && (
-            <div className='flex flex-col md:flex-row mx-auto w-full border border-tertiary rounded-lg'>
-              <div className="flex-1">
-                <textarea
-                  value={query}
-                  onKeyDown={handleKeyPress}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Ask a question about the uploaded document..."
-                  rows={2}
-                  className="w-full px-3 py-2 h-24 rounded-xl focus:outline-none resize-none"
-                />
-              </div>
-              <div className='flex justify-end items-center gap-4 pl-0 px-4 '>
-                <span className='flex items-center gap-2 md:mt-10'>
-                  <button
-                    onClick={handleVoiceModeClick}
-                    title="Voice Chat with Lynx AI"
-                    className="flex items-center  right-18 top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-gradient-to-tl from-yellow to-yellow-600 text-white hover:bg-blue-700 h-fit"
-                  >
-                    <AudioLines className="w-6 h-6"/>
-                  </button>
-                  <button
-                    onClick={() => {handleQuery()}}
-                    disabled={isQuerying || !query.trim() || !documentExists}
-                    className="flex items-center  group top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-foreground text-primary hover:bg-muted-foreground disabled:bg-muted disabled:text-muted-foreground disabled:cursor-default h-fit transition-all duration-300 ease-in-out"
-                  >
-                    <ArrowUp className="w-6 h-6" />
-                  </button>
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
+                 {/* Input Area */}
+         <div className="flex-shrink-0 bg-primary p-6">
+           {documentExists && (
+             <>
+               {/* ✅ NEW: Token limit warning message */}
+               {tokenLimitInfo.isLimitReached && (
+                 <div className="mb-4 p-3 bg-yellow/10 border border-yellow rounded-lg">
+                   <div className="flex items-center gap-2 text-yellow-700">
+                     <AlertCircle className="w-5 h-5" />
+                     <span className="text-sm font-medium">
+                       Message limit reached. It will refresh by {tokenLimitInfo.resetTime}
+                     </span>
+                   </div>
+                   {/* <div className="mt-2 text-xs text-red-600">
+                     Tokens used: {tokenLimitInfo.tokensUsed} / {tokenLimitInfo.tokenLimit}
+                   </div> */}
+                 </div>
+               )}
+               
+               <div className='flex flex-row mx-auto w-full border border-tertiary rounded-lg'>
+                 <div className="flex-1">
+                   <textarea
+                     value={query}
+                     onKeyDown={handleKeyPress}
+                     onChange={(e) => setQuery(e.target.value)}
+                     placeholder={
+                       tokenLimitInfo.isLimitReached 
+                         ? "Message limit reached. Please wait for reset or upgrade your plan."
+                         : "Ask a question about the uploaded document..."
+                     }
+                     rows={2}
+                     disabled={tokenLimitInfo.isLimitReached}
+                     className={`w-full px-3 py-2 h-24 rounded-xl focus:outline-none resize-none ${
+                       tokenLimitInfo.isLimitReached 
+                         ? 'text-gray-500 cursor-not-allowed' 
+                         : ''
+                     }`}
+                   />
+                 </div>
+                 <div className='flex justify-end items-center gap-4 pl-0 px-4 '>
+                   <span className='flex items-center gap-2 mt-10'>
+                     <button
+                       onClick={handleVoiceModeClick}
+                       title="Voice Chat with Lynx AI"
+                       disabled={tokenLimitInfo.isLimitReached}
+                       className={`flex items-center right-18 top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-gradient-to-tl from-yellow to-yellow-600 text-white hover:bg-blue-700 h-fit transition-all duration-300 ${
+                         tokenLimitInfo.isLimitReached ? 'opacity-50 cursor-not-allowed' : ''
+                       }`}
+                     >
+                       <AudioLines className="w-6 h-6"/>
+                     </button>
+                      {isQuerying ? (
+                        <button
+                          onClick={handleStopQuery}
+                          className="flex items-center group top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-foreground text-white hover:bg-red-600 h-fit transition-all duration-300 ease-in-out"
+                          title="Stop generation"
+                        >
+                          <GoSquareFill className="w-6 h-6" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleQuery()}
+                          disabled={!query.trim() || !documentExists || tokenLimitInfo.isLimitReached}
+                          className="flex items-center group top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-foreground text-primary hover:bg-muted-foreground disabled:bg-muted disabled:text-muted-foreground disabled:cursor-default h-fit transition-all duration-300 ease-in-out"
+                        >
+                          <ArrowUp className="w-6 h-6" />
+                        </button>
+                      )}
+                   </span>
+                 </div>
+               </div>
+             </>
+           )}
+         </div>
 
         {/* Confirmation Modal */}
         {confirmationModalConfig && (

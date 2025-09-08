@@ -115,14 +115,14 @@ function SettingsContent() {
                   onClick={() => handleTabClick(item.id as ActiveTab)}
                   className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
                     activeTab === item.id
-                      ? 'bg-blue/20 text-blue-700 font-semibold rounded-r-lg '
+                      ? 'bg-blue/10 text-blue-700 font-semibold rounded-r-lg '
                       : 'text-foreground hover:bg-accent'
                   }`}
                 >
                   {activeTab === item.id && (
                     <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
                   )}
-                  <IconComponent className={`${activeTab === item.id ? 'ml-2' : 'ml-0' } transition-all duration-300 w-6 h-6 flex-shrink-0`} strokeWidth={1.5} />
+                  <IconComponent className={`${activeTab === item.id ? 'ml-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5} />
                   <span className="text-sm lg:text-base">{item.label}</span>
                 </button>
               );

@@ -26,7 +26,6 @@ export interface UserProfile {
     currency: string;
     created_at: string;
   } | null;
-  
 }
 
 export interface UpdateProfileRequest {

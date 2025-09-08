@@ -28,7 +28,7 @@ export async function GET(req: Request) {
         job_title: true, // This will automatically map from job_title
         created_at: true, // This will automatically map from created_at
         last_login_at: true, // This will automatically map from last_login_at
-        
+
         // Only include subscription if the model exists
         subscription: {
           select: {
@@ -43,7 +43,17 @@ export async function GET(req: Request) {
             currency: true,
             created_at: true, // This will automatically map from created_at
           }
-        }
+        },
+        documents: {
+          select: {
+            id: true
+          }
+        },
+        chat_sessions: {
+          select: {
+            id: true
+          }
+        },
       }
     });
 
@@ -51,8 +61,22 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    console.log("User found:", user);
-    return NextResponse.json(user);
+    const userProfile = {
+      ...user,
+      recentActivity: {
+        documents: user.documents,
+        chat_sessions: user.chat_sessions
+      }
+    };
+    
+    const { documents, chat_sessions, ...userWithoutArrays } = userProfile;
+    const finalProfile = {
+      ...userWithoutArrays,
+      recentActivity: userProfile.recentActivity
+    };
+
+    console.log("User found:", finalProfile);
+    return NextResponse.json(finalProfile);
 
   } catch (err) {
     console.error("Error verifying token or fetching user:", err);
@@ -95,6 +119,16 @@ export async function PATCH(req: Request) {
         job_title: true,
         created_at: true,
         last_login_at: true,
+        documents: {
+          select: {
+            id: true
+          }
+        },
+        chat_sessions: {
+          select: {
+            id: true
+          }
+        }
       }
     });
 

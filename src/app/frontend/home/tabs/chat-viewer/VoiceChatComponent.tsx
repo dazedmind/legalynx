@@ -533,19 +533,29 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
     setIsProcessing(true);
 
     try {
-      // Call your existing API
-      const response = await apiService.queryDocuments(text);
-
-      // Add assistant response
+      // Create assistant message for streaming
+      const assistantMessageId = Date.now().toString();
+      let streamedContent = '';
+      
+      // Add empty assistant message
       await addMessage({
-        content: response.response || 'I apologize, but I couldn\'t generate a response.',
+        content: '',
         type: 'ASSISTANT'
       });
 
-      // Speak the response if voice is enabled
-      if (voiceEnabled && response.response) {
-        speakText(response.response);
-      }
+      // Use streaming API
+      await apiService.streamQueryDocuments(text, (chunk) => {
+        if (chunk.type === 'content_chunk') {
+          streamedContent = chunk.partial_response || streamedContent + chunk.chunk;
+        } else if (chunk.type === 'complete') {
+          streamedContent = chunk.final_response || streamedContent;
+          
+          // Speak the response if voice is enabled
+          if (voiceEnabled && streamedContent) {
+            speakText(streamedContent);
+          }
+        }
+      });
 
     } catch (error) {
       console.error('❌ Chat API error:', error);

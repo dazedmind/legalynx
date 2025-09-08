@@ -49,6 +49,8 @@ model Subscription {
   user_id         String    @unique @map("user_id") // Make unique for one-to-one
   tokens_used     Int       @default(0) @map("tokens_used")
   token_limit     Int       @map("token_limit")
+  storage         Int       @default(0) @map("storage")
+  storage_used    Int       @default(0) @map("storage_used")
   billing_date    DateTime?  @map("billing_date")
   days_remaining  Int       @map("days_remaining")
   

@@ -37,7 +37,7 @@ export const mainApi = axios.create({
 // RAG API instance (for your existing RAG system)
 export const ragApi = axios.create({
   baseURL: RAG_API_BASE_URL,
-  timeout: isDevelopment ? 30000 : 60000, // Longer timeout in production
+  timeout: isDevelopment ? 60000 : 60000, // Longer timeout in production
   headers: {
     'Content-Type': 'application/json',
   },
@@ -87,6 +87,20 @@ export interface QueryResponse {
   response: string;
   sourceCount: number;
   securityStatus?: string; // Added for security feedback
+}
+
+export interface StreamingChunk {
+  type: 'start' | 'retrieval' | 'retrieval_complete' | 'llm_start' | 'content_chunk' | 'complete' | 'error' | 'end';
+  message?: string;
+  chunk?: string;
+  partial_response?: string;
+  final_response?: string;
+  timestamp: string;
+  user_id?: string;
+  execution_time?: number;
+  total_time?: number;
+  error?: string;
+  details?: string;
 }
 
 export interface UploadResponse {
@@ -346,14 +360,14 @@ export const apiService = {
     }
   },
 
-  async uploadPdf(file: File, googleApiKey?: string): Promise<UploadResponse> {
+  async uploadPdf(file: File, openaiApiKey?: string): Promise<UploadResponse> {
     try {
       const formData = new FormData();
       formData.append('file', file);
       
       const params = new URLSearchParams();
-      if (googleApiKey) {
-        params.append('google_api_key', googleApiKey);
+      if (openaiApiKey) {
+        params.append('openai_api_key', openaiApiKey);
       }
 
       const response = await ragApi.post<UploadResponse>(
@@ -371,10 +385,61 @@ export const apiService = {
     }
   },
 
-  async queryDocuments(query: string): Promise<QueryResponse> {
+  async queryDocuments(query: string, signal?: AbortSignal): Promise<QueryResponse> {
     try {
-      const response = await ragApi.post<QueryResponse>('/query', { query });
+      const response = await ragApi.post<QueryResponse>('/query', { query }, {
+        signal
+      });
       return response.data;
+    } catch (error) {
+      throw handleSecurityError(error);
+    }
+  },
+
+  async streamQueryDocuments(query: string, onChunk: (chunk: any) => void): Promise<void> {
+    try {
+      const response = await fetch(`${ragApi.defaults.baseURL}/query?stream=true`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Stream query failed: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Process complete lines
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6)); // Remove 'data: ' prefix
+              onChunk(data);
+            } catch (e) {
+              console.warn('Failed to parse streaming chunk:', line);
+            }
+          }
+        }
+      }
     } catch (error) {
       throw handleSecurityError(error);
     }
@@ -546,12 +611,12 @@ export interface UserProfile {
     created_at: string;
   }
 
-  stats: {
-    document_count: number;
-    chat_session_count: number;
-    total_messages: number;
-    storage_used: number;
-  };
+  // stats: {
+  //   document_count: number;
+  //   chat_session_count: number;
+  //   total_messages: number;
+  //   storage_used: number;
+  // };
   
   recentActivity: {
     documents: Array<{
@@ -616,6 +681,88 @@ export const getSecurityErrorMessage = (error: SecurityError): string => {
       return 'Your query contains potentially harmful content. Please rephrase using normal language.';
     default:
       return error.message || 'A security error occurred.';
+  }
+};
+
+// Streaming query function to prevent timeouts
+export const streamQuery = async (
+  query: string,
+  onChunk: (chunk: StreamingChunk) => void,
+  onError?: (error: Error) => void,
+  onComplete?: () => void
+): Promise<void> => {
+  try {
+    const token = authUtils.getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    // Get session ID
+    let sessionId = localStorage.getItem('rag_session_id');
+    if (!sessionId) {
+      sessionId = `sess_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+      localStorage.setItem('rag_session_id', sessionId);
+    }
+
+    // Create streaming request
+    const response = await fetch(`${RAG_API_BASE_URL}/query?stream=true`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'X-Session-Id': sessionId,
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    if (!response.body) {
+      throw new Error('No response body available for streaming');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          break;
+        }
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              onChunk(data);
+              
+              // Check if this is the final chunk
+              if (data.type === 'complete' || data.type === 'end' || data.type === 'error') {
+                if (onComplete) onComplete();
+                return;
+              }
+            } catch (parseError) {
+              console.warn('Failed to parse streaming chunk:', parseError);
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+  } catch (error) {
+    console.error('Streaming query error:', error);
+    if (onError) {
+      onError(error instanceof Error ? error : new Error(String(error)));
+    }
   }
 };
 

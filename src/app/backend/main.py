@@ -8,6 +8,7 @@ import time
 import asyncio
 from typing import Optional, Dict, Any
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
@@ -15,6 +16,7 @@ from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 import jwt
 import httpx
+from rag_pipeline.streaming_query_engine import create_streaming_engine
 
 # Load environment variables
 load_dotenv()
@@ -61,7 +63,7 @@ except ImportError as e:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    print("🚀 Starting Ultra-Fast RAG Pipeline...")
+    print("🚀 Starting Ultra-Fast RAG Pipeline with GPT-5...")
     print("⚡ Pre-warming models for maximum speed...")
     
     # Pre-warm the singleton model manager if available
@@ -630,6 +632,15 @@ async def upload_document_ultra_fast(
 async def query_document_secure(request: Request, query_request: QueryRequest):
     """Query the RAG system with enhanced error handling and proper isolation."""
     
+    # Check if streaming is requested
+    stream = request.query_params.get("stream", "false").lower() == "true"
+    
+    if stream:
+        return await stream_query_document(request, query_request)
+    
+    # ... existing code ...
+    """Query the RAG system with enhanced error handling and proper isolation."""
+    
     user_id, _ = extract_user_id_from_token(request)
     session_id = extract_session_id_from_request(request)
 
@@ -888,6 +899,70 @@ async def get_optimization_stats():
             "enable_hybrid_retrieval": True
         }
     }
+
+async def stream_query_document(request: Request, query_request: QueryRequest = None):
+    """Stream query responses to prevent timeouts."""
+    from rag_pipeline.streaming_query_engine import create_streaming_engine
+    
+    user_id, _ = extract_user_id_from_token(request)
+    session_id = extract_session_id_from_request(request)
+    
+    # If query_request is None, parse it from the request body
+    if query_request is None:
+        try:
+            body = await request.json()
+            query_request = QueryRequest(**body)
+        except Exception as e:
+            print(f"❌ Failed to parse request body: {e}")
+            raise HTTPException(status_code=400, detail="Invalid request body")
+    
+    print(f"🔍 Streaming query received: '{query_request.query}'")
+    print(f"🔍 Query length: {len(query_request.query)} characters")
+    
+    # Get current RAG system
+    rag_system = rag_manager.get_current_system(user_id=user_id, session_id=session_id)
+    
+    if not rag_system:
+        raise HTTPException(
+            status_code=400, 
+            detail="No document has been uploaded and indexed yet. Please upload a document first."
+        )
+    
+    # Get query engine and LLM
+    query_engine = rag_system.get("query_engine")
+    if not query_engine:
+        raise HTTPException(
+            status_code=500, 
+            detail="Query engine not properly initialized. Please re-upload your document."
+        )
+    
+    # Get LLM from embedding manager
+    llm = None
+    if "embedding_manager" in rag_system:
+        embedding_manager = rag_system["embedding_manager"]
+        if hasattr(embedding_manager, 'get_llm'):
+            llm = embedding_manager.get_llm()
+    
+    if not llm:
+        raise HTTPException(
+            status_code=500, 
+            detail="LLM not available. Please re-upload your document."
+        )
+    
+    # Create streaming engine
+    streaming_engine = create_streaming_engine(query_engine, llm)
+    
+    # Return streaming response
+    return StreamingResponse(
+        streaming_engine.stream_query(query_request.query, user_id or "anonymous"),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Cache-Control"
+        }
+    )
 
 @app.get("/current-document")
 async def get_current_document(request: Request):
@@ -1212,15 +1287,8 @@ async def activate_document_for_session(request: Request, document_id: str):
 
 def main():
     """Main function to run the ultra-fast RAG API with Railway support."""
-    print("🚀 Starting Ultra-Fast RAG Pipeline API...")
-    print("⚡ Optimizations enabled:")
-    print("   - Singleton model manager")
-    print("   - Rule-based naming (no LLM)")
-    print("   - Cached embeddings")
-    print("   - Reduced query expansions")
-    print("   - Background processing")
-    print("   - Disabled expensive features")
-    print("💡 Expected performance: 15-30 seconds (was 5+ minutes)")
+    print("🚀 Starting Ultra-Fast RAG Pipeline API with GPT-5...")
+
     print("🛡️ Security features: Rate limiting, Content scanning, Injection protection")
     
     # FIXED: Use Railway's PORT environment variable
