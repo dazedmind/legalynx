@@ -129,9 +129,12 @@ export default function Home() {
         switch (plan) {
           case 'PREMIUM':
             return 10 * 1024 * 1024 * 1024; // 10GB for premium
+          case 'STANDARD':
+            return 1024 * 1024 * 1024; // 1GB for standard
           case 'BASIC':
+            return 10 * 1024 * 1024; // 10MB for basic
           default:
-            return 100 * 1024 * 1024; // 100MB for basic
+            return 10 * 1024 * 1024; // 10MB for basic
         }
       };
 
@@ -148,13 +151,7 @@ export default function Home() {
 
     } catch (error) {
       console.error('Failed to load storage info:', error);
-      // [Unverified] Set default values on error
-      setStorageInfo({
-        used: 0,
-        total: 100 * 1024 * 1024, // 100MB default
-        usedPercentage: 0,
-        planType: 'BASIC'
-      });
+
     } finally {
       setIsLoadingStorage(false);
     }

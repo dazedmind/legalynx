@@ -22,6 +22,7 @@ interface ChatContainerProps {
   onMessageAction: (action: string, messageId: string, content?: string) => void;
   typingMessageId?: string | null;
   onTypingComplete?: () => void;
+  streamingMessageId?: string | null;
 }
 
 export function ChatContainer({ 
@@ -30,7 +31,8 @@ export function ChatContainer({
   documentExists, 
   onMessageAction,
   typingMessageId,
-  onTypingComplete
+  onTypingComplete,
+  streamingMessageId
 }: ChatContainerProps) {
 
   // Use ref for scroll container
@@ -192,16 +194,20 @@ export function ChatContainer({
                 </div>
               ) : (
                 <div className="whitespace-pre-wrap break-words text-md leading-relaxed">
-                  {/* ✅ NEW: Use typing animation for new assistant messages */}
-                  {message.type === 'ASSISTANT' && typingMessageId === message.id ? (
-                    <TypingAnimation 
-                      text={message.content} 
-                      delay={5}
-                      onComplete={onTypingComplete}
-                    />
+                  {/* ✅ NEW: Handle streaming messages, typing animation, and regular messages */}
+                  {message.type === 'ASSISTANT' && streamingMessageId === message.id ? (
+                    // Streaming message - show content directly as it updates
+                    <div className="whitespace-pre-wrap break-words">
+                      {message.content === '▌' ? (
+                        <span className="animate-pulse text-neutral-800">Thinking...</span>
+                      ) : (
+                        message.content || ''
+                      )}
+                    </div>
                   ) : (
+                    // Regular message with formatting
                     <div dangerouslySetInnerHTML={{ 
-                      __html: message.content
+                      __html: (message.content || '')
                         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                         .replace(/\*(.*?)\*/g, '<em>$1</em>')
                         .replace(/\_(.*?)_/g, '<u>$1</u>')
@@ -322,8 +328,8 @@ export function ChatContainer({
           {chatHistory.map(renderMessage)}
         </div>
 
-        {/* Typing Indicator */}
-        {isQuerying && (
+        {/* Typing Indicator - only show when not streaming */}
+        {isQuerying && !streamingMessageId && (
           <div className="flex justify-start mb-6">
             <div className="flex items-start gap-3 max-w-[85%]">
               

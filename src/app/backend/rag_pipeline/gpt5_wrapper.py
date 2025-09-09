@@ -14,7 +14,7 @@ class GPT5MiniLLM(CustomLLM):
     temperature: float
     max_tokens: int
 
-    def __init__(self, api_key: str, system_prompt: str = "", temperature: float = 0.1, max_tokens: int = 512):
+    def __init__(self, api_key: str, system_prompt: str = "", temperature: float = 0.1, max_tokens: int = 1024):
         # Initialize fields first
         client = OpenAIClient(api_key=api_key)
 
@@ -44,8 +44,8 @@ class GPT5MiniLLM(CustomLLM):
             response = self.client.responses.create(
                 model="gpt-5-nano",
                 input=full_prompt,
-                reasoning={"effort": "medium"},
-                text={"verbosity": "low"},
+                reasoning={"effort": "high"},
+                text={"verbosity": "medium"},
             )
 
             # Extract text from GPT-5's response structure
@@ -68,8 +68,8 @@ class GPT5MiniLLM(CustomLLM):
             response = self.client.responses.create(
                 model="gpt-5-nano",
                 input=full_prompt,
-                reasoning={"effort": "medium"},
-                text={"verbosity": "low"},
+                reasoning={"effort": "high"},
+                text={"verbosity": "medium"},
                 stream=True,  # Enable streaming
                 timeout=30    # Increased timeout for streaming
             )

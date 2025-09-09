@@ -39,7 +39,7 @@ export async function POST(request: Request) {
 
     console.log('Creating message with data:', { id, sessionId, role, content: content?.substring(0, 50) });
 
-    if (!sessionId || !role || !content) {
+    if (!sessionId || !role || content === undefined || content === null) {
       return NextResponse.json(
         { error: 'Session ID, role, and content are required' },
         { status: 400 }
@@ -135,6 +135,100 @@ export async function POST(request: Request) {
     
     return NextResponse.json(
       { error: 'Failed to create chat message' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /backend/api/chat-messages - Update existing message content
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, sessionId, content, sourceCount, tokensUsed } = body;
+
+    console.log('Updating message:', { id, sessionId, content: content?.substring(0, 50) });
+
+    if (!id || !sessionId || content === undefined || content === null) {
+      return NextResponse.json(
+        { error: 'Message ID, Session ID, and content are required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify session exists and get user info
+    const session = await prisma.chatSession.findUnique({
+      where: { id: sessionId },
+      include: { user: true }
+    });
+
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Chat session not found' },
+        { status: 404 }
+      );
+    }
+
+    // Verify message exists and belongs to the session
+    const existingMessage = await prisma.chatMessage.findFirst({
+      where: {
+        id: id,
+        session_id: sessionId
+      }
+    });
+
+    if (!existingMessage) {
+      return NextResponse.json(
+        { error: 'Message not found' },
+        { status: 404 }
+      );
+    }
+
+    // Update the message
+    const updatedMessage = await prisma.chatMessage.update({
+      where: { id: id },
+      data: {
+        content: content,
+        source_nodes: sourceCount || existingMessage.source_nodes,
+        tokens_used: tokensUsed || existingMessage.tokens_used,
+      }
+    });
+
+    // Update session's updatedAt timestamp
+    await prisma.chatSession.update({
+      where: { id: sessionId },
+      data: { updated_at: new Date() }
+    });
+
+    console.log('Message updated successfully:', updatedMessage.id);
+
+    return NextResponse.json({
+      messageId: updatedMessage.id,
+      content: updatedMessage.content,
+      role: updatedMessage.role,
+      sourceNodes: updatedMessage.source_nodes,
+      tokensUsed: updatedMessage.tokens_used
+    });
+
+  } catch (error) {
+    console.error('Error updating chat message:', error);
+    
+    if (error instanceof Error) {
+      if (error.message.includes('P2025')) {
+        return NextResponse.json(
+          { error: 'Message not found' },
+          { status: 404 }
+        );
+      }
+      if (error.message.includes('P2003')) {
+        return NextResponse.json(
+          { error: 'Session not found' },
+          { status: 404 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { error: 'Failed to update chat message' },
       { status: 500 }
     );
   }

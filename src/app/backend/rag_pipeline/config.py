@@ -7,42 +7,38 @@
 # ================================
 rag_config = {
     # CHUNK OPTIMIZATION - Larger chunks = fewer total chunks = faster processing
-    "fine_chunk_size": 512,           # ⚡ INCREASED from 256 to 512 (50% fewer chunks)
-    "fine_chunk_overlap": 50,         # ⚡ INCREASED from 20 to 50 (better quality with fewer chunks)
-    "medium_chunk_size": 512,        # NEW: Medium chunks for balanced context
-    "medium_chunk_overlap": 50,      # NEW: Proportional overlap for medium chunks
-    "coarse_chunk_size": 1024,       # NEW: Large chunks for broad context
-    "coarse_chunk_overlap": 100,     # NEW: Larger overlap for context preservation
+    "small_chunk_size": 400,           # ⚡ INCREASED from 256 to 512 (50% fewer chunks)
+    "small_chunk_overlap": 200,         # ⚡ INCREASED from 20 to 50 (better quality with fewer chunks)
+    "medium_chunk_size": 650,        # NEW: Medium chunks for balanced context
+    "medium_chunk_overlap": 250,      # NEW: Proportional overlap for medium chunks
+    "large_chunk_size": 1000,       # NEW: Large chunks for broad context
+    "large_chunk_overlap": 300,     # NEW: Larger overlap for context preservation
 
     # RETRIEVAL OPTIMIZATION - Reduce computational overhead while maintaining vector capabilities
-    "retrieval_top_k": 3,             # ⚡ REDUCED from 4 to 3 (25% faster retrieval)
-    "rerank_top_n": 2,                # Keep for quality
-    
-    # QUERY EXPANSION - Balanced for vector + BM25 hybrid
+    "retrieval_top_k": 20,             # ⚡ REDUCED from 4 to 3 (25% faster retrieval)
+    "rerank_top_n": 10,                # Keep for quality
     "num_query_expansions": 1,        # ⚡ REDUCED from 3 to 1 (70% faster pipeline building)
     
     # HYBRID RETRIEVAL FEATURES
-    "enable_logical_chunking": False,  # ⚡ MAJOR SPEEDUP: Disable expensive logical chunking
     "enable_hybrid_retrieval": True,   # ✅ ENABLED: Vector + BM25 hybrid for best accuracy
     "enable_vector_search": True,      # ✅ NEW: Enable vector embeddings for semantic search
     "enable_bm25_search": True,        # ✅ MAINTAINED: Keep BM25 for keyword precision
     
     # NEW SPEED OPTIMIZATIONS
     "fast_mode": True,                 # Enable all fast processing optimizations
-    "max_pages_for_naming": 3,         # Only process first 3 pages for intelligent naming
+    "max_pages_for_naming": 10,         # Only process first 3 pages for intelligent naming
     "cache_embeddings": True,          # Cache embedding model between uploads
     "disable_page_chunks": True,       # ⚡ Disable page-level chunks to reduce total chunk count
 }
 
 # Model configurations - Enhanced for vectorization
 MODEL_CONFIG = {
-    "llm_model": "gpt-4.1-mini",                    # Latest GPT-5 nano model
     "embedding_model": "sentence-transformers/all-MiniLM-L12-v2",              # ✅ High-quality embeddings for vector search
-    "rerank_model": "cross-encoder/ms-marco-MiniLM-L-12-v2",  # Keep for quality
+    "rerank_model": "cross-encoder/ms-marco-electra-base",  # Keep for quality
     "temperature": 0.1,
-    "max_output_tokens": 1024,
+    "max_output_tokens": 512,
     "enable_verbose_enhancement": True,
-    "verbose_enhancement_level": "high",
+    "verbose_enhancement_level": "medium",
     "reasoning_depth": "high"
 }
 

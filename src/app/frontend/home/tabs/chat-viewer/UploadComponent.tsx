@@ -1445,7 +1445,7 @@ function UploadComponent({
   };
 
   return (
-    <div className="space-y-6 mx-5 md:mx-0">
+    <div className="space-y-6 mx-2 md:mx-0">
       <div>
         <BlurText
           text="To get started, upload a PDF or DOCX document"

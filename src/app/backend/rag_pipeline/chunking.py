@@ -16,14 +16,11 @@ def multi_granularity_chunking(documents: List[Document], pdf_path: str, text_th
     1. Small chunks (256 tokens) - fine-grained context
     2. Medium chunks (512 tokens) - balanced context  
     3. Large chunks (1024 tokens) - broad context
-    4. Logical chunks - structural sections
     """
     # Since we removed OCR, treat all documents as structured
     is_scanned = False  # Always False since we don't support scanned PDFs
     
-    fine_nodes = []
-    coarse_nodes = []
-    logical_nodes = []
+    all_nodes = []
 
     # =======================
     # TRUE MULTI-GRANULARITY: Same content at different sizes
@@ -34,8 +31,8 @@ def multi_granularity_chunking(documents: List[Document], pdf_path: str, text_th
         # Create multiple chunk sizes of the SAME content
         # Small chunks (256 tokens)
         small_splitter = SentenceSplitter(
-            chunk_size=rag_config["fine_chunk_size"],
-            chunk_overlap=rag_config["fine_chunk_overlap"]
+            chunk_size=rag_config["small_chunk_size"],
+            chunk_overlap=rag_config["small_chunk_overlap"]
         )
         small_chunks = small_splitter.get_nodes_from_documents([doc])
 
@@ -48,375 +45,31 @@ def multi_granularity_chunking(documents: List[Document], pdf_path: str, text_th
 
         # Large chunks (1024 tokens) - same content, largest context
         large_splitter = SentenceSplitter(
-            chunk_size=rag_config["coarse_chunk_size"],
-            chunk_overlap=rag_config["coarse_chunk_overlap"]
+            chunk_size=rag_config["large_chunk_size"],
+            chunk_overlap=rag_config["large_chunk_overlap"]
         )
         large_chunks = large_splitter.get_nodes_from_documents([doc])
 
         # Tag each chunk with granularity level and page info
         for node in small_chunks:
-            node.metadata["chunk_type"] = "fine"
-            node.metadata["granularity"] = "small"
+            node.metadata["chunk_type"] = "small"
+            node.metadata["granularity"] = "detailed"
             node.metadata["page_number"] = i + 1
 
         for node in medium_chunks:
             node.metadata["chunk_type"] = "medium"  # New granularity level
-            node.metadata["granularity"] = "medium"
+            node.metadata["granularity"] = "balanced"
             node.metadata["page_number"] = i + 1
 
         for node in large_chunks:
-            node.metadata["chunk_type"] = "coarse"
-            node.metadata["granularity"] = "large"
+            node.metadata["chunk_type"] = "large"
+            node.metadata["granularity"] = "contextual"
             node.metadata["page_number"] = i + 1
 
         # Add to respective collections (keeping original structure)
-        fine_nodes.extend(small_chunks)
-        coarse_nodes.extend(large_chunks)
-
-        # Add medium chunks to fine_nodes for retrieval (or create separate category)
-        fine_nodes.extend(medium_chunks)
-
-    # =======================
-    # ORIGINAL HIERARCHICAL APPROACH: Different content types
-    # =======================
-    # Logical chunking for structured documents (enhanced for legal documents)
-    for doc in documents:
-        lines = doc.text.split("\n")
-        current_chunk = []
-        collecting = False
-        section_title = None
-
-        for line in lines:
-            line_strip = line.strip()
-
-            # Enhanced section detection for legal documents
-            if any(anchor in line_strip.upper() for anchor in [
-                # Contract sections
-                "TERMS AND CONDITIONS",
-                "SCOPE OF WORK", 
-                "PAYMENT TERMS",
-                "MATERIALS, COST, AND DISBURSEMENTS",
-                "INDEMNITY",
-                "LIABILITY",
-                "APPLICABLE LAWS",
-                "GOVERNING LAW",
-                "JURISDICTION",
-                "TERMINATION",
-                "CONFIDENTIALITY",
-                "INTELLECTUAL PROPERTY",
-                "WARRANTIES",
-                "FORCE MAJEURE",
-                "DISPUTE RESOLUTION",
-                "ARBITRATION",
-                "REMEDIES",
-                "OBLIGATIONS",
-                "REPRESENTATIONS",
-                "COVENANTS",
-                "DEFAULT",
-                "BREACH",
-                "SEVERABILITY",
-                "ENTIRE AGREEMENT",
-                "AMENDMENTS",
-                "NOTICES",
-                "ASSIGNMENT",
-                    
-                # Additional legal document sections
-                "RECITALS",
-                "WHEREAS",
-                "NOW THEREFORE",
-                "DEFINITIONS",
-                "INTERPRETATION",
-                "CONSIDERATION",
-                "PERFORMANCE",
-                "DELIVERY",
-                "ACCEPTANCE",
-                "TITLE",
-                "RISK OF LOSS",
-                "INSURANCE",
-                "COMPLIANCE",
-                "REGULATORY",
-                "AUDIT",
-                "RECORDS",
-                "DISCLOSURE",
-                "NON-DISCLOSURE",
-                "PROPRIETARY",
-                "TRADE SECRETS",
-                "COPYRIGHT",
-                "PATENT",
-                "TRADEMARK",
-                "LICENSE",
-                "SUBLICENSE",
-                "ROYALTY",
-                "FEES",
-                "EXPENSES",
-                "COSTS",
-                "INVOICING",
-                "BILLING",
-                "COLLECTION",
-                "LATE PAYMENT",
-                "INTEREST",
-                "CURRENCY",
-                "TAXES",
-                "WITHHOLDING",
-                "FORCE MAJEURE",
-                "ACT OF GOD",
-                "IMPOSSIBILITY",
-                "FRUSTRATION",
-                "HARDSHIP",
-                "SUSPENSION",
-                "CANCELLATION",
-                "RESCISSION",
-                "MODIFICATION",
-                "WAIVER",
-                "CONSENT",
-                "APPROVAL",
-                "AUTHORIZATION",
-                "DELEGATION",
-                "SUBCONTRACTING",
-                "THIRD PARTIES",
-                "BENEFICIARIES",
-                "SUCCESSORS",
-                "ASSIGNS",
-                "HEIRS",
-                "EXECUTORS",
-                "ADMINISTRATORS",
-                "SURVIVAL",
-                "INTEGRATION",
-                "COUNTERPARTS",
-                "ELECTRONIC SIGNATURES",
-                "FACSIMILE",
-                "HEADINGS",
-                "CONSTRUCTION",
-                "INVALIDITY",
-                "ENFORCEABILITY",
-                "CHOICE OF LAW",
-                "VENUE",
-                "FORUM",
-                "SERVICE OF PROCESS",
-                "LIMITATION OF LIABILITY",
-                "CONSEQUENTIAL DAMAGES",
-                "PUNITIVE DAMAGES",
-                "LIQUIDATED DAMAGES",
-                "MITIGATION",
-                "CURE",
-                "NOTICE OF DEFAULT",
-                "OPPORTUNITY TO CURE",
-                "SPECIFIC PERFORMANCE",
-                "INJUNCTIVE RELIEF",
-                "ATTORNEY FEES",
-                "COSTS OF COLLECTION",
-                "PREVAILING PARTY",
-
-                # =====================
-                # COURT FILINGS & BRIEFS
-                # =====================
-                "CASE CAPTION",
-                "INTRODUCTION",
-                "PRELIMINARY STATEMENT",
-                "JURISDICTION AND VENUE",
-                "STATEMENT OF FACTS",
-                "STATEMENT OF THE CASE",
-                "PROCEDURAL HISTORY",
-                "ISSUES PRESENTED",
-                "QUESTIONS PRESENTED",
-                "STANDARD OF REVIEW",
-                "APPLICABLE STANDARD",
-                "SUMMARY OF ARGUMENT",
-                "ARGUMENT",
-                "LEGAL ANALYSIS",
-                "DISCUSSION",
-                "AUTHORITIES",
-                "CITATIONS",
-                "TABLE OF AUTHORITIES",
-                "TABLE OF CASES",
-                "TABLE OF STATUTES",
-                "POINTS AND AUTHORITIES",
-                "COUNTERARGUMENTS",
-                "RELIEF REQUESTED",
-                "PRAYER FOR RELIEF",
-                "CONCLUSION",
-                "ORDER",
-                "JUDGMENT",
-                "DECREE",
-                "PETITION",
-                "MOTION",
-                "AFFIDAVIT",
-                "DECLARATION",
-                "VERIFICATION",
-                "CERTIFICATE OF SERVICE",
-                "NOTICE OF APPEAL",
-                "APPELLATE JURISDICTION",
-                "APPELLATE PROCEDURE",
-                "APPEAL BRIEF",
-                "RESPONDENT'S BRIEF",
-                "REPLY BRIEF",
-                "SUR-REPLY",
-                "ORAL ARGUMENT",
-                "DOCKET",
-                "EXHIBITS TO MOTION",
-
-                # =====================
-                # WILLS, TRUSTS & ESTATES
-                # =====================
-                "LAST WILL AND TESTAMENT",
-                "DECLARATION",
-                "REVOCATION OF PRIOR WILLS",
-                "APPOINTMENT OF EXECUTOR",
-                "EXECUTOR POWERS",
-                "APPOINTMENT OF TRUSTEE",
-                "TRUSTEE POWERS",
-                "GUARDIANSHIP",
-                "APPOINTMENT OF GUARDIAN",
-                "FUNERAL INSTRUCTIONS",
-                "SPECIFIC BEQUESTS",
-                "GENERAL BEQUESTS",
-                "RESIDUARY ESTATE",
-                "DISTRIBUTION OF ESTATE",
-                "TAX ALLOCATION",
-                "CHARITABLE BEQUESTS",
-                "DISINHERITANCE",
-                "CONDITIONS OF INHERITANCE",
-                "NO CONTEST CLAUSE",
-                "INCAPACITY",
-                "HEALTH CARE DIRECTIVES",
-                "POWER OF ATTORNEY",
-                "LIVING WILL",
-                "TRUST AGREEMENT",
-                "IRREVOCABLE TRUST",
-                "REVOCABLE TRUST",
-                "SPENDTHRIFT CLAUSE",
-                "SUCCESSOR TRUSTEE",
-                "BENEFICIARY DESIGNATIONS",
-                "FIDUCIARY DUTIES",
-                "ACCOUNTING",
-                "DISTRIBUTION PLAN",
-
-                # =====================
-                # STATUTES & REGULATIONS
-                # =====================
-                "TITLE",
-                "CHAPTER",
-                "SECTION",
-                "SUBSECTION",
-                "ARTICLE",
-                "PART",
-                "DIVISION",
-                "SUBPART",
-                "SUBDIVISION",
-                "REGULATION",
-                "RULE",
-                "GENERAL PROVISIONS",
-                "DEFINITIONS AND INTERPRETATION",
-                "LEGISLATIVE INTENT",
-                "POLICY",
-                "APPLICATION",
-                "SCOPE",
-                "EXEMPTIONS",
-                "PROHIBITIONS",
-                "REQUIREMENTS",
-                "ENFORCEMENT",
-                "PENALTIES",
-                "SANCTIONS",
-                "APPEALS",
-                "ADMINISTRATIVE REMEDIES",
-                "HEARINGS",
-                "PUBLIC NOTICE",
-                "COMMENTS",
-                "EFFECTIVE DATE",
-                "SUNSET PROVISION",
-                "AMENDMENT HISTORY",
-                "LEGISLATIVE HISTORY",
-
-                # =====================
-                # CORPORATE GOVERNANCE
-                # =====================
-                "BYLAWS",
-                "ARTICLES OF INCORPORATION",
-                "CERTIFICATE OF FORMATION",
-                "SHAREHOLDER AGREEMENT",
-                "STOCK PURCHASE AGREEMENT",
-                "SUBSCRIPTION AGREEMENT",
-                "OPERATING AGREEMENT",
-                "PARTNERSHIP AGREEMENT",
-                "BOARD OF DIRECTORS",
-                "BOARD RESOLUTIONS",
-                "MEETING MINUTES",
-                "QUORUM",
-                "VOTING RIGHTS",
-                "DIVIDENDS",
-                "CAPITAL CONTRIBUTIONS",
-                "DISSOLUTION",
-                "LIQUIDATION",
-                "MERGERS",
-                "ACQUISITIONS",
-                "CORPORATE APPROVALS",
-                "AUTHORIZED SIGNATORIES",
-                "OFFICER DUTIES",
-                "FIDUCIARY DUTIES",
-                "COMPLIANCE PROGRAMS",
-                "CODE OF CONDUCT",
-                "RISK MANAGEMENT",
-                "INTERNAL CONTROLS"
-            ]):
-                if current_chunk:
-                    chunk_text = "\n".join(current_chunk)
-                    logical_nodes.append(TextNode(
-                        text=chunk_text,
-                        metadata={
-                            "section": section_title,
-                            "chunk_type": "logical",
-                            "granularity": "structural"
-                        }
-                    ))
-                    current_chunk = []
-
-                collecting = True
-                section_title = line_strip
-                current_chunk = [line_strip]
-                continue
-
-            if collecting:
-                if line_strip == "" and current_chunk:
-                    chunk_text = "\n".join(current_chunk)
-                    logical_nodes.append(TextNode(
-                        text=chunk_text,
-                        metadata={
-                            "section": section_title,
-                            "chunk_type": "logical",
-                            "granularity": "structural"
-                        }
-                    ))
-                    current_chunk = []
-                    collecting = False
-                else:
-                    current_chunk.append(line_strip)
-
-        # Add remaining chunk
-        if current_chunk:
-            chunk_text = "\n".join(current_chunk)
-            logical_nodes.append(TextNode(
-                text=chunk_text,
-                metadata={
-                    "section": section_title,
-                    "chunk_type": "logical",
-                    "granularity": "structural"
-                }
-            ))
-
-    # Print summary for verification
-    total_fine = len([n for n in fine_nodes if n.metadata.get("granularity") == "small"])
-    total_medium = len([n for n in fine_nodes if n.metadata.get("granularity") == "medium"])
-    total_coarse = len(coarse_nodes)
-    total_logical = len(logical_nodes)
-
-    print(f"✅ True Multi-Granularity Chunks:")
-    print(f"   - Small (256): {total_fine}")
-    print(f"   - Medium (512): {total_medium}")
-    print(f"   - Large (1024): {total_coarse}")
-    print(f"   - Logical/Structural: {total_logical}")
-    print(f"   - Total: {len(fine_nodes + coarse_nodes + logical_nodes)}")
-
-    return fine_nodes + coarse_nodes + logical_nodes
+        all_nodes.extend(small_chunks)
+        all_nodes.extend(medium_chunks)
+        all_nodes.extend(large_chunks)
 
 def create_semantic_chunks(documents: List[Document], chunk_size: int = 512, 
                           chunk_overlap: int = 50) -> List[TextNode]:

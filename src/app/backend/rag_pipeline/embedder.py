@@ -54,12 +54,12 @@ class EmbeddingManager:
             try:
                 # Fallback to a simpler, more compatible model
                 self.embed_model = HuggingFaceEmbedding(
-                    model_name="sentence-transformers/all-MiniLM-L6-v2",  # Simpler, more compatible model
+                    model_name="sentence-transformers/all-MiniLM-L12-v2",  # Simpler, more compatible model
                     device="cpu",
                     trust_remote_code=True
                 )
                 Settings.embed_model = self.embed_model
-                print("✅ Fallback embedding model loaded: sentence-transformers/all-MiniLM-L6-v2")
+                print("✅ Fallback embedding model loaded: sentence-transformers/all-MiniLM-L12-v2")
             except Exception as fallback_error:
                 print(f"❌ Fallback embedding model also failed: {fallback_error}")
                 print("🔄 Trying minimal embedding model as last resort...")

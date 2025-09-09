@@ -17,6 +17,7 @@ from contextlib import asynccontextmanager
 import jwt
 import httpx
 from rag_pipeline.streaming_query_engine import create_streaming_engine
+import json
 
 # Load environment variables
 load_dotenv()
@@ -872,7 +873,6 @@ async def get_optimization_stats():
                 "llm_initializations": 3,
                 "filename_method": "LLM-based with RAG queries",
                 "query_expansions": 3,
-                "logical_chunking": True
             },
             "after": {
                 "typical_time_seconds": 20,
@@ -880,7 +880,6 @@ async def get_optimization_stats():
                 "llm_initializations": 1,
                 "filename_method": "Rule-based regex patterns",
                 "query_expansions": 1,
-                "logical_chunking": False
             },
             "speedup_factor": "15x faster",
             "time_reduction": "95% reduction"
@@ -952,15 +951,34 @@ async def stream_query_document(request: Request, query_request: QueryRequest = 
     # Create streaming engine
     streaming_engine = create_streaming_engine(query_engine, llm)
     
-    # Return streaming response
+    # Wrap engine with an immediate prelude to flush headers and show instant UI feedback
+    async def sse_wrapper():
+        # Immediate 'start' event
+        start_event = {"type": "start", "timestamp": time.time(), "user_id": user_id or "anonymous"}
+        yield f"data: {json.dumps(start_event)}\n\n"
+
+        # Tiny first chunk so the client can render a bubble instantly
+        priming_chunk = {"type": "content_chunk", "chunk": " "}
+        yield f"data: {json.dumps(priming_chunk)}\n\n"
+
+        # Delegate to the engine
+        async for event in streaming_engine.stream_query(query_request.query, user_id or "anonymous"):
+            # Directly forward engine events (already formatted as SSE lines)
+            yield event
+
+        # Final end event in case engine doesn't send one
+        yield f"data: {json.dumps({'type': 'end', 'timestamp': time.time()})}\n\n"
+
+    # Return streaming response with no buffering
     return StreamingResponse(
-        streaming_engine.stream_query(query_request.query, user_id or "anonymous"),
+        sse_wrapper(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "Cache-Control"
+            "Access-Control-Allow-Headers": "Cache-Control",
+            "X-Accel-Buffering": "no"
         }
     )
 
