@@ -149,11 +149,18 @@ def create_vectorized_rag_system(documents: List, pdf_path: str) -> Dict[str, An
             print(f"❌ Vector index creation failed: {vector_error}")
             raise Exception(f"Could not create vector index: {vector_error}")
         
+        # Get config values
+        from rag_pipeline.config import rag_config
+        retrieval_top_k = rag_config["retrieval_top_k"]
+        safe_top_k = min(retrieval_top_k, len(nodes))
+        
+        print(f"🔄 Using retrieval_top_k={retrieval_top_k}, safe_top_k={safe_top_k} for {len(nodes)} nodes")
+        
         # Create BM25 retriever
         try:
             bm25_retriever = BM25Retriever.from_defaults(
                 nodes=nodes,
-                similarity_top_k=min(3, len(nodes))
+                similarity_top_k=safe_top_k
             )
             print("✅ BM25 retriever created successfully")
         except Exception as bm25_error:
@@ -163,7 +170,7 @@ def create_vectorized_rag_system(documents: List, pdf_path: str) -> Dict[str, An
         # Create vector retriever
         try:
             vector_retriever = vector_index.as_retriever(
-                similarity_top_k=min(3, len(nodes))
+                similarity_top_k=safe_top_k
             )
             print("✅ Vector retriever created successfully")
         except Exception as vector_ret_error:
@@ -175,7 +182,7 @@ def create_vectorized_rag_system(documents: List, pdf_path: str) -> Dict[str, An
             hybrid_retriever = AggressiveHybridRetriever(
                 vector_retriever=vector_retriever,
                 bm25_retriever=bm25_retriever,
-                top_k=min(3, len(nodes))
+                top_k=safe_top_k
             )
             print("✅ Hybrid retriever created successfully")
         except Exception as hybrid_error:

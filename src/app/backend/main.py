@@ -892,7 +892,7 @@ async def get_optimization_stats():
         },
         "config_optimizations": {
             "fine_chunk_size": 512,
-            "retrieval_top_k": 3,
+            "retrieval_top_k": 20,
             "num_query_expansions": 1,
             "enable_logical_chunking": False,
             "enable_hybrid_retrieval": True
