@@ -660,7 +660,7 @@ ULTRA_FAST_CONFIG = {
     "fine_chunk_overlap": 50,
     "coarse_chunk_size": 1024,
     "retrieval_top_k": 3,
-    "rerank_top_n": 2,
+    "rerank_top_n": 20,
     "num_query_expansions": 1,
     "enable_logical_chunking": False,
     "enable_hybrid_retrieval": True,  # Now enabled for vector + BM25

@@ -3103,7 +3103,7 @@ export default function ChatViewer({
                     placeholder={
                       tokenLimitInfo.isLimitReached
                         ? "Message limit reached. Please wait for reset or upgrade your plan."
-                        : "Ask a question about the uploaded document..."
+                        : "Ask a question..."
                     }
                     rows={2}
                     disabled={tokenLimitInfo.isLimitReached}

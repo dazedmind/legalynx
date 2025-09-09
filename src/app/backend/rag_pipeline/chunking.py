@@ -71,6 +71,14 @@ def multi_granularity_chunking(documents: List[Document], pdf_path: str, text_th
         all_nodes.extend(medium_chunks)
         all_nodes.extend(large_chunks)
 
+    print(f"✅ Three-Granularity Chunks:")
+    print(f"   - Small (400 tokens): {len([n for n in all_nodes if n.metadata.get('chunk_type') == 'small'])}")
+    print(f"   - Medium (650 tokens): {len([n for n in all_nodes if n.metadata.get('chunk_type') == 'medium'])}")
+    print(f"   - Large (1000 tokens): {len([n for n in all_nodes if n.metadata.get('chunk_type') == 'large'])}")
+    print(f"   - Total: {len(all_nodes)}")
+
+    return all_nodes
+
 def create_semantic_chunks(documents: List[Document], chunk_size: int = 512, 
                           chunk_overlap: int = 50) -> List[TextNode]:
     """

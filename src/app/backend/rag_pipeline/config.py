@@ -7,14 +7,14 @@
 rag_config = {
     # Three chunk sizes for demo
     "small_chunk_size": 400,
-    "small_chunk_overlap": 200,
+    "small_chunk_overlap": 250,
     "medium_chunk_size": 650,     # NEW: Between small and large
-    "medium_chunk_overlap": 250,  # NEW: Medium overlap
+    "medium_chunk_overlap": 310,  # NEW: Medium overlap
     "large_chunk_size": 1000,
-    "large_chunk_overlap": 300,
+    "large_chunk_overlap": 370,
 
-    "retrieval_top_k": 20,
-    "rerank_top_n": 10,
+    "retrieval_top_k": 50,
+    "rerank_top_n": 20,
     "num_query_expansions": 1,
 }
 
@@ -23,7 +23,7 @@ MODEL_CONFIG = {
     "embedding_model": "sentence-transformers/all-MiniLM-L12-v2",
     "rerank_model": "cross-encoder/ms-marco-electra-base",
     "temperature": 0.1,
-    "max_output_tokens": 512,
+    "max_output_tokens": 1024,
 }
 
 # System prompt for the LLM (enhanced for vector context)
@@ -34,6 +34,13 @@ SYSTEM_PROMPT = (
     "is to optimize paralegal workflows through precise legal document analysis while maintaining the highest "
     "standards of accuracy and professional legal practice.\n\n"
 
+    "## RESPONSE LENGTH REQUIREMENTS:\n"
+    "**CRITICAL INSTRUCTION: Keep responses concise and focused.**\n"
+    "- **Target length: ~70 to 200 words** for most queries\n"
+    "- **Maximum limit: 500 words** (only use when absolutely necessary for complex queries)\n"
+    "- **Be precise and direct** - avoid unnecessary elaboration or repetitive information\n"
+    "- **Prioritize the most essential information** that directly answers the user's query\n"
+    "- **Use bullet points or structured format** when it helps reduce word count while maintaining clarity\n\n"
 
     "## DOCUMENT PROCESSING CAPABILITIES:\n"
     "You analyze legal documents including: contracts, wills, power of attorney documents, trusts, policy documents, "
@@ -113,7 +120,7 @@ SYSTEM_PROMPT = (
 
     "Begin with the direct answer to the user's query followed by the specific information requested with full page attribution.\n\n"
     "Always present responses primarily in clear, professional prose. Use bullets or numbering only when absolutely necessary (e.g., for lists of clauses, dates,"
-    "or multi-step calculations). Responses should flow like a narrative explanation rather than rigid outlines.\n\n"
+    "or multi-step calculations). Responses should flow like a narrative explanation rather than rigid outlines. Always mention the proper names of the people involved in bold text (if possible and available) if referring to them to avoid confusion.\n\n"
 
     "At the beginning of every response, provide the **direct answer** to the user's query, with the specific word, phrase, or figure bolded for immediate clarity. Do not bold full sentences."
     "For example, if the question is 'How many pages?', the response should begin: **23 pages**.\n\n"

@@ -19,7 +19,7 @@ class AggressiveHybridRetriever(BaseRetriever):
     Simple combination logic to force retrieval of all relevant content.
     """
     
-    def __init__(self, vector_retriever, bm25_retriever, top_k: int = 20):
+    def __init__(self, vector_retriever, bm25_retriever, top_k: int = 50):
         self.vector_retriever = vector_retriever
         self.bm25_retriever = bm25_retriever
         self.top_k = top_k
@@ -94,7 +94,7 @@ class RAGPipelineBuilder:
         """
         num_nodes = len(nodes)
         # AGGRESSIVE: Use ALL nodes if document is small enough, otherwise use more than default
-        safe_top_k = min(num_nodes, max(rag_config["retrieval_top_k"]))  # At least 8 nodes
+        safe_top_k = min(num_nodes, max(rag_config["retrieval_top_k"]))
         
         print(f"🔄 Building AGGRESSIVE hybrid RAG pipeline with {num_nodes} nodes")
         print(f"🔄 Using aggressive top_k={safe_top_k} (was {rag_config['retrieval_top_k']})")
