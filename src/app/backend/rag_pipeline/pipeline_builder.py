@@ -13,84 +13,56 @@ import pandas as pd
 from .config import rag_config, MODEL_CONFIG
 
 
-class HybridRetriever(BaseRetriever):
+class AggressiveHybridRetriever(BaseRetriever):
     """
     Aggressive hybrid retriever that combines vector similarity search with BM25 keyword search.
-    Enhanced to retrieve more content for comprehensive responses.
+    Simple combination logic to force retrieval of all relevant content.
     """
     
-    def __init__(self, vector_retriever, bm25_retriever, top_k: int = 20, aggressive_mode: bool = True):
+    def __init__(self, vector_retriever, bm25_retriever, top_k: int = 20):
         self.vector_retriever = vector_retriever
         self.bm25_retriever = bm25_retriever
         self.top_k = top_k
-        self.aggressive_mode = aggressive_mode
         super().__init__()
     
     def _retrieve(self, query_bundle: QueryBundle, **kwargs) -> List[NodeWithScore]:
         """
-        AGGRESSIVE retrieval using both vector and BM25 search to force retrieval of all relevant content.
+        Simple combination logic - get results from both retrievers and combine them.
         """
         try:
-            # Get results from both retrievers
+            # Get LOTS of vector results
             vector_nodes = self.vector_retriever.retrieve(query_bundle)
             bm25_nodes = self.bm25_retriever.retrieve(query_bundle)
             
             print(f"🔍 Vector retriever found {len(vector_nodes)} nodes")
             print(f"🔍 BM25 retriever found {len(bm25_nodes)} nodes")
             
-            if self.aggressive_mode:
-                # AGGRESSIVE MODE: Combine and deduplicate to get MORE content
-                all_nodes = []
-                seen_ids = set()
-                
-                # Add all vector results first (they're usually more relevant)
-                for node in vector_nodes:
-                    if node.node_id not in seen_ids:
-                        all_nodes.append(node)
-                        seen_ids.add(node.node_id)
-                
-                # Add BM25 results that weren't already included
-                for node in bm25_nodes:
-                    if node.node_id not in seen_ids:
-                        all_nodes.append(node)
-                        seen_ids.add(node.node_id)
-                
-                # LESS aggressive sorting - keep more variety for comprehensive answers
-                sorted_nodes = sorted(
-                    all_nodes,
-                    key=lambda x: getattr(x, 'score', 0.0) or 0.0,
-                    reverse=True
-                )
-                
-                print(f"🔗 AGGRESSIVE: Combined to {len(sorted_nodes)} unique nodes (retrieving {self.top_k})")
-                
-            else:
-                # Original conservative approach
-                all_nodes = list(vector_nodes) + list(bm25_nodes)
-                
-                # Remove duplicates by node_id while preserving best scores
-                unique_nodes = {}
-                for node in all_nodes:
-                    node_id = node.node_id
-                    if node_id not in unique_nodes:
-                        unique_nodes[node_id] = node
-                    else:
-                        # Keep the node with higher score
-                        if hasattr(node, 'score') and hasattr(unique_nodes[node_id], 'score'):
-                            if node.score and unique_nodes[node_id].score:
-                                if node.score > unique_nodes[node_id].score:
-                                    unique_nodes[node_id] = node
-                
-                # Sort nodes by score, highest first
-                sorted_nodes = sorted(
-                    unique_nodes.values(),
-                    key=lambda x: getattr(x, 'score', 0.0) or 0.0,
-                    reverse=True
-                )
-                
-                print(f"🔗 CONSERVATIVE: Combined and deduplicated to {len(sorted_nodes)} unique nodes")
+            # Combine and deduplicate
+            all_nodes = []
+            seen_ids = set()
+
+            # Add all vector results
+            for node in vector_nodes:
+                if node.node_id not in seen_ids:
+                    all_nodes.append(node)
+                    seen_ids.add(node.node_id)
+
+            # Add BM25 results that weren't already included
+            for node in bm25_nodes:
+                if node.node_id not in seen_ids:
+                    all_nodes.append(node)
+                    seen_ids.add(node.node_id)
+
+            # LESS aggressive sorting - keep more variety
+            sorted_nodes = sorted(
+                all_nodes,
+                key=lambda x: getattr(x, 'score', 0.0) or 0.0,
+                reverse=True
+            )
             
-            # Return top_k results (more in aggressive mode)
+            print(f"🔗 Combined to {len(sorted_nodes)} unique nodes (retrieving {self.top_k})")
+
+            # Return MORE results
             return sorted_nodes[:self.top_k]
             
         except Exception as e:
@@ -122,22 +94,15 @@ class RAGPipelineBuilder:
         """
         num_nodes = len(nodes)
         # AGGRESSIVE: Use ALL nodes if document is small enough, otherwise use more than default
-        safe_top_k = min(num_nodes, max(rag_config["retrieval_top_k"], 8))  # At least 8 nodes
+        safe_top_k = min(num_nodes, max(rag_config["retrieval_top_k"]))  # At least 8 nodes
         
         print(f"🔄 Building AGGRESSIVE hybrid RAG pipeline with {num_nodes} nodes")
         print(f"🔄 Using aggressive top_k={safe_top_k} (was {rag_config['retrieval_top_k']})")
         
         # Step 1: Create vector retriever with metadata filtering
         print("🔄 Setting up AGGRESSIVE vector retriever...")
-        filter_by_fine_type = MetadataFilters(
-            filters=[ExactMatchFilter(key="chunk_type", value="fine")]
-        )
-        
-        vector_retriever = vector_index.as_retriever(
-            similarity_top_k=safe_top_k,
-            filters=filter_by_fine_type
-        )
-        
+        vector_retriever = vector_index.as_retriever(similarity_top_k=safe_top_k)
+
         # Step 2: Create BM25 retriever
         print("🔄 Setting up AGGRESSIVE BM25 retriever...")
         bm25_retriever = BM25Retriever.from_defaults(
@@ -147,11 +112,10 @@ class RAGPipelineBuilder:
         
         # Step 3: Create AGGRESSIVE hybrid retriever
         print("🔄 Combining vector and BM25 retrievers with AGGRESSIVE mode...")
-        hybrid_retriever = HybridRetriever(
+        hybrid_retriever = AggressiveHybridRetriever(
             vector_retriever=vector_retriever,
             bm25_retriever=bm25_retriever,
-            top_k=safe_top_k,
-            aggressive_mode=True  # Enable aggressive retrieval
+            top_k=safe_top_k
         )
         
         # Step 4: Setup AGGRESSIVE reranker with more results
@@ -160,7 +124,7 @@ class RAGPipelineBuilder:
         if num_nodes > 1:
             try:
                 # AGGRESSIVE: Use more results for reranking
-                rerank_top_n = min(max(rag_config["rerank_top_n"], 8), num_nodes)
+                rerank_top_n = min(max(rag_config["rerank_top_n"]), num_nodes)
                 reranker = SentenceTransformerRerank(
                     model=MODEL_CONFIG["rerank_model"],
                     top_n=rerank_top_n
@@ -188,18 +152,14 @@ class RAGPipelineBuilder:
             Analyze query results showing both vector and BM25 contributions.
             """
             query_bundle = QueryBundle(query_str=query_text)
-            
-            # Get results from individual retrievers
-            vector_nodes = vector_retriever.retrieve(query_bundle)
-            bm25_nodes = bm25_retriever.retrieve(query_bundle)
-            hybrid_nodes = hybrid_retriever._retrieve(query_bundle)
+            reranked_nodes = reranker.postprocess_nodes(nodes, query_str=query_text) if reranker else nodes
+            nodes = hybrid_retriever._retrieve(query_bundle)
             
             results = []
             
-            # Vector results (show more content)
-            for i, node in enumerate(vector_nodes[:top_k]):
+            for i, node in enumerate(nodes[:top_k]):
                 results.append({
-                    "Stage": "Vector Retrieval",
+                    "Stage": "Original Retrieval",
                     "Rank": i + 1,
                     "Score": getattr(node, 'score', 0.0),
                     "Content": node.get_text()[:200] + "...",  # Show more content
@@ -207,45 +167,18 @@ class RAGPipelineBuilder:
                     "Type": node.metadata.get("chunk_type", "Unknown")
                 })
             
-            # BM25 results (show more content)
-            for i, node in enumerate(bm25_nodes[:top_k]):
+            for i, node in enumerate(reranked_nodes[:top_k]):
                 results.append({
-                    "Stage": "BM25 Retrieval",
+                    "Stage": "After Reranking",
                     "Rank": i + 1,
                     "Score": getattr(node, 'score', 0.0),
                     "Content": node.get_text()[:200] + "...",  # Show more content
                     "Page": node.metadata.get("page_number", "Unknown"),
                     "Type": node.metadata.get("chunk_type", "Unknown")
                 })
-            
-            # Hybrid results (show more content)
-            for i, node in enumerate(hybrid_nodes[:top_k]):
-                results.append({
-                    "Stage": "Hybrid Combined",
-                    "Rank": i + 1,
-                    "Score": getattr(node, 'score', 0.0),
-                    "Content": node.get_text()[:200] + "...",  # Show more content
-                    "Page": node.metadata.get("page_number", "Unknown"),
-                    "Type": node.metadata.get("chunk_type", "Unknown")
-                })
-            
-            # Add reranked results if available
-            if reranker:
-                try:
-                    reranked_nodes = reranker.postprocess_nodes(hybrid_nodes, query_str=query_text)
-                    for i, node in enumerate(reranked_nodes[:top_k]):
-                        results.append({
-                            "Stage": "After Reranking",
-                            "Rank": i + 1,
-                            "Score": getattr(node, 'score', 0.0),
-                            "Content": node.get_text()[:200] + "...",  # Show more content
-                            "Page": node.metadata.get("page_number", "Unknown"),
-                            "Type": node.metadata.get("chunk_type", "Unknown")
-                        })
-                except Exception as e:
-                    print(f"⚠️ Reranking analysis failed: {e}")
-            
-            return pd.DataFrame(results)
+
+            results_df = pd.DataFrame(results)
+            return (results_df)
         
         return query_engine, analyze_query_results
 

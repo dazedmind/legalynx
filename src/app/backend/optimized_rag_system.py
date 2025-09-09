@@ -88,7 +88,7 @@ def create_vectorized_rag_system(documents: List, pdf_path: str) -> Dict[str, An
         from llama_index.core import VectorStoreIndex
         from llama_index.core.vector_stores import MetadataFilters, ExactMatchFilter
         from rag_pipeline.embedder import EmbeddingManager
-        from rag_pipeline.pipeline_builder import HybridRetriever
+        from rag_pipeline.pipeline_builder import AggressiveHybridRetriever
         
         # Convert documents to TextNode format
         nodes = []
@@ -172,7 +172,7 @@ def create_vectorized_rag_system(documents: List, pdf_path: str) -> Dict[str, An
         
         # Create hybrid retriever
         try:
-            hybrid_retriever = HybridRetriever(
+            hybrid_retriever = AggressiveHybridRetriever(
                 vector_retriever=vector_retriever,
                 bm25_retriever=bm25_retriever,
                 top_k=min(3, len(nodes))
@@ -213,35 +213,68 @@ def create_vectorized_rag_system(documents: List, pdf_path: str) -> Dict[str, An
         performance_monitor = SimplePerformanceMonitor()
         
         # Create analyzer
-        def analyze_query_results(query_text: str, top_k: int = 4):
-            """Enhanced query analyzer for hybrid retrieval."""
+        def run_query_with_reranking(query_text, top_k=8):  # Show more results
+            """
+            Analyze query results showing original retrieval and after reranking.
+            """
             from llama_index.core.schema import QueryBundle
+            import pandas as pd
             
             try:
                 query_bundle = QueryBundle(query_str=query_text)
+                nodes = hybrid_retriever._retrieve(query_bundle)
                 
-                # Get results from individual retrievers
-                vector_nodes = vector_retriever.retrieve(query_bundle)
-                bm25_nodes = bm25_retriever.retrieve(query_bundle)
-                hybrid_nodes = hybrid_retriever._retrieve(query_bundle)
+                # Create reranker if we have enough nodes
+                reranker = None
+                if len(nodes) > 1:
+                    try:
+                        reranker = SentenceTransformerRerank(
+                            model="cross-encoder/ms-marco-electra-base",
+                            top_n=min(8, len(nodes))
+                        )
+                    except:
+                        pass
                 
-                return {
-                    "query": query_text,
-                    "vector_results": len(vector_nodes),
-                    "bm25_results": len(bm25_nodes),
-                    "hybrid_results": len(hybrid_nodes),
-                    "status": "analyzed"
-                }
+                reranked_nodes = reranker.postprocess_nodes(nodes, query_str=query_text) if reranker else nodes
+
+                results = []
+
+                # Original retrieval results
+                for i, node in enumerate(nodes[:top_k]):  # Show more nodes
+                    results.append({
+                        "Stage": "Original Retrieval",
+                        "Rank": i + 1,
+                        "Score": getattr(node, 'score', 0),
+                        "Content": node.get_text()[:200] + "...",  # Show more content
+                        "Page": node.metadata.get("page_number", "Unknown"),
+                        "Type": node.metadata.get("chunk_type", "Unknown")
+                    })
+
+                # After reranking results
+                for i, node in enumerate(reranked_nodes[:top_k]):
+                    results.append({
+                        "Stage": "After Reranking",
+                        "Rank": i + 1,
+                        "Score": getattr(node, 'score', 0),
+                        "Content": node.get_text()[:200] + "...",  # Show more content
+                        "Page": node.metadata.get("page_number", "Unknown"),
+                        "Type": node.metadata.get("chunk_type", "Unknown")
+                    })
+
+                results_df = pd.DataFrame(results)
+                return results_df
+                
             except Exception as e:
-                return {"query": query_text, "status": f"analysis_failed: {e}"}
+                print(f"⚠️ Query analysis failed: {e}")
+                return pd.DataFrame([{"Stage": "Error", "Rank": 1, "Score": 0, "Content": f"Analysis failed: {e}", "Page": "Unknown", "Type": "Error"}])
         
         build_time = time.time() - start_time
         print(f"✅ Vectorized RAG system built in {build_time:.2f}s")
         
         return {
             "query_engine": query_engine,
-            "rerank_demo": analyze_query_results,
-            "analyzer": analyze_query_results,
+            "rerank_demo": run_query_with_reranking,
+            "analyzer": run_query_with_reranking,
             "pipeline_builder": None,
             "embedding_manager": embedding_manager,
             "performance_monitor": performance_monitor,
@@ -445,19 +478,37 @@ class RuleBasedFileNamer:
             
             # Clean the document type for filename safety
             if extracted_type:
+                # Remove all invalid filename characters including * [ ] ( ) and others
                 extracted_type = re.sub(r'[^\w\s-]', '', extracted_type)
                 extracted_type = re.sub(r'\s+', ' ', extracted_type).strip()
                 extracted_type = extracted_type.replace(' ', '_')[:30]  # Keep it shorter
+                # Additional safety check for Windows invalid characters
+                extracted_type = re.sub(r'[<>:"/\\|?*\[\]]', '', extracted_type)
+            
+            # Clean client name for filename safety
+            if extracted_client:
+                # Remove all invalid filename characters
+                extracted_client = re.sub(r'[^\w\s-]', '', extracted_client)
+                extracted_client = re.sub(r'\s+', ' ', extracted_client).strip()
+                extracted_client = extracted_client.replace(' ', '_')[:20]  # Keep it shorter
+                # Additional safety check for Windows invalid characters
+                extracted_client = re.sub(r'[<>:"/\\|?*\[\]]', '', extracted_client)
+                # If it becomes empty after cleaning, set to None
+                if not extracted_client or extracted_client.lower() == 'none':
+                    extracted_client = None
             
             # Parse extracted date if available
             if extracted_date:
                 try:
-                    # Parse date and format as YYYYMMDD
-                    if '-' in extracted_date:
-                        date_obj = datetime.strptime(extracted_date, "%Y-%m-%d")
+                    # Clean date first - remove any invalid characters
+                    cleaned_date = re.sub(r'[^\w\s\-/:]', '', extracted_date)
+                    if cleaned_date.lower() == 'none' or not cleaned_date.strip():
+                        date_part = datetime.now().strftime("%Y%m%d")
+                    elif '-' in cleaned_date:
+                        date_obj = datetime.strptime(cleaned_date, "%Y-%m-%d")
                         date_part = date_obj.strftime("%Y%m%d")
                     else:
-                        date_part = extracted_date[:8] if len(extracted_date) >= 8 else datetime.now().strftime("%Y%m%d")
+                        date_part = cleaned_date[:8] if len(cleaned_date) >= 8 and cleaned_date.isdigit() else datetime.now().strftime("%Y%m%d")
                 except:
                     date_part = datetime.now().strftime("%Y%m%d")
             
