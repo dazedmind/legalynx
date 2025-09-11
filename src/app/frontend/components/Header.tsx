@@ -108,7 +108,7 @@ function Header() {
             <div className="mt-4 space-y-2 text-center">
               <Link href="/frontend/register" onClick={closeMobileMenu}>
                 <p className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                  Don't have an account? Sign up
+                  Don't have an account? <span className='text-yellow'>Sign up</span>
                 </p>
               </Link>
             </div>
