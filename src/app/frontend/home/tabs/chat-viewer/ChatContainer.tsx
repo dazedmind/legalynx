@@ -326,19 +326,11 @@ export function ChatContainer({
         {isQuerying && (
           <div className="flex justify-start mb-6">
             <div className="flex items-start gap-3 max-w-[85%]">
-              
-              {/* Bot Avatar */}
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">
-                <Bot className="w-4 h-4" />
-              </div>
-
+  
               {/* Typing Animation */}
               <div className="bg-primary border border-tertiary rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
+                <p className="animate-pulse">Thinking... </p>
+    
               </div>
             </div>
           </div>

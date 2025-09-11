@@ -5,7 +5,10 @@ import Header from '../components/Header';
 import { Check, Star, Zap, Shield, Users, MessageSquare, FileText, Clock, Headphones, Crown, Sparkles } from 'lucide-react';
 import BlurText from '../components/reactbits/BlurText';
 import Link from 'next/link';
+import { paypalService } from '../lib/api';
+import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
+import { authUtils } from '@/lib/auth';
 
 function EnhancedPricing() {
     const { theme } = useTheme();
@@ -223,13 +226,31 @@ function EnhancedPricing() {
                 </div>
 
                 {/* CTA Button */}
-                <Link href="/frontend/register" className="block">
-                  <button
-                    className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 ${plan.ctaStyle} cursor-pointer`}
-                  >
-                    {plan.ctaText}
-                  </button>
-                </Link>
+                <button
+                  onClick={async () => {
+                    try {
+                      const token = authUtils.getToken();
+                      if (!token) {
+                        // Redirect to register with return URL to come back to pricing after registration
+                        window.location.href = '/frontend/register?returnUrl=' + encodeURIComponent('/frontend/pricing');
+                        return;
+                      }
+                      const planCode = plan.name.toUpperCase() as 'BASIC' | 'STANDARD' | 'PREMIUM';
+                      const billing: 'monthly' | 'yearly' = billingCycle;
+                      const { approvalUrl } = await paypalService.createSubscription(planCode, billing);
+                      if (approvalUrl) {
+                        window.location.href = approvalUrl; // Redirect to PayPal sandbox approval
+                      } else {
+                        toast.error('Could not get PayPal approval URL');
+                      }
+                    } catch (e: any) {
+                      toast.error(e?.response?.data?.error || 'Failed to create subscription');
+                    }
+                  }}
+                  className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 ${plan.ctaStyle} cursor-pointer`}
+                >
+                  {plan.ctaText}
+                </button>
               </div>
             ))}
           </div>

@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, AlertCircle, Plus, ArrowUp, Cloud, DiamondPlus, Square } from 'lucide-react';
+import { FileText, AlertCircle, Plus, ArrowUp, Cloud, DiamondPlus, Square, Eye } from 'lucide-react';
 import { apiService, handleApiError, UploadResponse, isSecurityError, getSecurityErrorMessage, profileService } from '../../../lib/api';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
@@ -16,6 +16,7 @@ import { ModalType } from '../../../components/ConfirmationModal';
 import VoiceChatComponent from './VoiceChatComponent';
 import { BiSolidFilePdf } from 'react-icons/bi';
 import { GoSquareFill } from 'react-icons/go';
+import { PDFViewer } from '../file-manager/PDFViewer';
 
 interface ChatMessage {
   id: string;
@@ -95,6 +96,7 @@ export default function ChatViewer({
   const [savedSessions, setSavedSessions] = useState<SavedChatSession[]>([]);
   const [isVoiceChat, setIsVoiceChat] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState('');
+  const [isPDFViewerOpen, setIsPDFViewerOpen] = useState(false);
   const ragLoadingDocIdRef = useRef<string | null>(null);
   
   // ✅ NEW: Track RAG system loading state
@@ -2371,8 +2373,8 @@ export default function ChatViewer({
               <BiSolidFilePdf className="w-8 h-8 text-red-500 flex-shrink-0" />
 
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className={`text-sm md:text-base mb-1 font-semibold ${documentExists ? 'text-foreground' : 'text-muted-foreground'}`}>
+                <div className="flex items-center">
+                  <h3 className={`text-sm md:text-base font-semibold ${documentExists ? 'text-foreground' : 'text-muted-foreground'}`}>
                     <span className="block md:hidden">
                       {truncateString(currentDocument.fileName, 20)}
                     </span> 
@@ -2381,7 +2383,22 @@ export default function ChatViewer({
                     </span>
                     {!documentExists && ' (Document Deleted)'}
                   </h3>
+
+                  <button 
+                    onClick={() => setIsPDFViewerOpen(true)}
+                    disabled={!documentExists}
+                    title="View PDF"
+                    className={`flex items-center px-2 text-sm rounded-lg transition-all duration-300 ${
+                      !documentExists
+                        ? ' text-muted-foreground cursor-default'
+                        : 'text-foreground hover:brightness-90 cursor-pointer'
+                    }`}
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span className='hidden md:block'></span>
+                  </button>
                 </div>
+                
                 <p className={`text-sm ${documentExists ? 'text-muted-foreground' : 'text-red-600'}`}>
                   {documentExists ? (
                     <span className="flex items-center gap-2">
@@ -2402,6 +2419,7 @@ export default function ChatViewer({
               </div>
             </div>
             <div className="flex items-center gap-2">
+       
               <button 
                 onClick={handleSaveFileClick}
                 disabled={!documentExists || currentDocument?.status === 'INDEXED'}
@@ -2496,7 +2514,7 @@ export default function ChatViewer({
                      placeholder={
                        tokenLimitInfo.isLimitReached 
                          ? "Message limit reached. Please wait for reset or upgrade your plan."
-                         : "Ask a question about the uploaded document..."
+                         : "Ask a question..."
                      }
                      rows={2}
                      disabled={tokenLimitInfo.isLimitReached}
@@ -2558,6 +2576,22 @@ export default function ChatViewer({
             }}
           />
         )}
+
+        {/* PDF Viewer Modal */}
+        <PDFViewer
+          isOpen={isPDFViewerOpen}
+          document={currentDocument ? {
+            id: currentDocument.id,
+            fileName: currentDocument.fileName,
+            originalFileName: currentDocument.originalFileName || currentDocument.fileName,
+            size: currentDocument.fileSize || 0,
+            uploadedAt: currentDocument.uploadedAt || new Date().toISOString(),
+            pages: currentDocument.pageCount,
+            status: currentDocument.status,
+            mimeType: currentDocument.mimeType || 'application/pdf'
+          } : null}
+          onClose={() => setIsPDFViewerOpen(false)}
+        />
       </div>
       <Toaster />
     </div>

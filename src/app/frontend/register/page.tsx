@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress'
 import Link from 'next/link'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast , Toaster } from 'sonner'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import logo from '../img/legalynxlogo.png'
 import Image from 'next/image'
 import { Loader2 } from 'lucide-react'
@@ -15,6 +15,8 @@ import { Loader2 } from 'lucide-react'
 
 function Register() {
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const returnUrl = searchParams.get('returnUrl')
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
@@ -101,10 +103,11 @@ function Register() {
         }
 
         try {
-            // Store form data in sessionStorage for later use
+            // Store form data and return URL in sessionStorage for later use
             sessionStorage.setItem('registrationData', JSON.stringify({
                 email: formData.email,
-                password: formData.password
+                password: formData.password,
+                returnUrl: returnUrl
             }));
     
             const response = await fetch('/backend/api/send-verification', {

@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import Header from '../../components/Header';
+import { authUtils } from '@/lib/auth';
 
 export default function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -40,6 +41,11 @@ export default function VerifyEmailContent() {
       if (response.ok) {
         setStatus('success');
         setMessage('Your email has been verified successfully!');
+        
+        // Auto-login the user if token and user data are provided
+        if (data.token && data.user) {
+          authUtils.setAuth(data.token, data.user);
+        }
       } else {
         setStatus('error');
         setMessage(data.error || 'Verification failed');
@@ -51,6 +57,21 @@ export default function VerifyEmailContent() {
   };
 
   const handleContinue = () => {
+    // Check for return URL from registration data
+    try {
+      const registrationData = sessionStorage.getItem('registrationData');
+      if (registrationData) {
+        const data = JSON.parse(registrationData);
+        if (data.returnUrl) {
+          sessionStorage.removeItem('registrationData'); // Clean up
+          router.push(data.returnUrl);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error reading registration data:', error);
+    }
+    
     router.push('/frontend/home');
   };
 

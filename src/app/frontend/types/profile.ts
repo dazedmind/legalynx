@@ -19,11 +19,15 @@ export interface UserProfile {
     is_active: boolean;
     tokens_used: number;
     token_limit: number;
+    storage_used: number;
+    storage: number;
     days_remaining: number;
     billing_date: string;
     auto_renew: boolean;
     price?: number;
     currency: string;
+    payment_method?: string;
+    last_four_digits?: string;
     created_at: string;
   } | null;
 }

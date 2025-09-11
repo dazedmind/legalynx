@@ -14,14 +14,31 @@ import {
   ExternalLink
 } from 'lucide-react'
 import { Progress } from "@/components/ui/progress"
+import { paypalService } from '../lib/api'
+import { toast } from 'sonner'
+import { useRouter, useSearchParams } from 'next/navigation'
+
+// Helper function to format MB to human readable format
+function formatStorage(mb: number): string {
+    if (mb === 0) return '0 MB';
+    if (mb < 1024) return mb + ' MB';
+    const gb = mb / 1024;
+    return parseFloat(gb.toFixed(1)) + ' GB';
+}
 
 function SubscriptionPage() {
+    const router = useRouter();
+    const search = useSearchParams();
     const [subscription, setSubscription] = useState('')
     const [isLoading, setIsLoading] = useState(true);
     const [tokensUsed, setTokensUsed] = useState(0);
     const [tokenLimit, setTokenLimit] = useState(0);
     const [billingDate, setBillingDate] = useState('');
     const [subscriptionDays, setSubscriptionDays] = useState(0);
+    const [storageUsed, setStorageUsed] = useState(0);
+    const [storageLimit, setStorageLimit] = useState(0);
+    const [paymentMethod, setPaymentMethod] = useState('');
+    const [lastFourDigits, setLastFourDigits] = useState('');
 
     useEffect(() => {
         const fetchSubscription = async () => {
@@ -32,6 +49,10 @@ function SubscriptionPage() {
                 setTokenLimit(profile.subscription?.token_limit || 0)
                 setBillingDate(profile.subscription?.billing_date || '')
                 setSubscriptionDays(profile.subscription?.days_remaining || 0)
+                setStorageUsed(profile.subscription?.storage_used || 0)
+                setStorageLimit(profile.subscription?.storage || 0)
+                setPaymentMethod(profile.subscription?.payment_method || '')
+                setLastFourDigits(profile.subscription?.last_four_digits || '')
             } catch (error) {
                 console.error('Failed to fetch subscription:', error)
             } finally {
@@ -40,6 +61,66 @@ function SubscriptionPage() {
         }
         fetchSubscription()
     }, [])
+
+    // Detect PayPal return and capture subscription
+    useEffect(() => {
+        const paypal = search.get('paypal');
+        const subscriptionId = search.get('subscription_id');
+        const token = search.get('token'); // PayPal returns token parameter
+        const plan = (search.get('plan') || '').toUpperCase();
+        const billing = search.get('billing');
+        
+        // Debug: Log all URL parameters
+        console.log('🔍 PayPal return URL parameters:', {
+            paypal,
+            subscriptionId,
+            token,
+            plan,
+            billing,
+            allParams: Object.fromEntries(search.entries()),
+            currentURL: window.location.href,
+            searchString: window.location.search
+        });
+        
+        // Handle success with either subscription_id or token from PayPal
+        const paypalSubId = subscriptionId || token;
+        
+        if (paypal === 'success' && paypalSubId && (plan === 'BASIC' || plan === 'STANDARD' || plan === 'PREMIUM') && (billing === 'monthly' || billing === 'yearly')) {
+            console.log(`🚀 Attempting to capture subscription: ${paypalSubId} for ${plan}/${billing}`);
+            (async () => {
+                try {
+                    const res = await paypalService.captureSubscription(paypalSubId, plan as 'BASIC'|'STANDARD'|'PREMIUM', billing as 'monthly'|'yearly');
+                    console.log('✅ Capture subscription response:', res);
+                    toast.success('Subscription activated');
+                    // Refresh profile to reflect new plan
+                    const profile = await profileService.getProfile();
+                    console.log('📊 Updated profile after capture:', profile.subscription);
+                    setSubscription(profile.subscription?.plan_type?.toUpperCase() || '')
+                    setTokensUsed(profile.subscription?.tokens_used || 0)
+                    setTokenLimit(profile.subscription?.token_limit || 0)
+                    setBillingDate(profile.subscription?.billing_date || '')
+                    setSubscriptionDays(profile.subscription?.days_remaining || 0)
+                    setStorageUsed(profile.subscription?.storage_used || 0)
+                    setStorageLimit(profile.subscription?.storage || 0)
+                    setPaymentMethod(profile.subscription?.payment_method || '')
+                    setLastFourDigits(profile.subscription?.last_four_digits || '')
+                    // Clean URL
+                    router.replace('/frontend/settings');
+                } catch (e: any) {
+                    console.error('❌ Failed to capture subscription:', e);
+                    toast.error(e?.response?.data?.error || 'Failed to activate subscription');
+                }
+            })();
+        } else if (paypal === 'success') {
+            console.log('⚠️ PayPal success but missing required parameters:', {
+                paypalSubId,
+                plan,
+                billing,
+                hasValidPlan: ['BASIC', 'STANDARD', 'PREMIUM'].includes(plan),
+                hasValidBilling: ['monthly', 'yearly'].includes(billing || '')
+            });
+        }
+    }, [search, router])
 
 
     const getSubscriptionColor = (plan: string) => {
@@ -172,10 +253,23 @@ function SubscriptionPage() {
                             <div className='space-y-2'>
                                 <div className='text-sm text-muted-foreground'>Payment Method</div>
                                 <div className='flex items-center gap-2'>
-                                    <div className='w-8 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold'>
-                                        VISA
-                                    </div>
-                                    <span className='text-sm'>•••• •••• •••• 4242</span>
+                                    {paymentMethod === 'paypal' ? (
+                                        <>
+                                            <div className='w-8 h-5 bg-blue-500 rounded text-white text-xs flex items-center justify-center font-bold'>
+                                                PP
+                                            </div>
+                                            <span className='text-sm'>PayPal</span>
+                                        </>
+                                    ) : paymentMethod === 'card' && lastFourDigits ? (
+                                        <>
+                                            <div className='w-8 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold'>
+                                                VISA
+                                            </div>
+                                            <span className='text-sm'>•••• •••• •••• {lastFourDigits}</span>
+                                        </>
+                                    ) : (
+                                        <span className='text-sm text-muted-foreground'>No payment method</span>
+                                    )}
                                 </div>
                             </div>
                             <div className='space-y-2'>
@@ -218,6 +312,7 @@ function SubscriptionPage() {
                             <div className='text-2xl font-bold mb-2'>$0<span className='text-sm text-muted-foreground'>/month</span></div>
                             <div className='text-sm text-muted-foreground space-y-1'>
                                 <div>• 1,000 tokens/month</div>
+                                <div>• 10 MB storage</div>
                                 <div>• Basic features</div>
                                 <div>• Community support</div>
                             </div>
@@ -234,11 +329,22 @@ function SubscriptionPage() {
                             <div className='text-2xl font-bold mb-2'>₱149<span className='text-sm text-muted-foreground'>/month</span></div>
                             <div className='text-sm text-muted-foreground space-y-1'>
                                 <div>• 10,000 tokens/month</div>
+                                <div>• 1 GB storage</div>
                                 <div>• Access to Chat History</div>
                                 <div>• Save Chat Sessions</div>
                             </div>
                             {subscription !== 'STANDARD' && (
-                                <button className='w-full mt-3 px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors cursor-pointer'>
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const { approvalUrl } = await paypalService.createSubscription('STANDARD', 'monthly');
+                                      if (approvalUrl) window.location.href = approvalUrl;
+                                      else toast.error('Could not get PayPal approval URL');
+                                    } catch (e: any) {
+                                      toast.error(e?.response?.data?.error || 'Failed to create subscription');
+                                    }
+                                  }}
+                                  className='w-full mt-3 px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors cursor-pointer'>
                                     Upgrade to Standard
                                 </button>
                             )}
@@ -255,11 +361,22 @@ function SubscriptionPage() {
                             <div className='text-2xl font-bold mb-2'>₱249<span className='text-sm text-muted-foreground'>/month</span></div>
                             <div className='text-sm text-muted-foreground space-y-1'>
                                 <div>• Unlimited tokens</div>
+                                <div>• 10 GB storage</div>
                                 <div>• All features</div>
                                 <div>• Dedicated support</div>
                             </div>
                             {subscription !== 'PREMIUM' && (
-                                <button className='w-full mt-3 px-3 py-2 bg-gray-800 text-white rounded text-sm hover:bg-gray-900 transition-colors cursor-pointer'>
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const { approvalUrl } = await paypalService.createSubscription('PREMIUM', 'monthly');
+                                      if (approvalUrl) window.location.href = approvalUrl;
+                                      else toast.error('Could not get PayPal approval URL');
+                                    } catch (e: any) {
+                                      toast.error(e?.response?.data?.error || 'Failed to create subscription');
+                                    }
+                                  }}
+                                  className='w-full mt-3 px-3 py-2 bg-gray-800 text-white rounded text-sm hover:bg-gray-900 transition-colors cursor-pointer'>
                                     Upgrade to Premium
                                 </button>
                             )}

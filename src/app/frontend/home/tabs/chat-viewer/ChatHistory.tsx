@@ -6,6 +6,8 @@ import { FileText, Calendar, MessageSquare, AlertCircle, Eye, Trash2, RotateCcw,
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
 import { toast } from 'sonner';
+import ConfirmationModal from '../../../components/ConfirmationModal';
+import { ModalType } from '../../../components/ConfirmationModal';
 
 interface ChatMessage {
   id: string;
@@ -57,6 +59,11 @@ export default function SavedChatHistory({
   const [savedSessions, setSavedSessions] = useState<SavedChatSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean;
+    itemId: string;
+    itemTitle: string;
+  } | null>(null);
 
   useEffect(() => {
     if (user && isAuthenticated) {
@@ -217,12 +224,19 @@ export default function SavedChatHistory({
     const item = savedSessions.find(s => s.id === itemId);
     if (!item) return;
     
-    // ✅ FIXED: Always offer to delete the entire document (which includes any sessions)
-    // For temp files, users typically want to delete the whole thing
-    const confirmMessage = `Are you sure you want to delete "${item.title}"? This will remove the document and all associated chat history. This action cannot be undone.`;
+    // Open confirmation modal
+    setConfirmationModal({
+      isOpen: true,
+      itemId: itemId,
+      itemTitle: item.title
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmationModal) return;
     
-    const confirmed = confirm(confirmMessage);
-    if (!confirmed) return;
+    const item = savedSessions.find(s => s.id === confirmationModal.itemId);
+    if (!item) return;
     
     try {
       // ✅ FIXED: Always delete the document (which will cascade delete sessions)
@@ -256,7 +270,7 @@ export default function SavedChatHistory({
         toast.success('Document and chat history deleted successfully');
         
         // Remove from local state
-        setSavedSessions(prev => prev.filter(s => s.id !== itemId));
+        setSavedSessions(prev => prev.filter(s => s.id !== confirmationModal.itemId));
         
       } else {
         const errorData = await response.json();
@@ -269,6 +283,9 @@ export default function SavedChatHistory({
       
       // Refresh the list in case of error
       await loadSavedSessions();
+    } finally {
+      // Close the confirmation modal
+      setConfirmationModal(null);
     }
   };
 
@@ -485,6 +502,22 @@ export default function SavedChatHistory({
             )}
           </div>
         </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmationModal && (
+        <ConfirmationModal
+          isOpen={confirmationModal.isOpen}
+          onClose={() => setConfirmationModal(null)}
+          onSave={handleConfirmDelete}
+          modal={{
+            header: 'Delete Chat',
+            message: `Are you sure you want to delete "${confirmationModal.itemTitle}"? This will remove the document and all associated chat history. This action cannot be undone.`,
+            trueButton: 'Delete',
+            falseButton: 'Cancel',
+            type: ModalType.DANGER
+          }}
+        />
       )}
     </div>
   );

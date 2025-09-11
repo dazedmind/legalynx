@@ -510,6 +510,22 @@ export const apiService = {
   }
 };
 
+// PayPal subscription API
+export const paypalService = {
+  async createSubscription(plan: 'BASIC' | 'STANDARD' | 'PREMIUM', billing: 'monthly' | 'yearly') {
+    const res = await mainApi.post('/backend/api/paypal/create-subscription', { plan, billing });
+    return res.data as { subscriptionId: string; approvalUrl: string };
+  },
+  async captureSubscription(subscriptionId: string, plan: 'BASIC' | 'STANDARD' | 'PREMIUM', billing: 'monthly' | 'yearly') {
+    const res = await mainApi.post('/backend/api/paypal/capture-subscription', { subscriptionId, plan, billing });
+    return res.data as { status: string; nextBillingDate: string };
+  },
+  async cancelSubscription(reason?: string) {
+    const res = await mainApi.post('/backend/api/paypal/cancel', { reason });
+    return res.data as { status: string };
+  }
+};
+
 // Enhanced error handler for API calls with security support
 export const handleApiError = (error: any): string => {
   // Handle security-specific errors
@@ -568,8 +584,8 @@ export const profileService = {
     }
   },
 
-  // Delete user account
-  async deleteAccount(): Promise<{ message: string }> {
+  // Delete user account (legacy - kept for backward compatibility)
+  async deleteAccountLegacy(): Promise<{ message: string }> {
     try {
       const response = await mainApi.delete<{ message: string }>('/backend/api/profile?confirm=true');
       return response.data;
@@ -584,6 +600,31 @@ export const profileService = {
       return response.data;
     } catch (error) {
       throw new Error('Failed to fetch security logs');
+    }
+  },
+
+  // Get account deletion information
+  async getAccountDeletionInfo(): Promise<AccountDeletionInfo> {
+    try {
+      const response = await mainApi.get<AccountDeletionInfo>('/backend/api/auth/delete-account');
+      return response.data;
+    } catch (error) {
+      throw new Error('Failed to fetch account deletion information');
+    }
+  },
+
+  // Delete user account
+  async deleteAccount(password: string, confirmDeletion: string): Promise<{ message: string; deletedAt: string }> {
+    try {
+      const response = await mainApi.delete<{ message: string; deletedAt: string }>('/backend/api/auth/delete-account', {
+        data: { password, confirmDeletion }
+      });
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError && error.response?.status === 400) {
+        throw new Error(error.response.data.error || 'Invalid deletion request');
+      }
+      throw new Error('Failed to delete account');
     }
   }
 };
@@ -603,6 +644,10 @@ export interface UserProfile {
     is_active: boolean;
     tokens_used: number;
     token_limit: number;
+    storage_used: number;
+    storage: number;
+    payment_method: string;
+    last_four_digits: string;
     days_remaining: number;
     billing_date: string;
     auto_renew: boolean;
@@ -610,14 +655,6 @@ export interface UserProfile {
     currency: string;
     created_at: string;
   }
-
-  // stats: {
-  //   document_count: number;
-  //   chat_session_count: number;
-  //   total_messages: number;
-  //   storage_used: number;
-  // };
-  
   recentActivity: {
     documents: Array<{
       id: string;
@@ -661,6 +698,27 @@ export interface SecurityLog {
     name: string;
     email: string;
   }
+}
+
+export interface AccountDeletionInfo {
+  user: {
+    email: string;
+    name: string;
+    createdAt: string;
+    hasActiveSubscription: boolean;
+    subscriptionPlan: string;
+  };
+  dataToBeDeleted: {
+    documents: number;
+    chatSessions: number;
+    messages: number;
+  };
+  requirements: {
+    passwordRequired: boolean;
+    confirmationRequired: boolean;
+    confirmationText: string;
+  };
+  warning: string;
 }
 
 // Utility function to check if an error is a security error

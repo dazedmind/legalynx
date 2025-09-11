@@ -20,7 +20,7 @@ import {
 import ProtectedRoute from "../components/ProtectedRoute";
 import NavBar from "../components/NavBar";
 import { useAuth } from "@/lib/context/AuthContext";
-import { LogOut, Menu, X, Lock, Palette, PanelRightClose, PanelRightOpen, MessageSquarePlusIcon, HardDrive, DiamondPlus, MessageCircle, Folder, Star } from "lucide-react";
+import { LogOut, Menu, X, Lock, Palette, PanelRightClose, PanelRightOpen, HardDrive, DiamondPlus, MessageCircle, Folder, Star, ChevronLeft } from "lucide-react";
 import { useTheme } from "next-themes";
 import UploadPage from "./tabs/chat-viewer/UploadPage";
 import ConfirmationModal, { ModalType } from "../components/ConfirmationModal";
@@ -487,10 +487,10 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <button
               onClick={toggleMobileSidebar}
-              className="lg:hidden bg-primary rounded-lg p-2 border"
+              className="lg:hidden bg-primary"
             >
               {isMobileSidebarOpen ? (
-                <X className="w-6 h-6 text-gray-600" />
+                <ChevronLeft className="w-6 h-6 text-gray-600" />
               ) : (
                 <Menu className="w-6 h-6 text-gray-600" />
               )}
@@ -532,7 +532,7 @@ export default function Home() {
               onClick={() => setIsMobileSidebarOpen(false)}
               className="md:hidden self-end mb-4 p-2 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              <X className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
 
             {/* Navigation Buttons */}
@@ -674,7 +674,7 @@ export default function Home() {
                 <a href="/frontend/privacy-policy" target="_blank" rel="noopener noreferrer">
                   Privacy Policy •
                 </a>
-                <p className="text-xs text-muted-foreground">v 0.3.0</p>
+                <p className="text-xs text-muted-foreground">v 0.3.1</p>
               </div>
             )}
           </aside>

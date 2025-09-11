@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/context/AuthContext';
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast, Toaster } from 'sonner'
 import logo from '../img/legalynxlogo.png'
 import Image from 'next/image';
@@ -27,6 +27,8 @@ function Login() {
     const [isLoading, setIsLoading] = useState(false);
 
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const returnUrl = searchParams.get('returnUrl')
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -52,7 +54,8 @@ function Login() {
         if (response.ok) {
             // Use auth context to set authentication
             login(data.token, data.user);
-            router.push('/frontend/home');
+            // Redirect to returnUrl if provided, otherwise go to home
+            router.push(returnUrl || '/frontend/home');
           } else {
             toast.error(data.message || 'Login failed');
           }
@@ -122,7 +125,7 @@ function Login() {
                     </Button>
 
                     <span className='text-sm text-muted-foreground'>
-                        <Link href="/frontend/register" className='cursor-pointer hover:text-blue-600'>
+                        <Link href={returnUrl ? `/frontend/register?returnUrl=${encodeURIComponent(returnUrl)}` : "/frontend/register"} className='cursor-pointer hover:text-blue-600'>
                             I don't have an account yet
                         </Link>
                     </span>
