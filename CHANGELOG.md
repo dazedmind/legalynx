@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-09-11
+### 🧩 What's new?
+- **View File Button:** Introduced a quick-access button to open and view uploaded files directly from the chat interface
+- **Payment Gateway Integration:** Integrated PayPal as payment gateway for subscription
+- **Delete Account API:** Backend endpoint for permanent account deletion is now available
+
+### 🛠️ Fixed
+- **Sidebar Menu Consistency on Mobile View:** Moved the sidebar open toggle to the navigation bar for UI consistency
+- **Confirmation Modal:**  Switched the delete confirmation on chat history to the existing confirmation modal for code and UI consistency
+
 ## [0.3.0] - 2025-09-08
 
 ⚠️ Note: We skipped version 0.2.3 to 0.2.x in order to align with the scope of new features and improvements. The jump reflects a larger set of changes that warranted a minor version bump.
