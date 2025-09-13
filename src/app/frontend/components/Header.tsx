@@ -1,19 +1,10 @@
 'use client'
-import { ArrowUp, ChevronDown, Menu, X } from 'lucide-react'
+import { ArrowUp, Menu } from 'lucide-react'
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import Image from 'next/image'
 import logo from '../img/legalynxlogo.png'
-import { GoLaw } from 'react-icons/go'
-import { PiNetwork, PiSuitcaseSimple } from 'react-icons/pi'
 import ThemeToggle from './ThemeToggle'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
 
 function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -50,7 +41,7 @@ function Header() {
               
 
             <Link href="/frontend/login">
-              <button className='cursor-pointer bg-gradient-to-tr from-yellow-500 to-yellow-300 hover:brightness-110 transition-all duration-300 text-white font-bold px-4 py-2 rounded-md'>
+              <button className='cursor-pointer bg-blue hover:brightness-110 transition-all duration-300 text-white font-bold px-4 py-2 rounded-full'>
                 Sign In
               </button>
             </Link>
@@ -99,7 +90,7 @@ function Header() {
           {/* Sign In Button - Pushed to bottom */}
           <div className="mt-auto">
             <Link href="/frontend/login" onClick={closeMobileMenu}>
-              <button className='w-full bg-gradient-to-tr from-yellow-500 to-yellow-300 hover:brightness-110 transition-all duration-300 text-white font-bold px-6 py-3 rounded-lg text-lg'>
+              <button className='w-full bg-blue hover:brightness-110 transition-all duration-300 text-white font-bold px-6 py-3 rounded-full text-lg'>
                 Sign In
               </button>
             </Link>

@@ -522,7 +522,7 @@ export const paypalService = {
   },
   async cancelSubscription(reason?: string) {
     const res = await mainApi.post('/backend/api/paypal/cancel', { reason });
-    return res.data as { status: string };
+    return res.data as { status: string; plan?: string };
   }
 };
 

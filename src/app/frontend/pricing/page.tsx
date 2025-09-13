@@ -257,8 +257,6 @@ function EnhancedPricing() {
         </div>
       </section>
 
-     
-
       {/* FAQ Section */}
       <section className="py-24 bg-accent">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -314,7 +312,7 @@ function EnhancedPricing() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link href="/frontend/register">
-              <button className="px-10 py-4 text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer">
+              <button className="px-10 py-4 text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer">
                 Start Free Trial
               </button>
             </Link>

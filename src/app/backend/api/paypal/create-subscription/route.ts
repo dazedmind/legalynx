@@ -72,8 +72,8 @@ export async function POST(request: NextRequest) {
       application_context: {
         brand_name: 'LegalynX Subscription',
         user_action: 'SUBSCRIBE_NOW',
-        return_url: `${appUrl}/frontend/settings?paypal=success&plan=${plan}&billing=${billing}`,
-        cancel_url: `${appUrl}/frontend/settings?paypal=cancel`,
+        return_url: `${appUrl}/frontend/settings?tab=subscription&paypal=success&plan=${plan}&billing=${billing}`,
+        cancel_url: `${appUrl}/frontend/settings?tab=subscription&paypal=cancel`,
       },
       custom_id: user.id,
     };

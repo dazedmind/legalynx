@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       nextBilling = computeNextBillingDate(billing);
     }
     const { tokenLimit, storageLimit } = getPlanLimits(plan);
+    console.log(`📊 Plan limits for ${plan}: tokens=${tokenLimit}, storage=${storageLimit}MB`);
     
     // Get PayPal payment details
     const paymentDetails = await getPayPalPaymentDetails(accessToken, subscriptionId);

@@ -70,8 +70,19 @@ function LoginContent() {
       </header>
 
       <main className="flex flex-col md:flex-row-reverse w-full h-[calc(100vh-var(--header-height,64px))]">
-        <div className="flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 px-10 py-20 md:py-10 justify-center gap-2 overflow-y-auto">
-          <div className="w-full flex flex-col items-start md:pl-20 gap-2">
+        <div className="flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 md:py-10 justify-center gap-2 overflow-y-auto">
+          <div className="md:hidden flex bg-gradient-to-bl from-blue/0 to-blue/20 items-center mb-10 pr-10 justify-center w-full md:w-1/2 gap-2 relative">
+            <Image
+                src={logo}
+                alt="Login"
+                width={100}
+                height={100}
+                className="fade-gradient"
+              />
+            <p className="text-muted-foreground">Linking you to legal clarity</p>
+          </div>
+          <div className="w-full flex flex-col items-start md:pl-20 gap-2 px-10">
+            
             <span>
               <h1 className="text-4xl font-bold font-serif">Sign In</h1>
               <p className="text-muted-foreground mb-4">

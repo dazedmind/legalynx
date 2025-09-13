@@ -42,19 +42,20 @@ export function getPlanId(plan: PlanCode, billing: BillingCycle): string | null 
   return process.env[key] || null;
 }
 
-const premiumStorage = 10 * 1024 * 1024 * 1024; // 10 GB in bytes
-const standardStorage = 1 * 1024 * 1024 * 1024; // 1 GB in bytes
-const basicStorage = 100 * 1024 * 1024; // 100 MB in bytes
+// Storage limits in MB (not bytes) to fit in 32-bit integer database field
+const premiumStorageMB = 10 * 1024; // 10 GB = 10,240 MB
+const standardStorageMB = 1 * 1024; // 1 GB = 1,024 MB  
+const basicStorageMB = 100; // 100 MB
 
 export function getPlanLimits(plan: PlanCode): { tokenLimit: number; storageLimit: number } {
   switch (plan) {
     case 'PREMIUM':
-      return { tokenLimit: 100000, storageLimit: premiumStorage }; // 10 GB in MB
+      return { tokenLimit: 100000, storageLimit: premiumStorageMB }; // 10 GB in MB
     case 'STANDARD':
-      return { tokenLimit: 10000, storageLimit: standardStorage }; // 1 GB in MB
+      return { tokenLimit: 10000, storageLimit: standardStorageMB }; // 1 GB in MB
     case 'BASIC':
     default:
-      return { tokenLimit: 1000, storageLimit: basicStorage }; // 10 MB in MB
+      return { tokenLimit: 1000, storageLimit: basicStorageMB }; // 100 MB in MB
   }
 }
 
