@@ -10,11 +10,18 @@ import { toast, Toaster } from "sonner";
 import logo from "../img/legalynxlogo.png";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
-
+import ForgotPasswordModal from "../components/ForgotPasswordModal";
+import { GoEye, GoEyeClosed } from "react-icons/go";
 
 function LoginContent() {
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState("");
+  const [showForgotPasswordSuccess, setShowForgotPasswordSuccess] = useState(false);
+  const [isForgotPasswordLoading, setIsForgotPasswordLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -60,6 +67,67 @@ function LoginContent() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleForgotPasswordClick = () => {
+    setShowForgotPasswordModal(true);
+    setForgotPasswordEmail("");
+    setForgotPasswordMessage("");
+    setShowForgotPasswordSuccess(false);
+  };
+
+  const handleCloseForgotPasswordModal = () => {
+    setShowForgotPasswordModal(false);
+    setForgotPasswordEmail("");
+    setForgotPasswordMessage("");
+    setShowForgotPasswordSuccess(false);
+    setIsForgotPasswordLoading(false);
+  };
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsForgotPasswordLoading(true);
+    setForgotPasswordMessage("");
+  
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(forgotPasswordEmail)) {
+      setForgotPasswordMessage("Please enter a valid email address.");
+      setIsForgotPasswordLoading(false);
+      return;
+    }
+  
+    try {
+      const response = await fetch("/backend/api/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: forgotPasswordEmail,
+        }),
+      });
+  
+      const result = await response.json();
+  
+      if (response.ok) {
+        // Success - email exists and reset instructions sent
+        setShowForgotPasswordSuccess(true);
+        setForgotPasswordMessage(result.message || "Password reset instructions have been sent to your email.");
+      } else if (response.status === 404) {
+        // ✅ NEW: Handle email not found case
+        setShowForgotPasswordModal(false); // Close forgot password modal
+        // setShowEmailNotFoundModal(true); // Show email not found modal
+      } else {
+        // Other errors
+        setForgotPasswordMessage(result.error || "Failed to send reset instructions.");
+      }
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      setForgotPasswordMessage("An error occurred. Please try again later.");
+    } finally {
+      setIsForgotPasswordLoading(false);
+    }
   };
 
   return (
@@ -112,21 +180,32 @@ function LoginContent() {
                   </p>
                 )}
               </span>
-              <span className="flex flex-col items-start gap-2 justify-start w-full">
+              <span className="flex flex-col items-start gap-2 justify-start w-full relative">
                 <p className="text-sm text-muted-foreground">Password</p>
                 <Input
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
                   onKeyDown={handleKeyPress}
+                  className="w-full"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 bottom-1/12 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <GoEyeClosed size={15} /> : <GoEye size={15} />}
+                </button>
               </span>
 
               <span className="text-sm text-muted-foreground">
-                Forgot Password?
+                <button className="cursor-pointer hover:text-blue-600" onClick={handleForgotPasswordClick}>
+                  Forgot Password?
+                </button>
               </span>
+
               <Button
                 onClick={handleLogin}
                 disabled={isLoading}
@@ -167,6 +246,18 @@ function LoginContent() {
         </div>
       </main>
       <Toaster />
+
+      {showForgotPasswordModal && (
+      <ForgotPasswordModal
+        showForgotPasswordSuccess={showForgotPasswordSuccess}
+        handleForgotPasswordSubmit={handleForgotPasswordSubmit}
+        handleCloseForgotPasswordModal={handleCloseForgotPasswordModal}
+        forgotPasswordEmail={forgotPasswordEmail}
+        setForgotPasswordEmail={setForgotPasswordEmail}
+          forgotPasswordMessage={forgotPasswordMessage}
+          isForgotPasswordLoading={isForgotPasswordLoading}
+        />
+      )}
     </div>
   );
 }

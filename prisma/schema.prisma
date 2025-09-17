@@ -33,6 +33,7 @@ model User {
   sessions           Session[]
   verification_tokens VerificationToken[] @relation("UserVerificationTokens")
   token_usage_logs   TokenUsageLog[]
+  password_reset_tokens PasswordResetToken[] @relation("UserPasswordResetTokens")
 
   // One-to-one relationship with Subscription
   subscription       Subscription?     @relation("UserSubscription")
@@ -242,6 +243,18 @@ model VerificationToken {
   created_at DateTime @default(now()) @map("created_at")
   
   @@map("verification_tokens")
+}
+
+model PasswordResetToken {
+  id         String   @id @default(uuid())
+  user_id    String   @map("user_id")
+  user       User?    @relation("UserPasswordResetTokens", fields: [user_id], references: [id], onDelete: Cascade)
+  token      String   @unique
+  used       Boolean  @default(false)
+  expires_at DateTime @map("expires_at")
+  created_at DateTime @default(now()) @map("created_at")
+  
+  @@map("password_reset_tokens")
 }
 
 model Session {

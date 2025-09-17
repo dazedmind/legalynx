@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { profileService } from "../lib/api";
-import LoaderComponent from "../components/ui/LoaderComponent";
+import { profileService } from "../../../lib/api";
+import LoaderComponent from "../../../components/ui/LoaderComponent";
 import {
   Crown,
   Zap,
@@ -16,10 +16,11 @@ import {
   X,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { paypalService } from "../lib/api";
+import { paypalService } from "../../../lib/api";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
-import ConfirmationModal, { ModalType } from "../components/ConfirmationModal";
+import ConfirmationModal, { ModalType } from "../../../components/ConfirmationModal";
+import { FaPaypal } from "react-icons/fa";
 
 // Helper function to format MB to human readable format
 function formatStorage(mb: number): string {
@@ -336,8 +337,8 @@ function SubscriptionPage() {
         {billingDate !== "" && (
           <div className="p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-4">
             <div className="flex items-center gap-2">
+              <FaPaypal className="w-5 h-5 text-blue-600" />
               <h1 className="text-lg font-bold">Billing Information</h1>
-              <CreditCard className="w-5 h-5 text-muted-foreground" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -349,7 +350,7 @@ function SubscriptionPage() {
                   {paymentMethod === "paypal" ? (
                     <>
                       <div className="w-8 h-5 bg-blue-500 rounded text-white text-xs flex items-center justify-center font-bold">
-                        PP
+                        <FaPaypal />
                       </div>
                       <span className="text-sm">PayPal</span>
                     </>
@@ -384,13 +385,9 @@ function SubscriptionPage() {
             </div>
 
             <div className="flex flex-col md:flex-row gap-2 pt-2 border-t border-tertiary">
-              <button className="flex items-center gap-2 px-3 py-2 text-sm border border-tertiary rounded hover:bg-accent transition-colors cursor-pointer">
-                <CreditCard className="w-4 h-4" />
-                Update Payment
-              </button>
               <button className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors cursor-pointer">
                 <ExternalLink className="w-4 h-4" />
-                View Invoices
+                View Billing History
               </button>
               <button
                 onClick={() => setConfirmationModal(true)}
@@ -488,11 +485,12 @@ function SubscriptionPage() {
                       );
                     }
                   }}
-                  className="w-full mt-3 px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors cursor-pointer"
+                  className="flex items-center justify-center gap-2 w-full mt-3 px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors cursor-pointer"
                 >
+                  <FaPaypal />
                   {subscription === "BASIC" ? "Upgrade to Standard" : "Downgrade to Basic"}
                 </button>
-              )}
+              )}    
             </div>
 
             <div
@@ -539,8 +537,9 @@ function SubscriptionPage() {
                       );
                     }
                   }}
-                  className="w-full mt-3 px-3 py-2 bg-gray-800 text-white rounded text-sm hover:bg-gray-900 transition-colors cursor-pointer"
+                  className="flex items-center justify-center gap-2 w-full mt-3 px-3 py-2 bg-gray-800 text-white rounded text-sm hover:bg-gray-900 transition-colors cursor-pointer"
                 >
+                  <FaPaypal />
                   Upgrade to Premium
                 </button>
               )}

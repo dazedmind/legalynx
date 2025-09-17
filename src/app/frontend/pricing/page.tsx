@@ -48,7 +48,7 @@ function EnhancedPricing() {
       },
       popular: true,
       features: [
-        { text: "Upload up to 50 documents", included: true },
+        { text: "Upload up to 20 documents", included: true },
         { text: "500 messages per session", included: true },
         { text: "Document analysis with Lynx AI", included: true },
         { text: "Chat history", included: true },

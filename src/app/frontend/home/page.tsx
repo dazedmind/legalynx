@@ -6,6 +6,7 @@ import ChatViewer from "./tabs/chat-viewer/ChatViewer";
 import FileManager from "./tabs/file-manager/FileManager";
 import ChatHistory from "./tabs/chat-viewer/ChatHistory";
 import Appearance from "./tabs/appearance/Appearance";
+import SubscriptionPage from "./tabs/subscription/SubscriptionPage";
 import {
   apiService,  profileService,
   SystemStatus,
@@ -20,7 +21,7 @@ import {
 import ProtectedRoute from "../components/ProtectedRoute";
 import NavBar from "../components/NavBar";
 import { useAuth } from "@/lib/context/AuthContext";
-import { LogOut, Menu, X, Lock, Palette, PanelRightClose, PanelRightOpen, HardDrive, DiamondPlus, MessageCircle, Folder, Star, ChevronLeft } from "lucide-react";
+import { LogOut, Menu, X, Lock, Palette, PanelRightClose, PanelRightOpen, HardDrive, DiamondPlus, MessageCircle, Folder, Star, ChevronLeft, Gift, CreditCard } from "lucide-react";
 import { useTheme } from "next-themes";
 import UploadPage from "./tabs/chat-viewer/UploadPage";
 import ConfirmationModal, { ModalType } from "../components/ConfirmationModal";
@@ -31,7 +32,8 @@ type ActiveTab =
   | "chat_history"
   | "upload"
   | "voice_chat"
-  | "appearance";
+  | "appearance"
+  | "subscription";
 
 interface StorageInfo {
   used: number;
@@ -474,7 +476,8 @@ export default function Home() {
   const menuItems = [
     { id: 'chat_history', label: 'Chat History', icon: MessageCircle },
     { id: 'documents', label: 'File Manager', icon: Folder },
-    { id: 'appearance', label: 'Appearance', icon: Palette }
+    { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'subscription', label: 'Subscription', icon: Star }
   ]
 
   const isSystemReady = systemStatus?.pdfLoaded && systemStatus?.indexReady;
@@ -581,7 +584,7 @@ export default function Home() {
                     {activeTab === item.id && (
                       <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
                     )}
-                    <IconComponent className={`${activeTab === item.id && !isDesktopSidebarCollapsed ? 'ml-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5}/>
+                    <IconComponent className={`${activeTab === item.id && !isDesktopSidebarCollapsed ? 'ml-2 stroke-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5}/>
                     <div className="flex items-center justify-between gap-2 w-full">
                       {!isDesktopSidebarCollapsed && <span className="truncate">{item.label}</span>}
                       {item.id === "documents" && subscriptionStatus === "BASIC" && (
@@ -590,7 +593,6 @@ export default function Home() {
                         </div>
                       )}
                     </div>
-                
                   </button>
                 );
               })}
@@ -674,7 +676,7 @@ export default function Home() {
                 <a href="/frontend/privacy-policy" target="_blank" rel="noopener noreferrer">
                   Privacy Policy •
                 </a>
-                <p className="text-xs text-muted-foreground">v 0.3.1</p>
+                <p className="text-xs text-muted-foreground">v 0.3.2</p>
               </div>
             )}
           </aside>
@@ -682,7 +684,7 @@ export default function Home() {
           {/* Main Content Area */}
           <section className="flex-1 flex flex-col overflow-hidden">
             {/* Tab Content */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto">
               {activeTab === "upload" && (
                 <UploadPage 
                   onUploadSuccess={handleUploadSuccess}
@@ -728,6 +730,10 @@ export default function Home() {
 
               {activeTab === "appearance" && (
                 <Appearance />
+              )}
+
+              {activeTab === "subscription" && (
+                <SubscriptionPage />
               )}
 
             </div>

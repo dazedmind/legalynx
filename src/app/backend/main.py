@@ -40,12 +40,17 @@ except ImportError as e:
 
 # Import existing modules with fallback handling
 try:
-    from security.security_middleware import SimplifiedSecurityMiddleware
+    from security.enhanced_security_middleware import EnhancedSecurityMiddleware
     SECURITY_AVAILABLE = True
-    print("✅ Security middleware loaded")
+    print("✅ Enhanced security middleware loaded")
 except ImportError as e:
-    print(f"⚠️ Security middleware not available: {e}")
-    SECURITY_AVAILABLE = False
+    try:
+        from security.security_middleware import SimplifiedSecurityMiddleware as EnhancedSecurityMiddleware
+        SECURITY_AVAILABLE = True
+        print("✅ Fallback security middleware loaded")
+    except ImportError as e2:
+        print(f"⚠️ Security middleware not available: {e}, {e2}")
+        SECURITY_AVAILABLE = False
 
 try:
     from utils.file_handler import get_next_sequential_number, validate_pdf_content
@@ -244,7 +249,7 @@ rag_manager = RAGSystemManager()
 
 # Security middleware (conditional initialization)
 if SECURITY_AVAILABLE:
-    security = SimplifiedSecurityMiddleware()
+    security = EnhancedSecurityMiddleware()
 else:
     security = None
 
@@ -684,19 +689,23 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
     print(f"👤 User ID: {user_id or 'anonymous'}")
     
     try:
-        # Step 4: Security check and sanitization (using your existing security middleware)
+        # Step 4: Enhanced security check and sanitization
         sanitized_query = query_request.query
         was_sanitized = False
+        query_analysis = None
         
         if security:
             try:
-                print("🛡️ Running security check...")
-                sanitized_query = security.check_query_security(user_id, query_request.query)
+                print("🛡️ Running enhanced security check...")
+                sanitized_query, query_analysis = security.check_query_security(user_id, query_request.query)
                 was_sanitized = sanitized_query != query_request.query
                 print(f"✅ Security check passed. Sanitized: {was_sanitized}")
                 if was_sanitized:
                     print(f"🔧 Original: {query_request.query}")
                     print(f"🔧 Sanitized: {sanitized_query}")
+                if query_analysis and query_analysis.get('is_malicious'):
+                    print(f"⚠️ Malicious patterns detected: {query_analysis.get('categories', [])}")
+                    print(f"⚠️ Risk score: {query_analysis.get('risk_score', 0)}")
             except Exception as security_error:
                 print(f"⚠️ Security check failed: {security_error}")
                 # If security fails, still allow the query but log it
@@ -745,14 +754,38 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
                 print("⚠️ Empty response generated")
                 response_text = "I apologize, but I couldn't generate a meaningful response to your query. Please try rephrasing your question or check if the document contains relevant information."
             
+            # Step 7: Enhanced response security analysis
+            response_analysis = None
+            final_security_status = "sanitized" if was_sanitized else "verified"
+            
+            if security:
+                try:
+                    print("🛡️ Analyzing response for security issues...")
+                    response_analysis = security.check_response_security(user_id, response_text, query_request.query)
+                    
+                    if response_analysis.get('risk_score', 0) > 0.7:
+                        print(f"⚠️ High-risk response detected! Risk score: {response_analysis.get('risk_score', 0)}")
+                        print(f"⚠️ Issues found: {response_analysis.get('detected_issues', [])}")
+                        final_security_status = "high_risk_response"
+                        
+                        # For very high risk responses, we might want to block them
+                        if response_analysis.get('jailbreak_successful') or response_analysis.get('leaked_instructions'):
+                            print("🚨 CRITICAL: Jailbreak or instruction leak detected!")
+                            response_text = "I apologize, but I cannot provide that response as it may contain inappropriate content. Please rephrase your question in a different way."
+                            final_security_status = "blocked_harmful_response"
+                    
+                except Exception as response_security_error:
+                    print(f"⚠️ Response security analysis failed: {response_security_error}")
+            
             print(f"✅ Returning response with {len(response_text)} characters and {source_count} sources")
             print(f"📋 Document: {current_doc_id}")
+            print(f"🛡️ Final security status: {final_security_status}")
             
             return QueryResponse(
                 query=query_request.query,
                 response=response_text,
                 source_count=source_count,
-                security_status="sanitized" if was_sanitized else "verified"
+                security_status=final_security_status
             )
             
         except Exception as query_error:
@@ -1033,6 +1066,23 @@ async def reset_system():
         "message": "All RAG systems reset successfully", 
         "note": "Models remain cached for speed"
     }
+
+@app.get("/security-report")
+async def get_security_report(request: Request):
+    """Get security report for the current user."""
+    user_id, _ = extract_user_id_from_token(request)
+    
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    if not security:
+        raise HTTPException(status_code=503, detail="Security middleware not available")
+    
+    try:
+        report = security.get_security_report(user_id)
+        return report
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate security report: {str(e)}")
 
 @app.get("/health")
 async def health_check(request: Request):

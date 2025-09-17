@@ -20,7 +20,7 @@ import {
   VisibilityState,
   FilterFn,
 } from "@tanstack/react-table";
-import { profileService, SecurityLog } from "../lib/api";
+import { profileService, SecurityLog } from "../../lib/api";
 import {
   Activity,
   Calendar,
@@ -32,7 +32,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-import LoaderComponent from "../components/ui/LoaderComponent";
+import LoaderComponent from "../../components/ui/LoaderComponent";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -271,20 +271,8 @@ function SecuritySettings() {
     table.resetColumnFilters();
   };
 
-  if (isLoading) {
-    return <LoaderComponent />;
-  }
-
   return (
     <div className="h-full flex flex-col">
-      <span className="flex flex-col gap-1 p-4 px-4">
-        <h1 className="text-3xl font-bold font-serif">Security Logs</h1>
-        <p className="text-sm text-muted-foreground">
-          Authentication and security changes in your account are logged here.
-          Logs are retained for 60 days.
-        </p>
-      </span>
-
       <div className="rounded-md border border-tertiary mx-4 mb-5 flex-1 flex flex-col overflow-hidden">
         {/* Filters Section */}
         <div className="p-4 space-y-4 border-b border-tertiary">

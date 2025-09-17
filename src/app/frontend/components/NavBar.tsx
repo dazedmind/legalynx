@@ -1,5 +1,5 @@
 "use client";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Settings, Star, User } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import {
   DropdownMenu,
@@ -233,7 +233,7 @@ export default function NavBar() {
                 className="cursor-pointer"
               >
                 <DropdownMenuItem className="cursor-pointer p-2 px-3">
-                  <GoGift className="w-4 h-4" />
+                  <Star className="w-4 h-4" />
                   Manage Subscription
                 </DropdownMenuItem>
               </Link>

@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { CircleUser, Shield, FileCog, CreditCard, LogOut, Lock, FolderCog, Menu, X, ChevronLeft } from 'lucide-react';
+import { CircleUser, Shield, FileCog, CreditCard, LogOut, Lock, FolderCog, Menu, X, ChevronLeft, Star } from 'lucide-react';
 import { SystemStatus } from '../lib/api';
 import NavBar from '../components/NavBar';
-import FileSettings from './FileSettings'
-import ProfileSettings from './ProfileSettings'
-import SubscriptionPage from './SubscriptionPage'
-import SecuritySettings from './SecurityLogSettings'
-import PrivacySecuritySettings from './PrivacySecuritySettings'
+import FileSettings from './file-settings/FileSettings'
+import ProfileSettings from './profile-settings/ProfileSettings'
+import SubscriptionPage from '../home/tabs/subscription/SubscriptionPage'
+import SecuritySettings from './privacy-security/SecurityLogSettings'
+import PrivacySecuritySettings from './privacy-security/PrivacySecuritySettings'
 import { useSearchParams, useRouter } from 'next/navigation';
 
 type ActiveTab = 'profile' | 'file_settings' | 'security_log' | 'security_settings' | 'subscription';
@@ -66,9 +66,8 @@ function SettingsContent() {
   const menuItems = [
     { id: 'profile', label: 'Profile Settings', icon: CircleUser },
     { id: 'file_settings', label: 'File Settings', icon: FolderCog },
-    { id: 'security_log', label: 'Security Log', icon: Shield },
     { id: 'security_settings', label: 'Privacy & Security', icon: Lock },
-    { id: 'subscription', label: 'Subscription', icon: CreditCard },
+    { id: 'subscription', label: 'Subscription', icon: Star },
   ];
 
   return (
@@ -137,7 +136,7 @@ function SettingsContent() {
                   {activeTab === item.id && (
                     <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
                   )}
-                  <IconComponent className={`${activeTab === item.id ? 'ml-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5} />
+                  <IconComponent className={`${activeTab === item.id ? 'ml-2 stroke-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5} />
                   <span className="text-sm lg:text-base">{item.label}</span>
                 </button>
               );

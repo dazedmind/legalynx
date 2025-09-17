@@ -12,12 +12,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import logo from "../img/legalynxlogo.png";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
+import { GoEye, GoEyeClosed } from "react-icons/go";
 
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get("returnUrl");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -204,14 +207,24 @@ function RegisterContent() {
                 )}
               </span>
               <span className="flex flex-col items-start gap-2 justify-start w-full">
-                <p className="text-sm text-muted-foreground">Password</p>
-                <Input
-                  type="password"
-                  name="password"
-                  placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
+                <div className="relative w-full">
+                  <p className="text-sm text-muted-foreground">Password</p>
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 bottom-1/12 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? <GoEyeClosed size={15} /> : <GoEye size={15} />}
+                  </button>                  
+                </div>
                 {formData.password && (
                   <div className="w-full space-y-2">
                     <div className="relative w-full h-2 bg-accent rounded-full overflow-hidden">
@@ -240,16 +253,27 @@ function RegisterContent() {
               </span>
 
               <span className="flex flex-col items-start gap-2 justify-start w-full">
-                <p className="text-sm text-muted-foreground">
-                  Confirm Password
-                </p>
-                <Input
-                  type="password"
-                  name="confirmPassword"
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                />
+                <div className="relative w-full">
+                  <p className="text-sm text-muted-foreground">
+                    Confirm Password
+                  </p>
+                  <Input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="w-full"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 bottom-1/12 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showConfirmPassword ? <GoEyeClosed size={15} /> : <GoEye size={15} />}
+                  </button>
+                </div>
+               
                 {formData.confirmPassword &&
                   !validatePassword(formData.confirmPassword) && (
                     <p className="text-destructive text-xs">

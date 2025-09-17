@@ -18,8 +18,8 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/context/AuthContext";
 import { authUtils } from "@/lib/auth";
-import LoaderComponent from "../components/ui/LoaderComponent";
-import { profileService } from "../lib/api";
+import LoaderComponent from "../../components/ui/LoaderComponent";
+import { profileService } from "../../lib/api";
 import { Separator } from "@/components/ui/separator";
 
 const retentionOptions = [
@@ -319,7 +319,7 @@ export default function FileSettings() {
     storageInfo.total > 0 ? (storageInfo.used / storageInfo.total) * 100 : 0;
 
   return (
-    <div className="space-y-4 pb-24"> {/* Added padding bottom for floating bar */}
+    <div className="space-y-4 pb-12"> {/* Added padding bottom for floating bar */}
           <span className='flex flex-col gap-1 p-4 pb-2 px-4'>
             <div className="flex items-center justify-between">
           <div>

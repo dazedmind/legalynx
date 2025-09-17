@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { StorageTracker } from '@/lib/storage-tracker';
+import { DocumentLimitChecker } from '@/lib/document-limits';
 
 // Just add this helper function to communicate with your FastAPI backend
 async function processWithRAGBackend(file: File, userToken: string) {
@@ -129,7 +130,19 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // ===== ADD STORAGE CHECK HERE =====
+    // ===== DOCUMENT COUNT LIMIT CHECK =====
+    const documentLimits = await DocumentLimitChecker.canUserUploadDocument(user.id);
+    if (!documentLimits.canUpload) {
+      const maxDocs = documentLimits.maxDocuments === -1 ? 'unlimited' : documentLimits.maxDocuments;
+      return NextResponse.json({ 
+        error: `Document limit reached. Your ${documentLimits.planType} plan allows ${maxDocs} documents. You currently have ${documentLimits.currentCount} documents. Please delete some files or upgrade your plan.`,
+        currentCount: documentLimits.currentCount,
+        maxDocuments: documentLimits.maxDocuments,
+        planType: documentLimits.planType
+      }, { status: 429 }); // 429 = Too Many Requests (rate limit exceeded)
+    }
+
+    // ===== STORAGE SIZE CHECK =====
     const canUpload = await StorageTracker.canUploadFile(user.id, file.size);
     if (!canUpload) {
       return NextResponse.json({ 
