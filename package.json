@@ -11,6 +11,7 @@
     "test-rag": "node test-rag-backend.js",
     "test-document-limits": "node tests/document-limits-test.js",
     "test-prompt-injection": "node tests/prompt-injection-test.js",
+    "test-renaming-speed": "node tests/renaming-speed-test.js",
     "postinstall": "npx prisma generate --schema=./prisma/schema.prisma"
   },
   "dependencies": {

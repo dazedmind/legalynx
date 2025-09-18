@@ -23,6 +23,7 @@ function ForgotPasswordModal({showForgotPasswordSuccess, handleForgotPasswordSub
                     className="w-auto"
                     id="email"
                     placeholder="Enter your email"
+                    label=""
                   />
                 </div>
 
