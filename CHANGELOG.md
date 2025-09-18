@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2025-09-17
+
+### 🧩 What's New
+- **Forgot Password:** Users can now securely reset their password.
+- **Password Visibility Toggle:** Option to show or hide password text during entry.
+- **Security Logs Relocation:** Security logs are now housed under _Privacy & Security_ for a more streamlined experience.
+- **Subscription Tab:** A new subscription section has been added to the home page.
+- **Internal Testing Support:** Introduced dedicated test scripts to improve QA workflows.
+
+### 🛠️ Fixes
+- **Code Settings Page:** Refactored for improved stability and maintainability.
+
 ## [0.3.1] - 2025-09-11
 ### 🧩 What's new?
 - **View File Button:** Introduced a quick-access button to open and view uploaded files directly from the chat interface
