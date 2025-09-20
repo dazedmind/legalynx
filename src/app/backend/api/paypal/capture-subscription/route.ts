@@ -1,7 +1,11 @@
+// src/app/backend/api/paypal/capture-subscription/route.ts
+// Updated to send invoices using LegalynX user email
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import { getPayPalAccessToken, getPayPalBaseUrl, computeNextBillingDate, PlanCode, BillingCycle, getPlanLimits, getPayPalPaymentDetails } from '../_utils';
+import { prismaInvoiceService } from '@/lib/invoice-service';
 
 async function getUserFromToken(request: NextRequest) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -14,10 +18,12 @@ async function getUserFromToken(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Get the authenticated LegalynX user
     const user = await getUserFromToken(request);
     const { subscriptionId, plan, billing }: { subscriptionId: string; plan: PlanCode; billing: BillingCycle } = await request.json();
     
-    console.log(`🔄 Capturing subscription for user ${user.id}: ${subscriptionId}, plan: ${plan}, billing: ${billing}`);
+    console.log(`🔄 Capturing subscription for LegalynX user ${user.id} (${user.email}): ${subscriptionId}, plan: ${plan}, billing: ${billing}`);
+    
     if (!subscriptionId || !plan || !billing) {
       return NextResponse.json({ error: 'subscriptionId, plan and billing are required' }, { status: 400 });
     }
@@ -39,7 +45,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Subscription not active. Status: ${status}` }, { status: 400 });
     }
 
-    // Next billing from PayPal if available
+    // Calculate next billing date
     let nextBilling: Date | null = null;
     try {
       const next = data?.billing_info?.next_billing_time;
@@ -48,6 +54,7 @@ export async function POST(request: NextRequest) {
     if (!nextBilling || isNaN(nextBilling.getTime())) {
       nextBilling = computeNextBillingDate(billing);
     }
+    
     const { tokenLimit, storageLimit } = getPlanLimits(plan);
     console.log(`📊 Plan limits for ${plan}: tokens=${tokenLimit}, storage=${storageLimit}MB`);
     
@@ -55,6 +62,7 @@ export async function POST(request: NextRequest) {
     const paymentDetails = await getPayPalPaymentDetails(accessToken, subscriptionId);
     console.log('💳 PayPal payment details:', paymentDetails);
 
+    // Update subscription in database
     const updatedSubscription = await prisma.subscription.upsert({
       where: { user_id: user.id },
       update: {
@@ -88,30 +96,94 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Subscription updated for user ${user.id}:`, {
       plan_type: updatedSubscription.plan_type,
-      token_limit: updatedSubscription.token_limit,
-      storage: updatedSubscription.storage,
-      storage_used: updatedSubscription.storage_used,
-      billing_date: updatedSubscription.billing_date,
       external_subscription_id: updatedSubscription.external_subscription_id,
-      payment_method: updatedSubscription.payment_method,
-      payment_provider: updatedSubscription.payment_provider,
-      last_four_digits: updatedSubscription.last_four_digits,
-      is_active: updatedSubscription.is_active,
-      days_remaining: updatedSubscription.days_remaining
+      is_active: updatedSubscription.is_active
     });
 
-    // Verify the update by querying the database again
-    const verifySubscription = await prisma.subscription.findUnique({
-      where: { user_id: user.id }
-    });
-    console.log(`🔍 Database verification for user ${user.id}:`, verifySubscription);
+    // 🎯 SEND INVOICE TO LEGALYNX USER EMAIL (NOT PAYPAL EMAIL)
+    if (plan === 'STANDARD' || plan === 'PREMIUM') {
+      console.log('📧 Sending invoice to LegalynX registered email:', {
+        legalynxEmail: user.email,  // This is the LegalynX registered email
+        userName: user.name || 'User',
+        plan,
+        billing,
+        subscriptionId
+      });
 
-    // Return success
-    return NextResponse.json({ status: 'ok', nextBillingDate: nextBilling.toISOString() });
+      try {
+        const invoiceResult = await prismaInvoiceService.createAndSendInvoice({
+          userId: user.id,
+          userEmail: user.email,  // 🎯 Using LegalynX email, not PayPal email
+          userName: user.name || user.email.split('@')[0],  // 🎯 Using LegalynX user name
+          planType: plan,
+          billingCycle: billing,
+          subscriptionId: subscriptionId,
+          paypalTransactionId: data.id
+        });
+
+        if (invoiceResult.success) {
+          console.log('✅ Invoice sent successfully to LegalynX user:', {
+            invoiceNumber: invoiceResult.invoiceNumber,
+            invoiceId: invoiceResult.invoiceId,
+            sentToEmail: user.email,  // Confirming it was sent to LegalynX email
+            plan,
+            billing
+          });
+
+          return NextResponse.json({ 
+            status: 'ok', 
+            nextBillingDate: nextBilling.toISOString(),
+            invoice: {
+              sent: true,
+              invoiceNumber: invoiceResult.invoiceNumber,
+              invoiceId: invoiceResult.invoiceId,
+              sentTo: user.email  // Return confirmation of email address
+            }
+          });
+        } else {
+          console.error('⚠️ Subscription activated but invoice sending failed:', {
+            userEmail: user.email,
+            error: invoiceResult.error
+          });
+
+          return NextResponse.json({ 
+            status: 'ok', 
+            nextBillingDate: nextBilling.toISOString(),
+            invoice: {
+              sent: false,
+              error: invoiceResult.error,
+              note: 'Subscription active, but invoice email failed'
+            }
+          });
+        }
+      } catch (invoiceError) {
+        console.error('❌ Invoice creation error:', invoiceError);
+        
+        return NextResponse.json({ 
+          status: 'ok', 
+          nextBillingDate: nextBilling.toISOString(),
+          invoice: {
+            sent: false,
+            error: 'Invoice creation failed',
+            note: 'Subscription is active, but invoice could not be generated'
+          }
+        });
+      }
+    } else {
+      // BASIC plan or no invoice needed
+      console.log('ℹ️ No invoice needed for plan:', plan);
+      return NextResponse.json({ 
+        status: 'ok', 
+        nextBillingDate: nextBilling.toISOString(),
+        invoice: {
+          sent: false,
+          note: 'No invoice required for this plan'
+        }
+      });
+    }
+
   } catch (error) {
-    console.error('PayPal capture-subscription error:', error);
+    console.error('❌ PayPal capture-subscription error:', error);
     return NextResponse.json({ error: 'Failed to activate subscription' }, { status: 500 });
   }
 }
-
-

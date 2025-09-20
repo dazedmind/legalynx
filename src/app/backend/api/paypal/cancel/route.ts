@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
         const subscription = await prisma.subscription.findUnique({
             where: { user_id: user.id },
-            select: { external_subscription_id: true, plan_type: true, is_active: true },
+            select: { external_subscription_id: true, plan_type: true, is_active: true, billing_date: true },
         });
         console.log(`📊 Current subscription:`, subscription);
         
@@ -44,29 +44,60 @@ export async function POST(request: NextRequest) {
         
         if (!subscription?.external_subscription_id) {
             console.log("⚠️ No external subscription ID found - user might be on basic plan already");
-            
-            // If no external subscription, just reset to basic plan
-            const { tokenLimit, storageLimit } = getPlanLimits("BASIC");
-            console.log(`📊 Basic tier limits for reset - tokens: ${tokenLimit}, storage: ${storageLimit}MB`);
-            const updatedSubscription = await prisma.subscription.update({
-                where: { user_id: user.id },
-                data: {
-                    is_active: false,
-                    cancelled_at: new Date(),
-                    plan_type: "BASIC",
-                    token_limit: tokenLimit,
-                    storage: storageLimit,
-                    billing_date: null,
-                    external_subscription_id: null,
-                    payment_method: null,
-                    payment_provider: null,
-                    last_four_digits: null,
-                    days_remaining: 0,
-                },
-            });
-            
-            console.log(`✅ Subscription reset to BASIC for user ${user.id} (no PayPal subscription to cancel)`);
-            return NextResponse.json({ status: "cancelled", plan: "BASIC" });
+
+            // If no external subscription but user is on paid plan, calculate end date
+            if (subscription?.plan_type !== 'BASIC') {
+                let subscriptionEndDate = subscription?.billing_date || new Date();
+                const now = new Date();
+
+                // If billing_date is in the past or not set, add 30 days from cancellation date
+                if (subscriptionEndDate <= now) {
+                    subscriptionEndDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+                }
+
+                console.log(`📅 No PayPal subscription but user on ${subscription?.plan_type} plan. Will remain active until: ${subscriptionEndDate.toISOString()}`);
+
+                const updatedSubscription = await prisma.subscription.update({
+                    where: { user_id: user.id },
+                    data: {
+                        cancelled_at: new Date(),
+                        auto_renew: false,
+                        external_subscription_id: null,
+                        payment_method: null,
+                        payment_provider: null,
+                        last_four_digits: null,
+                        billing_date: subscriptionEndDate,
+                    },
+                });
+
+                console.log(`✅ Subscription cancelled for user ${user.id} - plan ${subscription?.plan_type} remains active until expiration`);
+                return NextResponse.json({
+                    status: "cancelled",
+                    plan: subscription?.plan_type,
+                    expires_at: subscriptionEndDate.toISOString(),
+                    message: "Subscription cancelled. Your current plan will remain active until the end of your billing period."
+                });
+            } else {
+                // User is already on BASIC plan
+                const { tokenLimit, storageLimit } = getPlanLimits("BASIC");
+                console.log(`📊 User already on BASIC plan`);
+                const updatedSubscription = await prisma.subscription.update({
+                    where: { user_id: user.id },
+                    data: {
+                        cancelled_at: new Date(),
+                        auto_renew: false,
+                        external_subscription_id: null,
+                        payment_method: null,
+                        payment_provider: null,
+                        last_four_digits: null,
+                        billing_date: null,
+                        days_remaining: 0,
+                    },
+                });
+
+                console.log(`✅ Subscription reset to BASIC for user ${user.id} (no PayPal subscription to cancel)`);
+                return NextResponse.json({ status: "cancelled", plan: "BASIC" });
+            }
         }
 
         console.log("🔑 Getting PayPal access token...");
@@ -115,34 +146,44 @@ export async function POST(request: NextRequest) {
 
         console.log("✅ PayPal subscription cancelled successfully");
 
-        // Get basic tier limits
-        const { tokenLimit, storageLimit } = getPlanLimits("BASIC");
-        console.log(`📊 Basic tier limits - tokens: ${tokenLimit}, storage: ${storageLimit}MB`);
+        // Calculate subscription end date based on current billing date
+        let subscriptionEndDate = subscription?.billing_date || new Date();
 
-        // Update subscription to basic tier and mark as cancelled
+        // If billing_date is in the past, add 30 days from cancellation date
+        const now = new Date();
+        if (subscriptionEndDate <= now) {
+            subscriptionEndDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days from now
+        }
+
+        console.log(`📅 Subscription will remain active until: ${subscriptionEndDate.toISOString()}`);
+
+        // Update subscription - remove PayPal connection but keep current plan active until end date
         console.log("💾 Updating subscription in database...");
         const updatedSubscription = await prisma.subscription.update({
             where: { user_id: user.id },
             data: {
-                is_active: false,
                 cancelled_at: new Date(),
-                plan_type: "BASIC",
-                token_limit: tokenLimit,
-                storage: storageLimit,
-                billing_date: null,
-                external_subscription_id: null,
+                auto_renew: false, // Disable auto-renewal
+                external_subscription_id: null, // Remove PayPal connection
                 payment_method: null,
                 payment_provider: null,
                 last_four_digits: null,
-                days_remaining: 0,
+                billing_date: subscriptionEndDate, // Set to end date
+                // Keep current plan_type, token_limit, storage, and is_active until expiration
             },
         });
-        console.log("✅ Database updated successfully:", updatedSubscription.plan_type);
+        console.log("✅ Database updated successfully - PayPal connection removed, plan remains active until expiration");
 
         console.log(
-            `✅ Subscription cancelled and downgraded to BASIC for user ${user.id}`
+            `✅ Subscription cancelled - PayPal unlinked for user ${user.id}. Plan ${subscription.plan_type} remains active until ${subscriptionEndDate.toISOString()}`
         );
-        return NextResponse.json({ status: "cancelled", plan: "BASIC" });
+
+        return NextResponse.json({
+            status: "cancelled",
+            plan: subscription.plan_type,
+            expires_at: subscriptionEndDate.toISOString(),
+            message: "PayPal subscription cancelled. Your current plan will remain active until the end of your billing period."
+        });
     } catch (error) {
         console.error("PayPal cancel error:", error);
         return NextResponse.json(

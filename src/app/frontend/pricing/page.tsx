@@ -27,9 +27,9 @@ function EnhancedPricing() {
       features: [
         { text: "Upload up to 5 documents", included: true },
         { text: "200 messages per session", included: true },
-        { text: "Document analysis with Lynx AI", included: true },
         { text: "Temporary Chat Session", included: true },
         { text: "File Storage", included: false },
+        { text: "No token cooldown", included: false },
         { text: "Voice mode", included: false }
       ],
       ctaText: "Get Started Free",
@@ -50,9 +50,9 @@ function EnhancedPricing() {
       features: [
         { text: "Upload up to 20 documents", included: true },
         { text: "500 messages per session", included: true },
-        { text: "Document analysis with Lynx AI", included: true },
-        { text: "Chat history", included: true },
+        { text: "Save chat sessions", included: true },
         { text: "1GB file storage", included: true },
+        { text: "No token cooldown", included: false },
         { text: "Voice mode", included: false }
       ],
       ctaText: "Start Standard",
@@ -73,9 +73,9 @@ function EnhancedPricing() {
       features: [
         { text: "Upload unlimited documents", included: true },
         { text: "Unlimited messages", included: true },
-        { text: "Document analysis with Lynx AI", included: true },
-        { text: "Chat history", included: true },
+        { text: "Save chat sessions", included: true },
         { text: "10GB file storage", included: true },
+        { text: "No token cooldown", included: true },
         { text: "Voice mode", included: true },
       ],
       ctaText: "Go Premium",

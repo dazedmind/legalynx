@@ -88,12 +88,8 @@ export async function POST(request: NextRequest) {
         // Set other default values - only include properties that exist in the schema
         auto_rename_files: false,
         file_naming_format: 'ORIGINAL',
-        login_notifications: true,
-        security_alerts: true,
         theme: 'light',
         date_format: 'MM/DD/YYYY',
-        email_notifications: true,
-        push_notifications: false,
         last_settings_update: new Date(),
       }
     });

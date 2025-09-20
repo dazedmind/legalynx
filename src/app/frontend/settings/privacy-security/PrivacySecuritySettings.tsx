@@ -540,43 +540,6 @@ export default function PrivacySecuritySettings() {
           </div>
         )}
       </section>
-
-      {/* Security Settings */}
-      <section className="mx-4 p-6 rounded-lg border border-tertiary bg-primary">
-        <div className="flex items-center gap-3 mb-4">
-          <Lock className="w-6 h-6 text-yellow-500" />
-          <div>
-            <h2 className="text-xl font-semibold">Security Notifications</h2>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <Separator className="my-4"/>
-
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Login Notifications</h3>
-              <p className="text-sm text-muted-foreground">Get notified when someone signs into your account</p>
-            </div>
-            <Switch 
-              checked={securitySettings.login_notifications}
-              onCheckedChange={(checked) => handleSecuritySettingChange('login_notifications', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Security Alerts</h3>
-              <p className="text-sm text-muted-foreground">Receive alerts about unusual account activity</p>
-            </div>
-            <Switch 
-              checked={securitySettings.security_alerts}
-              onCheckedChange={(checked) => handleSecuritySettingChange('security_alerts', checked)}
-            />
-          </div>
-        </div>
-      </section>
       
       {/* Security Settings */}
       <section className="mx-4 p-6 rounded-lg border border-tertiary bg-primary">

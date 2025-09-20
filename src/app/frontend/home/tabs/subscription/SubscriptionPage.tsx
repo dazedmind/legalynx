@@ -6,8 +6,6 @@ import {
   Crown,
   Zap,
   Calendar,
-  CreditCard,
-  TrendingUp,
   AlertCircle,
   Gift,
   RefreshCw,
@@ -17,7 +15,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { paypalService } from "../../../lib/api";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import ConfirmationModal, { ModalType } from "../../../components/ConfirmationModal";
 import { FaPaypal } from "react-icons/fa";
@@ -189,6 +187,15 @@ function SubscriptionPage() {
       
       if (result.status === "already_cancelled") {
         toast.info("Subscription is already cancelled. Your account is on the Basic tier.");
+      } else if (result.expires_at) {
+        const expiryDate = new Date(result.expires_at).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        toast.success(
+          `Subscription cancelled successfully. Your ${result.plan} plan will remain active until ${expiryDate}.`
+        );
       } else {
         toast.success(
           "Subscription cancelled successfully. Your account has been downgraded to Basic tier."
@@ -200,12 +207,18 @@ function SubscriptionPage() {
       setSubscription(profile.subscription?.plan_type?.toUpperCase() || 'BASIC');
       setTokensUsed(profile.subscription?.tokens_used || 0);
       setTokenLimit(profile.subscription?.token_limit || 1000);
-      setBillingDate('');
-      setSubscriptionDays(0);
+      setBillingDate(profile.subscription?.billing_date || '');
+      setSubscriptionDays(profile.subscription?.days_remaining || 0);
       setStorageUsed(profile.subscription?.storage_used || 0);
       setStorageLimit(profile.subscription?.storage || 100);
-      setPaymentMethod('');
-      setLastFourDigits('');
+      // Only clear payment info if subscription is cancelled and expires_at is provided
+      if (result.expires_at) {
+        setPaymentMethod('');
+        setLastFourDigits('');
+      } else {
+        setPaymentMethod(profile.subscription?.payment_method || '');
+        setLastFourDigits(profile.subscription?.last_four_digits || '');
+      }
     } catch (error: any) {
       console.error("Failed to cancel subscription:", error);
       toast.error(
@@ -555,13 +568,14 @@ function SubscriptionPage() {
           onSave={cancelSubscription}
           modal={{
             header: 'Cancel Subscription?',
-            message: `Are you sure you want to cancel your subscription? Your account will be downgraded to the Basic tier immediately.`,
+            message: `Are you sure you want to cancel your subscription? Your payment method will be removed and your subscription will remain active until the end of your billing period.`,
             trueButton: 'Cancel Subscription',
             falseButton: 'No',
             type: ModalType.DANGER
           }}
         />
       )}
+      <Toaster />
     </div>
   );
 }
