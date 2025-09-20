@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2025-09-20
+
+### 🧩 What’s New
+- **Subscription Invoice:** Subscriptions now automatically send invoices to the registered email.
+- Canceling a subscription now stops future payments but keeps access until the billing cycle ends.
+- **[FIX]** Voice Mode: improved stability and removed the outdated visualizer.
+
 ## [0.3.2] - 2025-09-17
 
 ### 🧩 What's New
