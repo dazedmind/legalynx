@@ -1,3 +1,4 @@
+// src/app/frontend/login/page.tsx
 "use client";
 import React, { useEffect, useState, Suspense } from "react";
 import Header from "../components/Header";
@@ -9,7 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast, Toaster } from "sonner";
 import logo from "../img/legalynxlogo.png";
 import Image from "next/image";
-import { Loader2 } from "lucide-react";
+import { Loader2, Shield, ShieldAlert } from "lucide-react";
 import ForgotPasswordModal from "../components/ForgotPasswordModal";
 import { GoEye, GoEyeClosed } from "react-icons/go";
 
@@ -22,6 +23,10 @@ function LoginContent() {
   const [showForgotPasswordSuccess, setShowForgotPasswordSuccess] = useState(false);
   const [isForgotPasswordLoading, setIsForgotPasswordLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
+  // 2FA states
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -38,23 +43,47 @@ function LoginContent() {
 
   const handleLogin = async () => {
     setIsLoading(true);
+    
+    const requestBody: any = {
+      email: formData.email,
+      password: formData.password
+    };
+
+    // Include 2FA code if required
+    if (requires2FA && twoFactorCode) {
+      requestBody.twoFactorCode = twoFactorCode;
+    }
+
     const response = await fetch("/backend/api/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();
 
     if (response.ok) {
+      if (data.requires2FA) {
+        // Enable 2FA input
+        setRequires2FA(true);
+        setIsLoading(false);
+        return;
+      }
+
       // Use auth context to set authentication
       login(data.token, data.user);
       // Redirect to returnUrl if provided, otherwise go to home
       router.push(returnUrl || "/frontend/home");
     } else {
-      toast.error(data.message || "Login failed");
+      if (data.requires2FA) {
+        // Invalid 2FA code
+        toast.error("Invalid authentication code. Please try again.");
+        setTwoFactorCode("");
+      } else {
+        toast.error(data.message || "Login failed");
+      }
     }
     setIsLoading(false);
   };
@@ -138,7 +167,7 @@ function LoginContent() {
       </header>
 
       <main className="flex flex-col md:flex-row-reverse w-full h-[calc(100vh-var(--header-height,64px))]">
-        <div className="flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 md:py-10 justify-center gap-2 overflow-y-auto">
+        <div className="flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 md:py-10 md:px-6 justify-center gap-2 overflow-y-auto">
           <div className="md:hidden flex bg-gradient-to-bl from-blue/0 to-blue/20 items-center mb-10 pr-10 justify-center w-full md:w-1/2 gap-2 relative">
             <Image
                 src={logo}
@@ -159,60 +188,105 @@ function LoginContent() {
             </span>
 
             <div className="flex flex-col items-start justify-center gap-4 w-full md:not-first:w-2/3">
-              <span className="flex flex-col items-start gap-2 justify-start w-full">
-                <p className="text-sm text-muted-foreground">Email address</p>
-                <Input
-                  name="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  onKeyDown={handleKeyPress}
-                  className={
-                    formData.email && !emailValidation(formData.email)
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                      : ""
-                  }
-                />
-                {formData.email && !emailValidation(formData.email) && (
-                  <p className="text-red-500 text-xs">
-                    Must be a valid email address
-                  </p>
-                )}
-              </span>
-              <span className="flex flex-col items-start gap-2 justify-start w-full relative">
-                <p className="text-sm text-muted-foreground">Password</p>
-                <Input
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  onKeyDown={handleKeyPress}
-                  className="w-full"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 bottom-1/12 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showPassword ? <GoEyeClosed size={15} /> : <GoEye size={15} />}
-                </button>
-              </span>
+              {!requires2FA ? (
+                <>
+                  <span className="flex flex-col items-start gap-2 justify-start w-full">
+                    <p className="text-sm text-muted-foreground">Email address</p>
+                    <Input
+                      name="email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      onKeyDown={handleKeyPress}
+                      className={
+                        formData.email && !emailValidation(formData.email)
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : ""
+                      }
+                    />
+                    {formData.email && !emailValidation(formData.email) && (
+                      <p className="text-red-500 text-xs">
+                        Must be a valid email address
+                      </p>
+                    )}
+                  </span>
+                  <span className="flex flex-col items-start gap-2 justify-start w-full relative">
+                    <p className="text-sm text-muted-foreground">Password</p>
+                    <Input
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      onKeyDown={handleKeyPress}
+                      className="w-full"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 bottom-1/12 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showPassword ? <GoEyeClosed size={15} /> : <GoEye size={15} />}
+                    </button>
+                  </span>
 
-              <span className="text-sm text-muted-foreground">
-                <button className="cursor-pointer hover:text-blue-600" onClick={handleForgotPasswordClick}>
-                  Forgot Password?
-                </button>
-              </span>
+                  <span className="text-sm text-muted-foreground">
+                    <button className="cursor-pointer hover:text-blue-600" onClick={handleForgotPasswordClick}>
+                      Forgot Password?
+                    </button>
+                  </span>
+                </>
+              ) : (
+                <>
+                  <div className="w-full p-3 bg-blue/20 rounded-md border border-blue/50">
+                    <div className="flex items-center gap-2">
+                      <ShieldAlert className="w-auto h-auto text-blue-600" />
+                      <p className="text-sm text-blue-600 leading-tight">
+                        Enter the 6-digit code from your authenticator app
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="flex flex-col items-start gap-2 justify-start w-full">
+                    <p className="text-sm text-muted-foreground">Authentication Code</p>
+                    <Input
+                      name="twoFactorCode"
+                      type="text"
+                      placeholder="000000"
+                      value={twoFactorCode}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setTwoFactorCode(value);
+                      }}
+                      onKeyDown={handleKeyPress}
+                      className="text-center text-lg tracking-widest"
+                      maxLength={6}
+                      autoFocus
+                    />
+                  </span>
+
+                  <button
+                    onClick={() => {
+                      setRequires2FA(false);
+                      setTwoFactorCode("");
+                    }}
+                    className="text-sm text-blue-600 hover:underline -mt-2 cursor-pointer"
+                  >
+                    Back to login
+                  </button>
+                </>
+              )}
 
               <Button
                 onClick={handleLogin}
-                disabled={isLoading}
+                disabled={isLoading || (requires2FA && twoFactorCode.length !== 6)}
                 className="w-full cursor-pointer bg-blue-600 text-white"
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
+                ) : requires2FA ? (
+                  "Verify & Sign In"
                 ) : (
                   "Sign In"
                 )}

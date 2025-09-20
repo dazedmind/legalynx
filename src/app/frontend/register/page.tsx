@@ -165,7 +165,7 @@ function RegisterContent() {
       <main className="flex flex-col md:flex-row-reverse w-full h-[calc(100vh-var(--header-height,64px))]">
   
 
-        <div className="flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 md:py-10 justify-center gap-2 overflow-y-auto">
+        <div className="flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 md:py-10 md:px-6 justify-center gap-2 overflow-y-auto">
           <div className="md:hidden flex bg-gradient-to-bl from-blue/0 to-blue/20 items-center mb-10 pr-10 justify-center w-full md:w-1/2 gap-2 relative">
             <Image
                 src={logo}
