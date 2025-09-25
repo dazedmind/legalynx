@@ -115,18 +115,33 @@ def generate_filename(
 ) -> str:
     """
     Generate filename based on naming option and user settings.
+    For add_client_name: surname at the end in format YYYYMMDD_DOCUMENTTYPE_SURNAME.ext
     """
-    # Get file extension
     file_ext = os.path.splitext(original_filename)[1].lower()
     
     def clean_for_filename(text: str) -> str:
-        """Clean text to be safe for filenames"""
+        """Clean text to be safe for filenames - uppercase with dashes"""
         if not text:
             return ""
-        # Remove or replace problematic characters
-        cleaned = re.sub(r'[^\w\-_\.]', '_', text)
-        cleaned = re.sub(r'_+', '_', cleaned)  # Replace multiple underscores with single
-        return cleaned.strip('_')
+        
+        cleaned = re.sub(r'[^\w\s-]', '', text)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        
+        words_to_remove = ['page', 'unknown', 'document', 'file']
+        words = cleaned.split()
+        filtered_words = [w for w in words if w.lower() not in words_to_remove]
+        
+        if filtered_words:
+            return '-'.join(filtered_words).upper()
+        else:
+            return re.sub(r'\s+', '-', cleaned).upper()
+    
+    def extract_surname(text: str) -> str:
+        """Extract only the surname (last word) from client name."""
+        if not text:
+            return ""
+        words = text.strip().split()
+        return words[-1].upper() if words else ""
     
     if naming_option == "keep_original":
         return original_filename
@@ -136,7 +151,6 @@ def generate_filename(
             print("⚠️ Missing title for timestamp naming, using original")
             return original_filename
         
-        # Format: YYYYMMDD_TITLE.ext (no client name)
         date_str = datetime.now().strftime("%Y%m%d")
         clean_title = clean_for_filename(title)
         return f"{date_str}_{clean_title}{file_ext}"
@@ -146,15 +160,86 @@ def generate_filename(
             print("⚠️ Missing title or client_name for client naming, using original")
             return original_filename
         
-        # Format: YYYYMMDD_CLIENTNAME_TITLE.ext
+        # Format: YYYYMMDD_DOCUMENTTYPE_SURNAME.ext (surname at the END)
         date_str = datetime.now().strftime("%Y%m%d")
         clean_title = clean_for_filename(title)
-        clean_client = clean_for_filename(client_name)
-        return f"{date_str}_{clean_client}_{clean_title}{file_ext}"
+        surname = extract_surname(client_name)
+        return f"{date_str}_{clean_title}_{surname}{file_ext}"
     
     else:
         print(f"⚠️ Unknown naming option: {naming_option}, using original")
         return original_filename
+
+
+def generate_fallback_filename(
+    original_filename: str,
+    naming_option: str,
+    user_title: Optional[str] = None,
+    user_client_name: Optional[str] = None,
+    counter: Optional[int] = None
+) -> str:
+    """Enhanced fallback filename generation - surname at the end for add_client_name."""
+    file_ext = os.path.splitext(original_filename)[1].lower()
+    
+    def clean_for_filename(text: str) -> str:
+        if not text:
+            return ""
+        
+        cleaned = re.sub(r'[^\w\s-]', '', text)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        
+        words_to_remove = ['page', 'unknown', 'document', 'file']
+        words = cleaned.split()
+        filtered_words = [w for w in words if w.lower() not in words_to_remove]
+        
+        if filtered_words:
+            return '-'.join(filtered_words).upper()[:30]
+        else:
+            return re.sub(r'\s+', '-', cleaned).upper()[:30]
+    
+    def extract_surname(text: str) -> str:
+        """Extract only the surname (last word) from client name."""
+        if not text:
+            return ""
+        words = text.strip().split()
+        return words[-1].upper() if words else ""
+    
+    if naming_option == "add_timestamp" and user_title:
+        date_str = datetime.now().strftime("%Y%m%d")
+        clean_title = clean_for_filename(user_title)
+        return f"{date_str}_{clean_title}{file_ext}"
+    
+    elif naming_option == "add_client_name" and user_title and user_client_name:
+        date_str = datetime.now().strftime("%Y%m%d")
+        clean_title = clean_for_filename(user_title)
+        surname = extract_surname(user_client_name)
+        # Format: YYYYMMDD_DOCUMENTTYPE_SURNAME.ext
+        return f"{date_str}_{clean_title}_{surname}{file_ext}"
+    
+    elif naming_option in ["add_timestamp", "add_client_name"]:
+        extracted_name = extract_name_from_filename(original_filename)
+        extracted_type = extract_type_from_filename(original_filename)
+        
+        if naming_option == "add_timestamp" and extracted_type:
+            date_str = datetime.now().strftime("%Y%m%d")
+            return f"{date_str}_{clean_for_filename(extracted_type)}{file_ext}"
+        
+        elif naming_option == "add_client_name" and (extracted_name or extracted_type):
+            date_str = datetime.now().strftime("%Y%m%d")
+            parts = [date_str]
+            
+            if extracted_type:
+                parts.append(clean_for_filename(extracted_type))
+            
+            if extracted_name:
+                surname = extract_surname(extracted_name)
+                parts.append(surname)
+            
+            if len(parts) >= 2:
+                return f"{'_'.join(parts)}{file_ext}"
+    
+    print(f"⚠️ No valid naming configuration, keeping original: {original_filename}")
+    return original_filename
 
 def save_uploaded_file(
     file_content: bytes, 
@@ -669,51 +754,73 @@ def generate_fallback_filename(
     user_client_name: Optional[str] = None,
     counter: Optional[int] = None
 ) -> str:
-    """Enhanced fallback filename generation."""
+    """Enhanced fallback filename generation - surname at the end for add_client_name."""
     file_ext = os.path.splitext(original_filename)[1].lower()
     
     def clean_for_filename(text: str) -> str:
         if not text:
             return ""
-        cleaned = re.sub(r'[^\w\-_\.]', '_', text)
-        cleaned = re.sub(r'_+', '_', cleaned)
-        return cleaned.strip('_')[:30]
+        
+        # Remove special characters
+        cleaned = re.sub(r'[^\w\s-]', '', text)
+        # Replace multiple spaces with single space
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        
+        # Filter out unknown words (case-insensitive)
+        words_to_remove = ['page', 'unknown', 'document', 'file']
+        words = cleaned.split()
+        filtered_words = [w for w in words if w.lower() not in words_to_remove]
+        
+        if filtered_words:
+            # Convert to uppercase and join with dash
+            return '-'.join(filtered_words).upper()[:30]
+        else:
+            # If all words were filtered, return uppercase version
+            return re.sub(r'\s+', '-', cleaned).upper()[:30]
+    
+    def extract_surname(text: str) -> str:
+        """Extract only the surname (last word) from client name."""
+        if not text:
+            return ""
+        # Split and get last word (surname)
+        words = text.strip().split()
+        return words[-1].upper() if words else ""
     
     # Try to use user settings if available
-    if naming_option == "add_timestamp" and user_title and user_client_name:
+    if naming_option == "add_timestamp" and user_title:
         date_str = datetime.now().strftime("%Y%m%d")
         clean_title = clean_for_filename(user_title)
-        clean_client = clean_for_filename(user_client_name)
-        return f"{date_str}_{clean_client}_{clean_title}{file_ext}"
+        return f"{date_str}_{clean_title}{file_ext}"
     
     elif naming_option == "add_client_name" and user_title and user_client_name:
         date_str = datetime.now().strftime("%Y%m%d")
         clean_title = clean_for_filename(user_title)
-        clean_client = clean_for_filename(user_client_name)
-        return f"{date_str}_{clean_client}_{clean_title}{file_ext}"
+        surname = extract_surname(user_client_name)
+        # Format: YYYYMMDD_DOCUMENTTYPE_SURNAME.ext
+        return f"{date_str}_{clean_title}_{surname}{file_ext}"
     
     # Ultimate fallback: try to extract from filename, else use original
     elif naming_option in ["add_timestamp", "add_client_name"]:
         extracted_name = extract_name_from_filename(original_filename)
         extracted_type = extract_type_from_filename(original_filename)
         
-        if extracted_name or extracted_type:
-            if naming_option == "add_timestamp":
-                date_str = datetime.now().strftime("%Y%m%d")
-                parts = [date_str]
-                if extracted_name:
-                    parts.append(clean_for_filename(extracted_name))
-                if extracted_type:
-                    parts.append(clean_for_filename(extracted_type))
-                return f"{'_'.join(parts)}{file_ext}"
+        if naming_option == "add_timestamp" and extracted_type:
+            date_str = datetime.now().strftime("%Y%m%d")
+            return f"{date_str}_{clean_for_filename(extracted_type)}{file_ext}"
+        
+        elif naming_option == "add_client_name" and (extracted_name or extracted_type):
+            date_str = datetime.now().strftime("%Y%m%d")
+            parts = [date_str]
             
-            elif naming_option == "add_client_name":
-                date_str = datetime.now().strftime("%Y%m%d")
-                parts = [date_str]
-                if extracted_name:
-                    parts.append(clean_for_filename(extracted_name))
-                if extracted_type:
-                    parts.append(clean_for_filename(extracted_type))
+            if extracted_type:
+                parts.append(clean_for_filename(extracted_type))
+            
+            if extracted_name:
+                # Extract surname from the name
+                surname = extract_surname(extracted_name)
+                parts.append(surname)
+            
+            if len(parts) >= 2:
                 return f"{'_'.join(parts)}{file_ext}"
     
     print(f"⚠️ No valid naming configuration, keeping original: {original_filename}")
