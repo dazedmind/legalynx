@@ -15,7 +15,7 @@ import SpotlightCard from "@/components/SpotlightCard";
 export default function Home() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const { theme } = useTheme();
-  const [windowWidth, setWindowWidth] = useState(0);
+  const [windowWidth, setWindowWidth] = useState(0); 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-primary/10 backdrop-blur-md shadow-md sticky top-0 w-full z-60">
+      <header className="bg-primary/10 backdrop-blur-md shadow-md fixed top-0 w-full z-60">
         <Header />
       </header>
       
@@ -71,7 +71,7 @@ export default function Home() {
                 className="is-background"
               />
         )}
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-10 md:pt-30 md:pb-32">
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-10 md:pt-40 md:pb-32">
           <div className="flex flex-col-reverse lg:flex-row items-center justify-between md:gap-16">
             <div className="flex-1 text-center lg:text-left">
               <BlurText

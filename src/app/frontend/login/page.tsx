@@ -162,13 +162,13 @@ function LoginContent() {
   return (
     <div className="h-screen overflow-hidden">
       {/* Header */}
-      <header className="bg-primary backdrop-blur-md shadow-sm border-b sticky top-0 z-50">
+      <header className="bg-primary/10 backdrop-blur-md shadow-md fixed top-0 w-full z-60">
         <Header />
       </header>
 
-      <main className="flex flex-col md:flex-row-reverse w-full h-[calc(100vh-var(--header-height,64px))]">
+      <main className="flex flex-col md:flex-row-reverse w-full h-full">
         <div className="flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 md:py-10 md:px-6 justify-center gap-2 overflow-y-auto">
-          <div className="md:hidden flex bg-gradient-to-bl from-blue/0 to-blue/20 items-center mb-10 pr-10 justify-center w-full md:w-1/2 gap-2 relative">
+          <div className="md:hidden mt-20 flex bg-gradient-to-bl from-blue/0 to-blue/20 items-center mb-10 pr-10 justify-center w-full md:w-1/2 gap-2 relative">
             <Image
                 src={logo}
                 alt="Login"
@@ -178,8 +178,7 @@ function LoginContent() {
               />
             <p className="text-muted-foreground">Linking you to legal clarity</p>
           </div>
-          <div className="w-full flex flex-col items-start md:pl-20 gap-2 px-10">
-            
+          <div className="w-full md:w-md flex flex-col md:border border-tertiary rounded-md shadow-sm items-start gap-2 mx-0 md:mx-auto pt-0 md:pt-10 p-10 md:mt-10">
             <span>
               <h1 className="text-4xl font-bold font-serif">Sign In</h1>
               <p className="text-muted-foreground mb-4">
@@ -187,7 +186,7 @@ function LoginContent() {
               </p>
             </span>
 
-            <div className="flex flex-col items-start justify-center gap-4 w-full md:not-first:w-2/3">
+            <div className="flex flex-col items-start justify-center gap-4 w-full">
               {!requires2FA ? (
                 <>
                   <span className="flex flex-col items-start gap-2 justify-start w-full">
