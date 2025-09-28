@@ -13,6 +13,7 @@ interface ChatMessage {
   createdAt: Date;
   query?: string;
   sourceCount?: number;
+  isThinking?: boolean; // For pulse animation
 }
 
 interface ChatContainerProps {
@@ -192,21 +193,28 @@ export function ChatContainer({
                 </div>
               ) : (
                 <div className="whitespace-pre-wrap break-words text-md leading-relaxed">
-                  {/* ✅ NEW: Use typing animation for new assistant messages */}
-                  {message.type === 'ASSISTANT' && typingMessageId === message.id ? (
-                    <TypingAnimation 
-                      text={message.content} 
-                      delay={5}
-                      onComplete={onTypingComplete}
-                    />
-                  ) : (
-                    <div dangerouslySetInnerHTML={{ 
-                      __html: message.content
-                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                        .replace(/\_(.*?)_/g, '<u>$1</u>')
-                        .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>')
-                    }} />
+                  {/* Render USER messages */}
+                  {message.type === 'USER' && (
+                    <div>{message.content}</div>
+                  )}
+
+                  {/* Render ASSISTANT messages with pulse animation for thinking */}
+                  {message.type === 'ASSISTANT' && (
+                    message.isThinking ? (
+                      <div className="animate-pulse">
+                        <span className="text-muted-foreground italic">
+                          {message.content}
+                        </span>
+                      </div>
+                    ) : (
+                      <div dangerouslySetInnerHTML={{
+                        __html: message.content
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                          .replace(/\_(.*?)_/g, '<u>$1</u>')
+                          .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>')
+                      }} />
+                    )
                   )}
                 </div>
               )}
@@ -257,24 +265,6 @@ export function ChatContainer({
                   {/* Assistant-only action buttons */}
                   {isAssistant && (
                     <>
-                      {/* Thumbs Up */}
-                      {/* <button
-                        onClick={() => onMessageAction('thumbsUp', message.id)}
-                        className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
-                        title="Good response"
-                      >
-                        <ThumbsUp className="w-3 h-3" />
-                      </button> */}
-
-                      {/* Thumbs Down */}
-                      {/* <button
-                        onClick={() => onMessageAction('thumbsDown', message.id)}
-                        className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
-                        title="Poor response"
-                      >
-                        <ThumbsDown className="w-3 h-3" />
-                      </button> */}
-
                       {/* Regenerate */}
                       <button
                         onClick={() => onMessageAction('regenerate', message.id)}
@@ -328,10 +318,10 @@ export function ChatContainer({
             <div className="flex items-start gap-3 max-w-[85%]">
   
               {/* Typing Animation */}
-              <div className="bg-primary border border-tertiary rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+              {/* <div className="bg-primary border border-tertiary rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
                 <p className="animate-pulse">Thinking... </p>
     
-              </div>
+              </div> */}
             </div>
           </div>
         )}

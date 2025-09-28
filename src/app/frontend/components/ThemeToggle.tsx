@@ -17,7 +17,7 @@ export default function ThemeToggle() {
   if (!mounted) {
     return (
       <Button
-        variant="outline"
+        variant="ghost"
         size="sm"
         className="w-9 h-9 p-0"
       >
@@ -29,9 +29,9 @@ export default function ThemeToggle() {
 
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="sm"
-      className="w-9 h-9 p-0 hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+      className="w-9 h-9 p-0 rounded-full transition-colors cursor-pointer"
       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
     >
       {theme === 'dark' ? (

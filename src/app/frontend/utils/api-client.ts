@@ -46,18 +46,33 @@ export class RAGApiClient {
     }
 
     async streamQueryDocument(
-      query: string, 
+      query: string,
       onChunk: (chunk: StreamingChunk) => void,
       onError?: (error: Error) => void,
       onComplete?: () => void,
       documentId?: string
     ): Promise<void> {
+      const startTime = Date.now();
+      console.log(`🚀 FRONTEND: Starting stream query at ${startTime}`);
+
       try {
-        const response = await fetch(`${this.baseUrl}/documents/query?stream=true`, {
+        // Use the correct RAG API endpoint for streaming with proper auth
+        const token = localStorage.getItem('token');
+        const sessionId = localStorage.getItem('rag_session_id');
+
+        console.log(`🔐 AUTH: Token: ${token ? 'present' : 'missing'}, Session: ${sessionId}`);
+
+        const response = await fetch(`http://localhost:8000/query?stream=true`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query, documentId })
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+            'X-Session-Id': sessionId || ''
+          },
+          body: JSON.stringify({ query })
         });
+
+        console.log(`🌊 FRONTEND: Response received at ${Date.now() - startTime}ms`);
 
         if (!response.ok) {
           throw new Error(`Query failed: ${response.status}`);
@@ -69,13 +84,21 @@ export class RAGApiClient {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        let firstChunkTime: number | null = null;
+        let chunkCount = 0;
 
         try {
           while (true) {
             const { done, value } = await reader.read();
-            
+
             if (done) {
+              console.log(`✅ FRONTEND: Stream completed after ${chunkCount} chunks in ${Date.now() - startTime}ms`);
               break;
+            }
+
+            if (firstChunkTime === null) {
+              firstChunkTime = Date.now();
+              console.log(`📦 FRONTEND: First chunk received at ${firstChunkTime - startTime}ms`);
             }
 
             const chunk = decoder.decode(value);
@@ -84,11 +107,14 @@ export class RAGApiClient {
             for (const line of lines) {
               if (line.startsWith('data: ')) {
                 try {
+                  chunkCount++;
                   const data = JSON.parse(line.slice(6));
+                  // Process chunk immediately regardless of tab visibility
                   onChunk(data);
-                  
+
                   // Check if this is the final chunk
-                  if (data.type === 'complete' || data.type === 'end' || data.type === 'error') {
+                  if (data.type === 'stream_end' || data.type === 'end' || data.type === 'error') {
+                    console.log(`🏁 FRONTEND: Final chunk received at ${Date.now() - startTime}ms`);
                     if (onComplete) onComplete();
                     return;
                   }

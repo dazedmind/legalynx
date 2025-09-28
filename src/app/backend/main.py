@@ -33,7 +33,6 @@ try:
         apply_ultra_fast_config
     )
     OPTIMIZED_SYSTEM_AVAILABLE = True
-    print("✅ Optimized RAG system loaded successfully")
 except ImportError as e:
     print(f"⚠️ Optimized system not available: {e}")
     OPTIMIZED_SYSTEM_AVAILABLE = False
@@ -42,7 +41,6 @@ except ImportError as e:
 try:
     from security.enhanced_security_middleware import EnhancedSecurityMiddleware
     SECURITY_AVAILABLE = True
-    print("✅ Enhanced security middleware loaded")
 except ImportError as e:
     try:
         from security.security_middleware import SimplifiedSecurityMiddleware as EnhancedSecurityMiddleware
@@ -56,7 +54,6 @@ try:
     from utils.file_handler import get_next_sequential_number, validate_pdf_content
     from utils.docx_converter import convert_docx_to_pdf, validate_docx_file
     UTILS_AVAILABLE = True
-    print("✅ Utils loaded")
 except ImportError as e:
     print(f"⚠️ Utils not available: {e}")
     UTILS_AVAILABLE = False
@@ -636,11 +633,17 @@ async def upload_document_ultra_fast(
 @app.post("/query", response_model=QueryResponse)
 async def query_document_secure(request: Request, query_request: QueryRequest):
     """Query the RAG system with enhanced error handling and proper isolation."""
-    
+
+    # Add timing debug for all queries
+    query_start = time.time()
+    print(f"🚀 QUERY RECEIVED: '{query_request.query[:50]}...' at {query_start}")
+
     # Check if streaming is requested
     stream = request.query_params.get("stream", "false").lower() == "true"
-    
+    print(f"🔍 STREAMING REQUESTED: {stream}")
+
     if stream:
+        print(f"📡 REDIRECTING TO STREAMING at {time.time() - query_start:.3f}s")
         return await stream_query_document(request, query_request)
     
     # ... existing code ...
@@ -935,11 +938,15 @@ async def get_optimization_stats():
 
 async def stream_query_document(request: Request, query_request: QueryRequest = None):
     """Stream query responses to prevent timeouts."""
+    stream_start = time.time()
+    print(f"🌊 STREAM_QUERY_DOCUMENT STARTED at {stream_start}")
+
     from rag_pipeline.streaming_query_engine import create_streaming_engine
-    
+
     user_id, _ = extract_user_id_from_token(request)
     session_id = extract_session_id_from_request(request)
-    
+    print(f"👤 USER: {user_id or 'anonymous'}, SESSION: {session_id}")
+
     # If query_request is None, parse it from the request body
     if query_request is None:
         try:
@@ -948,16 +955,40 @@ async def stream_query_document(request: Request, query_request: QueryRequest = 
         except Exception as e:
             print(f"❌ Failed to parse request body: {e}")
             raise HTTPException(status_code=400, detail="Invalid request body")
-    
+
     print(f"🔍 Streaming query received: '{query_request.query}'")
     print(f"🔍 Query length: {len(query_request.query)} characters")
-    
-    # Get current RAG system
+
+    # Debug RAG manager state
+    manager_status = rag_manager.get_status(user_id=user_id, session_id=session_id)
+    print(f"📊 RAG Manager Status: {manager_status}")
+    print(f"📊 Available systems: {list(rag_manager.systems.keys())}")
+    print(f"📊 User sessions: {rag_manager.user_sessions}")
+    print(f"📊 Session systems: {rag_manager.session_systems}")
+
+    # Get current RAG system with fallback logic
     rag_system = rag_manager.get_current_system(user_id=user_id, session_id=session_id)
-    
+    print(f"🔍 RAG System found: {rag_system is not None}")
+
+    # If no system found and we have a user_id, try to get any system for this user
+    if not rag_system and user_id and user_id in rag_manager.user_sessions:
+        document_id = rag_manager.user_sessions[user_id]
+        if document_id in rag_manager.systems:
+            rag_system = rag_manager.systems[document_id]["rag_system"]
+            print(f"🔄 Using user's document: {document_id}")
+
+    # If still no system, try the most recent system if available
+    if not rag_system and rag_manager.systems:
+        # Get the most recently used system
+        recent_doc_id = max(rag_manager.systems.keys(),
+                           key=lambda k: rag_manager.systems[k]["created_at"])
+        rag_system = rag_manager.systems[recent_doc_id]["rag_system"]
+        print(f"🔄 Using most recent document: {recent_doc_id}")
+
     if not rag_system:
+        print(f"❌ No RAG system available after fallback attempts")
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail="No document has been uploaded and indexed yet. Please upload a document first."
         )
     
@@ -1337,20 +1368,12 @@ async def activate_document_for_session(request: Request, document_id: str):
 
 def main():
     """Main function to run the ultra-fast RAG API with Railway support."""
-    print("🚀 Starting Ultra-Fast RAG Pipeline API with GPT-5...")
-
-    print("🛡️ Security features: Rate limiting, Content scanning, Injection protection")
+    print("🚀 Starting RAG Pipeline API with GPT-5...")
     
     # FIXED: Use Railway's PORT environment variable
     port = int(os.environ.get("PORT", 8000))
     print(f"🌐 Starting server on port: {port}")
     print(f"🔧 Environment: {'Production' if port != 8000 else 'Development'}")
-    
-    # Print dependency status
-    print(f"📦 Dependencies status:")
-    print(f"   - Optimized system: {'✅' if OPTIMIZED_SYSTEM_AVAILABLE else '❌'}")
-    print(f"   - Security middleware: {'✅' if SECURITY_AVAILABLE else '❌'}")
-    print(f"   - Utils: {'✅' if UTILS_AVAILABLE else '❌'}")
     
     uvicorn.run(
         "main:app",

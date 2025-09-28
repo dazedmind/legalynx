@@ -41,6 +41,7 @@ interface ChatMessage {
   createdAt: Date;
   query?: string;
   sourceCount?: number;
+  isThinking?: boolean; // For pulse animation
 }
 
 interface ChatSession {
@@ -547,27 +548,6 @@ export default function ChatViewer({
   }, [chatHistory, currentSessionId, documentExists]);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Tab is becoming hidden - save immediately
-        console.log("📱 Tab becoming hidden - saving session");
-        if (hasUnsavedChanges && currentSessionId && chatHistory.length > 0) {
-          saveSessionToDatabase(true); // Force save
-        }
-      } else {
-        // Tab is becoming visible - check if we need to save
-        console.log("📱 Tab becoming visible - checking for unsaved changes");
-        if (hasUnsavedChanges && currentSessionId && chatHistory.length > 0) {
-          // Short delay to allow for state stabilization
-          setTimeout(() => {
-            saveSessionToDatabase(true);
-          }, 100);
-        }
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
     // Also handle beforeunload for browser close/refresh
     const handleBeforeUnload = () => {
       if (hasUnsavedChanges && currentSessionId && chatHistory.length > 0) {
@@ -591,14 +571,13 @@ export default function ChatViewer({
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [hasUnsavedChanges, currentSessionId, chatHistory.length]);
 
   useEffect(() => {
     // Clear any existing timeout
-    if (saveTimeoutRef.current) {
+    if (saveTimeoutRef.current) { 
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
     }
@@ -1576,10 +1555,7 @@ export default function ChatViewer({
       createdAt: new Date(),
     };
 
-    // ✅ NEW: Start typing animation for assistant messages
-    if (message.type === "ASSISTANT") {
-      setTypingMessageId(newMessage.id);
-    }
+    // Note: Typing animation removed - handled in streaming logic only
 
     // ✅ FIXED: Update state first
     setChatHistory((prev) => [...prev, newMessage]);
@@ -2207,12 +2183,6 @@ export default function ChatViewer({
 
     const currentQuery = queryText || query;
 
-    if (!currentQuery.trim()) {
-      console.log("❌ Query blocked - empty query");
-      setError("Please enter a query");
-      return;
-    }
-
     // ✅ NEW: Check token limits before proceeding
     if (tokenLimitInfo.isLimitReached) {
       console.log("❌ Query blocked - token limit reached");
@@ -2333,36 +2303,141 @@ export default function ChatViewer({
       sessionId || undefined
     );
 
-    // already set querying and cleared input above
-
     try {
-      // Use regular query API instead of streaming for now
-      console.log("📡 Starting query...");
-      const result = await apiService.queryDocuments(
-        currentQuery,
-        abortController.signal
-      );
+      // Use streaming API for real-time responses
+      console.log("📡 Starting streaming query...");
 
-      let assistantMessage = result.response;
-      let securityNotice = "";
+      // Create a temporary assistant message that will be updated as we stream
+      const assistantMessageId = crypto.randomUUID();
+      let streamedContent = "";
+      let sourceCount = 0;
 
-      if (result.securityStatus === "sanitized") {
-        securityNotice =
-          "\n\n⚠️ Note: Your query was modified for security reasons.";
-        toast.warning("Your query was modified for security reasons");
+      // Add a temporary streaming message with pulse animation
+      const tempMessage: ChatMessage = {
+        id: assistantMessageId,
+        type: "ASSISTANT",
+        content: "Thinking...",
+        createdAt: new Date(),
+        query: currentQuery,
+        isThinking: true, // Flag to trigger pulse animation
+      };
+
+      setChatHistory(prev => [...prev, tempMessage]);
+      // DO NOT set typing message ID - we only want the streaming content
+
+      // Create RAG API client instance
+      const ragClient = new (await import('../../../utils/api-client')).RAGApiClient();
+
+      // Prevent tab throttling during streaming
+      let wakeLock: any = null;
+      if ('wakeLock' in navigator) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('🔒 Screen wake lock acquired for streaming');
+        } catch (err) {
+          console.log('⚠️ Could not acquire wake lock:', err);
+        }
       }
 
-      await addMessage(
-        {
-          type: "ASSISTANT",
-          content: assistantMessage + securityNotice,
-          query: currentQuery,
-          sourceCount: result.sourceCount,
+      // Also use Page Visibility API to ensure continuous processing
+      const originalTitle = document.title;
+
+      try {
+        // Stream the response
+        await ragClient.streamQueryDocument(
+        currentQuery,
+        (chunk) => {
+          // Handle different chunk types
+          if (chunk.type === 'content_chunk') {
+            if (chunk.partial_response) {
+              streamedContent = chunk.partial_response;
+
+              // Update the streaming message with the partial response and remove thinking state
+              setChatHistory(prev =>
+                prev.map(msg =>
+                  msg.id === assistantMessageId
+                    ? { ...msg, content: streamedContent, isThinking: false }
+                    : msg
+                )
+              );
+            }
+          } else if (chunk.type === 'end') {
+            // Update only metadata to avoid content duplication
+            setChatHistory(prev =>
+              prev.map(msg =>
+                msg.id === assistantMessageId
+                  ? { ...msg, sourceCount }
+                  : msg
+              )
+            );
+
+            console.log(`✅ FRONTEND: Streaming ended - ${streamedContent.length} chars`);
+          } else if (chunk.type === 'start') {
+            console.log(`💬 FRONTEND: Streaming started`);
+          }
         },
-        sessionId || undefined
+        (error) => {
+          console.error('Streaming error:', error);
+
+          // Update message with error
+          setChatHistory(prev =>
+            prev.map(msg =>
+              msg.id === assistantMessageId
+                ? { ...msg, content: `❌ Sorry, I encountered an error: ${error.message}` }
+                : msg
+            )
+          );
+        },
+        () => {
+          console.log('🏁 FRONTEND: Streaming completed');
+        }
       );
+
+      } finally {
+        // Cleanup: Release wake lock and remove event listener
+        if (wakeLock) {
+          wakeLock.release();
+          console.log('🔓 Screen wake lock released');
+        }
+        document.title = originalTitle;
+      }
+
+      // Save to database WITHOUT adding another message to chat history
+      if (sessionId && user && documentExists && streamedContent) {
+        try {
+          // Save to database in background (don't block UI)
+          setTimeout(async () => {
+            try {
+              // Use direct API call instead of addMessage to avoid creating duplicate
+              const response = await fetch(`/backend/api/chat-messages`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${authUtils.getToken()}`,
+                },
+                body: JSON.stringify({
+                  sessionId: sessionId,
+                  role: "assistant",
+                  content: streamedContent,
+                  tokens_used: sourceCount,
+                }),
+              });
+
+              if (response.ok) {
+                console.log("💾 Streamed message saved to database");
+              } else {
+                console.warn("Failed to save streamed message to database");
+              }
+            } catch (saveError) {
+              console.warn("Failed to save streamed message to database:", saveError);
+            }
+          }, 0);
+        } catch (saveError) {
+          console.warn("Failed to save streamed message to database:", saveError);
+        }
+      }
     } catch (error) {
-      setTypingMessageId(null); // Clear typing animation on error
+      // Handle streaming errors
 
       // Check if the error is due to abort
       if (

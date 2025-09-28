@@ -71,16 +71,200 @@ class GPT5MiniLLM(CustomLLM):
                 reasoning={"effort": "medium"},
                 text={"verbosity": "low"},
                 stream=True,  # Enable streaming
-                timeout=30    # Increased timeout for streaming
+                timeout=30    # Reduced timeout for faster response
             )
 
-            # Return streaming response object
-            return response
+            # Process and yield streaming chunks
+            accumulated_text = ""
+            chunk_count = 0
+
+            for chunk in response:
+                try:
+                    chunk_count += 1
+                    chunk_text = None
+                    # Handle specific OpenAI GPT-5 streaming event types
+                    chunk_type = type(chunk).__name__
+
+                    if "ResponseTextDeltaEvent" in chunk_type:
+                        if hasattr(chunk, 'delta') and chunk.delta:
+                            chunk_text = chunk.delta
+                            accumulated_text += chunk_text
+                            # Create proper CompletionResponse object
+                            from llama_index.core.llms import CompletionResponse
+                            response_obj = CompletionResponse(
+                                text=accumulated_text,
+                                delta=chunk_text
+                            )
+                            yield response_obj
+                        elif hasattr(chunk, 'text') and chunk.text:
+                            chunk_text = chunk.text
+                            accumulated_text += chunk_text
+                            print(f"📝 GPT-5 Text: '{chunk_text}'")
+
+                            # Create proper CompletionResponse object
+                            from llama_index.core.llms import CompletionResponse
+                            response_obj = CompletionResponse(
+                                text=accumulated_text,
+                                delta=chunk_text
+                            )
+                            yield response_obj
+                        else:
+                            # Try other attributes that might contain the delta
+                            for attr in ['content', 'data', 'value']:
+                                if hasattr(chunk, attr):
+                                    value = getattr(chunk, attr)
+                                    if isinstance(value, str) and value:
+                                        accumulated_text += value
+
+                                        # Create proper CompletionResponse object
+                                        from llama_index.core.llms import CompletionResponse
+                                        response_obj = CompletionResponse(
+                                            text=accumulated_text,
+                                            delta=value
+                                        )
+                                        yield response_obj
+                                        break
+
+                    elif "ResponseContentPartAddedEvent" in chunk_type:
+                        # Handle content part events - debug what's actually in here
+                        if hasattr(chunk, 'part'):
+                            part = chunk.part
+
+                            # Handle text content - including empty text which indicates start
+                            if hasattr(part, 'text'):
+                                chunk_text = part.text
+                                print(f"🔍 Part.text: '{chunk_text}' (length: {len(chunk_text) if chunk_text else 0})")
+
+                                # Even if text is empty, this might signal the start of streaming
+                                if chunk_text:  # Only yield non-empty text
+                                    accumulated_text += chunk_text
+
+                                    # Create proper CompletionResponse object
+                                    from llama_index.core.llms import CompletionResponse
+                                    response_obj = CompletionResponse(
+                                        text=accumulated_text,
+                                        delta=chunk_text
+                                    )
+                                    yield response_obj
+                                else:
+                                    print(f"🔍 Empty text part - streaming starting")
+
+                                # Try to get text from other attributes as fallback
+                                for attr in ['content', 'value', 'data']:
+                                    if hasattr(part, attr):
+                                        value = getattr(part, attr)
+                                        print(f"🔍 Part.{attr}: {value}")
+                                        if isinstance(value, str) and value and value not in accumulated_text:
+                                            accumulated_text += value
+
+                                            # Create proper CompletionResponse object
+                                            from llama_index.core.llms import CompletionResponse
+                                            response_obj = CompletionResponse(
+                                                text=accumulated_text,
+                                                delta=value
+                                            )
+                                            yield response_obj
+                            else:
+                                print(f"🔍 Part has no text attribute")
+
+                    elif "ResponseOutputItemDoneEvent" in chunk_type:
+                        # Final content might be here - debug what's actually in here
+                        if hasattr(chunk, 'item'):
+                            item = chunk.item
+
+                            if hasattr(item, 'content') and item.content:
+
+                                try:
+                                    for i, content_part in enumerate(item.content):
+                                        if hasattr(content_part, 'text'):
+                                            chunk_text = content_part.text
+                                            if chunk_text and chunk_text != accumulated_text:
+                                                # This might be the complete text, extract only new parts
+                                                if len(chunk_text) > len(accumulated_text):
+                                                    new_text = chunk_text[len(accumulated_text):]
+                                                    accumulated_text = chunk_text
+                                                    print(f"📝 GPT-5 Complete: '{new_text}'")
+
+                                                    # Create proper CompletionResponse object
+                                                    from llama_index.core.llms import CompletionResponse
+                                                    response_obj = CompletionResponse(
+                                                        text=accumulated_text,
+                                                        delta=new_text
+                                                    )
+                                                    yield response_obj
+                                                elif chunk_text != accumulated_text:
+                                                    accumulated_text += chunk_text
+                                                    print(f"📝 GPT-5 Complete (append): '{chunk_text}'")
+
+                                                    # Create proper CompletionResponse object
+                                                    from llama_index.core.llms import CompletionResponse
+                                                    response_obj = CompletionResponse(
+                                                        text=accumulated_text,
+                                                        delta=chunk_text
+                                                    )
+                                                    yield response_obj
+                                except Exception as content_error:
+                                    print(f"⚠️ Error processing content: {content_error}")
+
+                    elif "ResponseOutputItemAddedEvent" in chunk_type:
+                        # This might have the text content in the item
+                        print(f"🔍 Output Item Added - hasattr item: {hasattr(chunk, 'item')}")
+                        if hasattr(chunk, 'item'):
+                            item = chunk.item
+
+                            # Check if this item has content
+                            if hasattr(item, 'content') and item.content:
+                                try:
+                                    for i, content_part in enumerate(item.content):
+                                        if hasattr(content_part, 'text') and content_part.text:
+                                            chunk_text = content_part.text
+                                            if chunk_text and chunk_text not in accumulated_text:
+                                                accumulated_text += chunk_text
+                                                print(f"📝 GPT-5 Added Item: '{chunk_text}'")
+
+                                                # Create proper CompletionResponse object
+                                                from llama_index.core.llms import CompletionResponse
+                                                response_obj = CompletionResponse(
+                                                    text=accumulated_text,
+                                                    delta=chunk_text
+                                                )
+                                                yield response_obj
+                                except Exception as content_error:
+                                    print(f"⚠️ Error processing added content: {content_error}")
+
+                    # Debug: Try to extract from any text-related attributes
+                    else:
+                        for attr in ['delta', 'text', 'content', 'message', 'item']:
+                            if hasattr(chunk, attr):
+                                value = getattr(chunk, attr)
+                                if isinstance(value, str) and value and value not in accumulated_text:
+                                    accumulated_text += value
+                                    print(f"📝 GPT-5 Generic ({attr}): '{value}'")
+
+                                    # Create proper CompletionResponse object
+                                    from llama_index.core.llms import CompletionResponse
+                                    response_obj = CompletionResponse(
+                                        text=accumulated_text,
+                                        delta=value
+                                    )
+                                    yield response_obj
+                                    break
+
+                except Exception as chunk_error:
+                    print(f"⚠️ GPT-5 chunk error: {chunk_error}")
+                    continue
+
+            # Fallback if no chunks were processed
+            if chunk_count == 0:
+                print("⚠️ No streaming chunks, falling back to complete")
+                fallback = self.complete(prompt, **kwargs)
+                yield fallback  # This is already a CompletionResponse
 
         except Exception as e:
             print(f"Error in GPT-5 Mini streaming API call: {e}")
             # Fallback to non-streaming
-            return self.complete(prompt, **kwargs)
+            fallback = self.complete(prompt, **kwargs)
+            yield fallback  # This is already a CompletionResponse
 
 # LegalLynx System Prompt for GPT-5
 LEGALLYNX_SYSTEM_PROMPT = (

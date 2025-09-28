@@ -88,7 +88,7 @@ function EnhancedPricing() {
   return (
     <div className="min-h-screen bg-primary">
       {/* Header */}
-      <header className="bg-primary backdrop-blur-md shadow-sm border-b sticky top-0 z-50">
+      <header className="bg-primary/10 backdrop-blur-md shadow-md sticky top-0 w-full z-50">
         <Header />
       </header>
 

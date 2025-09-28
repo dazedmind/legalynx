@@ -6,3 +6,11 @@
   z-index: 3;
   overflow: hidden;
 }
+
+/* Background variant to place rays behind content */
+.light-rays-container.is-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}

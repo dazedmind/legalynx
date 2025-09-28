@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Brain, Zap, Shield, Clock, Users } from "lucide-react";
+import { Brain, Zap, Shield, Clock, Users, File, Folder } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Header from "./frontend/components/Header";
 import BlurText from "./frontend/components/reactbits/BlurText";
@@ -15,21 +15,62 @@ import SpotlightCard from "@/components/SpotlightCard";
 export default function Home() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const { theme } = useTheme();
+  const [windowWidth, setWindowWidth] = useState(0);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    // Set initial width
+    handleResize();
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const toggleMobileSidebar = () => {
     setIsMobileSidebarOpen(!isMobileSidebarOpen);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-primary backdrop-blur-md shadow-sm border-b sticky top-0 z-60">
+      <header className="bg-primary/10 backdrop-blur-md shadow-md sticky top-0 w-full z-60">
         <Header />
       </header>
       
       {/* Hero Section */}
       <section className="bg-primary relative overflow-hidden ">
+        {/* Background light rays */}
+        {windowWidth > 768 ? (
+        <LightRays
+                raysOrigin="top-center"
+                raysColor="#00ffff"
+                raysSpeed={1.5}
+                lightSpread={0.8}
+                rayLength={0.5}
+                followMouse={true}
+                mouseInfluence={0.1}
+                noiseAmount={0.1}
+                distortion={0.05}
+                className="is-background"
+              />
+        ) : (
+          <LightRays
+                raysOrigin="top-center"
+                raysColor="#00ffff"
+                raysSpeed={1.5}
+                lightSpread={0.8}
+                rayLength={1.2}
+                followMouse={true}
+                mouseInfluence={0.1}
+                noiseAmount={0.1}
+                distortion={0.05}
+                className="is-background"
+              />
+        )}
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-10 md:pt-30 md:pb-32">
           <div className="flex flex-col-reverse lg:flex-row items-center justify-between md:gap-16">
             <div className="flex-1 text-center lg:text-left">
@@ -68,39 +109,24 @@ export default function Home() {
       <section className="py-24 bg-primary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
-            <h3 className="text-4xl lg:text-5xl font-bold font-serif text-foreground mb-6">
+            <h3 className="text-3xl lg:text-5xl font-bold font-serif text-foreground mb-6">
               Powerful Features for Legal Excellence
             </h3>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-md text-muted-foreground max-w-3xl mx-4">
               Our AI-powered platform combines cutting-edge technology with
-              legal expertise to deliver unmatched document analysis
-              capabilities.
+              legal expertise to deliver unmatched document analysis.
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <SpotlightCard className="group bg-primary rounded-2xl p-8 mx-8 md:mx-0  transition-all duration-300 border border-tertiary"
-              spotlightColor="rgba(255, 214, 0, 0.25)"
-            >
-              <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300">
-                <Brain className="w-8 h-8 text-white" />
-              </div>
-              <h4 className="text-2xl font-bold text-foreground">
-                Smart Processing
-              </h4>
-              <p className="text-muted-foreground text-md leading-relaxed">
-                Advanced OCR and text extraction technology automatically
-                detects document types and processes PDFs.
-              </p>
-            </SpotlightCard>
 
-            <SpotlightCard className="group bg-primary rounded-2xl p-8 mx-8 md:mx-0 transition-all duration-300 border border-tertiary"
+            <SpotlightCard className="group bg-primary rounded-2xl p-8 mx-4 md:mx-0 transition-all duration-300 border border-tertiary"
               spotlightColor="rgba(255, 214, 0, 0.25)"
             >
-              <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300">
+              <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300">
                 <Shield className="w-8 h-8 text-white" />
               </div>
-              <h4 className="text-2xl font-bold text-foreground">
+              <h4 className="text-2xl mb-2 font-bold text-foreground">
                 Privacy Focused
               </h4>
               <p className="text-muted-foreground text-md leading-relaxed">
@@ -110,13 +136,27 @@ export default function Home() {
               </p>
             </SpotlightCard>
 
-            <SpotlightCard className="group bg-primary rounded-2xl p-8 mx-8 md:mx-0 transition-all duration-300 border border-tertiary"
+            <SpotlightCard className="group bg-primary p-8 mx-4 md:mx-0  transition-all duration-300 border border-tertiary"
               spotlightColor="rgba(255, 214, 0, 0.25)"
             >
-              <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300">
+              <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300">
+                <Folder className="w-8 h-8 text-white" />
+              </div>
+              <h4 className="text-2xl mb-2 font-bold text-foreground">
+                Smart File Management
+              </h4>
+              <p className="text-muted-foreground text-md leading-relaxed">
+                Advanced file management and auto-rename features to help you organize your documents efficiently. 
+              </p>
+            </SpotlightCard>
+
+            <SpotlightCard className="group bg-primary rounded-2xl p-8 mx-4 md:mx-0 transition-all duration-300 border border-tertiary"
+              spotlightColor="rgba(255, 214, 0, 0.25)"
+            >
+              <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300">
                 <Zap className="w-8 h-8 text-white" />
               </div>
-              <h4 className="text-2xl font-bold text-foreground">
+              <h4 className="text-2xl mb-2 font-bold text-foreground">
                 Swift Resolution
               </h4>
               <p className="text-muted-foreground text-md leading-relaxed">
@@ -137,7 +177,7 @@ export default function Home() {
               </h3>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <div className="bg-yellow/20 p-2 rounded-lg">
+                  <div className=" p-2 rounded-lg">
                     <Clock className="w-6 h-6 text-yellow" />
                   </div>
                   <div>
@@ -152,7 +192,7 @@ export default function Home() {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="bg-yellow/20 p-2 rounded-lg">
+                  <div className="p-2 rounded-lg">
                     <Shield className="w-6 h-6 text-yellow" />
                   </div>
                   <div>
@@ -167,7 +207,7 @@ export default function Home() {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="bg-yellow/20 p-2 rounded-lg">
+                  <div className="p-2 rounded-lg">
                     <Users className="w-6 h-6 text-yellow" />
                   </div>
                   <div>
@@ -199,6 +239,7 @@ export default function Home() {
                   </div>
                   <div className="text-muted-foreground">Support</div>
                 </div>
+    
               </div>
             </div>
           </div>
@@ -243,7 +284,7 @@ export default function Home() {
                 and intelligent insights for better decision-making.
               </p>
               <div className="text-sm text-muted-foreground">
-                <p>Powered by GPT 5 nano</p>
+                <p>Powered by GPT-5-nano</p>
               </div>
             </div>
 
