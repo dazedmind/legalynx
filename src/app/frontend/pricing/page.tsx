@@ -88,12 +88,12 @@ function EnhancedPricing() {
   return (
     <div className="min-h-screen bg-primary">
       {/* Header */}
-      <header className="bg-primary/10 backdrop-blur-md shadow-md sticky top-0 w-full z-50">
+      <header className="bg-primary/10 backdrop-blur-md shadow-md fixed top-0 left-0 right-0 w-full z-60" style={{ transform: 'translateZ(0)', willChange: 'transform' }}>
         <Header />
       </header>
 
       {/* Hero Section */}
-      <section className="pt-20">
+      <section className="pt-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <span className='flex flex-col items-center justify-center'>
                 <BlurText

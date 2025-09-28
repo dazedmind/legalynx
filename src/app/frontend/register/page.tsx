@@ -177,7 +177,7 @@ function RegisterContent() {
             <p className="text-muted-foreground">Linking you to legal clarity</p>
           </div>
 
-          <div className="w-full md:w-md flex flex-col md:border border-tertiary rounded-md shadow-sm items-start gap-2 mx-0 md:mx-auto pt-0 md:pt-10 p-10 md:mt-20">
+          <div className="w-full md:w-md flex flex-col md:border border-tertiary rounded-lg md:shadow-sm items-start gap-2 mx-0 md:mx-auto pt-0 md:pt-10 p-10 md:mt-20">
             <span>
               <h1 className="text-4xl font-bold font-serif">Sign Up</h1>
               <p className="text-muted-foreground mb-4">

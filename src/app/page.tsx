@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Brain, Zap, Shield, Clock, Users, File, Folder } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Zap, Shield, Clock, Users, Folder } from "lucide-react";
 import Header from "./frontend/components/Header";
 import BlurText from "./frontend/components/reactbits/BlurText";
 import Image from "next/image";
@@ -37,7 +36,7 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-primary/10 backdrop-blur-md shadow-md fixed top-0 w-full z-60">
+      <header className="bg-primary/10 backdrop-blur-md shadow-md fixed top-0 left-0 right-0 w-full z-60" style={{ transform: 'translateZ(0)', willChange: 'transform' }}>
         <Header />
       </header>
       
@@ -47,7 +46,7 @@ export default function Home() {
         {windowWidth > 768 ? (
         <LightRays
                 raysOrigin="top-center"
-                raysColor="#00ffff"
+                raysColor="#C7EDE4"
                 raysSpeed={1.5}
                 lightSpread={0.8}
                 rayLength={0.5}
@@ -60,10 +59,10 @@ export default function Home() {
         ) : (
           <LightRays
                 raysOrigin="top-center"
-                raysColor="#00ffff"
+                raysColor="#C7EDE4"
                 raysSpeed={1.5}
                 lightSpread={0.8}
-                rayLength={1.2}
+                rayLength={1.5}
                 followMouse={true}
                 mouseInfluence={0.1}
                 noiseAmount={0.1}
@@ -71,7 +70,7 @@ export default function Home() {
                 className="is-background"
               />
         )}
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-10 md:pt-40 md:pb-32">
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-30 pb-10 md:pt-40 md:pb-32">
           <div className="flex flex-col-reverse lg:flex-row items-center justify-between md:gap-16">
             <div className="flex-1 text-center lg:text-left">
               <BlurText
