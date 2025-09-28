@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.4] - 2025-09-28
+
+### 🧩 What's New
+- **Response Streaming:** Now uses response streaming from OpenAI for faster response time
+- **Landing Page Refinements:** Added some visual refinements on the landing page
+
+### 🛠️ Fixes
+- **File Renaming:** Fixed file renames the original file instead of the uploaded (renamed) file
+
 ## [0.3.3] - 2025-09-20
 
 ### 🧩 What’s New
@@ -56,6 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Response feedback:** thumbs up/down feature removed since feedback isn’t used for training.  
 - **Usage statistics:** simplified subscription page by removing usage tracking.  
 
+---
+
 ## [0.2.2] - 2025-08-15
 ### 🛠️ Fixed
 - **Smarter auto-rename:** feature now powered by rule-based pattern matching (previously regex only) for higher accuracy.  
@@ -92,6 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - **Privacy Settings**: Removed privacy preferences settings for simplified user experience
+
+--- 
 
 ## [0.1.9] - 2025-08-05 - Pre-Alpha
 
@@ -137,7 +150,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - **Document Privacy**: Ensured all documents remain private and accessible only through authenticated API calls
 
----
 
 ## [0.1.5] - 2025-07-24
 
@@ -150,7 +162,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improved
 - **RAG Pipeline Optimization**: Significantly faster document processing performance
 
----
 
 ## [0.1.4] - 2025-07-19
 
@@ -173,8 +184,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Chat Session Loading**: Resolved errors when loading deleted or non-existent chat sessions
 - **Default Page**: Login now correctly defaults to upload file page
 
----
-
 ## [0.1.2] - 2025-07-15
 
 ### Added
@@ -187,8 +196,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Logout Cleanup**: Logging out now properly removes unsaved files and sessions
 - **Versioning**: Adjusted CHANGELOG versioning for consistency
 
----
-
 ## [0.1.1] - 2025-07-12
 
 ### Added
@@ -200,8 +207,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Navigation**: Improved routing for header links and page navigation
-
----
 
 ## [0.1.0] - 2025-07-10 - Initial Release
 
