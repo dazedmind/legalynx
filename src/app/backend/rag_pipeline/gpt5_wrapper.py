@@ -133,7 +133,6 @@ class GPT5MiniLLM(CustomLLM):
                             # Handle text content - including empty text which indicates start
                             if hasattr(part, 'text'):
                                 chunk_text = part.text
-                                print(f"🔍 Part.text: '{chunk_text}' (length: {len(chunk_text) if chunk_text else 0})")
 
                                 # Even if text is empty, this might signal the start of streaming
                                 if chunk_text:  # Only yield non-empty text
@@ -146,14 +145,11 @@ class GPT5MiniLLM(CustomLLM):
                                         delta=chunk_text
                                     )
                                     yield response_obj
-                                else:
-                                    print(f"🔍 Empty text part - streaming starting")
 
                                 # Try to get text from other attributes as fallback
                                 for attr in ['content', 'value', 'data']:
                                     if hasattr(part, attr):
                                         value = getattr(part, attr)
-                                        print(f"🔍 Part.{attr}: {value}")
                                         if isinstance(value, str) and value and value not in accumulated_text:
                                             accumulated_text += value
 
@@ -164,8 +160,6 @@ class GPT5MiniLLM(CustomLLM):
                                                 delta=value
                                             )
                                             yield response_obj
-                            else:
-                                print(f"🔍 Part has no text attribute")
 
                     elif "ResponseOutputItemDoneEvent" in chunk_type:
                         # Final content might be here - debug what's actually in here
@@ -207,8 +201,6 @@ class GPT5MiniLLM(CustomLLM):
                                     print(f"⚠️ Error processing content: {content_error}")
 
                     elif "ResponseOutputItemAddedEvent" in chunk_type:
-                        # This might have the text content in the item
-                        print(f"🔍 Output Item Added - hasattr item: {hasattr(chunk, 'item')}")
                         if hasattr(chunk, 'item'):
                             item = chunk.item
 

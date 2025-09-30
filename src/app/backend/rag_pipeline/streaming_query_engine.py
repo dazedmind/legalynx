@@ -39,10 +39,10 @@ class StreamingQueryEngine:
         try:
             # Send initial response immediately
             initial_msg = f"data: {json.dumps({
-                'type': 'start',
-                'timestamp': start_time,
-                'query': query,
-                'user_id': user_id,
+                'type': 'start', 
+                'timestamp': start_time, 
+                'query': query, 
+                'user_id': user_id, 
                 'message': 'Starting analysis...'
             })}\n\n"
             print(f"📤 Sending: {initial_msg.strip()}")
@@ -56,10 +56,10 @@ class StreamingQueryEngine:
             print(f"⏱️ RETRIEVAL START: {retrieval_time - start_time:.3f}s elapsed")
 
             retrieval_msg = f"data: {json.dumps({
-                'type': 'retrieval',
-                'timestamp': retrieval_time,
-                'message': '🔍 Retrieving relevant document sections...'
-            })}\n\n"
+                'type': 'retrieval', 
+                'timestamp': retrieval_time, 
+                'message': '🔍 Retrieving relevant document sections...'}
+            )}\n\n"
             print(f"📤 Sending: {retrieval_msg.strip()}")
             yield retrieval_msg
 
