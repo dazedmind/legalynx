@@ -71,18 +71,13 @@ export async function PATCH(
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
-    console.log('📄 Found document:', {
-      currentName: document.original_file_name,
-      newName: trimmedName
-    });
-
     // Check if name is actually different
-    if (document.original_file_name === trimmedName) {
+    if (document.file_name === trimmedName) {
       return NextResponse.json({ 
         message: 'Document name unchanged',
         document: {
           id: document.id,
-          originalFileName: document.original_file_name,
+          originalFileName: document.file_name,
           fileName: document.file_name
         }
       });
@@ -91,7 +86,7 @@ export async function PATCH(
     // Check if a document with the same name already exists in the same folder
     const existingDocument = await prisma.document.findFirst({
       where: {
-        original_file_name: trimmedName,
+        file_name: trimmedName,
         folder_id: document.folder_id,
         owner_id: user.id,
         id: { not: documentId } // Exclude current document
@@ -107,7 +102,6 @@ export async function PATCH(
     // Check if this is a RAG processing update
     const isRagUpdate = updateProcessedName === true;
     
-    // Update the document name - RAG updates go to file_name, user renames go to original_file_name
     const updateData: any = {
       updated_at: new Date()
     };
@@ -116,8 +110,7 @@ export async function PATCH(
       // RAG processing update: update file_name (intelligent filename)
       updateData.file_name = trimmedName;
     } else {
-      // User rename: update original_file_name (display name)
-      updateData.original_file_name = trimmedName;
+      updateData.file_name = trimmedName;
     }
     
     const updatedDocument = await prisma.document.update({
@@ -125,7 +118,6 @@ export async function PATCH(
       data: updateData,
       select: {
         id: true,
-        original_file_name: true,
         file_name: true,
         status: true,
         uploaded_at: true,
@@ -135,7 +127,7 @@ export async function PATCH(
 
     console.log('✅ Document renamed successfully:', {
       documentId,
-      oldName: document.original_file_name,
+      oldName: document.file_name,
       newName: trimmedName
     });
 
@@ -145,7 +137,6 @@ export async function PATCH(
       document: {
         id: updatedDocument.id,
         fileName: updatedDocument.file_name,
-        originalFileName: updatedDocument.original_file_name,
         status: updatedDocument.status,
         uploadedAt: updatedDocument.uploaded_at.toISOString(),
         updatedAt: updatedDocument.updated_at.toISOString()

@@ -35,23 +35,15 @@ export async function GET(request: NextRequest) {
         // File Management Settings
         auto_rename_files: true,
         file_naming_format: true,
-        file_naming_title: true,
-        file_client_name: true,
         file_retention_days: true,
         auto_delete_files: true,
         
         // Security Settings
         two_factor_enabled: true,
-        login_notifications: true,
-        security_alerts: true,
         
         // UI/UX Preferences
         theme: true,
         date_format: true,
-        
-        // Notification Settings
-        email_notifications: true,
-        push_notifications: true,
         
         // Timestamps
         last_settings_update: true,
@@ -66,8 +58,6 @@ export async function GET(request: NextRequest) {
         // File Management Settings defaults
         auto_rename_files: false,
         file_naming_format: 'ORIGINAL',
-        file_naming_title: null,
-        file_client_name: null,
         file_retention_days: null,
         auto_delete_files: false,
         
@@ -76,8 +66,6 @@ export async function GET(request: NextRequest) {
         
         // Security Settings defaults
         two_factor_enabled: false,
-        login_notifications: true,
-        security_alerts: true,
         
         // Privacy Settings defaults
         
@@ -87,8 +75,6 @@ export async function GET(request: NextRequest) {
         date_format: 'MM/DD/YYYY',
         
         // Notification Settings defaults
-        email_notifications: true,
-        push_notifications: false,
       }, { status: 200 });
     }
 
@@ -118,11 +104,8 @@ export async function POST(request: NextRequest) {
 
     // Validate input data
     const allowedFields = [
-      'auto_rename_files', 'file_naming_format', 'file_naming_title', 
-      'file_client_name', 'file_retention_days', 'auto_delete_files', 
-      'login_notifications', 'security_alerts',
+      'auto_rename_files', 'file_naming_format', 'file_retention_days', 'auto_delete_files', 
       'theme', 'date_format',
-      'email_notifications', 'push_notifications'
     ];
 
     // Filter out any fields that aren't allowed

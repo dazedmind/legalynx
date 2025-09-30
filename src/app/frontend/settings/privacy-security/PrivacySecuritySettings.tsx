@@ -11,14 +11,16 @@ import {
   Lock,
   Loader2,
   Save,
-  Undo
+  Undo,
+  Activity
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
-import LoaderComponent from '../components/ui/LoaderComponent';
+import LoaderComponent from '../../components/ui/LoaderComponent';
 import { Separator } from '@/components/ui/separator';
+import SecurityLogSettings from './SecurityLogSettings';
 
 interface SecuritySettings {
   two_factor_enabled: boolean;
@@ -538,43 +540,25 @@ export default function PrivacySecuritySettings() {
           </div>
         )}
       </section>
-
+      
       {/* Security Settings */}
       <section className="mx-4 p-6 rounded-lg border border-tertiary bg-primary">
-        <div className="flex items-center gap-3 mb-4">
-          <Lock className="w-6 h-6 text-yellow-500" />
+        <div className="flex items-center gap-3">
+          <Activity className="w-6 h-6 text-yellow-500" />
           <div>
-            <h2 className="text-xl font-semibold">Security Notifications</h2>
+            <h2 className="text-xl font-semibold">Security Logs</h2>
           </div>
         </div>
 
         {/* Divider */}
         <Separator className="my-4"/>
-
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Login Notifications</h3>
-              <p className="text-sm text-muted-foreground">Get notified when someone signs into your account</p>
-            </div>
-            <Switch 
-              checked={securitySettings.login_notifications}
-              onCheckedChange={(checked) => handleSecuritySettingChange('login_notifications', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Security Alerts</h3>
-              <p className="text-sm text-muted-foreground">Receive alerts about unusual account activity</p>
-            </div>
-            <Switch 
-              checked={securitySettings.security_alerts}
-              onCheckedChange={(checked) => handleSecuritySettingChange('security_alerts', checked)}
-            />
-          </div>
-        </div>
+        <p className="text-sm text-muted-foreground">
+        Authentication and security changes in your account are logged here.
+        Logs are retained for 60 days.
+        </p>
       </section>
+
+      <SecurityLogSettings />
 
       {/* Danger Zone */}
       <section className="mx-4 p-6 mb-8 rounded-lg border border-tertiary bg-destructive/5">

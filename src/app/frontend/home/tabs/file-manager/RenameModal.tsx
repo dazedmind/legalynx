@@ -50,7 +50,7 @@ export const RenameModal: React.FC<RenameModalProps> = ({
       if (itemType === 'document') {
         const doc = item as DocumentInfo;
         // Remove file extension for editing
-        const nameWithoutExt = doc.originalFileName.replace(/\.[^/.]+$/, '');
+        const nameWithoutExt = doc.fileName.replace(/\.[^/.]+$/, '');
         setNewName(nameWithoutExt);
       } else {
         const folder = item as FolderInfo;
@@ -95,7 +95,7 @@ export const RenameModal: React.FC<RenameModalProps> = ({
       // For documents, add back the file extension
       if (itemType === 'document' && item) {
         const doc = item as DocumentInfo;
-        const extension = doc.originalFileName.match(/\.[^/.]+$/);
+        const extension = doc.fileName.match(/\.[^/.]+$/);
         if (extension) {
           finalName += extension[0];
         }

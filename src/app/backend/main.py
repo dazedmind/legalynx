@@ -34,25 +34,27 @@ try:
         apply_ultra_fast_config
     )
     OPTIMIZED_SYSTEM_AVAILABLE = True
-    print("✅ Optimized RAG system loaded successfully")
 except ImportError as e:
     print(f"⚠️ Optimized system not available: {e}")
     OPTIMIZED_SYSTEM_AVAILABLE = False
 
 # Import existing modules with fallback handling
 try:
-    from security.security_middleware import SimplifiedSecurityMiddleware
+    from security.enhanced_security_middleware import EnhancedSecurityMiddleware
     SECURITY_AVAILABLE = True
-    print("✅ Security middleware loaded")
 except ImportError as e:
-    print(f"⚠️ Security middleware not available: {e}")
-    SECURITY_AVAILABLE = False
+    try:
+        from security.security_middleware import SimplifiedSecurityMiddleware as EnhancedSecurityMiddleware
+        SECURITY_AVAILABLE = True
+        print("✅ Fallback security middleware loaded")
+    except ImportError as e2:
+        print(f"⚠️ Security middleware not available: {e}, {e2}")
+        SECURITY_AVAILABLE = False
 
 try:
     from utils.file_handler import get_next_sequential_number, validate_pdf_content
     from utils.docx_converter import convert_docx_to_pdf, validate_docx_file
     UTILS_AVAILABLE = True
-    print("✅ Utils loaded")
 except ImportError as e:
     print(f"⚠️ Utils not available: {e}")
     UTILS_AVAILABLE = False
@@ -245,7 +247,7 @@ rag_manager = RAGSystemManager()
 
 # Security middleware (conditional initialization)
 if SECURITY_AVAILABLE:
-    security = SimplifiedSecurityMiddleware()
+    security = EnhancedSecurityMiddleware()
 else:
     security = None
 
@@ -632,11 +634,17 @@ async def upload_document_ultra_fast(
 @app.post("/query", response_model=QueryResponse)
 async def query_document_secure(request: Request, query_request: QueryRequest):
     """Query the RAG system with enhanced error handling and proper isolation."""
-    
+
+    # Add timing debug for all queries
+    query_start = time.time()
+    print(f"🚀 QUERY RECEIVED: '{query_request.query[:50]}...' at {query_start}")
+
     # Check if streaming is requested
     stream = request.query_params.get("stream", "false").lower() == "true"
-    
+    print(f"🔍 STREAMING REQUESTED: {stream}")
+
     if stream:
+        print(f"📡 REDIRECTING TO STREAMING at {time.time() - query_start:.3f}s")
         return await stream_query_document(request, query_request)
     
     # ... existing code ...
@@ -685,19 +693,23 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
     print(f"👤 User ID: {user_id or 'anonymous'}")
     
     try:
-        # Step 4: Security check and sanitization (using your existing security middleware)
+        # Step 4: Enhanced security check and sanitization
         sanitized_query = query_request.query
         was_sanitized = False
+        query_analysis = None
         
         if security:
             try:
-                print("🛡️ Running security check...")
-                sanitized_query = security.check_query_security(user_id, query_request.query)
+                print("🛡️ Running enhanced security check...")
+                sanitized_query, query_analysis = security.check_query_security(user_id, query_request.query)
                 was_sanitized = sanitized_query != query_request.query
                 print(f"✅ Security check passed. Sanitized: {was_sanitized}")
                 if was_sanitized:
                     print(f"🔧 Original: {query_request.query}")
                     print(f"🔧 Sanitized: {sanitized_query}")
+                if query_analysis and query_analysis.get('is_malicious'):
+                    print(f"⚠️ Malicious patterns detected: {query_analysis.get('categories', [])}")
+                    print(f"⚠️ Risk score: {query_analysis.get('risk_score', 0)}")
             except Exception as security_error:
                 print(f"⚠️ Security check failed: {security_error}")
                 # If security fails, still allow the query but log it
@@ -746,14 +758,38 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
                 print("⚠️ Empty response generated")
                 response_text = "I apologize, but I couldn't generate a meaningful response to your query. Please try rephrasing your question or check if the document contains relevant information."
             
+            # Step 7: Enhanced response security analysis
+            response_analysis = None
+            final_security_status = "sanitized" if was_sanitized else "verified"
+            
+            if security:
+                try:
+                    print("🛡️ Analyzing response for security issues...")
+                    response_analysis = security.check_response_security(user_id, response_text, query_request.query)
+                    
+                    if response_analysis.get('risk_score', 0) > 0.7:
+                        print(f"⚠️ High-risk response detected! Risk score: {response_analysis.get('risk_score', 0)}")
+                        print(f"⚠️ Issues found: {response_analysis.get('detected_issues', [])}")
+                        final_security_status = "high_risk_response"
+                        
+                        # For very high risk responses, we might want to block them
+                        if response_analysis.get('jailbreak_successful') or response_analysis.get('leaked_instructions'):
+                            print("🚨 CRITICAL: Jailbreak or instruction leak detected!")
+                            response_text = "I apologize, but I cannot provide that response as it may contain inappropriate content. Please rephrase your question in a different way."
+                            final_security_status = "blocked_harmful_response"
+                    
+                except Exception as response_security_error:
+                    print(f"⚠️ Response security analysis failed: {response_security_error}")
+            
             print(f"✅ Returning response with {len(response_text)} characters and {source_count} sources")
             print(f"📋 Document: {current_doc_id}")
+            print(f"🛡️ Final security status: {final_security_status}")
             
             return QueryResponse(
                 query=query_request.query,
                 response=response_text,
                 source_count=source_count,
-                security_status="sanitized" if was_sanitized else "verified"
+                security_status=final_security_status
             )
             
         except Exception as query_error:
@@ -901,11 +937,15 @@ async def get_optimization_stats():
 
 async def stream_query_document(request: Request, query_request: QueryRequest = None):
     """Stream query responses to prevent timeouts."""
+    stream_start = time.time()
+    print(f"🌊 STREAM_QUERY_DOCUMENT STARTED at {stream_start}")
+
     from rag_pipeline.streaming_query_engine import create_streaming_engine
-    
+
     user_id, _ = extract_user_id_from_token(request)
     session_id = extract_session_id_from_request(request)
-    
+    print(f"👤 USER: {user_id or 'anonymous'}, SESSION: {session_id}")
+
     # If query_request is None, parse it from the request body
     if query_request is None:
         try:
@@ -914,16 +954,40 @@ async def stream_query_document(request: Request, query_request: QueryRequest = 
         except Exception as e:
             print(f"❌ Failed to parse request body: {e}")
             raise HTTPException(status_code=400, detail="Invalid request body")
-    
+
     print(f"🔍 Streaming query received: '{query_request.query}'")
     print(f"🔍 Query length: {len(query_request.query)} characters")
-    
-    # Get current RAG system
+
+    # Debug RAG manager state
+    manager_status = rag_manager.get_status(user_id=user_id, session_id=session_id)
+    print(f"📊 RAG Manager Status: {manager_status}")
+    print(f"📊 Available systems: {list(rag_manager.systems.keys())}")
+    print(f"📊 User sessions: {rag_manager.user_sessions}")
+    print(f"📊 Session systems: {rag_manager.session_systems}")
+
+    # Get current RAG system with fallback logic
     rag_system = rag_manager.get_current_system(user_id=user_id, session_id=session_id)
-    
+    print(f"🔍 RAG System found: {rag_system is not None}")
+
+    # If no system found and we have a user_id, try to get any system for this user
+    if not rag_system and user_id and user_id in rag_manager.user_sessions:
+        document_id = rag_manager.user_sessions[user_id]
+        if document_id in rag_manager.systems:
+            rag_system = rag_manager.systems[document_id]["rag_system"]
+            print(f"🔄 Using user's document: {document_id}")
+
+    # If still no system, try the most recent system if available
+    if not rag_system and rag_manager.systems:
+        # Get the most recently used system
+        recent_doc_id = max(rag_manager.systems.keys(),
+                           key=lambda k: rag_manager.systems[k]["created_at"])
+        rag_system = rag_manager.systems[recent_doc_id]["rag_system"]
+        print(f"🔄 Using most recent document: {recent_doc_id}")
+
     if not rag_system:
+        print(f"❌ No RAG system available after fallback attempts")
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail="No document has been uploaded and indexed yet. Please upload a document first."
         )
     
@@ -1051,6 +1115,23 @@ async def reset_system():
         "message": "All RAG systems reset successfully", 
         "note": "Models remain cached for speed"
     }
+
+@app.get("/security-report")
+async def get_security_report(request: Request):
+    """Get security report for the current user."""
+    user_id, _ = extract_user_id_from_token(request)
+    
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    if not security:
+        raise HTTPException(status_code=503, detail="Security middleware not available")
+    
+    try:
+        report = security.get_security_report(user_id)
+        return report
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate security report: {str(e)}")
 
 @app.get("/health")
 async def health_check(request: Request):
@@ -1209,8 +1290,10 @@ async def activate_document_for_session(request: Request, document_id: str):
         import aiohttp
         async with aiohttp.ClientSession() as session:
             # Get document metadata
+            # Use localhost in dev, NEXT_PUBLIC_APP_URL in production
+            base_url = "http://localhost:3000" if os.environ.get("NODE_ENV") != "production" else os.environ.get("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
             doc_response = await session.get(
-                f"http://localhost:3000/backend/api/documents/{document_id}",
+                f"{base_url}/backend/api/documents/{document_id}",
                 headers={"Authorization": f"Bearer {auth_token}"}
             )
             
@@ -1225,7 +1308,7 @@ async def activate_document_for_session(request: Request, document_id: str):
             
             # Get document file
             file_response = await session.get(
-                f"http://localhost:3000/backend/api/documents/{document_id}/file",
+                f"{base_url}/backend/api/documents/{document_id}/file",
                 headers={"Authorization": f"Bearer {auth_token}"}
             )
             
@@ -1305,20 +1388,12 @@ async def activate_document_for_session(request: Request, document_id: str):
 
 def main():
     """Main function to run the ultra-fast RAG API with Railway support."""
-    print("🚀 Starting Ultra-Fast RAG Pipeline API with GPT-5...")
-
-    print("🛡️ Security features: Rate limiting, Content scanning, Injection protection")
+    print("🚀 Starting RAG Pipeline API with GPT-5...")
     
     # FIXED: Use Railway's PORT environment variable
     port = int(os.environ.get("PORT", 8000))
     print(f"🌐 Starting server on port: {port}")
     print(f"🔧 Environment: {'Production' if port != 8000 else 'Development'}")
-    
-    # Print dependency status
-    print(f"📦 Dependencies status:")
-    print(f"   - Optimized system: {'✅' if OPTIMIZED_SYSTEM_AVAILABLE else '❌'}")
-    print(f"   - Security middleware: {'✅' if SECURITY_AVAILABLE else '❌'}")
-    print(f"   - Utils: {'✅' if UTILS_AVAILABLE else '❌'}")
     
     uvicorn.run(
         "main:app",

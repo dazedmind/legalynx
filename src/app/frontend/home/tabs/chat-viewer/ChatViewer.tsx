@@ -19,7 +19,6 @@ import {
   isSecurityError,
   getSecurityErrorMessage,
   profileService,
-  streamQuery,
 } from "../../../lib/api";
 import { toast, Toaster } from "sonner";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -35,17 +34,6 @@ import { BiSolidFilePdf } from "react-icons/bi";
 import { GoSquareFill } from "react-icons/go";
 import { PDFViewer } from "../file-manager/PDFViewer";
 
-interface DocumentInfo {
-  id: string;
-  fileName: string;
-  originalFileName: string;
-  size: number;
-  uploadedAt: string;
-  pages?: number;
-  status: string;
-  mimeType?: string;
-}
-
 interface ChatMessage {
   id: string;
   type: "USER" | "ASSISTANT";
@@ -53,6 +41,8 @@ interface ChatMessage {
   createdAt: Date;
   query?: string;
   sourceCount?: number;
+  isThinking?: boolean; // For pulse animation
+  isStreaming?: boolean; // For streaming cursor animation
 }
 
 interface ChatSession {
@@ -132,6 +122,7 @@ export default function ChatViewer({
   const [savedSessions, setSavedSessions] = useState<SavedChatSession[]>([]);
   const [isVoiceChat, setIsVoiceChat] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState("");
+  const [isPDFViewerOpen, setIsPDFViewerOpen] = useState(false);
   const ragLoadingDocIdRef = useRef<string | null>(null);
 
   // ✅ NEW: Track RAG system loading state
@@ -178,10 +169,6 @@ export default function ChatViewer({
   // ✅ NEW: AbortController for cancelling queries
   const [queryAbortController, setQueryAbortController] =
     useState<AbortController | null>(null);
-
-  // ✅ NEW: Streaming message state
-  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
-  const [streamingContent, setStreamingContent] = useState<string>("");
 
   // Modal state for confirmation
   const [confirmationModalConfig, setConfirmationModalConfig] = useState<{
@@ -230,10 +217,6 @@ export default function ChatViewer({
 
     // ✅ NEW: Clear typing animation state
     setTypingMessageId(null);
-
-    // ✅ NEW: Clear streaming state
-    setStreamingMessageId(null);
-    setStreamingContent("");
 
     // Clear any cached RAG data
     ragCache.clearAll();
@@ -460,10 +443,13 @@ export default function ChatViewer({
     lastUploadedDocumentId,
   ]);
 
-  // Register clear function with parent
+  // Register clear function with parent (defer to avoid setState during render)
   useEffect(() => {
     if (onClearStateCallback) {
-      onClearStateCallback(clearAllSessionState);
+      // Defer to next tick to avoid setState during render warning
+      setTimeout(() => {
+        onClearStateCallback(clearAllSessionState);
+      }, 0);
     }
   }, [onClearStateCallback]);
 
@@ -571,27 +557,6 @@ export default function ChatViewer({
   }, [chatHistory, currentSessionId, documentExists]);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Tab is becoming hidden - save immediately
-        console.log("📱 Tab becoming hidden - saving session");
-        if (hasUnsavedChanges && currentSessionId && chatHistory.length > 0) {
-          saveSessionToDatabase(true); // Force save
-        }
-      } else {
-        // Tab is becoming visible - check if we need to save
-        console.log("📱 Tab becoming visible - checking for unsaved changes");
-        if (hasUnsavedChanges && currentSessionId && chatHistory.length > 0) {
-          // Short delay to allow for state stabilization
-          setTimeout(() => {
-            saveSessionToDatabase(true);
-          }, 100);
-        }
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
     // Also handle beforeunload for browser close/refresh
     const handleBeforeUnload = () => {
       if (hasUnsavedChanges && currentSessionId && chatHistory.length > 0) {
@@ -615,14 +580,13 @@ export default function ChatViewer({
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [hasUnsavedChanges, currentSessionId, chatHistory.length]);
 
   useEffect(() => {
     // Clear any existing timeout
-    if (saveTimeoutRef.current) {
+    if (saveTimeoutRef.current) { 
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
     }
@@ -1595,7 +1559,7 @@ export default function ChatViewer({
   };
 
   const addMessage = async (
-    message: Omit<ChatMessage, "id" | "createdAt"> & { id?: string },
+    message: Omit<ChatMessage, "id" | "createdAt">,
     sessionIdOverride?: string
   ) => {
     if (!documentExists) {
@@ -1605,15 +1569,11 @@ export default function ChatViewer({
 
     const newMessage: ChatMessage = {
       ...message,
-      id: message.id || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date(),
     };
 
-    // ✅ NEW: Don't start typing animation for streaming messages
-    // Only use typing animation for non-empty assistant messages that aren't streaming
-    if (message.type === "ASSISTANT" && message.content && !streamingMessageId) {
-      setTypingMessageId(newMessage.id);
-    }
+    // Note: Typing animation removed - handled in streaming logic only
 
     // ✅ FIXED: Update state first
     setChatHistory((prev) => [...prev, newMessage]);
@@ -2221,13 +2181,6 @@ export default function ChatViewer({
       setIsQuerying(false);
       isSubmittingRef.current = false;
       setTypingMessageId(null);
-      
-      // ✅ NEW: Handle streaming cancellation
-      if (streamingMessageId) {
-        updateStreamingMessage(streamingMessageId, "🛑 Response generation was stopped by user.");
-        setStreamingMessageId(null);
-        setStreamingContent("");
-      }
     }
   };
 
@@ -2249,12 +2202,6 @@ export default function ChatViewer({
     }
 
     const currentQuery = queryText || query;
-
-    if (!currentQuery.trim()) {
-      console.log("❌ Query blocked - empty query");
-      setError("Please enter a query");
-      return;
-    }
 
     // ✅ NEW: Check token limits before proceeding
     if (tokenLimitInfo.isLimitReached) {
@@ -2376,179 +2323,161 @@ export default function ChatViewer({
       sessionId || undefined
     );
 
-    // already set querying and cleared input above
-
     try {
-      // ✅ NEW: Use streaming API for better user experience
+      // Use streaming API for real-time responses
       console.log("📡 Starting streaming query...");
-      
-      // Generate message ID first for streaming
-      const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Set up streaming state BEFORE creating message
-      setStreamingMessageId(messageId);
-      setStreamingContent("");
-      
-      // Create assistant message for streaming with placeholder content
-      const assistantMessage = await addMessage(
-        {
-          id: messageId,
-          type: "ASSISTANT",
-          content: "▌", // Use placeholder content that will be saved to database
-          query: currentQuery,
-          sourceCount: 0,
-        },
-        sessionId || undefined
-      );
 
-      if (!assistantMessage) {
-        throw new Error("Failed to create assistant message");
-      }
-
-      // Set initial streaming state
-      setStreamingContent("▌");
-      // No need to update message again since it already has the placeholder
-
-      let fullResponse = "";
+      // Create a temporary assistant message that will be updated as we stream
+      const assistantMessageId = crypto.randomUUID();
+      let streamedContent = "";
       let sourceCount = 0;
-      let securityStatus = "";
 
-      // Use the streaming API - fall back to regular API if streaming fails
-      try {
-        await streamQuery(currentQuery, (chunk) => {
-          console.log("📦 Received chunk:", chunk);
-          
-          // Handle different chunk types
-          switch (chunk.type) {
-            case "start":
-              console.log("🚀 Stream started");
-              break;
-              
-            case "retrieval":
-              console.log("📚 Retrieving relevant content...");
-              break;
-              
-            case "retrieval_complete":
-              console.log("✅ Retrieval complete");
-              if ((chunk as any).source_count || (chunk as any).sourceCount) {
-                sourceCount = (chunk as any).source_count || (chunk as any).sourceCount;
-              }
-              break;
-              
-            case "llm_start":
-              console.log("🤖 LLM processing started...");
-              break;
-              
-            case "content_chunk":
-              // Update the streaming content in real-time
-              if ((chunk as any).chunk) {
-                fullResponse += (chunk as any).chunk;
-                setStreamingContent(fullResponse);
-                updateStreamingMessage(assistantMessage.id, fullResponse);
-              } else if ((chunk as any).partial_response) {
-                fullResponse = (chunk as any).partial_response;
-                setStreamingContent(fullResponse);
-                updateStreamingMessage(assistantMessage.id, fullResponse);
-              }
-              break;
-              
-            case "complete":
-              console.log("✅ Stream complete");
-              if ((chunk as any).final_response) {
-                fullResponse = (chunk as any).final_response;
-              }
-              if ((chunk as any).source_count || (chunk as any).sourceCount) {
-                sourceCount = (chunk as any).source_count || (chunk as any).sourceCount;
-              }
-              if ((chunk as any).security_status || (chunk as any).securityStatus) {
-                securityStatus = (chunk as any).security_status || (chunk as any).securityStatus;
-              }
-              break;
-              
-            case "error":
-              console.error("❌ Stream error:", (chunk as any).error);
-              throw new Error((chunk as any).error || "Streaming error occurred");
-              
-            default:
-              console.log("📦 Unknown chunk type:", chunk.type, chunk);
-          }
-        });
-      } catch (streamError) {
-        console.warn("⚠️ Streaming failed, falling back to regular API:", streamError);
-        
-        // Clear streaming state and fall back to regular API
-        setStreamingMessageId(null);
-        setStreamingContent("");
-        
-        // Use regular API as fallback
-        const result = await apiService.queryDocuments(
-          currentQuery,
-          abortController.signal
-        );
+      // Add a temporary streaming message with pulse animation
+      const tempMessage: ChatMessage = {
+        id: assistantMessageId,
+        type: "ASSISTANT",
+        content: "Thinking...",
+        createdAt: new Date(),
+        query: currentQuery,
+        isThinking: true, // Flag to trigger pulse animation
+        isStreaming: true, // Mark as actively streaming
+      };
 
-        fullResponse = result.response;
-        sourceCount = result.sourceCount || 0;
-        securityStatus = result.securityStatus || "";
-        
-        // Update the message with the complete response
-        updateStreamingMessage(assistantMessage.id, fullResponse);
-      }
+      setChatHistory(prev => [...prev, tempMessage]);
+      // DO NOT set typing message ID - we only want the streaming content
 
-      // Add security notice if needed
-      let finalContent = fullResponse;
-      if (securityStatus === "sanitized") {
-        finalContent += "\n\n⚠️ Note: Your query was modified for security reasons.";
-        toast.warning("Your query was modified for security reasons");
-      }
+      // Create RAG API client instance
+      const ragClient = new (await import('../../../utils/api-client')).RAGApiClient();
 
-      // Update the final message with complete content and metadata
-      updateStreamingMessage(assistantMessage.id, finalContent);
-      
-      // Update the message in chat history with source count
-      setChatHistory((prev) =>
-        prev.map((msg) =>
-          msg.id === assistantMessage.id 
-            ? { ...msg, content: finalContent, sourceCount } 
-            : msg
-        )
-      );
-
-      // ✅ NEW: Save the final streaming content to database
-      if (currentSessionId && finalContent.trim()) {
+      // Prevent tab throttling during streaming
+      let wakeLock: any = null;
+      if ('wakeLock' in navigator) {
         try {
-          console.log("💾 Saving final streaming content to database:", assistantMessage.id);
-          const response = await fetch("/backend/api/chat-messages", {
-            method: "PUT",
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-              id: assistantMessage.id,
-              sessionId: currentSessionId,
-              content: finalContent,
-              sourceCount: sourceCount,
-              tokensUsed: 0, // TODO: Calculate actual tokens used
-            }),
-          });
-
-          if (response.ok) {
-            console.log("✅ Final streaming content saved to database");
-          } else {
-            console.error("❌ Failed to save final streaming content:", await response.text());
-          }
-        } catch (error) {
-          console.error("❌ Error saving final streaming content:", error);
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('🔒 Screen wake lock acquired for streaming');
+        } catch (err) {
+          console.log('⚠️ Could not acquire wake lock:', err);
         }
       }
 
-      // Clear streaming state
-      setStreamingMessageId(null);
-      setStreamingContent("");
-      
+      // Also use Page Visibility API to ensure continuous processing
+      const originalTitle = document.title;
+
+      try {
+        // Stream the response
+        await ragClient.streamQueryDocument(
+        currentQuery,
+        (chunk) => {
+          // Handle different chunk types
+          if (chunk.type === 'content_chunk') {
+            // Update streamedContent even if partial_response is empty (for first chunk)
+            if (chunk.partial_response !== undefined) {
+              streamedContent = chunk.partial_response;
+
+              // Update the streaming message with the partial response
+              // Only remove thinking state when we have actual content
+              setChatHistory(prev =>
+                prev.map(msg =>
+                  msg.id === assistantMessageId
+                    ? {
+                        ...msg,
+                        content: streamedContent || "Generating response...",
+                        isThinking: !streamedContent, // Keep thinking animation if no content yet
+                        isStreaming: true
+                      }
+                    : msg
+                )
+              );
+            }
+          } else if (chunk.type === 'end') {
+            // Mark streaming as complete and update final metadata
+            setChatHistory(prev =>
+              prev.map(msg =>
+                msg.id === assistantMessageId
+                  ? { ...msg, sourceCount, isStreaming: false, isThinking: false }
+                  : msg
+              )
+            );
+
+            console.log(`✅ FRONTEND: Streaming ended (${chunk.type}) - ${streamedContent.length} chars`);
+          } else if (chunk.type === 'start' || chunk.type === 'retrieval' || chunk.type === 'llm_start') {
+            // Keep thinking animation during these stages
+            console.log(`💬 FRONTEND: ${chunk.type} event received`);
+          }
+        },
+        (error) => {
+          console.error('Streaming error:', error);
+
+          // Check if this is an abort error (user clicked stop)
+          if (error.name === 'AbortError') {
+            console.log('🛑 User stopped the response generation');
+            // Remove the incomplete assistant message
+            setChatHistory(prev => prev.filter(msg => msg.id !== assistantMessageId));
+            toast.info('Response generation stopped');
+            return;
+          }
+
+          // Update message with error and remove streaming state
+          setChatHistory(prev =>
+            prev.map(msg =>
+              msg.id === assistantMessageId
+                ? { ...msg, content: `❌ Sorry, I encountered an error: ${error.message}`, isStreaming: false, isThinking: false }
+                : msg
+            )
+          );
+        },
+        () => {
+          console.log('🏁 FRONTEND: Streaming completed');
+        },
+        undefined, // documentId
+        abortController.signal // Pass abort signal to enable stopping
+      );
+
+      } finally {
+        // Cleanup: Release wake lock and remove event listener
+        if (wakeLock) {
+          wakeLock.release();
+          console.log('🔓 Screen wake lock released');
+        }
+        document.title = originalTitle;
+      }
+
+      // Save to database WITHOUT adding another message to chat history
+      if (sessionId && user && documentExists && streamedContent) {
+        try {
+          // Save to database in background (don't block UI)
+          setTimeout(async () => {
+            try {
+              // Use direct API call instead of addMessage to avoid creating duplicate
+              const response = await fetch(`/backend/api/chat-messages`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${authUtils.getToken()}`,
+                },
+                body: JSON.stringify({
+                  sessionId: sessionId,
+                  role: "assistant",
+                  content: streamedContent,
+                  tokens_used: sourceCount,
+                }),
+              });
+
+              if (response.ok) {
+                console.log("💾 Streamed message saved to database");
+              } else {
+                console.warn("Failed to save streamed message to database");
+              }
+            } catch (saveError) {
+              console.warn("Failed to save streamed message to database:", saveError);
+            }
+          }, 0);
+        } catch (saveError) {
+          console.warn("Failed to save streamed message to database:", saveError);
+        }
+      }
     } catch (error) {
-      setTypingMessageId(null); // Clear typing animation on error
-      
-      // ✅ NEW: Clear streaming state on error
-      setStreamingMessageId(null);
-      setStreamingContent("");
+      // Handle streaming errors
 
       // Check if the error is due to abort
       if (
@@ -2556,11 +2485,6 @@ export default function ChatViewer({
         (error.name === "AbortError" || error.message?.includes("aborted"))
       ) {
         console.log("🛑 Query was aborted by user");
-        
-        // ✅ NEW: Update streaming message with cancellation notice
-        if (streamingMessageId) {
-          updateStreamingMessage(streamingMessageId, "🛑 Response generation was cancelled by user.");
-        }
         return; // Don't show error toast for user-initiated cancellation
       }
 
@@ -2590,55 +2514,36 @@ export default function ChatViewer({
             toast.error("Security error occurred");
         }
 
-        // ✅ NEW: Update streaming message or create new error message
-        if (streamingMessageId) {
-          updateStreamingMessage(streamingMessageId, assistantResponse);
-        } else {
-          await addMessage(
-            {
-              type: "ASSISTANT",
-              content: assistantResponse,
-              query: currentQuery,
-            },
-            sessionId || undefined
-          );
-        }
+        await addMessage(
+          {
+            type: "ASSISTANT",
+            content: assistantResponse,
+            query: currentQuery,
+          },
+          sessionId || undefined
+        );
       } else {
         const errorMessage = handleApiError(error);
         setError(errorMessage);
 
         if (errorMessage.includes("canceled")) {
-          const cancelMessage = `🛑 Response generation was canceled`;
-          
-          // ✅ NEW: Update streaming message or create new error message
-          if (streamingMessageId) {
-            updateStreamingMessage(streamingMessageId, cancelMessage);
-          } else {
-            await addMessage(
-              {
-                type: "ASSISTANT",
-                content: cancelMessage,
-                query: currentQuery,
-              },
-              sessionId || undefined
-            );
-          }
+          await addMessage(
+            {
+              type: "ASSISTANT",
+              content: `Response generation was canceled`,
+              query: currentQuery,
+            },
+            sessionId || undefined
+          );
         } else {
-          const errorMsg = `❌ Sorry, I encountered an error: ${errorMessage}`;
-          
-          // ✅ NEW: Update streaming message or create new error message
-          if (streamingMessageId) {
-            updateStreamingMessage(streamingMessageId, errorMsg);
-          } else {
-            await addMessage(
-              {
-                type: "ASSISTANT",
-                content: errorMsg,
-                query: currentQuery,
-              },
-              sessionId || undefined
-            );
-          }
+          await addMessage(
+            {
+              type: "ASSISTANT",
+              content: `❌ Sorry, I encountered an error: ${errorMessage}`,
+              query: currentQuery,
+            },
+            sessionId || undefined
+          );
 
           toast.error("Query failed: " + errorMessage);
         }
@@ -2656,6 +2561,9 @@ export default function ChatViewer({
       if (!isQuerying && !isSubmittingRef.current) {
         handleQuery();
       }
+    }
+    if (event.key === "Escape") {
+      handleStopQuery();
     }
   };
 
@@ -2931,9 +2839,9 @@ export default function ChatViewer({
               <BiSolidFilePdf className="w-8 h-8 text-red-500 flex-shrink-0" />
 
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center">
                   <h3
-                    className={`text-sm md:text-base mb-1 font-semibold ${
+                    className={`text-sm md:text-base font-semibold ${
                       documentExists
                         ? "text-foreground"
                         : "text-muted-foreground"
@@ -2947,7 +2855,22 @@ export default function ChatViewer({
                     </span>
                     {!documentExists && " (Document Deleted)"}
                   </h3>
+
+                  <button
+                    onClick={() => setIsPDFViewerOpen(true)}
+                    disabled={!documentExists}
+                    title="View PDF"
+                    className={`flex items-center px-2 text-sm rounded-lg transition-all duration-300 ${
+                      !documentExists
+                        ? " text-muted-foreground cursor-default"
+                        : "text-foreground hover:brightness-90 cursor-pointer"
+                    }`}
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span className="hidden md:block"></span>
+                  </button>
                 </div>
+
                 <p
                   className={`text-sm ${
                     documentExists ? "text-muted-foreground" : "text-red-600"
@@ -2973,22 +2896,6 @@ export default function ChatViewer({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setPdfViewer({ isOpen: true, document: currentDocument });
-                }}
-                disabled={!documentExists}
-                className={`flex items-center p-3 px-3 text-sm rounded-lg transition-all duration-300 ${
-                  !documentExists
-                    ? "bg-tertiary text-muted-foreground cursor-default"
-                    : "text-foreground bg-accent hover:brightness-90 cursor-pointer"
-                }`}
-                title="View PDF"
-              >
-                <Eye className="w-4 h-4" />
-                <span className="hidden md:block"></span>
-              </button>
-
               <button
                 onClick={handleSaveFileClick}
                 disabled={
@@ -3051,12 +2958,17 @@ export default function ChatViewer({
       {isVoiceChat && (
         <VoiceChatComponent
           isSystemReady={isSystemReady}
+          selectedSessionId={currentSessionId || undefined} // Changed from selectedSessionId prop
+          user={user} // ADDED - was missing
+          currentDocument={currentDocument} // ADDED - was missing
           getAuthHeaders={getAuthHeaders}
           checkDocumentExists={checkDocumentExists}
           handleDocumentDeleted={handleDocumentDeleted}
-          selectedSessionId={selectedSessionId}
-          onSessionCreated={handleNewChat}
-          handleManualInput={handleManualInput}
+          onSessionCreated={(sessionId) => {
+            setCurrentSessionId(sessionId);
+            if (handleNewChat) handleNewChat();
+          }}
+          handleManualInput={() => setIsVoiceChat(false)} // Changed to close voice chat
           toast={toast}
         />
       )}
@@ -3171,6 +3083,29 @@ export default function ChatViewer({
             }}
           />
         )}
+
+        {/* PDF Viewer Modal */}
+        <PDFViewer
+          isOpen={isPDFViewerOpen}
+          document={
+            currentDocument
+              ? {
+                  id: currentDocument.id,
+                  fileName: currentDocument.fileName,
+                  originalFileName:
+                    currentDocument.originalFileName ||
+                    currentDocument.fileName,
+                  size: currentDocument.fileSize || 0,
+                  uploadedAt:
+                    currentDocument.uploadedAt || new Date().toISOString(),
+                  pages: currentDocument.pageCount,
+                  status: currentDocument.status,
+                  mimeType: currentDocument.mimeType || "application/pdf",
+                }
+              : null
+          }
+          onClose={() => setIsPDFViewerOpen(false)}
+        />
       </div>
 
       {/* PDF Viewer Modal */}

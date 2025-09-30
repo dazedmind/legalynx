@@ -241,14 +241,9 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <FileText className="w-6 h-6 text-blue-600 flex-shrink-0" />
             <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-lg truncate text-foreground" title={document.originalFileName}>
-                {document.originalFileName}
+              <h3 className="font-semibold text-lg truncate text-foreground" title={document.fileName}>
+                {document.fileName}
               </h3>
-              <p className="text-sm text-muted-foreground">
-                {formatFileSize(document.size)}
-                {document.pages && ` • ${document.pages} pages`}
-                
-              </p>
             </div>
           </div>
 
@@ -304,7 +299,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         {/* PDF Content */}
         <div className="flex-1 overflow-auto bg-gray-100">
           {isLoading && (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-full my-10">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
                 <p className="text-muted-foreground">Loading PDF...</p>
@@ -338,7 +333,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                     minWidth: '300px',
                     minHeight: '400px'
                   }}
-                  title={`PDF Viewer - ${document.originalFileName}`}
+                  title={`PDF Viewer - ${document.fileName}`}
                   onLoad={() => setIsLoading(false)}
                 />
               ) : (
@@ -368,18 +363,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t bg-tertiary rounded-b-lg">
-          <div className="flex justify-between items-center text-sm text-muted-foreground">
-            <div>
-              Size: {formatFileSize(document.size)}
-              {document.pages && ` • ${document.pages} pages`}
-            </div>
-            <div>
-              Uploaded: {new Date(document.uploadedAt).toLocaleDateString()}
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );

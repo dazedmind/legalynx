@@ -34,18 +34,12 @@ export async function GET(request: NextRequest) {
         id: true,
         auto_rename_files: true,
         file_naming_format: true,
-        file_naming_title: true,
-        file_client_name: true,
         file_retention_days: true,
         auto_delete_files: true,
         two_factor_enabled: true,
         two_factor_secret: true,
-        login_notifications: true,
-        security_alerts: true,
         theme: true,
         date_format: true,
-        email_notifications: true,
-        push_notifications: true,
         last_settings_update: true,
         created_at: true,
         updated_at: true
@@ -60,8 +54,6 @@ export async function GET(request: NextRequest) {
         // File Management Settings
         autoRenameFiles: false,
         fileNamingFormat: 'ORIGINAL',
-        fileNamingTitle: null,
-        fileClientName: null,
         fileRetentionDays: null,
         autoDeleteFiles: false,
         
@@ -71,8 +63,6 @@ export async function GET(request: NextRequest) {
         // Security Settings
         twoFactorEnabled: false,
         twoFactorSecret: null,
-        loginNotifications: true,
-        securityAlerts: true,
         
         
         
@@ -81,8 +71,6 @@ export async function GET(request: NextRequest) {
         dateFormat: 'MM/DD/YYYY',
         
         // Notification Settings
-        emailNotifications: true,
-        pushNotifications: false,
         
         // Metadata
         lastSettingsUpdate: new Date().toISOString(),
@@ -98,8 +86,6 @@ export async function GET(request: NextRequest) {
       // File Management Settings
       autoRenameFiles: userSettings.auto_rename_files,
       fileNamingFormat: userSettings.file_naming_format,
-      fileNamingTitle: userSettings.file_naming_title,
-      fileClientName: userSettings.file_client_name,
       fileRetentionDays: userSettings.file_retention_days,
       autoDeleteFiles: userSettings.auto_delete_files,
       
@@ -109,8 +95,6 @@ export async function GET(request: NextRequest) {
       // Security Settings
       twoFactorEnabled: userSettings.two_factor_enabled,
       twoFactorSecret: userSettings.two_factor_secret,
-      loginNotifications: userSettings.login_notifications,
-      securityAlerts: userSettings.security_alerts,
       
       // Privacy Settings
       
@@ -120,8 +104,6 @@ export async function GET(request: NextRequest) {
       dateFormat: userSettings.date_format,
       
       // Notification Settings
-      emailNotifications: userSettings.email_notifications,
-      pushNotifications: userSettings.push_notifications,
       
       // Metadata
       lastSettingsUpdate: userSettings.last_settings_update.toISOString(),
@@ -160,8 +142,6 @@ export async function PATCH(request: NextRequest) {
     // File Management Settings
     if (body.autoRenameFiles !== undefined) updateData.auto_rename_files = body.autoRenameFiles;
     if (body.fileNamingFormat !== undefined) updateData.file_naming_format = body.fileNamingFormat;
-    if (body.fileNamingTitle !== undefined) updateData.file_naming_title = body.fileNamingTitle;
-    if (body.fileClientName !== undefined) updateData.file_client_name = body.fileClientName;
     if (body.fileRetentionDays !== undefined) updateData.file_retention_days = body.fileRetentionDays;
     if (body.autoDeleteFiles !== undefined) updateData.auto_delete_files = body.autoDeleteFiles;
     
@@ -171,8 +151,6 @@ export async function PATCH(request: NextRequest) {
     // Security Settings
     if (body.twoFactorEnabled !== undefined) updateData.two_factor_enabled = body.twoFactorEnabled;
     if (body.twoFactorSecret !== undefined) updateData.two_factor_secret = body.twoFactorSecret;
-    if (body.loginNotifications !== undefined) updateData.login_notifications = body.loginNotifications;
-    if (body.securityAlerts !== undefined) updateData.security_alerts = body.securityAlerts;
     
     
     
@@ -181,8 +159,6 @@ export async function PATCH(request: NextRequest) {
     if (body.dateFormat !== undefined) updateData.date_format = body.dateFormat;
     
     // Notification Settings
-    if (body.emailNotifications !== undefined) updateData.email_notifications = body.emailNotifications;
-    if (body.pushNotifications !== undefined) updateData.push_notifications = body.pushNotifications;
     
     // Always update the last_settings_update timestamp
     updateData.last_settings_update = new Date();
@@ -199,17 +175,11 @@ export async function PATCH(request: NextRequest) {
         id: true,
         auto_rename_files: true,
         file_naming_format: true,
-        file_naming_title: true,
-        file_client_name: true,
         file_retention_days: true,
         auto_delete_files: true,
         two_factor_enabled: true,
-        login_notifications: true,
-        security_alerts: true,
         theme: true,
         date_format: true,
-        email_notifications: true,
-        push_notifications: true,
         last_settings_update: true,
         updated_at: true
       }
@@ -223,17 +193,11 @@ export async function PATCH(request: NextRequest) {
       settings: {
         autoRenameFiles: userSettings.auto_rename_files,
         fileNamingFormat: userSettings.file_naming_format,
-        fileNamingTitle: userSettings.file_naming_title,
-        fileClientName: userSettings.file_client_name,
         fileRetentionDays: userSettings.file_retention_days,
         autoDeleteFiles: userSettings.auto_delete_files,
         twoFactorEnabled: userSettings.two_factor_enabled,
-        loginNotifications: userSettings.login_notifications,
-        securityAlerts: userSettings.security_alerts,
         theme: userSettings.theme,
         dateFormat: userSettings.date_format,
-        emailNotifications: userSettings.email_notifications,
-        pushNotifications: userSettings.push_notifications,
         lastSettingsUpdate: userSettings.last_settings_update.toISOString(),
         updatedAt: userSettings.updated_at.toISOString()
       }

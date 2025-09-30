@@ -116,9 +116,9 @@ class EmbeddingManager:
                 print(f"✅ Initialized OpenAI LLM: {MODEL_CONFIG['llm_model']}")
             
             # Test the LLM with a simple call
-            print("🧪 Testing LLM connection...")
-            test_response = self.llm.complete("Hello")
-            print(f"✅ LLM test successful: {str(test_response)[:50]}...")
+            # print("🧪 Testing LLM connection...")
+            # test_response = self.llm.complete("Hello")
+            # print(f"✅ LLM test successful: {str(test_response)[:50]}...")
             
         except Exception as e:
             print(f"❌ LLM initialization failed: {e}")

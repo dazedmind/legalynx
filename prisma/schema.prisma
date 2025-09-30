@@ -33,6 +33,7 @@ model User {
   sessions           Session[]
   verification_tokens VerificationToken[] @relation("UserVerificationTokens")
   token_usage_logs   TokenUsageLog[]
+  password_reset_tokens PasswordResetToken[] @relation("UserPasswordResetTokens")
 
   // One-to-one relationship with Subscription
   subscription       Subscription?     @relation("UserSubscription")
@@ -40,6 +41,7 @@ model User {
 
   // One-to-one relationship with UserSettings
   user_settings      UserSettings?     @relation("UserUserSettings")
+  invoices            Invoice[]     @relation("UserInvoices")
 
   @@map("users")
 }
@@ -75,7 +77,8 @@ model Subscription {
 
   // Relationship back to User
   user User @relation("UserSubscription", fields: [user_id], references: [id], onDelete: Cascade)
-
+  last_invoice_id       String?   @map("last_invoice_id")
+  last_invoice_sent_at  DateTime? @map("last_invoice_sent_at")
   @@map("subscriptions")
 }
 
@@ -99,25 +102,16 @@ model UserSettings {
   // File Management Settings
   auto_rename_files Boolean @default(false) @map("auto_rename_files")
   file_naming_format FileNamingFormat @default(ORIGINAL) @map("file_naming_format")
-  file_naming_title String? @map("file_naming_title")
-  file_client_name String? @map("file_client_name")
   file_retention_days Int?  @map("file_retention_days") // null = never delete, 7, 30, 60, 90
   auto_delete_files Boolean @default(false) @map("auto_delete_files")
   
   // Security Settings
   two_factor_enabled Boolean @default(false) @map("two_factor_enabled")
   two_factor_secret String?   @map("two_factor_secret")
-  login_notifications Boolean @default(true) @map("login_notifications")
-  security_alerts   Boolean  @default(true) @map("security_alerts")
-  
   
   // UI/UX Preferences
   theme             String    @default("light") @map("theme") // "light", "dark", "auto"
   date_format       String    @default("MM/DD/YYYY") @map("date_format")
-  
-  // Notification Settings
-  email_notifications Boolean @default(true) @map("email_notifications")
-  push_notifications Boolean  @default(false) @map("push_notifications")
   
   // Usage Tracking
   last_settings_update DateTime @default(now()) @map("last_settings_update")
@@ -244,6 +238,18 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
+model PasswordResetToken {
+  id         String   @id @default(uuid())
+  user_id    String   @map("user_id")
+  user       User?    @relation("UserPasswordResetTokens", fields: [user_id], references: [id], onDelete: Cascade)
+  token      String   @unique
+  used       Boolean  @default(false)
+  expires_at DateTime @map("expires_at")
+  created_at DateTime @default(now()) @map("created_at")
+  
+  @@map("password_reset_tokens")
+}
+
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique @map("session_token")
@@ -256,6 +262,73 @@ model Session {
   
   @@map("sessions") // Use snake_case table name
 }
+
+// Add these models to your existing schema.prisma file
+
+model Invoice {
+  id                    String        @id @default(cuid())
+  invoice_number        String        @unique @map("invoice_number")
+  user_id               String        @map("user_id")
+  plan_type             SubscriptionStatus @map("plan_type")
+  billing_cycle         BillingCycle  @map("billing_cycle")
+  amount                Float         @map("amount") // Using Float to match your subscription price field
+  currency              String        @default("PHP") @map("currency")
+  subscription_id       String?       @map("subscription_id") // Reference to external subscription ID
+  paypal_transaction_id String?       @map("paypal_transaction_id")
+  status                InvoiceStatus @default(SENT) @map("status")
+  email_sent_to         String        @map("email_sent_to")
+  sendgrid_message_id   String?       @map("sendgrid_message_id")
+  
+  // Timestamps
+  created_at            DateTime      @default(now()) @map("created_at")
+  updated_at            DateTime      @updatedAt @map("updated_at")
+  sent_at               DateTime?     @map("sent_at")
+  viewed_at             DateTime?     @map("viewed_at")
+  
+  // Relationships
+  user                  User          @relation("UserInvoices", fields: [user_id], references: [id], onDelete: Cascade)
+  invoice_items         InvoiceItem[] @relation("InvoiceItems")
+  
+  // Indexes for performance
+  @@index([user_id, created_at])
+  @@index([invoice_number])
+  @@index([subscription_id])
+  @@index([status])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoice_id  String  @map("invoice_id")
+  description String  @db.Text
+  quantity    Int     @default(1)
+  unit_price  Float   @map("unit_price")
+  total       Float   @map("total")
+  
+  // Timestamps
+  created_at  DateTime @default(now()) @map("created_at")
+  
+  // Relationship
+  invoice     Invoice @relation("InvoiceItems", fields: [invoice_id], references: [id], onDelete: Cascade)
+  
+  @@index([invoice_id])
+  @@map("invoice_items")
+}
+
+// Add these enums to your existing enums section
+
+enum InvoiceStatus {
+  SENT
+  FAILED
+  DELIVERED
+  VIEWED
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
 
 enum TokenType {
   EMAIL_VERIFICATION

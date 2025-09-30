@@ -356,7 +356,6 @@ class RuleBasedFileNamer:
         import io
         
         try:
-            # Create a temporary file-like object
             pdf_stream = io.BytesIO(file_content)
             
             with fitz.open(stream=pdf_stream, filetype="pdf") as doc:
@@ -377,30 +376,27 @@ class RuleBasedFileNamer:
     @classmethod
     def extract_date(cls, text: str) -> Optional[str]:
         """Extract date using pre-compiled regex patterns."""
-        text_sample = text[:2000]  # Only check first 2000 chars for speed
+        text_sample = text[:2000]
         
         for pattern in cls.DATE_PATTERNS:
             match = pattern.search(text_sample)
             if match:
                 date_str = match.group(1)
                 try:
-                    # Convert to YYYYMMDD format
                     if '/' in date_str or '-' in date_str:
                         parts = re.split('[-/]', date_str)
                         if len(parts) == 3:
-                            # Determine format and convert
-                            if len(parts[0]) == 4:  # YYYY-MM-DD
+                            if len(parts[0]) == 4:
                                 year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
-                            elif len(parts[2]) == 4:  # MM-DD-YYYY
+                            elif len(parts[2]) == 4:
                                 month, day, year = int(parts[0]), int(parts[1]), int(parts[2])
                             else:
                                 continue
                             
-                            # Validate
                             if 1900 <= year <= 2100 and 1 <= month <= 12 and 1 <= day <= 31:
                                 return f"{year:04d}{month:02d}{day:02d}"
                     
-                    elif len(date_str) == 8 and date_str.isdigit():  # YYYYMMDD
+                    elif len(date_str) == 8 and date_str.isdigit():
                         year = int(date_str[:4])
                         month = int(date_str[4:6])
                         day = int(date_str[6:8])
@@ -457,7 +453,7 @@ class RuleBasedFileNamer:
         """
         LLM-enhanced filename generation with intelligent document analysis.
         Uses LLM to extract document information for accurate naming.
-        Format: YYYYMMDD_TITLE.pdf (no client name)
+        Format: YYYYMMDD_TITLE.pdf (all caps with dashes)
         """
         if naming_option == "keep_original":
             return original_filename
@@ -468,7 +464,6 @@ class RuleBasedFileNamer:
         print("🧠 Using LLM for document analysis...")
         
         # Initialize variables to avoid scoping issues
-        extracted_title = None
         date_part = datetime.now().strftime("%Y%m%d")
         
         try:
@@ -479,84 +474,291 @@ class RuleBasedFileNamer:
             extracted_info = await extract_document_info(file_content, original_filename)
             
             # Get extracted values with fallbacks
-            extracted_type = extracted_info.get('document_type') or user_title or 'Document'
+            raw_type = extracted_info.get('document_type') or user_title or 'Document'
             extracted_date = extracted_info.get('date')
             extracted_client = extracted_info.get('client_name')
             
             # Clean the document type for filename safety
-            if extracted_type:
-                # Remove all invalid filename characters including * [ ] ( ) and others
-                extracted_type = re.sub(r'[^\w\s-]', '', extracted_type)
-                extracted_type = re.sub(r'\s+', ' ', extracted_type).strip()
-                extracted_type = extracted_type.replace(' ', '_')[:30]  # Keep it shorter
-                # Additional safety check for Windows invalid characters
-                extracted_type = re.sub(r'[<>:"/\\|?*\[\]]', '', extracted_type)
+            if raw_type:
+                print(f"📝 Raw document type from LLM: {raw_type}")
+                
+                # First, split CamelCase into separate words
+                # e.g., "AcknowledgmentOfDebt" -> "Acknowledgment Of Debt"
+                camel_split = re.sub(r'(?<!^)(?=[A-Z])', ' ', raw_type)
+                print(f"📝 After CamelCase split: {camel_split}")
+                
+                # Remove special characters
+                cleaned_type = re.sub(r'[^\w\s-]', '', camel_split)
+                # Replace multiple spaces with single space and strip
+                cleaned_type = re.sub(r'\s+', ' ', cleaned_type).strip()
+                
+                # Filter out unknown words (case-insensitive)
+                words_to_remove = ['page', 'unknown', 'document', 'file', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
+                words = cleaned_type.split()
+                filtered_words = [w for w in words if w.lower() not in words_to_remove and not w.isdigit()]
+                
+                if filtered_words:
+                    # Convert to uppercase and join with dash
+                    extracted_type = '-'.join(filtered_words).upper()[:50]
+                    print(f"✅ Cleaned document type: {extracted_type}")
+                else:
+                    # If all words were filtered out, use fallback
+                    extracted_type = user_title.upper().replace(' ', '-') if user_title else 'DOCUMENT'
+                    print(f"⚠️ All words filtered, using fallback: {extracted_type}")
+            else:
+                extracted_type = 'DOCUMENT'
             
-            # Clean client name for filename safety
+            # Clean client name similarly
             if extracted_client:
-                # Remove all invalid filename characters
-                extracted_client = re.sub(r'[^\w\s-]', '', extracted_client)
-                extracted_client = re.sub(r'\s+', ' ', extracted_client).strip()
-                extracted_client = extracted_client.replace(' ', '_')[:20]  # Keep it shorter
-                # Additional safety check for Windows invalid characters
-                extracted_client = re.sub(r'[<>:"/\\|?*\[\]]', '', extracted_client)
-                # If it becomes empty after cleaning, set to None
-                if not extracted_client or extracted_client.lower() == 'none':
+                print(f"📝 Raw client name from LLM: {extracted_client}")
+
+                # CRITICAL FIX: Immediately check for test placeholders before any processing
+                test_placeholders = ['testclient', 'test client', 'test-client', 'sample', 'example', 'placeholder']
+                if any(placeholder in extracted_client.lower() for placeholder in test_placeholders):
+                    print(f"⚠️ Detected test placeholder in LLM response: '{extracted_client}'")
+                    print(f"   Using user_client_name fallback instead")
                     extracted_client = None
+                    # This will trigger the fallback logic below
+
+                # Only proceed with cleaning if not a test placeholder
+                if extracted_client:
+                    # CRITICAL FIX: Remove page references and common noise before processing
+                    # Handle patterns like "ZAYVEN KORRIN Page 1", "JOHN DOE *[Page 1]*", etc.
+                    noise_patterns = [
+                        r'\s*\*?\[?\s*page\s+\d+\s*\]?\*?',  # [Page 1], *[Page 1]*, Page 1
+                        r'\s*page\s+\d+',                     # Page 1, page 2
+                        r'\s*\*\[.*?\]\*',                   # *[any text]*
+                        r'\s*\[.*?\]',                       # [any text]
+                        r'\s+\d+$'                          # trailing numbers
+                    ]
+
+                    cleaned_client = extracted_client
+                    for pattern in noise_patterns:
+                        cleaned_client = re.sub(pattern, '', cleaned_client, flags=re.IGNORECASE).strip()
+
+                    # Only split CamelCase if it's not already all uppercase or contains mixed case
+                    # Avoid splitting normal names like "ZAYVEN KORRIN" which are already properly spaced
+                    if not cleaned_client.isupper() and not cleaned_client.islower():
+                        # Split CamelCase only for mixed case strings like "JohnDoe"
+                        camel_split = re.sub(r'(?<!^)(?=[A-Z][a-z])', ' ', cleaned_client)
+                    else:
+                        camel_split = cleaned_client
+
+                    cleaned_client = re.sub(r'[^\w\s-]', ' ', camel_split)
+                    cleaned_client = re.sub(r'\s+', ' ', cleaned_client).strip()
+
+                    # Enhanced word filtering
+                    words_to_remove = [
+                        'page', 'unknown', 'document', 'file', 'test', 'client',
+                        'testclient', 'sample', 'example', 'placeholder'
+                    ]
+                    words = cleaned_client.split()
+
+                    # Check for "vs" or "versus" to detect multi-party cases
+                    if 'vs' in [w.lower() for w in words] or 'versus' in [w.lower() for w in words]:
+                        # Multi-party case: extract surnames from both sides
+                        vs_index = -1
+                        for i, word in enumerate(words):
+                            if word.lower() in ['vs', 'versus', 'v']:
+                                vs_index = i
+                                break
+
+                        if vs_index > 0 and vs_index < len(words) - 1:
+                            # Get words before and after "vs"
+                            first_party_words = [w for w in words[:vs_index] if w.lower() not in words_to_remove and not w.isdigit()]
+                            second_party_words = [w for w in words[vs_index+1:] if w.lower() not in words_to_remove and not w.isdigit()]
+
+                            # Extract surnames (last word from each party)
+                            surnames = []
+                            if first_party_words:
+                                surnames.append(first_party_words[-1].upper())
+                            if second_party_words:
+                                surnames.append(second_party_words[-1].upper())
+
+                            if surnames:
+                                extracted_client = '-'.join(surnames)[:40]
+                                print(f"✅ Extracted multi-party surnames: {extracted_client}")
+                            else:
+                                print(f"⚠️ Multi-party extraction failed, using user_client_name fallback")
+                                extracted_client = None
+                        else:
+                            # Fallback to single surname
+                            filtered_words = [w for w in words if w.lower() not in words_to_remove + ['vs', 'versus', 'v'] and not w.isdigit()]
+                            if filtered_words:
+                                extracted_client = filtered_words[-1].upper()[:20]
+                                print(f"✅ Extracted surname: {extracted_client}")
+                            else:
+                                print(f"⚠️ All words filtered, using user_client_name fallback")
+                                extracted_client = None
+                    else:
+                        # Single party case: extract last surname only
+                        filtered_words = [w for w in words if w.lower() not in words_to_remove and not w.isdigit()]
+
+                        if filtered_words:
+                            # Take LAST word (surname) and ensure it's substantial (not just 1 letter)
+                            surname = filtered_words[-1].upper()
+
+                            # Validation: surname should be at least 2 characters
+                            if len(surname) >= 2:
+                                extracted_client = surname[:20]
+                                print(f"✅ Extracted surname: {extracted_client}")
+                            else:
+                                # Try second-to-last word if last word is too short
+                                if len(filtered_words) >= 2:
+                                    surname = filtered_words[-2].upper()
+                                    if len(surname) >= 2:
+                                        extracted_client = surname[:20]
+                                        print(f"✅ Extracted surname (from 2nd last): {extracted_client}")
+                                    else:
+                                        print(f"⚠️ Surname too short, using user_client_name fallback")
+                                        extracted_client = None
+                                else:
+                                    print(f"⚠️ Only one short word found, using user_client_name fallback")
+                                    extracted_client = None
+                        else:
+                            print(f"⚠️ No valid words after filtering, using user_client_name fallback")
+                            extracted_client = None
             
+            # CRITICAL: Final fallback to user_client_name if extraction failed or returned invalid result
+            if not extracted_client and user_client_name:
+                print(f"📝 Using user_client_name as fallback: {user_client_name}")
+                client_words = user_client_name.strip().split()
+                
+                # Check for multi-party case in user input
+                if 'vs' in [w.lower() for w in client_words] or 'versus' in [w.lower() for w in client_words]:
+                    vs_index = -1
+                    for i, word in enumerate(client_words):
+                        if word.lower() in ['vs', 'versus', 'v']:
+                            vs_index = i
+                            break
+                    
+                    if vs_index > 0 and vs_index < len(client_words) - 1:
+                        surnames = []
+                        if client_words[vs_index-1]:
+                            surnames.append(client_words[vs_index-1].upper())
+                        if vs_index + 1 < len(client_words):
+                            surnames.append(client_words[vs_index+1].upper())
+                        extracted_client = '-'.join(surnames) if surnames else user_client_name.upper().replace(' ', '-')
+                    else:
+                        extracted_client = client_words[-1].upper() if client_words else user_client_name.upper().replace(' ', '-')
+                else:
+                    # Single party: use last word (surname)
+                    extracted_client = client_words[-1].upper() if client_words else user_client_name.upper().replace(' ', '-')
+                
+                print(f"✅ Fallback client name extracted: {extracted_client}")         
+
             # Parse extracted date if available
             if extracted_date:
                 try:
-                    # Clean date first - remove any invalid characters
-                    cleaned_date = re.sub(r'[^\w\s\-/:]', '', extracted_date)
-                    if cleaned_date.lower() == 'none' or not cleaned_date.strip():
-                        date_part = datetime.now().strftime("%Y%m%d")
-                    elif '-' in cleaned_date:
-                        date_obj = datetime.strptime(cleaned_date, "%Y-%m-%d")
+                    # Remove any trailing text like "*[Page 1]*"
+                    date_clean = re.sub(r'\s*\*?\[.*?\]\*?', '', extracted_date).strip()
+                    
+                    # Parse date and format as YYYYMMDD
+                    if '-' in date_clean:
+                        date_obj = datetime.strptime(date_clean, "%Y-%m-%d")
                         date_part = date_obj.strftime("%Y%m%d")
+                        print(f"✅ Extracted date: {date_part}")
                     else:
-                        date_part = cleaned_date[:8] if len(cleaned_date) >= 8 and cleaned_date.isdigit() else datetime.now().strftime("%Y%m%d")
-                except:
+                        date_part = date_clean[:8] if len(date_clean) >= 8 else datetime.now().strftime("%Y%m%d")
+                except Exception as date_err:
+                    print(f"⚠️ Date parsing error: {date_err}, using current date")
                     date_part = datetime.now().strftime("%Y%m%d")
             
             # Build filename based on naming option
             if naming_option == "add_timestamp":
-                # Format: YYYYMMDD_DOCUMENTTYPE.ext (no client name)
+                # Format: YYYYMMDD_DOCUMENTTYPE.ext (no client name, uppercase with dashes)
+                if not extracted_type or extracted_type == 'DOCUMENT':
+                    # Use user title as absolute fallback
+                    extracted_type = user_title.upper().replace(' ', '-') if user_title else 'DOCUMENT'
+                
                 filename = f"{date_part}_{extracted_type}{file_ext}"
-            
+                    
             elif naming_option == "add_client_name":
-                # Format: YYYYMMDD_CLIENTNAME_DOCUMENTTYPE.ext
-                # Prefer LLM-extracted client name, fallback to user-provided, then default
-                client_part = extracted_client or user_client_name or "Client"
-                client_part = re.sub(r'[^\w]', '', client_part)[:20]  # Clean and limit length
-                filename = f"{date_part}_{client_part}_{extracted_type}{file_ext}"
+                # Format: YYYYMMDD_DOCUMENTTYPE_SURNAME.ext
+                
+                # CRITICAL FIX: Properly handle fallback to user_client_name
+                if not extracted_client:
+                    if user_client_name:
+                        print(f"📝 No client extracted from LLM, using user_client_name: {user_client_name}")
+                        client_words = user_client_name.strip().split()
+                        
+                        # Check for multi-party case
+                        if 'vs' in [w.lower() for w in client_words] or 'versus' in [w.lower() for w in client_words]:
+                            vs_index = -1
+                            for i, word in enumerate(client_words):
+                                if word.lower() in ['vs', 'versus', 'v']:
+                                    vs_index = i
+                                    break
+                            
+                            if vs_index > 0 and vs_index < len(client_words) - 1:
+                                surnames = []
+                                if client_words[vs_index-1]:
+                                    surnames.append(client_words[vs_index-1].upper())
+                                if vs_index + 1 < len(client_words):
+                                    surnames.append(client_words[vs_index+1].upper())
+                                extracted_client = '-'.join(surnames) if surnames else user_client_name.upper().replace(' ', '-')
+                                print(f"✅ Multi-party surnames from user_client_name: {extracted_client}")
+                            else:
+                                extracted_client = client_words[-1].upper() if client_words else user_client_name.upper().replace(' ', '-')
+                                print(f"✅ Surname from user_client_name: {extracted_client}")
+                        else:
+                            # Single party: use last word (surname)
+                            extracted_client = client_words[-1].upper() if client_words else user_client_name.upper().replace(' ', '-')
+                            print(f"✅ Surname from user_client_name: {extracted_client}")
+                    else:
+                        # Only use default if absolutely no client information is available
+                        extracted_client = "UNKNOWN"
+                        print(f"⚠️ No client name available, using: {extracted_client}")
+                        
+                
+                # Ensure document type is set
+                if not extracted_type or extracted_type == 'DOCUMENT':
+                    extracted_type = user_title.upper().replace(' ', '-') if user_title else 'DOCUMENT'
+                
+                # CRITICAL: Build filename with client at the END
+                # Format: YYYYMMDD_DOCUMENTTYPE_SURNAME.ext
+                filename = f"{date_part}_{extracted_type}_{extracted_client}{file_ext}"
+                
+                print(f"🏗️ Building filename with client name:")
+                print(f"   - Date: {date_part}")
+                print(f"   - Type: {extracted_type}")
+                print(f"   - Client: {extracted_client}")
+                print(f"   - Final: {filename}")
             
             else:
                 filename = original_filename
-            
             processing_time = time.time() - start_time
             print(f"✅ LLM-enhanced naming completed in {processing_time:.3f}s")
             print(f"   - Document Type: {extracted_info.get('document_type', 'Unknown')}")
             print(f"   - Date: {extracted_date}")
-            print(f"   - Client Name: {extracted_client or 'None'}")
+            print(f"   - Client Surname: {extracted_client or 'None'}")
             print(f"   - Final: {filename}")
             
             return filename
             
         except Exception as e:
+            # This exception handler starts here - make sure it's properly aligned
             print(f"⚠️ LLM extraction failed, using fallback: {e}")
+            import traceback
+            print(f"   Traceback: {traceback.format_exc()}")
             
             # Use fallback document type if LLM extraction failed
             fallback_type = user_title or "Document"
-            fallback_type = re.sub(r'[^\w]', '_', fallback_type)[:20]  # Keep it short
+            fallback_type = re.sub(r'[^\w\s-]', '', fallback_type)
+            fallback_type = re.sub(r'\s+', '-', fallback_type).upper()[:20]
             
             # Build filename using fallback logic
             if naming_option == "add_timestamp":
                 filename = f"{date_part}_{fallback_type}{file_ext}"
             elif naming_option == "add_client_name":
-                client_part = user_client_name or "Client"
-                client_part = re.sub(r'[^\w]', '', client_part)[:20]  # Clean and limit length
-                filename = f"{date_part}_{client_part}_{fallback_type}{file_ext}"
+                # Extract surname from user_client_name for fallback
+                if user_client_name:
+                    client_words = user_client_name.strip().split()
+                    client_part = client_words[-1].upper() if client_words else "CLIENT"
+                else:
+                    client_part = "CLIENT"
+                # Format: YYYYMMDD_DOCUMENTTYPE_SURNAME.ext
+                filename = f"{date_part}_{fallback_type}_{client_part}{file_ext}"
             else:
                 filename = original_filename
             

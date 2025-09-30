@@ -227,8 +227,10 @@ cython_debug/
 # ================================
 # Uploads and documents
 /sample_docs/
+/sample_files/
 /uploads/
 /src/app/backend/sample_docs/
+/src/app/backend/sample_files/
 /src/app/backend/uploads/
 /src/app/backend/rag_pipeline/__pycache__/
 /src/app/backend/security/__pycache__/

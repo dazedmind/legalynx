@@ -35,9 +35,29 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { id, sessionId, role, content, timestamp, tokens_used } = body;
+    const {
+      id,
+      sessionId,
+      role,
+      content,
+      // aliases for created time
+      timestamp,
+      createdAt,
+      // aliases for tokens used
+      tokens_used,
+      tokensUsed,
+    } = body || {};
 
-    console.log('Creating message with data:', { id, sessionId, role, content: content?.substring(0, 50) });
+    console.log('Creating message with data:', {
+      id,
+      sessionId,
+      role,
+      contentPreview: content?.substring(0, 50),
+      createdAt,
+      timestamp,
+      tokens_used,
+      tokensUsed,
+    });
 
     if (!sessionId || !role || content === undefined || content === null) {
       return NextResponse.json(
@@ -46,8 +66,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // ✅ FIX: Validate role enum
-    const validRole = role.toUpperCase();
+    const validRole = String(role).toUpperCase();
     if (!['USER', 'ASSISTANT'].includes(validRole)) {
       return NextResponse.json(
         { error: 'Invalid role. Must be USER or ASSISTANT' },
@@ -55,8 +74,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // ===== ADD TOKEN TRACKING HERE =====
-    // Note: This endpoint doesn't have user auth, so we need to get user from session
+    // Find session and user for token tracking
     const session = await prisma.chatSession.findUnique({
       where: { id: sessionId },
       include: { user: true }
@@ -74,69 +92,55 @@ export async function POST(request: Request) {
       const estimatedTokens = estimateTokens(content);
       const canUse = await TokenTracker.canUseTokens(session.user_id, estimatedTokens);
       if (!canUse) {
-        return NextResponse.json({ 
-          error: 'Token limit exceeded' 
-        }, { status: 429 });
+        return NextResponse.json({ error: 'Token limit exceeded' }, { status: 429 });
       }
     }
+
+    const effectiveCreatedAt = createdAt || timestamp;
+    const effectiveTokens = typeof tokensUsed === 'number' ? tokensUsed : tokens_used;
 
     const message = await prisma.chatMessage.create({
       data: {
         id,
         session_id: sessionId,
-        role: validRole,
+        // Cast to Prisma enum
+        role: validRole as any,
         content,
-        created_at: timestamp ? new Date(timestamp) : new Date(),
-        tokens_used: tokens_used || null
+        created_at: effectiveCreatedAt ? new Date(effectiveCreatedAt) : new Date(),
+        tokens_used: effectiveTokens ?? null,
       }
     });
 
-    // ===== RECORD TOKEN USAGE =====
-    if (tokens_used && tokens_used > 0) {
-      await TokenTracker.useTokens(session.user_id, tokens_used, "chat");
+    // Record token usage
+    if (effectiveTokens && effectiveTokens > 0) {
+      await TokenTracker.useTokens(session.user_id, effectiveTokens, 'chat');
     } else if (validRole === 'USER') {
       const estimatedTokens = estimateTokens(content);
-      await TokenTracker.useTokens(session.user_id, estimatedTokens, "chat");
+      await TokenTracker.useTokens(session.user_id, estimatedTokens, 'chat');
     }
 
-    // Update session's updatedAt timestamp
     await prisma.chatSession.update({
       where: { id: sessionId },
       data: { updated_at: new Date() }
     });
 
     console.log('Message created successfully:', message.id);
-
     return NextResponse.json(message, { status: 201 });
   } catch (error) {
     console.error('Error creating chat message:', error);
-    
-    // ✅ Better error handling
     if (error instanceof Error) {
       if (error.message.includes('P2002')) {
-        return NextResponse.json(
-          { error: 'Message with this ID already exists' },
-          { status: 409 }
-        );
+        return NextResponse.json({ error: 'Message with this ID already exists' }, { status: 409 });
       }
       if (error.message.includes('P2003')) {
-        return NextResponse.json(
-          { error: 'Session not found' },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: 'Session not found' }, { status: 404 });
       }
       if (error.message.includes('P2000')) {
-        return NextResponse.json(
-          { error: 'Invalid input data' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Invalid input data' }, { status: 400 });
       }
+      return NextResponse.json({ error: error.message || 'Failed to create chat message' }, { status: 500 });
     }
-    
-    return NextResponse.json(
-      { error: 'Failed to create chat message' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create chat message' }, { status: 500 });
   }
 }
 

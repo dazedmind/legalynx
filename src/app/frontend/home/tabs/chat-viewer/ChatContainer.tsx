@@ -13,6 +13,8 @@ interface ChatMessage {
   createdAt: Date;
   query?: string;
   sourceCount?: number;
+  isThinking?: boolean; // For pulse animation
+  isStreaming?: boolean; // For streaming cursor animation
 }
 
 interface ChatContainerProps {
@@ -45,7 +47,10 @@ export function ChatContainer({
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -148,7 +153,9 @@ export function ChatContainer({
     return (
       <div
         key={message.id}
-        className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'}`}
+        className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'} ${
+          isUser ? 'chat-message-user' : 'chat-message-assistant'
+        }`}
       >
         <div className={`flex ${isUser ? '' : 'flex-row'} items-start gap-3 max-w-[85%]`}>
 
@@ -157,12 +164,15 @@ export function ChatContainer({
             
             {/* Message Bubble */}
             <div
-              className={`relative px-4 py-3 rounded-2xl max-w-full ${
+              className={`relative px-4 py-3 rounded-2xl max-w-full transition-all duration-200 ${
                 isUser
                   ? 'bg-blue-600 text-white rounded-br-md'
                   : 'bg-primary text-foreground border border-tertiary rounded-bl-md '
-                } ${isEditing ? 'bg-blue/10 text-gray-900  rounded-bl-md w-120' : ''}
+                } ${isEditing ? 'bg-blue/10 text-gray-900  rounded-bl-md md:w-240' : ''}
               } ${isRegeneratingThis ? 'opacity-50' : ''}`}
+              style={{
+                animation: 'scaleIn 0.2s ease-out'
+              }}
             >
               {/* Message Text or Edit Input */}
               {isEditing ? (
@@ -194,25 +204,28 @@ export function ChatContainer({
                 </div>
               ) : (
                 <div className="whitespace-pre-wrap break-words text-md leading-relaxed">
-                  {/* ✅ NEW: Handle streaming messages, typing animation, and regular messages */}
-                  {message.type === 'ASSISTANT' && streamingMessageId === message.id ? (
-                    // Streaming message - show content directly as it updates
-                    <div className="whitespace-pre-wrap break-words">
-                      {message.content === '▌' ? (
-                        <span className="animate-pulse text-neutral-800">Thinking...</span>
-                      ) : (
-                        message.content || ''
-                      )}
-                    </div>
-                  ) : (
-                    // Regular message with formatting
-                    <div dangerouslySetInnerHTML={{ 
-                      __html: (message.content || '')
-                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                        .replace(/\_(.*?)_/g, '<u>$1</u>')
-                        .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>')
-                    }} />
+                  {/* Render USER messages */}
+                  {message.type === 'USER' && (
+                    <div>{message.content}</div>
+                  )}
+
+                  {/* Render ASSISTANT messages with pulse animation for thinking */}
+                  {message.type === 'ASSISTANT' && (
+                    message.isThinking ? (
+                      <div className="animate-pulse">
+                        <span className="text-muted-foreground italic">
+                          {message.content}
+                        </span>
+                      </div>
+                    ) : (
+                      <div dangerouslySetInnerHTML={{
+                        __html: message.content
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                          .replace(/\_(.*?)_/g, '<u>$1</u>')
+                          .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>')
+                      }} />
+                    )
                   )}
                 </div>
               )}
@@ -221,9 +234,14 @@ export function ChatContainer({
 
             {/* Message Footer */}
             {!isEditing && (
-              <div className={`flex items-center gap-2 mt-1 text-xs text-muted-foreground ${
-                isUser ? 'flex-row-reverse' : 'flex-row'
-              }`}>
+              <div
+                className={`flex items-center gap-2 mt-1 text-xs text-muted-foreground opacity-0 ${
+                  isUser ? 'flex-row-reverse' : 'flex-row'
+                }`}
+                style={{
+                  animation: 'fadeIn 0.3s ease-out 0.2s forwards'
+                }}
+              >
                 
                 {/* Timestamp - Now always shows */}
                 <span>{formatTime(message.createdAt)}</span>
@@ -246,6 +264,7 @@ export function ChatContainer({
                   {/* Copy Button - For all messages */}
                   <button
                     onClick={() => copyToClipboard(message.content, message.id)}
+                    disabled={isQuerying}
                     className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
                     title="Copy message"
                   >
@@ -254,6 +273,8 @@ export function ChatContainer({
 
                   <button
                     onClick={() => deleteMessage(message.id)}
+                    disabled={isQuerying}
+
                     className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
                     title="Delete message"
                   >
@@ -263,24 +284,6 @@ export function ChatContainer({
                   {/* Assistant-only action buttons */}
                   {isAssistant && (
                     <>
-                      {/* Thumbs Up */}
-                      {/* <button
-                        onClick={() => onMessageAction('thumbsUp', message.id)}
-                        className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
-                        title="Good response"
-                      >
-                        <ThumbsUp className="w-3 h-3" />
-                      </button> */}
-
-                      {/* Thumbs Down */}
-                      {/* <button
-                        onClick={() => onMessageAction('thumbsDown', message.id)}
-                        className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
-                        title="Poor response"
-                      >
-                        <ThumbsDown className="w-3 h-3" />
-                      </button> */}
-
                       {/* Regenerate */}
                       <button
                         onClick={() => onMessageAction('regenerate', message.id)}
@@ -332,20 +335,12 @@ export function ChatContainer({
         {isQuerying && !streamingMessageId && (
           <div className="flex justify-start mb-6">
             <div className="flex items-start gap-3 max-w-[85%]">
-              
-              {/* Bot Avatar */}
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">
-                <Bot className="w-4 h-4" />
-              </div>
-
+  
               {/* Typing Animation */}
-              <div className="bg-primary border border-tertiary rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-              </div>
+              {/* <div className="bg-primary border border-tertiary rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+                <p className="animate-pulse">Thinking... </p>
+    
+              </div> */}
             </div>
           </div>
         )}

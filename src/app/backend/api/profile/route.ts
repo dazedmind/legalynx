@@ -36,11 +36,15 @@ export async function GET(req: Request) {
             is_active: true, // This will automatically map from is_active
             tokens_used: true, // This will automatically map from tokens_used
             token_limit: true, // This will automatically map from token_limit
+            storage_used: true, // Storage usage in MB
+            storage: true, // Storage limit in MB
             days_remaining: true, // This will automatically map from days_remaining
             billing_date: true, // This will automatically map from billing_date
             auto_renew: true, // This will automatically map from auto_renew
             price: true,
             currency: true,
+            payment_method: true, // Payment method (paypal, card, etc.)
+            last_four_digits: true, // Last 4 digits of card
             created_at: true, // This will automatically map from created_at
           }
         },

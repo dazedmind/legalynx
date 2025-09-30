@@ -5,7 +5,10 @@ import Header from '../components/Header';
 import { Check, Star, Zap, Shield, Users, MessageSquare, FileText, Clock, Headphones, Crown, Sparkles } from 'lucide-react';
 import BlurText from '../components/reactbits/BlurText';
 import Link from 'next/link';
+import { paypalService } from '../lib/api';
+import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
+import { authUtils } from '@/lib/auth';
 
 function EnhancedPricing() {
     const { theme } = useTheme();
@@ -24,9 +27,9 @@ function EnhancedPricing() {
       features: [
         { text: "Upload up to 5 documents", included: true },
         { text: "200 messages per session", included: true },
-        { text: "Document analysis with Lynx AI", included: true },
         { text: "Temporary Chat Session", included: true },
         { text: "File Storage", included: false },
+        { text: "No token cooldown", included: false },
         { text: "Voice mode", included: false }
       ],
       ctaText: "Get Started Free",
@@ -45,11 +48,11 @@ function EnhancedPricing() {
       },
       popular: true,
       features: [
-        { text: "Upload up to 50 documents", included: true },
+        { text: "Upload up to 20 documents", included: true },
         { text: "500 messages per session", included: true },
-        { text: "Document analysis with Lynx AI", included: true },
-        { text: "Chat history", included: true },
+        { text: "Save chat sessions", included: true },
         { text: "1GB file storage", included: true },
+        { text: "No token cooldown", included: false },
         { text: "Voice mode", included: false }
       ],
       ctaText: "Start Standard",
@@ -70,9 +73,9 @@ function EnhancedPricing() {
       features: [
         { text: "Upload unlimited documents", included: true },
         { text: "Unlimited messages", included: true },
-        { text: "Document analysis with Lynx AI", included: true },
-        { text: "Chat history", included: true },
+        { text: "Save chat sessions", included: true },
         { text: "10GB file storage", included: true },
+        { text: "No token cooldown", included: true },
         { text: "Voice mode", included: true },
       ],
       ctaText: "Go Premium",
@@ -85,12 +88,12 @@ function EnhancedPricing() {
   return (
     <div className="min-h-screen bg-primary">
       {/* Header */}
-      <header className="bg-primary backdrop-blur-md shadow-sm border-b sticky top-0 z-50">
+      <header className="bg-primary/10 backdrop-blur-md shadow-md fixed top-0 left-0 right-0 w-full z-60" style={{ transform: 'translateZ(0)', willChange: 'transform' }}>
         <Header />
       </header>
 
       {/* Hero Section */}
-      <section className="pt-20">
+      <section className="pt-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <span className='flex flex-col items-center justify-center'>
                 <BlurText
@@ -223,20 +226,36 @@ function EnhancedPricing() {
                 </div>
 
                 {/* CTA Button */}
-                <Link href="/frontend/register" className="block">
-                  <button
-                    className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 ${plan.ctaStyle} cursor-pointer`}
-                  >
-                    {plan.ctaText}
-                  </button>
-                </Link>
+                <button
+                  onClick={async () => {
+                    try {
+                      const token = authUtils.getToken();
+                      if (!token) {
+                        // Redirect to register with return URL to come back to pricing after registration
+                        window.location.href = '/frontend/register?returnUrl=' + encodeURIComponent('/frontend/pricing');
+                        return;
+                      }
+                      const planCode = plan.name.toUpperCase() as 'BASIC' | 'STANDARD' | 'PREMIUM';
+                      const billing: 'monthly' | 'yearly' = billingCycle;
+                      const { approvalUrl } = await paypalService.createSubscription(planCode, billing);
+                      if (approvalUrl) {
+                        window.location.href = approvalUrl; // Redirect to PayPal sandbox approval
+                      } else {
+                        toast.error('Could not get PayPal approval URL');
+                      }
+                    } catch (e: any) {
+                      toast.error(e?.response?.data?.error || 'Failed to create subscription');
+                    }
+                  }}
+                  className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 ${plan.ctaStyle} cursor-pointer`}
+                >
+                  {plan.ctaText}
+                </button>
               </div>
             ))}
           </div>
         </div>
       </section>
-
-     
 
       {/* FAQ Section */}
       <section className="py-24 bg-accent">
@@ -293,7 +312,7 @@ function EnhancedPricing() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link href="/frontend/register">
-              <button className="px-10 py-4 text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer">
+              <button className="px-10 py-4 text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer">
                 Start Free Trial
               </button>
             </Link>

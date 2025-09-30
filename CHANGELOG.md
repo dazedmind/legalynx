@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5] - 2025-09-30
+### 🧩 What's New
+- **Chat Message Animations:** Added smooth slide-in animations for user and assistant messages
+- **Smooth Scrolling:** Chat container now scrolls smoothly to new messages
+- **Message Management:** Added delete button for individual chat messages
+- **Rename Chat Title:** Added a rename chat title feature for customizability
+
+### 🛠️ Fixes
+- **Stop Button:** Fixed streaming response abort functionality - stop button now properly cancels ongoing responses
+- **React setState Error:** Resolved persistent "Cannot update a component while rendering a different component" error by deferring callback invocations
+- **Message Rendering:** Improved streaming response handling with proper cursor states
+
+### ⚙️ Technical Changes
+- **Backend Configuration:** Updated RAG pipeline config with new optimization flags
+- **API Client:** Enhanced `streamQueryDocument` with AbortSignal support for request cancellation
+- **Component Lifecycle:** Fixed state management timing issues in Home and ChatViewer components
+
+## [0.3.4] - 2025-09-28
+
+### 🧩 What's New
+- **Response Streaming:** Now uses response streaming from OpenAI for faster response time
+- **Landing Page Refinements:** Added some visual refinements on the landing page
+
+### 🛠️ Fixes
+- **File Renaming:** Fixed file renames the original file instead of the uploaded (renamed) file
+
+## [0.3.3] - 2025-09-20
+
+### 🧩 What’s New
+- **Subscription Invoice:** Subscriptions now automatically send invoices to the registered email.
+- Canceling a subscription now stops future payments but keeps access until the billing cycle ends.
+- **[FIX]** Voice Mode: improved stability and removed the outdated visualizer.
+
+## [0.3.2] - 2025-09-17
+
+### 🧩 What's New
+- **Forgot Password:** Users can now securely reset their password.
+- **Password Visibility Toggle:** Option to show or hide password text during entry.
+- **Security Logs Relocation:** Security logs are now housed under _Privacy & Security_ for a more streamlined experience.
+- **Subscription Tab:** A new subscription section has been added to the home page.
+- **Internal Testing Support:** Introduced dedicated test scripts to improve QA workflows.
+
+### 🛠️ Fixes
+- **Code Settings Page:** Refactored for improved stability and maintainability.
+
+## [0.3.1] - 2025-09-11
+### 🧩 What's new?
+- **View File Button:** Introduced a quick-access button to open and view uploaded files directly from the chat interface
+- **Payment Gateway Integration:** Integrated PayPal as payment gateway for subscription
+- **Delete Account API:** Backend endpoint for permanent account deletion is now available
+
+### 🛠️ Fixed
+- **Sidebar Menu Consistency on Mobile View:** Moved the sidebar open toggle to the navigation bar for UI consistency
+- **Confirmation Modal:**  Switched the delete confirmation on chat history to the existing confirmation modal for code and UI consistency
+
 ## [0.3.0] - 2025-09-08
 
 ⚠️ Note: We skipped version 0.2.3 to 0.2.x in order to align with the scope of new features and improvements. The jump reflects a larger set of changes that warranted a minor version bump.
@@ -26,6 +81,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Response feedback:** thumbs up/down feature removed since feedback isn’t used for training.  
 - **Usage statistics:** simplified subscription page by removing usage tracking.  
+
+---
 
 ## [0.2.2] - 2025-08-15
 ### 🛠️ Fixed
@@ -63,6 +120,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - **Privacy Settings**: Removed privacy preferences settings for simplified user experience
+
+--- 
 
 ## [0.1.9] - 2025-08-05 - Pre-Alpha
 
@@ -108,7 +167,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - **Document Privacy**: Ensured all documents remain private and accessible only through authenticated API calls
 
----
 
 ## [0.1.5] - 2025-07-24
 
@@ -121,7 +179,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improved
 - **RAG Pipeline Optimization**: Significantly faster document processing performance
 
----
 
 ## [0.1.4] - 2025-07-19
 
@@ -144,8 +201,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Chat Session Loading**: Resolved errors when loading deleted or non-existent chat sessions
 - **Default Page**: Login now correctly defaults to upload file page
 
----
-
 ## [0.1.2] - 2025-07-15
 
 ### Added
@@ -158,8 +213,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Logout Cleanup**: Logging out now properly removes unsaved files and sessions
 - **Versioning**: Adjusted CHANGELOG versioning for consistency
 
----
-
 ## [0.1.1] - 2025-07-12
 
 ### Added
@@ -171,8 +224,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Navigation**: Improved routing for header links and page navigation
-
----
 
 ## [0.1.0] - 2025-07-10 - Initial Release
 

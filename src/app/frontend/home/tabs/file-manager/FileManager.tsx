@@ -2,8 +2,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { 
-  File, 
-  HardDrive, 
   AlertCircle, 
   Upload,
   Search,

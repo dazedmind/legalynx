@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { CircleUser, Shield, FileCog, CreditCard, LogOut, Lock, FolderCog, Menu, X } from 'lucide-react';
+import { CircleUser, Shield, FileCog, CreditCard, LogOut, Lock, FolderCog, Menu, X, ChevronLeft, Star } from 'lucide-react';
 import { SystemStatus } from '../lib/api';
 import NavBar from '../components/NavBar';
-import FileSettings from './FileSettings'
-import ProfileSettings from './ProfileSettings'
-import SubscriptionPage from './SubscriptionPage'
-import SecuritySettings from './SecurityLogSettings'
-import PrivacySecuritySettings from './PrivacySecuritySettings'
+import FileSettings from './file-settings/FileSettings'
+import ProfileSettings from './profile-settings/ProfileSettings'
+import SubscriptionPage from '../home/tabs/subscription/SubscriptionPage'
+import SecuritySettings from './privacy-security/SecurityLogSettings'
+import PrivacySecuritySettings from './privacy-security/PrivacySecuritySettings'
 import { useSearchParams, useRouter } from 'next/navigation';
 
 type ActiveTab = 'profile' | 'file_settings' | 'security_log' | 'security_settings' | 'subscription';
@@ -38,8 +38,10 @@ function SettingsContent() {
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     if (!tabParam) {
-      // Set default tab in URL if none is specified
-      router.replace(`/frontend/settings?tab=profile`);
+      // Preserve existing parameters when setting default tab
+      const currentParams = new URLSearchParams(window.location.search);
+      currentParams.set('tab', 'profile');
+      router.replace(`/frontend/settings?${currentParams.toString()}`);
     }
   }, [searchParams, router]);
 
@@ -47,8 +49,10 @@ function SettingsContent() {
     setActiveTab(tab);
     // Close mobile sidebar when a tab is selected
     setIsMobileSidebarOpen(false);
-    // Update URL to reflect current tab
-    router.push(`/frontend/settings?tab=${tab}`);
+    // Preserve PayPal parameters when switching tabs
+    const currentParams = new URLSearchParams(window.location.search);
+    currentParams.set('tab', tab);
+    router.push(`/frontend/settings?${currentParams.toString()}`);
   };
 
   const logout = () => {
@@ -62,23 +66,33 @@ function SettingsContent() {
   const menuItems = [
     { id: 'profile', label: 'Profile Settings', icon: CircleUser },
     { id: 'file_settings', label: 'File Settings', icon: FolderCog },
-    { id: 'security_log', label: 'Security Log', icon: Shield },
     { id: 'security_settings', label: 'Privacy & Security', icon: Lock },
-    { id: 'subscription', label: 'Subscription', icon: CreditCard },
+    { id: 'subscription', label: 'Subscription', icon: Star },
   ];
 
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-primary shadow-sm border-b flex-shrink-0 px-6 md:px-0">
-        <NavBar />
+      <header className="bg-primary shadow-sm border-b flex-shrink-0 flex px-6 md:px-0">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={toggleMobileSidebar}
+            className="lg:hidden bg-primary"
+          >
+            {isMobileSidebarOpen ? (
+              <ChevronLeft className="w-6 h-6 text-gray-600" />
+            ) : (
+              <Menu className="w-6 h-6 text-gray-600" />
+            )}
+          </button>
+        </div>
+        <div className="flex-1 items-center justify-between">
+          <NavBar />
+        </div>
       </header>
 
       {/* Main Content */}
       <main className="flex bg-primary flex-1 overflow-hidden relative">
-        {/* Mobile Menu Button */}
- 
-
         {/* Mobile Overlay */}
         {isMobileSidebarOpen && (
           <div 
@@ -101,7 +115,7 @@ function SettingsContent() {
               onClick={() => setIsMobileSidebarOpen(false)}
               className="p-1 rounded-lg hover:bg-accent"
             >
-              <X className="w-5 h-5 text-foreground" />
+              <ChevronLeft className="w-5 h-5 text-foreground" />
             </button>
           </div>
 
@@ -122,7 +136,7 @@ function SettingsContent() {
                   {activeTab === item.id && (
                     <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
                   )}
-                  <IconComponent className={`${activeTab === item.id ? 'ml-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5} />
+                  <IconComponent className={`${activeTab === item.id ? 'ml-2 stroke-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5} />
                   <span className="text-sm lg:text-base">{item.label}</span>
                 </button>
               );
@@ -143,23 +157,6 @@ function SettingsContent() {
         
         {/* Main Content Area */}
         <section className="flex-1 flex flex-col overflow-hidden lg:ml-0">
-          {/* Mobile Content Header - Shows active tab */}
-          <div className="lg:hidden bg-primary border-b px-4 py-3 flex items-center gap-3">
-            <button
-              onClick={toggleMobileSidebar}
-              className="lg:hidden bg-primary rounded-lg p-2 border"
-            >
-              {isMobileSidebarOpen ? (
-                <X className="w-6 h-6 text-foreground" />
-              ) : (
-                <Menu className="w-6 h-6 text-foreground" />
-              )}
-            </button>
-            <h1 className="text-lg font-semibold text-foreground">
-              {menuItems.find(item => item.id === activeTab)?.label}
-            </h1>
-          </div>
-
           <div className="flex-1 overflow-y-auto p-2">
             {activeTab === 'profile' && <ProfileSettings />}
             {activeTab === 'file_settings' && <FileSettings />}
