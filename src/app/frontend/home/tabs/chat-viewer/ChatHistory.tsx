@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Calendar, MessageSquare, AlertCircle, Eye, Trash2, RotateCcw, MessageSquarePlus, DiamondPlus } from 'lucide-react';
+import { FileText, Calendar, MessageSquare, AlertCircle, Eye, Trash2, RotateCcw, MessageSquarePlus, DiamondPlus, Pencil } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -64,6 +64,8 @@ export default function SavedChatHistory({
     itemId: string;
     itemTitle: string;
   } | null>(null);
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState<string>('');
 
   useEffect(() => {
     if (user && isAuthenticated) {
@@ -234,30 +236,30 @@ export default function SavedChatHistory({
 
   const handleConfirmDelete = async () => {
     if (!confirmationModal) return;
-    
+
     const item = savedSessions.find(s => s.id === confirmationModal.itemId);
     if (!item) return;
-    
+
     try {
       // ✅ FIXED: Always delete the document (which will cascade delete sessions)
       const response = await fetch(`/backend/api/documents?id=${item.documentId}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
-      
+
       if (response.ok) {
         // Notify parent component about session deletion if there was a session
         if (item.hasSession && item.sessionId) {
           onSessionDelete?.(item.sessionId);
         }
-        
+
         // ✅ FIXED: Also remove from localStorage
         try {
           const storageKey = user?.id ? `uploaded_documents_${user.id}` : 'uploaded_documents';
           const savedDocs = localStorage.getItem(storageKey);
           if (savedDocs) {
             const docs = JSON.parse(savedDocs);
-            const filteredDocs = docs.filter((doc: any) => 
+            const filteredDocs = docs.filter((doc: any) =>
               doc.id !== item.documentId && doc.documentId !== item.documentId
             );
             localStorage.setItem(storageKey, JSON.stringify(filteredDocs));
@@ -266,26 +268,79 @@ export default function SavedChatHistory({
         } catch (localStorageError) {
           console.warn('Failed to remove from localStorage:', localStorageError);
         }
-        
+
         toast.success('Document and chat history deleted successfully');
-        
+
         // Remove from local state
         setSavedSessions(prev => prev.filter(s => s.id !== confirmationModal.itemId));
-        
+
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to delete document');
       }
-      
+
     } catch (error) {
       console.error('Failed to delete document:', error);
       toast.error('Failed to delete document and chat history');
-      
+
       // Refresh the list in case of error
       await loadSavedSessions();
     } finally {
       // Close the confirmation modal
       setConfirmationModal(null);
+    }
+  };
+
+  const handleStartRename = (sessionId: string, currentTitle: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setEditingSessionId(sessionId);
+    setEditingTitle(currentTitle);
+  };
+
+  const handleCancelRename = () => {
+    setEditingSessionId(null);
+    setEditingTitle('');
+  };
+
+  const handleSaveRename = async (sessionId: string) => {
+    if (!editingTitle.trim()) {
+      toast.error('Title cannot be empty');
+      return;
+    }
+
+    const session = savedSessions.find(s => s.id === sessionId);
+    if (!session) return;
+
+    // If no session exists, we can't rename it
+    if (!session.hasSession || !session.sessionId) {
+      toast.error('Cannot rename a document without a chat session');
+      handleCancelRename();
+      return;
+    }
+
+    try {
+      const response = await fetch(`/backend/api/chat-sessions/${session.sessionId}`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ title: editingTitle.trim() })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update title');
+      }
+
+      // Update local state
+      setSavedSessions(prev =>
+        prev.map(s =>
+          s.id === sessionId ? { ...s, title: editingTitle.trim() } : s
+        )
+      );
+
+      toast.success('Title updated successfully');
+      handleCancelRename();
+    } catch (error) {
+      console.error('Failed to rename session:', error);
+      toast.error('Failed to update title');
     }
   };
 
@@ -414,9 +469,47 @@ export default function SavedChatHistory({
                 {/* Session Header */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground truncate mb-1">
-                      {session.title}
-                    </h3>
+                    {editingSessionId === session.id ? (
+                      <div className="flex items-center gap-2 mb-1">
+                        <input
+                          type="text"
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveRename(session.id);
+                            } else if (e.key === 'Escape') {
+                              handleCancelRename();
+                            }
+                          }}
+                          className="flex-1 font-bold  rounded text-md focus:outline-none"
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSaveRename(session.id);
+                          }}
+                          className="p-2 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors cursor-pointer"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCancelRename();
+                          }}
+                          className="p-2 text-xs bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <h3 className="font-semibold text-foreground truncate mb-1">
+                        {session.title}
+                      </h3>
+                    )}
                     <div className="flex items-center text-sm text-muted-foreground space-x-4">
                       <div className="flex items-center">
                         <FileText className="w-4 h-4 mr-1" />
@@ -424,27 +517,38 @@ export default function SavedChatHistory({
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Actions */}
-                  <div className="flex items-center space-x-2 ml-4">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSessionClick(session);
-                      }}
-                      className="p-2 text-blue-600 hover:bg-blue/20 rounded-full transition-colors cursor-pointer"
-                      title="Open chat session"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => handleDeleteItem(session.id, e)}
-                      className="p-2 text-destructive hover:bg-destructive/20 rounded-full transition-colors cursor-pointer"
-                      title={session.hasSession ? "Delete chat session" : "Delete document"}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {editingSessionId !== session.id && (
+                    <div className="flex items-center space-x-2 ml-4">
+                      {session.hasSession && (
+                        <button
+                          onClick={(e) => handleStartRename(session.id, session.title, e)}
+                          className="p-2 text-yellow-600 hover:bg-yellow/20 rounded-full transition-colors cursor-pointer"
+                          title="Rename chat session"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSessionClick(session);
+                        }}
+                        className="p-2 text-blue-600 hover:bg-blue/20 rounded-full transition-colors cursor-pointer"
+                        title="Open chat session"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteItem(session.id, e)}
+                        className="p-2 text-destructive hover:bg-destructive/20 rounded-full transition-colors cursor-pointer"
+                        title={session.hasSession ? "Delete chat session" : "Delete document"}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Last Message Preview or Status */}
