@@ -14,6 +14,7 @@ interface ChatMessage {
   query?: string;
   sourceCount?: number;
   isThinking?: boolean; // For pulse animation
+  isStreaming?: boolean; // For streaming cursor animation
 }
 
 interface ChatContainerProps {
@@ -248,6 +249,7 @@ export function ChatContainer({
                   {/* Copy Button - For all messages */}
                   <button
                     onClick={() => copyToClipboard(message.content, message.id)}
+                    disabled={isQuerying}
                     className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
                     title="Copy message"
                   >
@@ -256,6 +258,8 @@ export function ChatContainer({
 
                   <button
                     onClick={() => deleteMessage(message.id)}
+                    disabled={isQuerying}
+
                     className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
                     title="Delete message"
                   >

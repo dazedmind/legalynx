@@ -42,6 +42,7 @@ interface ChatMessage {
   query?: string;
   sourceCount?: number;
   isThinking?: boolean; // For pulse animation
+  isStreaming?: boolean; // For streaming cursor animation
 }
 
 interface ChatSession {
@@ -2349,41 +2350,49 @@ export default function ChatViewer({
         (chunk) => {
           // Handle different chunk types
           if (chunk.type === 'content_chunk') {
-            if (chunk.partial_response) {
+            // Update streamedContent even if partial_response is empty (for first chunk)
+            if (chunk.partial_response !== undefined) {
               streamedContent = chunk.partial_response;
 
-              // Update the streaming message with the partial response and remove thinking state
+              // Update the streaming message with the partial response
+              // Only remove thinking state when we have actual content
               setChatHistory(prev =>
                 prev.map(msg =>
                   msg.id === assistantMessageId
-                    ? { ...msg, content: streamedContent, isThinking: false }
+                    ? {
+                        ...msg,
+                        content: streamedContent || "Generating response...",
+                        isThinking: !streamedContent, // Keep thinking animation if no content yet
+                        isStreaming: true
+                      }
                     : msg
                 )
               );
             }
           } else if (chunk.type === 'end') {
-            // Update only metadata to avoid content duplication
+            // Mark streaming as complete and update final metadata
             setChatHistory(prev =>
               prev.map(msg =>
                 msg.id === assistantMessageId
-                  ? { ...msg, sourceCount }
+                  ? { ...msg, sourceCount, isStreaming: false, isThinking: false }
                   : msg
               )
             );
 
             console.log(`✅ FRONTEND: Streaming ended - ${streamedContent.length} chars`);
-          } else if (chunk.type === 'start') {
-            console.log(`💬 FRONTEND: Streaming started`);
+          } else if (chunk.type === 'start' || chunk.type === 'retrieval' || chunk.type === 'llm_start') {
+            // Keep thinking animation during these stages
+            console.log(`💬 FRONTEND: ${chunk.type} event received`);
           }
         },
         (error) => {
           console.error('Streaming error:', error);
 
-          // Update message with error
+          // Update message with error and remove streaming state
           setChatHistory(prev =>
             prev.map(msg =>
               msg.id === assistantMessageId
-                ? { ...msg, content: `❌ Sorry, I encountered an error: ${error.message}` }
+                ? { ...msg, content: `❌ Sorry, I encountered an error: ${error.message}`, isStreaming: false, isThinking: false }
                 : msg
             )
           );

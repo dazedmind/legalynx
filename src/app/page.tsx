@@ -107,11 +107,11 @@ export default function Home() {
       {/* Features Section */}
       <section className="py-24 bg-primary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
+          <div className="flex flex-col items-center text-center mb-20">
             <h3 className="text-3xl lg:text-5xl font-bold font-serif text-foreground mb-6">
               Powerful Features for Legal Excellence
             </h3>
-            <p className="text-md text-muted-foreground max-w-3xl mx-4">
+            <p className="text-md tex text-muted-foreground max-w-3xl mx-4">
               Our AI-powered platform combines cutting-edge technology with
               legal expertise to deliver unmatched document analysis.
             </p>
@@ -213,7 +213,7 @@ export default function Home() {
                     <h4 className="text-xl font-semibold text-foreground mb-2">
                       24/7 Support
                     </h4>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground">
                       24/7 Support for all your legal needs.
                     </p>
                   </div>
