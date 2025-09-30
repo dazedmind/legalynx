@@ -62,7 +62,12 @@ export class RAGApiClient {
 
         console.log(`🔐 AUTH: Token: ${token ? 'present' : 'missing'}, Session: ${sessionId}`);
 
-        const response = await fetch(`http://localhost:8000/query?stream=true`, {
+        // Use environment variable for RAG API URL, fallback to localhost for development
+        const ragApiUrl = process.env.NEXT_PUBLIC_RAG_API_URL || 'http://localhost:8000';
+        const streamUrl = `${ragApiUrl}/query?stream=true`;
+        console.log(`🌐 FRONTEND: Using RAG API URL: ${streamUrl}`);
+
+        const response = await fetch(streamUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
