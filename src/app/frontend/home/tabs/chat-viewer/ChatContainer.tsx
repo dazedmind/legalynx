@@ -45,7 +45,10 @@ export function ChatContainer({
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -148,7 +151,9 @@ export function ChatContainer({
     return (
       <div
         key={message.id}
-        className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'}`}
+        className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'} ${
+          isUser ? 'chat-message-user' : 'chat-message-assistant'
+        }`}
       >
         <div className={`flex ${isUser ? '' : 'flex-row'} items-start gap-3 max-w-[85%]`}>
 
@@ -157,12 +162,15 @@ export function ChatContainer({
             
             {/* Message Bubble */}
             <div
-              className={`relative px-4 py-3 rounded-2xl max-w-full ${
+              className={`relative px-4 py-3 rounded-2xl max-w-full transition-all duration-200 ${
                 isUser
                   ? 'bg-blue-600 text-white rounded-br-md'
                   : 'bg-primary text-foreground border border-tertiary rounded-bl-md '
                 } ${isEditing ? 'bg-blue/10 text-gray-900  rounded-bl-md md:w-240' : ''}
               } ${isRegeneratingThis ? 'opacity-50' : ''}`}
+              style={{
+                animation: 'scaleIn 0.2s ease-out'
+              }}
             >
               {/* Message Text or Edit Input */}
               {isEditing ? (
@@ -224,9 +232,14 @@ export function ChatContainer({
 
             {/* Message Footer */}
             {!isEditing && (
-              <div className={`flex items-center gap-2 mt-1 text-xs text-muted-foreground ${
-                isUser ? 'flex-row-reverse' : 'flex-row'
-              }`}>
+              <div
+                className={`flex items-center gap-2 mt-1 text-xs text-muted-foreground opacity-0 ${
+                  isUser ? 'flex-row-reverse' : 'flex-row'
+                }`}
+                style={{
+                  animation: 'fadeIn 0.3s ease-out 0.2s forwards'
+                }}
+              >
                 
                 {/* Timestamp - Now always shows */}
                 <span>{formatTime(message.createdAt)}</span>

@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5] - 2025-09-30
+### 🧩 What's New
+- **Chat Message Animations:** Added smooth slide-in animations for user and assistant messages
+- **Smooth Scrolling:** Chat container now scrolls smoothly to new messages
+- **Message Management:** Added delete button for individual chat messages
+- **Rename Chat Title:** Added a rename chat title feature for customizability
+
+### 🛠️ Fixes
+- **Stop Button:** Fixed streaming response abort functionality - stop button now properly cancels ongoing responses
+- **React setState Error:** Resolved persistent "Cannot update a component while rendering a different component" error by deferring callback invocations
+- **Message Rendering:** Improved streaming response handling with proper cursor states
+
+### ⚙️ Technical Changes
+- **Backend Configuration:** Updated RAG pipeline config with new optimization flags
+- **API Client:** Enhanced `streamQueryDocument` with AbortSignal support for request cancellation
+- **Component Lifecycle:** Fixed state management timing issues in Home and ChatViewer components
+
 ## [0.3.4] - 2025-09-28
 
 ### 🧩 What's New

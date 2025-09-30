@@ -438,10 +438,13 @@ export default function ChatViewer({
     lastUploadedDocumentId,
   ]);
 
-  // Register clear function with parent
+  // Register clear function with parent (defer to avoid setState during render)
   useEffect(() => {
     if (onClearStateCallback) {
-      onClearStateCallback(clearAllSessionState);
+      // Defer to next tick to avoid setState during render warning
+      setTimeout(() => {
+        onClearStateCallback(clearAllSessionState);
+      }, 0);
     }
   }, [onClearStateCallback]);
 
@@ -2321,6 +2324,7 @@ export default function ChatViewer({
         createdAt: new Date(),
         query: currentQuery,
         isThinking: true, // Flag to trigger pulse animation
+        isStreaming: true, // Mark as actively streaming
       };
 
       setChatHistory(prev => [...prev, tempMessage]);
@@ -2379,7 +2383,7 @@ export default function ChatViewer({
               )
             );
 
-            console.log(`✅ FRONTEND: Streaming ended - ${streamedContent.length} chars`);
+            console.log(`✅ FRONTEND: Streaming ended (${chunk.type}) - ${streamedContent.length} chars`);
           } else if (chunk.type === 'start' || chunk.type === 'retrieval' || chunk.type === 'llm_start') {
             // Keep thinking animation during these stages
             console.log(`💬 FRONTEND: ${chunk.type} event received`);
@@ -2387,6 +2391,15 @@ export default function ChatViewer({
         },
         (error) => {
           console.error('Streaming error:', error);
+
+          // Check if this is an abort error (user clicked stop)
+          if (error.name === 'AbortError') {
+            console.log('🛑 User stopped the response generation');
+            // Remove the incomplete assistant message
+            setChatHistory(prev => prev.filter(msg => msg.id !== assistantMessageId));
+            toast.info('Response generation stopped');
+            return;
+          }
 
           // Update message with error and remove streaming state
           setChatHistory(prev =>
@@ -2399,7 +2412,9 @@ export default function ChatViewer({
         },
         () => {
           console.log('🏁 FRONTEND: Streaming completed');
-        }
+        },
+        undefined, // documentId
+        abortController.signal // Pass abort signal to enable stopping
       );
 
       } finally {
@@ -2531,6 +2546,9 @@ export default function ChatViewer({
         handleQuery();
       }
     }
+    if (event.key === "Escape") {
+      handleStopQuery();
+    }
   };
 
   const handleManualInput = () => {
@@ -2538,15 +2556,6 @@ export default function ChatViewer({
     loadOrCreateSession();
     setChatHistory([]);
   };
-
-  // Get cache status for current document
-  const getCacheStatus = () => {
-    if (!currentDocument) return null;
-    return ragCache.getCached(currentDocument.id);
-  };
-
-  const cacheStatus = getCacheStatus();
-  const cacheStats = ragCache.getStats();
 
   // Modified save file handler
   const handleSaveFileClick = () => {

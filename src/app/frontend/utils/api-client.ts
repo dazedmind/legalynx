@@ -50,7 +50,8 @@ export class RAGApiClient {
       onChunk: (chunk: StreamingChunk) => void,
       onError?: (error: Error) => void,
       onComplete?: () => void,
-      documentId?: string
+      documentId?: string,
+      abortSignal?: AbortSignal
     ): Promise<void> {
       const startTime = Date.now();
       console.log(`🚀 FRONTEND: Starting stream query at ${startTime}`);
@@ -74,7 +75,8 @@ export class RAGApiClient {
             'Authorization': token ? `Bearer ${token}` : '',
             'X-Session-Id': sessionId || ''
           },
-          body: JSON.stringify({ query })
+          body: JSON.stringify({ query }),
+          signal: abortSignal
         });
 
         console.log(`🌊 FRONTEND: Response received at ${Date.now() - startTime}ms`);
@@ -134,6 +136,15 @@ export class RAGApiClient {
         }
 
       } catch (error) {
+        // Check if this is an abort error (user clicked stop button)
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log('🛑 FRONTEND: Streaming query aborted by user');
+          if (onError) {
+            onError(error);
+          }
+          return;
+        }
+
         console.error('Streaming query error:', error);
         if (onError) {
           onError(error instanceof Error ? error : new Error(String(error)));
