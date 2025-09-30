@@ -1272,8 +1272,10 @@ async def activate_document_for_session(request: Request, document_id: str):
         import aiohttp
         async with aiohttp.ClientSession() as session:
             # Get document metadata
+            # Use localhost in dev, NEXT_PUBLIC_APP_URL in production
+            base_url = "http://localhost:3000" if os.environ.get("NODE_ENV") != "production" else os.environ.get("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
             doc_response = await session.get(
-                f"http://localhost:3000/backend/api/documents/{document_id}",
+                f"{base_url}/backend/api/documents/{document_id}",
                 headers={"Authorization": f"Bearer {auth_token}"}
             )
             
@@ -1288,7 +1290,7 @@ async def activate_document_for_session(request: Request, document_id: str):
             
             # Get document file
             file_response = await session.get(
-                f"http://localhost:3000/backend/api/documents/{document_id}/file",
+                f"{base_url}/backend/api/documents/{document_id}/file",
                 headers={"Authorization": f"Bearer {auth_token}"}
             )
             
