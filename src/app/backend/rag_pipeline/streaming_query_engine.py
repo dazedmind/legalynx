@@ -38,13 +38,8 @@ class StreamingQueryEngine:
 
         try:
             # Send initial response immediately
-            initial_msg = f"data: {json.dumps({
-                'type': 'start', 
-                'timestamp': start_time, 
-                'query': query, 
-                'user_id': user_id, 
-                'message': 'Starting analysis...'
-            })}\n\n"
+            initial_data = {'type': 'start', 'timestamp': start_time, 'query': query, 'user_id': user_id, 'message': 'Starting analysis...'}
+            initial_msg = f"data: {json.dumps(initial_data)}\n\n"
             print(f"📤 Sending: {initial_msg.strip()}")
             yield initial_msg
 
@@ -55,11 +50,8 @@ class StreamingQueryEngine:
             retrieval_time = time.time()
             print(f"⏱️ RETRIEVAL START: {retrieval_time - start_time:.3f}s elapsed")
 
-            retrieval_msg = f"data: {json.dumps({
-                'type': 'retrieval', 
-                'timestamp': retrieval_time, 
-                'message': '🔍 Retrieving relevant document sections...'}
-            )}\n\n"
+            retrieval_data = {'type': 'retrieval', 'timestamp': retrieval_time, 'message': '🔍 Retrieving relevant document sections...'}
+            retrieval_msg = f"data: {json.dumps(retrieval_data)}\n\n"
             print(f"📤 Sending: {retrieval_msg.strip()}")
             yield retrieval_msg
 
@@ -73,34 +65,19 @@ class StreamingQueryEngine:
                     retriever = self.query_engine.retriever
                     retrieved_nodes = retriever.retrieve(query)
                     
-                    yield f"data: {json.dumps({
-                        'type': 'retrieval_complete',
-                        'timestamp': time.time(),
-                        'message': f'✅ Retrieved {len(retrieved_nodes)} relevant sections',
-                        'node_count': len(retrieved_nodes)
-                    })}\n\n"
+                    retrieval_complete_data = {'type': 'retrieval_complete', 'timestamp': time.time(), 'message': f'✅ Retrieved {len(retrieved_nodes)} relevant sections', 'node_count': len(retrieved_nodes)}
+                    yield f"data: {json.dumps(retrieval_complete_data)}\n\n"
                 else:
-                    yield f"data: {json.dumps({
-                        'type': 'retrieval_complete',
-                        'timestamp': time.time(),
-                        'message': '✅ Using cached retrieval results',
-                        'node_count': 'unknown'
-                    })}\n\n"
+                    retrieval_cached_data = {'type': 'retrieval_complete', 'timestamp': time.time(), 'message': '✅ Using cached retrieval results', 'node_count': 'unknown'}
+                    yield f"data: {json.dumps(retrieval_cached_data)}\n\n"
                     
             except Exception as e:
-                yield f"data: {json.dumps({
-                    'type': 'retrieval_error',
-                    'timestamp': time.time(),
-                    'message': f'⚠️ Retrieval issue: {str(e)}',
-                    'error': str(e)
-                })}\n\n"
+                retrieval_error_data = {'type': 'retrieval_error', 'timestamp': time.time(), 'message': f'⚠️ Retrieval issue: {str(e)}', 'error': str(e)}
+                yield f"data: {json.dumps(retrieval_error_data)}\n\n"
             
             # Step 2: LLM Processing (streaming)
-            yield f"data: {json.dumps({
-                'type': 'llm_start',
-                'timestamp': time.time(),
-                'message': '🧠 Generating response...'
-            })}\n\n"
+            llm_start_data = {'type': 'llm_start', 'timestamp': time.time(), 'message': '🧠 Generating response...'}
+            yield f"data: {json.dumps(llm_start_data)}\n\n"
             
             # Get retriever and LLM for real streaming
             try:
@@ -111,12 +88,8 @@ class StreamingQueryEngine:
                 print(f"⏱️ RETRIEVAL COMPLETE: {retrieval_complete - start_time:.3f}s elapsed, found {len(retrieved_nodes)} nodes")
 
                 # Send retrieval complete message
-                complete_msg = f"data: {json.dumps({
-                    'type': 'retrieval_complete',
-                    'timestamp': retrieval_complete,
-                    'message': f'✅ Found {len(retrieved_nodes)} relevant sections',
-                    'node_count': len(retrieved_nodes)
-                })}\n\n"
+                complete_data = {'type': 'retrieval_complete', 'timestamp': retrieval_complete, 'message': f'✅ Found {len(retrieved_nodes)} relevant sections', 'node_count': len(retrieved_nodes)}
+                complete_msg = f"data: {json.dumps(complete_data)}\n\n"
                 print(f"📤 Sending: {complete_msg.strip()}")
                 yield complete_msg
                 await asyncio.sleep(0.001)
@@ -145,11 +118,8 @@ A:"""
                 stream_start = time.time()
                 print(f"⏱️ LLM STREAMING START: {stream_start - start_time:.3f}s elapsed")
 
-                stream_msg = f"data: {json.dumps({
-                    'type': 'streaming_start',
-                    'timestamp': stream_start,
-                    'message': '💬 Streaming response...'
-                })}\n\n"
+                stream_data = {'type': 'streaming_start', 'timestamp': stream_start, 'message': '💬 Streaming response...'}
+                stream_msg = f"data: {json.dumps(stream_data)}\n\n"
                 print(f"📤 Sending: {stream_msg.strip()}")
                 yield stream_msg
                 await asyncio.sleep(0.001)
@@ -197,14 +167,8 @@ A:"""
                                 partial_response += chunk_text
 
                                 # Send chunk immediately
-                                chunk_msg = f"data: {json.dumps({
-                                    'type': 'content_chunk',
-                                    'timestamp': current_time,
-                                    'chunk': chunk_text,
-                                    'partial_response': partial_response,
-                                    'chunk_number': chunk_count,
-                                    'elapsed_time': current_time - start_time
-                                })}\n\n"
+                                chunk_data = {'type': 'content_chunk', 'timestamp': current_time, 'chunk': chunk_text, 'partial_response': partial_response, 'chunk_number': chunk_count, 'elapsed_time': current_time - start_time}
+                                chunk_msg = f"data: {json.dumps(chunk_data)}\n\n"
 
                                 yield chunk_msg
 
@@ -223,14 +187,8 @@ A:"""
                     print(f"⏱️ STREAMING COMPLETE: {total_time:.3f}s total, {chunk_count} chunks processed")
 
                     # Send completion signal without final_response to avoid duplication
-                    completion_msg = f"data: {json.dumps({
-                        'type': 'stream_end',
-                        'timestamp': final_time,
-                        'total_time': total_time,
-                        'source_nodes': len(retrieved_nodes),
-                        'chunks_processed': chunk_count,
-                        'content_length': len(partial_response)
-                    })}\n\n"
+                    completion_data = {'type': 'stream_end', 'timestamp': final_time, 'total_time': total_time, 'source_nodes': len(retrieved_nodes), 'chunks_processed': chunk_count, 'content_length': len(partial_response)}
+                    completion_msg = f"data: {json.dumps(completion_data)}\n\n"
                     print(f"📤 Sending stream end signal at {total_time:.3f}s")
                     yield completion_msg
 
@@ -239,37 +197,21 @@ A:"""
                     response = self.llm.complete(streaming_prompt)
                     response_text = str(response)
 
-                    yield f"data: {json.dumps({
-                        'type': 'complete',
-                        'timestamp': time.time(),
-                        'final_response': response_text,
-                        'total_time': time.time() - start_time,
-                        'source_nodes': len(retrieved_nodes)
-                    })}\n\n"
+                    fallback_data = {'type': 'complete', 'timestamp': time.time(), 'final_response': response_text, 'total_time': time.time() - start_time, 'source_nodes': len(retrieved_nodes)}
+                    yield f"data: {json.dumps(fallback_data)}\n\n"
                         
             except Exception as e:
-                yield f"data: {json.dumps({
-                    'type': 'error',
-                    'timestamp': time.time(),
-                    'message': f'❌ Query error: {str(e)}',
-                    'error': str(e)
-                })}\n\n"
+                error_data = {'type': 'error', 'timestamp': time.time(), 'message': f'❌ Query error: {str(e)}', 'error': str(e)}
+                yield f"data: {json.dumps(error_data)}\n\n"
                     
         except Exception as e:
-            yield f"data: {json.dumps({
-                'type': 'error',
-                'timestamp': time.time(),
-                'message': f'❌ Streaming error: {str(e)}',
-                'error': str(e)
-            })}\n\n"
+            stream_error_data = {'type': 'error', 'timestamp': time.time(), 'message': f'❌ Streaming error: {str(e)}', 'error': str(e)}
+            yield f"data: {json.dumps(stream_error_data)}\n\n"
         
         finally:
             # Always send completion signal
-            yield f"data: {json.dumps({
-                'type': 'end',
-                'timestamp': time.time(),
-                'total_time': time.time() - start_time
-            })}\n\n"
+            end_data = {'type': 'end', 'timestamp': time.time(), 'total_time': time.time() - start_time}
+            yield f"data: {json.dumps(end_data)}\n\n"
     
     def get_streaming_stats(self) -> Dict[str, Any]:
         """Get streaming engine statistics."""
