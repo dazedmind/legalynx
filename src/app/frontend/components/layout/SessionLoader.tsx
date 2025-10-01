@@ -78,12 +78,9 @@ export default function SessionLoader({
 
         {/* Session/Document Info */}
         {sessionTitle && (
-          <div className="bg-primary rounded-lg p-4 mb-4 shadow-sm border">
-            <p className="font-medium text-foreground truncate">
-              {sessionTitle}
-            </p>
+          <div className="bg-primary rounded-lg p-4 py-6 mb-4 shadow-sm border">
             {documentName && (
-              <div className="flex items-center justify-center mt-2 text-sm text-muted-foreground">
+              <div className="flex items-center justify-center text-sm text-muted-foreground">
                 <FileText className="w-4 h-4 mr-1" />
                 <span className="truncate">{documentName}</span>
               </div>

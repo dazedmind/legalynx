@@ -161,7 +161,7 @@ class MultiQuestionBatchProcessor:
         print(f"⏱️ Deduplication: {time.time() - dedup_start:.3f}s")
         print(f"   🎯 {len(deduplicated_nodes)} unique nodes from {len(vector_nodes) + len(bm25_nodes) + len(entity_nodes)} total")
 
-        # STEP 3: Rerank the deduplicated nodes
+        # STEP 3: Rerank the deduplicated nodes (single pass for speed)
         rerank_start = time.time()
         if len(deduplicated_nodes) > 1:
             try:
@@ -169,12 +169,16 @@ class MultiQuestionBatchProcessor:
                     model=MODEL_CONFIG["rerank_model"],
                     top_n=min(rerank_top_n, len(deduplicated_nodes))
                 )
-                # Rerank using the combined query
+
+                # Rerank using the combined query (single fast pass)
+                print(f"🔄 Reranking {len(deduplicated_nodes)} nodes with combined query...")
                 reranked_nodes = reranker.postprocess_nodes(deduplicated_nodes, query_str=combined_query)
 
                 # Verify scores were assigned
                 scores_present = sum(1 for n in reranked_nodes if hasattr(n, 'score') and n.score > 0)
-                print(f"⏱️ Reranking: {time.time() - rerank_start:.3f}s - Top {len(reranked_nodes)} nodes, {scores_present} with scores")
+                avg_score = sum(n.score for n in reranked_nodes if hasattr(n, 'score')) / max(len(reranked_nodes), 1)
+                print(f"⏱️ Reranking: {time.time() - rerank_start:.3f}s - Top {len(reranked_nodes)} nodes")
+                print(f"   ✅ Scores: {scores_present}/{len(reranked_nodes)} scored, avg={avg_score:.4f}")
 
                 # If reranking didn't assign scores, use original nodes with their retrieval scores
                 if scores_present == 0:

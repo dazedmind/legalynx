@@ -88,24 +88,36 @@ class LLMDocumentExtractor:
             return self._fallback_extraction(original_filename)
         
         try:
-            # Extract text from document
-            text_content = self.extract_text_from_content(file_content)
-            
+            # Extract text from document - OPTIMIZED: Only first page for speed
+            text_content = self.extract_text_from_content(file_content, max_pages=1)
+
             if not text_content.strip():
                 print("⚠️ No text extracted from document")
                 return self._fallback_extraction(original_filename)
-            
-            # Truncate text if too long (keep first 2000 characters for efficiency)
-            if len(text_content) > 2000:
-                text_content = text_content[:2000] + "..."
-            
+
+            # OPTIMIZED: Truncate to first 1500 chars (was 2000) for faster LLM processing
+            if len(text_content) > 1500:
+                text_content = text_content[:1500] + "..."
+
             # Create LLM prompt for document analysis
             prompt = self._create_extraction_prompt(text_content, original_filename)
-            
-            # Get LLM response
+
+            # Get LLM response - OPTIMIZED: Use complete() with lower max_tokens
             print("🧠 Analyzing document with LLM...")
-            response = await self.llm.acomplete(prompt)
+
+            # Check if LLM has update_token_limit method and set to minimum for naming
+            if hasattr(self.llm, 'update_token_limit'):
+                self.llm.update_token_limit(150)  # Only need ~100 tokens for response
+
+            # Use synchronous complete for faster response (acomplete adds overhead)
+            import asyncio
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(None, lambda: self.llm.complete(prompt))
             response_text = str(response).strip()
+
+            # Reset token limit if we changed it
+            if hasattr(self.llm, 'update_token_limit'):
+                self.llm.update_token_limit(512)  # Reset to default
             
             # Parse LLM response
             extracted_info = self._parse_llm_response(response_text, original_filename)
@@ -131,33 +143,17 @@ class LLMDocumentExtractor:
     
     def _create_extraction_prompt(self, text_content: str, original_filename: str) -> str:
         """Create a prompt for LLM to extract document information."""
-        return f"""
-Analyze this document text and extract key information for filename generation.
+        # OPTIMIZED: Shorter, more direct prompt for faster processing
+        return f"""Extract document info from this text. Respond ONLY in this format:
 
-DOCUMENT TEXT:
+DOCUMENT_TYPE: [Brief type in CamelCase, e.g. "Brief", "Motion", "Contract"]
+DATE: [YYYY-MM-DD or NONE]
+CLIENT_NAME: [Person/company name or NONE]
+
+TEXT:
 {text_content}
 
-ORIGINAL FILENAME: {original_filename}
-
-Please extract the following information and respond in this EXACT format:
-
-DOCUMENT_TYPE: [Type of document - be specific but concise, e.g., "PowerOfAttorney", "Contract", "Invoice", "Letter", etc.]
-DATE: [Any date found in the document in YYYY-MM-DD format, or "NONE" if no date found]
-CLIENT_NAME: [The name of the client or the person who filed the document or company mentioned in the document, or "NONE" if not found]
-
-RULES:
-1. DOCUMENT_TYPE should be specific and professional but concise (max 20 characters)
-2. CLIENT_NAME should be the name of the client or the person who filed the document or company mentioned in the document, or "NONE" if not found
-2. Use CamelCase for DOCUMENT_TYPE (e.g., "PowerOfAttorney", "ServiceAgreement", "TaxDocument")
-3. If multiple dates exist, use the most relevant one (document date, not future dates)
-4. Use "NONE" if you cannot determine any field with confidence
-5. Keep DOCUMENT_TYPE short and focused on the main document category
-
-Example response:
-DOCUMENT_TYPE: PowerOfAttorney
-DATE: 2024-03-15
-CLIENT_NAME: John Doe
-"""
+Be concise. Use NONE if unclear."""
     
     def _parse_llm_response(self, response_text: str, original_filename: str) -> Dict[str, Any]:
         """Parse LLM response to extract structured information."""

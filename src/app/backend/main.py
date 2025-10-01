@@ -694,7 +694,6 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
         # Step 4: Enhanced security check and sanitization
         sanitized_query = query_request.query
         was_sanitized = False
-        query_analysis = None
         
         if security:
             try:
@@ -705,12 +704,8 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
                 if was_sanitized:
                     print(f"🔧 Original: {query_request.query}")
                     print(f"🔧 Sanitized: {sanitized_query}")
-                if query_analysis and query_analysis.get('is_malicious'):
-                    print(f"⚠️ Malicious patterns detected: {query_analysis.get('categories', [])}")
-                    print(f"⚠️ Risk score: {query_analysis.get('risk_score', 0)}")
+
             except Exception as security_error:
-                print(f"⚠️ Security check failed: {security_error}")
-                # If security fails, still allow the query but log it
                 sanitized_query = query_request.query
                 was_sanitized = False
         else:
@@ -756,38 +751,10 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
                 print("⚠️ Empty response generated")
                 response_text = "I apologize, but I couldn't generate a meaningful response to your query. Please try rephrasing your question or check if the document contains relevant information."
             
-            # Step 7: Enhanced response security analysis
-            response_analysis = None
-            final_security_status = "sanitized" if was_sanitized else "verified"
-            
-            if security:
-                try:
-                    print("🛡️ Analyzing response for security issues...")
-                    response_analysis = security.check_response_security(user_id, response_text, query_request.query)
-                    
-                    if response_analysis.get('risk_score', 0) > 0.7:
-                        print(f"⚠️ High-risk response detected! Risk score: {response_analysis.get('risk_score', 0)}")
-                        print(f"⚠️ Issues found: {response_analysis.get('detected_issues', [])}")
-                        final_security_status = "high_risk_response"
-                        
-                        # For very high risk responses, we might want to block them
-                        if response_analysis.get('jailbreak_successful') or response_analysis.get('leaked_instructions'):
-                            print("🚨 CRITICAL: Jailbreak or instruction leak detected!")
-                            response_text = "I apologize, but I cannot provide that response as it may contain inappropriate content. Please rephrase your question in a different way."
-                            final_security_status = "blocked_harmful_response"
-                    
-                except Exception as response_security_error:
-                    print(f"⚠️ Response security analysis failed: {response_security_error}")
-            
-            print(f"✅ Returning response with {len(response_text)} characters and {source_count} sources")
-            print(f"📋 Document: {current_doc_id}")
-            print(f"🛡️ Final security status: {final_security_status}")
-            
             return QueryResponse(
                 query=query_request.query,
                 response=response_text,
                 source_count=source_count,
-                security_status=final_security_status
             )
             
         except Exception as query_error:
@@ -1045,7 +1012,15 @@ async def stream_query_document(request: Request, query_request: QueryRequest = 
     # Get additional parameters for adaptive multi-question processing
     vector_index = rag_system.get("vector_index")
     nodes = rag_system.get("nodes")
+    embedding_manager = rag_system.get("embedding_manager")
     total_pages = rag_system.get("total_pages", 0)
+
+    # Debug: verify parameters are being extracted
+    print(f"🔍 DEBUG: Extracted parameters for streaming engine:")
+    print(f"   - vector_index: {vector_index is not None}")
+    print(f"   - nodes: {nodes is not None} (count: {len(nodes) if nodes else 0})")
+    print(f"   - embedding_manager: {embedding_manager is not None}")
+    print(f"   - total_pages: {total_pages}")
 
     # Create streaming engine with all parameters for adaptive processing
     streaming_engine = create_streaming_engine(
@@ -1321,12 +1296,89 @@ async def activate_document_for_session(request: Request, document_id: str):
             "status": "activated_existing"
         }
 
-    # 🔥 FIXED: If document doesn't exist in RAG system, fetch from database and re-upload
-    print(f"📤 Document {document_id} not in RAG system, fetching from database...")
-    
+    # 🔥 OPTIMIZED: Check if file already exists locally before fetching from database
+    print(f"📤 Document {document_id} not in RAG system, checking local files...")
+
+    # Check if we have a local copy from previous upload
+    # Files are named like: YYYYMMDD_DOCTYPE_CLIENT_#.pdf
+    # But we stored the document_id in the upload process, so check all PDFs
+    import glob
+
+    # First, try to find by document_id in filename (if stored during upload)
+    sample_docs_pattern = os.path.join("sample_docs", "*.pdf")
+    all_local_files = glob.glob(sample_docs_pattern)
+
+    # Match by checking which file was most recently associated with this document_id
+    # For now, check all files and use the most recent one
+    local_files = []
+
+    # Try to find exact match first by checking RAG manager's systems dict
+    if document_id in rag_manager.systems:
+        stored_path = rag_manager.systems[document_id].get('file_path')
+        if stored_path and os.path.exists(stored_path):
+            local_files = [stored_path]
+            print(f"✅ Found file from RAG manager: {stored_path}")
+
+    # If not found in systems, file must have been cleared from memory
+    # In this case, we need to fetch from database (no local copy available)
+    if not local_files:
+        print(f"⚠️ No local file found for document {document_id}")
+        local_files = []
+
+    if local_files:
+        # Found local file! Just rebuild RAG without re-fetching or renaming
+        local_file_path = local_files[0]
+        print(f"✅ Found local file: {local_file_path}")
+        print(f"🚀 Fast reactivation: Building RAG only (skip download & naming)")
+
+        try:
+            if not OPTIMIZED_SYSTEM_AVAILABLE:
+                raise HTTPException(status_code=503, detail="RAG system not available")
+
+            # Extract text and build RAG directly (no renaming needed!)
+            from utils.file_handler import extract_text_from_pdf
+            documents = extract_text_from_pdf(local_file_path)
+
+            if not documents:
+                raise Exception("No text extracted from local file")
+
+            print(f"📄 Extracted {len(documents)} pages from local file")
+
+            # Build RAG system directly
+            from optimized_rag_system import VectorizedRAGBuilder
+            rag_system = await VectorizedRAGBuilder.build_rag_system_fast(documents, local_file_path)
+
+            if not rag_system or "query_engine" not in rag_system:
+                raise Exception("RAG system incomplete")
+
+            # Register with RAG manager
+            rag_manager.set_system(
+                document_id=document_id,
+                rag_system=rag_system,
+                file_path=local_file_path,
+                user_id=user_id,
+                session_id=session_id
+            )
+
+            print(f"✅ Document {document_id} reactivated from local file (fast path)")
+
+            return {
+                "message": "Document reactivated from local file",
+                "document_id": document_id,
+                "status": "reactivated_from_local",
+                "filename": os.path.basename(local_file_path)
+            }
+
+        except Exception as e:
+            print(f"❌ Fast reactivation failed: {e}, falling back to full re-upload")
+            # Continue to full re-upload below
+
+    # If no local file, fetch from database and do full re-upload
+    print(f"📥 No local file found, fetching from database...")
+
     if not auth_token:
         raise HTTPException(status_code=401, detail="Authentication required to fetch document")
-    
+
     try:
         # Fetch document from database via Next.js API
         import aiohttp
@@ -1338,31 +1390,31 @@ async def activate_document_for_session(request: Request, document_id: str):
                 f"{base_url}/backend/api/documents/{document_id}",
                 headers={"Authorization": f"Bearer {auth_token}"}
             )
-            
+
             if doc_response.status != 200:
                 raise HTTPException(
-                    status_code=404, 
+                    status_code=404,
                     detail=f"Document {document_id} not found in database"
                 )
-            
+
             doc_data = await doc_response.json()
             print(f"📄 Found document in database: {doc_data.get('originalFileName', 'Unknown')}")
-            
+
             # Get document file
             file_response = await session.get(
                 f"{base_url}/backend/api/documents/{document_id}/file",
                 headers={"Authorization": f"Bearer {auth_token}"}
             )
-            
+
             if file_response.status != 200:
                 raise HTTPException(
-                    status_code=404, 
+                    status_code=404,
                     detail=f"Document file {document_id} not found or not accessible"
                 )
-            
+
             file_content = await file_response.read()
             filename = doc_data.get('originalFileName', f'document_{document_id}.pdf')
-            
+
             print(f"📁 Retrieved file: {filename} ({len(file_content)} bytes)")
 
             # Create temporary file for RAG processing
@@ -1371,18 +1423,23 @@ async def activate_document_for_session(request: Request, document_id: str):
             with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
                 temp_file.write(file_content)
                 temp_path = temp_file.name
-            
+
             try:
                 # Process document with RAG system
                 if not OPTIMIZED_SYSTEM_AVAILABLE:
                     raise HTTPException(status_code=503, detail="RAG system not available")
-                
+
                 result = await optimized_upload_workflow(
-                    temp_path,
-                    filename,
+                    file_content=file_content,
+                    original_filename=filename,
                     naming_option='keep_original',
-                    title='Document',
-                    client_name='Client'
+                    document_id=document_id,
+                    rag_manager=rag_manager,
+                    user_id=user_id,
+                    session_id=session_id,
+                    user_title='Document',
+                    user_client_name='Client',
+                    counter=1
                 )
                 
                 if result and "rag_system" in result:

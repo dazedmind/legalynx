@@ -12,6 +12,8 @@ from concurrent.futures import ThreadPoolExecutor
 import fitz  # PyMuPDF
 import sys
 import os
+
+# Note: We don't need pymupdf.extra.page_count since we use len(doc) directly
 if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -135,7 +137,7 @@ class BackgroundRAGTracker:
 # VECTORIZED RAG SYSTEM BUILDER
 # ================================
 
-def create_vectorized_rag_system(documents: List, pdf_path: str) -> Dict[str, Any]:
+def create_vectorized_rag_system(documents: List, pdf_path: str, total_pages: int = None) -> Dict[str, Any]:
     """
     Create a vectorized RAG system using hybrid vector + BM25 retrieval.
     """
@@ -152,8 +154,16 @@ def create_vectorized_rag_system(documents: List, pdf_path: str) -> Dict[str, An
         import faiss
         from llama_index.core.vector_stores import MetadataFilters, ExactMatchFilter
         from rag_pipeline.embedder import EmbeddingManager
-        from rag_pipeline.pipeline_builder import AggressiveHybridRetriever
+        from rag_pipeline.pipeline_builder import EnhancedHybridRetriever
         from rag_pipeline.chunking import multi_granularity_chunking
+        
+        if total_pages is None:
+            import fitz
+            with fitz.open(pdf_path) as doc:
+                total_pages = len(doc)
+                print(f"Detected {total_pages} pages in the document")
+        else:
+            print(f"Using provided total count: {total_pages}")
 
         # Ensure documents are Document objects
         doc_objects = []
@@ -203,7 +213,7 @@ def create_vectorized_rag_system(documents: List, pdf_path: str) -> Dict[str, An
             similarity_top_k=safe_top_k
         )
         vector_retriever = vector_index.as_retriever(similarity_top_k=safe_top_k)
-        hybrid_retriever = AggressiveHybridRetriever(
+        hybrid_retriever = EnhancedHybridRetriever(
             vector_retriever=vector_retriever,
             bm25_retriever=bm25_retriever,
             top_k=safe_top_k
@@ -298,7 +308,7 @@ def create_vectorized_rag_system(documents: List, pdf_path: str) -> Dict[str, An
             "retrieval_type": "hybrid_vector_bm25",
             "vector_index": vector_index,
             "nodes": nodes,
-            "total_pages": len(documents),
+            "total_pages": total_pages,
             "build_time": build_time
         }
 
@@ -831,7 +841,16 @@ class VectorizedRAGBuilder:
         """
         print("🚀 Building vectorized RAG system with optimizations...")
         start_time = time.time()
-        
+
+        # Get page count from PDF
+        try:
+            with fitz.open(pdf_path) as doc:
+                total_pages = len(doc)
+            print(f"📄 PDF has {total_pages} pages")
+        except Exception as e:
+            print(f"⚠️ Could not determine page count: {e}, using document count")
+            total_pages = len(documents)
+
         # Get cached embedding manager (singleton)
         try:
             embedding_manager = await model_manager.get_embedding_manager()
@@ -839,16 +858,16 @@ class VectorizedRAGBuilder:
         except Exception as e:
             print(f"⚠️ Could not get embedding manager: {e}")
             # Continue without it for now
-        
+
         # Run in background thread to avoid blocking
         loop = asyncio.get_event_loop()
         executor = ThreadPoolExecutor(max_workers=1)
-        
+
         try:
             # Build vectorized RAG system
             rag_system = await loop.run_in_executor(
                 executor,
-                lambda: create_vectorized_rag_system(documents, pdf_path)
+                lambda: create_vectorized_rag_system(documents, pdf_path, total_pages=total_pages)
             )
             
             if not rag_system or "query_engine" not in rag_system:

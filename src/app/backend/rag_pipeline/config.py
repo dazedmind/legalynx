@@ -24,60 +24,64 @@ rag_config = {
 def get_adaptive_config(total_pages, num_questions=1):
     """
     Get adaptive RAG configuration based on document size and question complexity.
-
+    
+    🎯 CRITICAL: This function enables dynamic scaling to match Colab's superior performance.
+    When handling 6 questions, this scales retrieval from 20 → ~40-60 chunks (2x multiplier).
+    
     Args:
         total_pages: Total pages in the document
-        num_questions: Number of questions detected in the query
-
+        num_questions: Number of questions detected in the query (e.g., 6 for multi-question)
+    
     Returns:
         Dict with optimized retrieval_top_k, rerank_top_n, and max_tokens
     """
-
+    
     # Base configuration based on document size
-    # ENHANCED: Increased for better coverage, especially for multi-question queries
-    if total_pages <= 50:
-        # Small documents: comprehensive retrieval
+    if total_pages <= 20:
+        # Small documents: faster, more precise
         base_config = {
-            "retrieval_top_k": 20,  # Increased from 15
-            "rerank_top_n": 12,     # Increased from 8
-            "max_tokens": 1000      # Increased from 1024
+            "retrieval_top_k": 15,   # Small doc baseline
+            "rerank_top_n": 8,       # Moderate reranking
+            "max_tokens": 1024       # Shorter responses for small docs
         }
     elif total_pages <= 100:
-        # Large documents: maximum retrieval
+        # Large documents: comprehensive retrieval
         base_config = {
-            "retrieval_top_k": 30,  # Increased from 25
-            "rerank_top_n": 18,     # Increased from 12
-            "max_tokens": 2000      # Increased from 1600
-        } 
-    else:
-        # Extra large documents: exhaustive coverage
-        base_config = {
-            "retrieval_top_k": 40,  # Increased from 35
-            "rerank_top_n": 25,     # Increased from 18
-            "max_tokens": 3000      # Increased from 2048
+            "retrieval_top_k": 25,   # Medium doc baseline
+            "rerank_top_n": 12,      # More reranking needed
+            "max_tokens": 1600       # Longer responses for complexity
         }
-
-    # Scale up for multiple questions (up to 2.5x for 6+ questions)
+    else:
+        # Extra large documents: maximum coverage
+        base_config = {
+            "retrieval_top_k": 35,   # Large doc baseline
+            "rerank_top_n": 18,      # Extensive reranking
+            "max_tokens": 2048       # Maximum response length
+        }
+    
+    # 🎯 KEY FIX: Scale up for multiple questions (up to 2x, capped for performance)
+    # This is what makes Colab retrieve 40-60 chunks for 6 questions vs FastAPI's static 20
     if num_questions > 1:
-        # More aggressive scaling for multi-question queries
-        multiplier = min(1 + (num_questions - 1) * 0.4, 2.5)
+        # Calculate multiplier: 1 question = 1.0x, 2 = 1.3x, 3 = 1.6x, 4+ = 2.0x (capped)
+        multiplier = min(1 + (num_questions - 1) * 0.3, 2.0)
+        
+        # Apply multiplier to all retrieval parameters
         base_config["retrieval_top_k"] = int(base_config["retrieval_top_k"] * multiplier)
         base_config["rerank_top_n"] = int(base_config["rerank_top_n"] * multiplier)
-        base_config["max_tokens"] = min(int(base_config["max_tokens"] * multiplier), 4096)
-
-        print(f"🔍 Multi-question scaling: {num_questions}Q → multiplier={multiplier:.2f}")
-        print(f"   retrieval_top_k: {base_config['retrieval_top_k']}")
-        print(f"   rerank_top_n: {base_config['rerank_top_n']}")
-        print(f"   max_tokens: {base_config['max_tokens']}")
-
+        base_config["max_tokens"] = min(int(base_config["max_tokens"] * multiplier), 2048)
+        
+        # 🎯 JUSTIFICATION: This scaling ensures sufficient context for each question
+        # Example: 6 questions on 50-page doc → 25 * 2.0 = 50 chunks retrieved
+    
     return base_config
+
 
 # Model configurations
 MODEL_CONFIG = {
     "embedding_model": "sentence-transformers/all-MiniLM-L12-v2",
     "rerank_model": "cross-encoder/ms-marco-electra-base",
     "temperature": 0.1,
-    "max_output_tokens": 1024,
+    "max_output_tokens": 2000,
 }
 
 # System prompt for the LLM (enhanced for vector context)

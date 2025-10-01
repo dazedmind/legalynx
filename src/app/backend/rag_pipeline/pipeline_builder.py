@@ -71,12 +71,6 @@ class EnhancedHybridRetriever(BaseRetriever):
             return self.bm25_retriever.retrieve(query_bundle)[:self.top_k]
 
 
-# Backward compatibility alias
-class AggressiveHybridRetriever(EnhancedHybridRetriever):
-    """Backward compatibility alias for AggressiveHybridRetriever."""
-    pass
-
-
 class RAGPipelineBuilder:
     """
     RAG pipeline builder that uses both vector embeddings and BM25 for hybrid retrieval.
@@ -186,7 +180,7 @@ class RAGPipelineBuilder:
 
         return query_engine, analyze_query_results
 
-    def build_hybrid_rag_pipeline(self, vector_index: VectorStoreIndex, nodes: List[TextNode]) -> Tuple[RetrieverQueryEngine, Callable]:
+    def build_hybrid_rag_pipeline(self, vector_index: VectorStoreIndex, nodes: List[TextNode], total_pages: int = 50, num_questions: int = 1) -> Tuple[RetrieverQueryEngine, Callable]:
         """
         Build an AGGRESSIVE hybrid RAG pipeline using both vector and BM25 retrieval.
         Enhanced to force retrieval of all relevant content for comprehensive responses.
@@ -194,16 +188,17 @@ class RAGPipelineBuilder:
         Args:
             vector_index: Vector index for semantic search
             nodes: List of text nodes for BM25 search
-            
+
         Returns:
             tuple: (query_engine, analysis_function)
         """
         num_nodes = len(nodes)
+        adaptive_config = get_adaptive_config(total_pages, num_questions)
         # AGGRESSIVE: Use ALL nodes if document is small enough, otherwise use more than default
-        safe_top_k = min(num_nodes, max(rag_config["retrieval_top_k"]))
+        safe_top_k = min(num_nodes, max(adaptive_config["retrieval_top_k"]))
         
         print(f"🔄 Building AGGRESSIVE hybrid RAG pipeline with {num_nodes} nodes")
-        print(f"🔄 Using aggressive top_k={safe_top_k} (was {rag_config['retrieval_top_k']})")
+        print(f"🔄 Using aggressive top_k={safe_top_k} (was {adaptive_config['retrieval_top_k']})")
         
         # Step 1: Create vector retriever with metadata filtering
         print("🔄 Setting up AGGRESSIVE vector retriever...")
@@ -218,7 +213,7 @@ class RAGPipelineBuilder:
         
         # Step 3: Create AGGRESSIVE hybrid retriever
         print("🔄 Combining vector and BM25 retrievers with AGGRESSIVE mode...")
-        hybrid_retriever = AggressiveHybridRetriever(
+        hybrid_retriever = EnhancedHybridRetriever(
             vector_retriever=vector_retriever,
             bm25_retriever=bm25_retriever,
             top_k=safe_top_k
@@ -230,7 +225,7 @@ class RAGPipelineBuilder:
         if num_nodes > 1:
             try:
                 # AGGRESSIVE: Use more results for reranking
-                rerank_top_n = min(max(rag_config["rerank_top_n"]), num_nodes)
+                rerank_top_n = min(max(adaptive_config["rerank_top_n"]), num_nodes)
                 reranker = SentenceTransformerRerank(
                     model=MODEL_CONFIG["rerank_model"],
                     top_n=rerank_top_n

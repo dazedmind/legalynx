@@ -1,7 +1,7 @@
 // FIXED: Updated Home page with storage usage bar and proper document switching
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import ChatViewer from "./chat-viewer/ChatViewer";
 import FileManager from "./file-manager/FileManager";
 import ChatHistory from "./chat-viewer/ChatHistory";
@@ -673,7 +673,7 @@ export default function Home() {
                 <a href="/frontend/privacy-policy" target="_blank" rel="noopener noreferrer">
                   Privacy Policy •
                 </a>
-                <p className="text-xs text-muted-foreground">v 0.3.5</p>
+                <p className="text-xs text-muted-foreground">v 0.3.5-dev-unstable</p>
               </div>
             )}
           </aside>
