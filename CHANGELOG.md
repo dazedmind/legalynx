@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.6] - 2025-10-01
+
+### 🚀 Performance Improvements
+- **Adaptive Multi-Question Processing:** Implemented intelligent query analysis that detects and optimizes handling of multi-question queries
+- **Enhanced Retrieval System:** Added hybrid Vector + BM25 retrieval with automatic configuration based on document size and query complexity
+- **Smart Context Building:** Improved token budgeting with adaptive chunk selection and prioritization for comprehensive multi-question responses
+
+### 🛠️ Fixes
+- **RAG System Detection:** Fixed critical bug where streaming engine couldn't detect RAG system parameters, causing fallback to basic retrieval
+- **Page Count Issue:** Resolved issue where `total_pages` was stored as function reference instead of integer value, breaking adaptive configuration
+- **Embedding Manager Integration:** Fixed missing `embedding_manager` parameter extraction in streaming query engine
+- **Multi-Question Support:** Enabled `MultiQuestionBatchProcessor` for queries with multiple questions, providing better answer coverage and accuracy
+
+### ⚙️ Technical Changes
+- **Streaming Engine Enhancement:** Added comprehensive parameter passing (`vector_index`, `nodes`, `embedding_manager`, `total_pages`) to enable adaptive query processing
+- **Debug Logging:** Added detailed debug output for RAG system parameter extraction to improve troubleshooting
+- **Import Cleanup:** Removed unused `pymupdf.extra.page_count` import that was causing naming conflicts
+- **RAG Builder Optimization:** Enhanced `VectorizedRAGBuilder.build_rag_system_fast()` to properly calculate and store page count from PDF files
+
+### 📊 Features Added
+- **Entity Detection:** Automatic extraction and prioritized retrieval of named entities from multi-question queries
+- **Batch Processing:** Single-pass retrieval and reranking for multiple questions, reducing latency and improving efficiency
+- **Adaptive Configuration:** Dynamic adjustment of retrieval parameters based on document size (pages) and query complexity (number of questions)
+- **Enhanced Deduplication:** Improved node deduplication with diversity optimization through interleaved retrieval results
+
+### 🎯 User Impact
+- **Faster Multi-Question Responses:** Users asking multiple questions in one query now get comprehensive answers with better accuracy
+- **Improved Context Coverage:** System now retrieves and includes more relevant document sections for complex queries
+- **Better Answer Quality:** Enhanced retrieval ranking ensures most relevant information is prioritized in responses
+
 ## [0.3.5] - 2025-09-30
 ### 🧩 What's New
 - **Chat Message Animations:** Added smooth slide-in animations for user and assistant messages

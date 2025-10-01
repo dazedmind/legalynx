@@ -108,7 +108,7 @@ export default function SessionLoader({
         </div>
 
         {/* Loading Bar */}
-        <div className="w-full bg-tertiary rounded-full h-1 overflow-hidden">
+        {/* <div className="w-full bg-tertiary rounded-full h-1 overflow-hidden">
           <div 
             className={`h-full ${stageInfo.color.replace('text-', 'bg-')} rounded-full animate-pulse`}
             style={{
@@ -116,7 +116,7 @@ export default function SessionLoader({
               animation: 'loading 2s ease-in-out infinite'
             }}
           />
-        </div>
+        </div> */}
       </div>
 
       <style jsx>{`
