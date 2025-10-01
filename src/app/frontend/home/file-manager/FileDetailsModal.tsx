@@ -2,7 +2,7 @@
 'use client';
 import React from 'react';
 import { X, FileText, Folder, Calendar, HardDrive, MessageSquare } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/app/frontend/components/ui/button';
 
 interface DocumentInfo {
   id: string;

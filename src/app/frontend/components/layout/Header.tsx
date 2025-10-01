@@ -3,7 +3,7 @@ import { ArrowUp, Menu } from 'lucide-react'
 import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import logo from '../img/legalynxlogo.png'
+import logo from '../../img/legalynxlogo.png'
 import ThemeToggle from './ThemeToggle'
 
 function Header() {

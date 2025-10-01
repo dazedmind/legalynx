@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { CircleUser, Shield, FileCog, CreditCard, LogOut, Lock, FolderCog, Menu, X, ChevronLeft, Star } from 'lucide-react';
-import { SystemStatus } from '../lib/api';
-import NavBar from '../components/NavBar';
+import { SystemStatus } from '../../../lib/api';
+import NavBar from '../components/layout/NavBar';
 import FileSettings from './file-settings/FileSettings'
 import ProfileSettings from './profile-settings/ProfileSettings'
-import SubscriptionPage from '../home/tabs/subscription/SubscriptionPage'
+import SubscriptionPage from '../home/subscription/SubscriptionPage'
 import SecuritySettings from './privacy-security/SecurityLogSettings'
 import PrivacySecuritySettings from './privacy-security/PrivacySecuritySettings'
 import { useSearchParams, useRouter } from 'next/navigation';

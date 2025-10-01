@@ -16,7 +16,7 @@ import {
   Eye,
   Edit
 } from 'lucide-react';
-import { apiService, handleApiError } from '../../../lib/api';
+import { apiService, handleApiError } from '../../../../lib/api';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useTheme } from 'next-themes';
 import { CreateFolderModal } from './CreateFolderModal';

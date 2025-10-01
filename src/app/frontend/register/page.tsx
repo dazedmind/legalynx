@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
-import Header from "../components/Header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
+import Header from "../components/layout/Header";
+import { Button } from "@/app/frontend/components/ui/button";
+import { Input } from "@/app/frontend/components/ui/input";
+import { Progress } from "@/app/frontend/components/ui/progress";
 import Link from "next/link";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/app/frontend/components/ui/checkbox";
 import { toast, Toaster } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import logo from "../img/legalynxlogo.png";

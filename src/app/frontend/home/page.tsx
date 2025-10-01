@@ -2,29 +2,29 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import ChatViewer from "./tabs/chat-viewer/ChatViewer";
-import FileManager from "./tabs/file-manager/FileManager";
-import ChatHistory from "./tabs/chat-viewer/ChatHistory";
-import Appearance from "./tabs/appearance/Appearance";
-import SubscriptionPage from "./tabs/subscription/SubscriptionPage";
+import ChatViewer from "./chat-viewer/ChatViewer";
+import FileManager from "./file-manager/FileManager";
+import ChatHistory from "./chat-viewer/ChatHistory";
+import Appearance from "./appearance/Appearance";
+import SubscriptionPage from "./subscription/SubscriptionPage";
 import {
   apiService,  profileService,
   SystemStatus,
   UploadResponse,
-} from "../lib/api";
+} from "../../../lib/api";
 import { authUtils } from '@/lib/auth';
 import {
   GoFileDirectory,
   GoComment,
   GoStarFill
 } from "react-icons/go";
-import ProtectedRoute from "../components/ProtectedRoute";
-import NavBar from "../components/NavBar";
+import ProtectedRoute from "../components/layout/ProtectedRoute";
+import NavBar from "../components/layout/NavBar";
 import { useAuth } from "@/lib/context/AuthContext";
 import { LogOut, Menu, X, Lock, Palette, PanelRightClose, PanelRightOpen, HardDrive, DiamondPlus, MessageCircle, Folder, Star, ChevronLeft, Gift, CreditCard } from "lucide-react";
 import { useTheme } from "next-themes";
-import UploadPage from "./tabs/chat-viewer/UploadPage";
-import ConfirmationModal, { ModalType } from "../components/ConfirmationModal";
+import UploadPage from "./chat-viewer/UploadPage";
+import ConfirmationModal, { ModalType } from "../components/layout/ConfirmationModal";
 
 type ActiveTab =
   | "chat"

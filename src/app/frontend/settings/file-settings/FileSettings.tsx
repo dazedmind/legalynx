@@ -7,20 +7,20 @@ import {
   Sparkle,
 } from "lucide-react";
 import { GoCloud } from "react-icons/go";
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "@/app/frontend/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import { Switch } from "@/components/ui/switch";
+} from "@/app/frontend/components/ui/dropdown-menu";
+import { Switch } from "@/app/frontend/components/ui/switch";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/context/AuthContext";
 import { authUtils } from "@/lib/auth";
 import LoaderComponent from "../../components/ui/LoaderComponent";
-import { profileService } from "../../lib/api";
-import { Separator } from "@/components/ui/separator";
+import { profileService } from "../../../../lib/api";
+import { Separator } from "@/app/frontend/components/ui/separator";
 
 const retentionOptions = [
   { value: null, label: "Never" },

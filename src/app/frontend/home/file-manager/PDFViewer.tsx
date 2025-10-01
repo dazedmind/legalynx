@@ -12,7 +12,7 @@ import {
   Maximize,
   Minimize
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/app/frontend/components/ui/button';
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
 

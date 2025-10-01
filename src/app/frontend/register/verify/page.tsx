@@ -2,9 +2,9 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/app/frontend/components/ui/button';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
-import Header from '../../components/Header';
+import Header from '../../components/layout/Header';
 import VerifyEmailContent from './VerifyEmailContent';
 
 // Loading component for Suspense fallback

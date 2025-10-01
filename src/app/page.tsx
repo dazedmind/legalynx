@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { Zap, Shield, Clock, Users, Folder } from "lucide-react";
-import Header from "./frontend/components/Header";
+import Header from "./frontend/components/layout/Header";
 import BlurText from "./frontend/components/reactbits/BlurText";
 import Image from "next/image";
 import heroImg from "./frontend/img/legalynxlogo.png";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import LightRays from "@/components/LightRays";
-import SpotlightCard from "@/components/SpotlightCard";
+import LightRays from "./frontend/components/reactbits/LightRays";
+import SpotlightCard from "./frontend/components/reactbits/SpotlightCard";
 
 export default function Home() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);

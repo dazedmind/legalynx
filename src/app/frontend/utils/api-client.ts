@@ -1,4 +1,4 @@
-import { QueryResponse, UploadResponse, StreamingChunk } from "../lib/api";
+import { QueryResponse, UploadResponse, StreamingChunk } from "../../../lib/api";
 
 export class RAGApiClient {
     private baseUrl = '/backend/api';

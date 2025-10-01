@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Copy, ThumbsUp, ThumbsDown, RotateCcw, User, Bot, Edit, Check, X, Send, ArrowUp, Trash } from 'lucide-react';
 import { toast } from 'sonner';
-import TypingAnimation from '../../../components/TypingAnimation';
+import TypingAnimation from '../../components/layout/TypingAnimation';
 
 interface ChatMessage {
   id: string;

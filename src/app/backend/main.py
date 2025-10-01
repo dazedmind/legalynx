@@ -29,11 +29,14 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 try:
     from optimized_rag_system import (
         optimized_upload_workflow,
+        instant_upload_workflow,
+        BackgroundRAGTracker,
         model_manager,
         RuleBasedFileNamer,
         apply_ultra_fast_config
     )
     OPTIMIZED_SYSTEM_AVAILABLE = True
+    print("✅ Optimized system with instant upload available")
 except ImportError as e:
     print(f"⚠️ Optimized system not available: {e}")
     OPTIMIZED_SYSTEM_AVAILABLE = False
@@ -539,71 +542,46 @@ async def upload_document_ultra_fast(
                     os.remove(f"temp_{file.filename}")
                 raise HTTPException(status_code=500, detail=f"DOCX conversion failed: {str(e)}")
 
-        # ===== STEP 4: BUILD RAG SYSTEM (USING YOUR EXISTING SYSTEM) =====
+        # ===== STEP 4: STREAMLINED UPLOAD (SINGLE STRAIGHT PROCESS) =====
         build_start = time.time()
-        print(f"🚀 Building RAG system using optimized workflow...")
-        
-        # FIXED: Use your existing optimized_upload_workflow
-        from optimized_rag_system import optimized_upload_workflow
-        
-        # No counter needed for the new naming options
-        counter = 1
-        
-        # Call your existing optimized workflow with proper user settings
+
+        # Use streamlined workflow - completes LLM naming before chat ready
         result = await optimized_upload_workflow(
             file_content=final_file_content,
             original_filename=file.filename,
             naming_option=naming_option,
+            document_id=document_id,
+            rag_manager=rag_manager,
+            user_id=user_id,
+            session_id=session_id,
             user_title=title,
             user_client_name=client_name,
-            counter=counter
+            counter=1
         )
-        
-        # ===== STEP 5: REGISTER WITH RAG MANAGER =====
+
         final_filename = result["filename"]
-        final_path = result["file_path"]
-        rag_system = result["rag_system"]
-        
-        # Register with RAG manager
-        if result and "rag_system" in result:
-            rag_manager.set_system(
-                document_id=document_id,
-                rag_system=result["rag_system"],
-                file_path=result["file_path"],
-                user_id=user_id,
-                session_id=session_id
-            )
-            print(f"✅ RAG system stored for document: {document_id}")
-        else:
-            print("❌ RAG system creation failed - no rag_system in result")
-            raise HTTPException(status_code=500, detail="RAG system creation failed")
+        page_count = result.get("page_count", 0)
 
         # Calculate total time
         total_time = time.time() - start_time
-        result["timing"]["total"] = total_time
-        
+
         # Security status
         security_status = "verified"
 
-        print(f"🎉 ULTRA-FAST UPLOAD COMPLETED in {total_time:.2f}s!")
-        print(f"   - Document ID: {document_id}")
-        print(f"   - File: {file.filename} → {final_filename}")
-        print(f"   - RAG system stored and isolated")
-
         return UploadResponse(
-            message=f"Ultra-fast processing complete in {total_time:.2f}s ({300/total_time:.1f}x speedup)",
+            message=f"Document ready for chat! Upload completed in {total_time:.2f}s",
             filename=final_filename,
             original_filename=file.filename,
-            document_count=len(result["documents"]),
-            document_id=document_id,  # FIXED: Always return the new document ID
+            document_count=page_count,
+            document_id=document_id,
             security_status=security_status,
             file_type=file_type,
             conversion_performed=conversion_performed,
             naming_applied=naming_option,
             user_settings_used=user_id is not None,
             processing_time=total_time,
-            timing_breakdown=result["timing"],
-            optimization_used="ultra_fast_rule_based_singleton"
+            timing_breakdown=result.get("timing", {}),
+            optimization_used="streamlined_single_process"
         )
 
     except HTTPException:
@@ -655,15 +633,35 @@ async def query_document_secure(request: Request, query_request: QueryRequest):
 
     print(f"🔍 Query received: '{query_request.query}'")
     print(f"🔍 Query length: {len(query_request.query)} characters")
-    
+
+    # Check if document is uploaded but RAG still building
+    current_doc_id = None
+    if user_id and user_id in rag_manager.user_sessions:
+        current_doc_id = rag_manager.user_sessions[user_id]
+    elif session_id and session_id in rag_manager.session_systems:
+        current_doc_id = rag_manager.session_systems[session_id]
+
+    if current_doc_id and OPTIMIZED_SYSTEM_AVAILABLE:
+        rag_status = BackgroundRAGTracker.get_status(current_doc_id)
+        if rag_status.get("status") == "processing":
+            stage = rag_status.get("stage", "initializing")
+            elapsed = time.time() - rag_status.get("started_at", time.time())
+            eta = max(5, 60 - elapsed)
+
+            print(f"⏳ Document {current_doc_id} still indexing: {stage}")
+            raise HTTPException(
+                status_code=202,
+                detail=f"Your document is still being indexed (stage: {stage}). Please wait about {eta:.0f} more seconds."
+            )
+
     # Step 1: Get current RAG system from manager
     rag_system = rag_manager.get_current_system(user_id=user_id, session_id=session_id)
-    
+
     if not rag_system:
         print(f"❌ No RAG system available for user: {user_id}, session: {session_id}")
         print(f"📊 Manager status: {rag_manager.get_status(user_id, session_id)}")
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail="No document has been uploaded and indexed yet. Please upload a document first."
         )
     
@@ -958,6 +956,38 @@ async def stream_query_document(request: Request, query_request: QueryRequest = 
     print(f"🔍 Streaming query received: '{query_request.query}'")
     print(f"🔍 Query length: {len(query_request.query)} characters")
 
+    # Check if document is uploaded but RAG still building
+    current_doc_id = None
+    if user_id and user_id in rag_manager.user_sessions:
+        current_doc_id = rag_manager.user_sessions[user_id]
+    elif session_id and session_id in rag_manager.session_systems:
+        current_doc_id = rag_manager.session_systems[session_id]
+
+    if current_doc_id and OPTIMIZED_SYSTEM_AVAILABLE:
+        rag_status = BackgroundRAGTracker.get_status(current_doc_id)
+        if rag_status.get("status") == "processing":
+            stage = rag_status.get("stage", "initializing")
+            elapsed = time.time() - rag_status.get("started_at", time.time())
+            eta = max(5, 60 - elapsed)
+
+            print(f"⏳ Document {current_doc_id} still indexing: {stage}")
+
+            # Return streaming response with processing message
+            async def processing_stream():
+                message = f"⏳ Your document is still being indexed (stage: {stage}). Please wait about {eta:.0f} more seconds and try again."
+                yield f"data: {json.dumps({'type': 'content', 'content': message})}\n\n"
+                yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+            return StreamingResponse(
+                processing_stream(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no"
+                }
+            )
+
     # Debug RAG manager state
     manager_status = rag_manager.get_status(user_id=user_id, session_id=session_id)
     print(f"📊 RAG Manager Status: {manager_status}")
@@ -1005,15 +1035,27 @@ async def stream_query_document(request: Request, query_request: QueryRequest = 
         embedding_manager = rag_system["embedding_manager"]
         if hasattr(embedding_manager, 'get_llm'):
             llm = embedding_manager.get_llm()
-    
+
     if not llm:
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail="LLM not available. Please re-upload your document."
         )
-    
-    # Create streaming engine
-    streaming_engine = create_streaming_engine(query_engine, llm)
+
+    # Get additional parameters for adaptive multi-question processing
+    vector_index = rag_system.get("vector_index")
+    nodes = rag_system.get("nodes")
+    total_pages = rag_system.get("total_pages", 0)
+
+    # Create streaming engine with all parameters for adaptive processing
+    streaming_engine = create_streaming_engine(
+        query_engine,
+        llm,
+        vector_index=vector_index,
+        nodes=nodes,
+        embedding_manager=embedding_manager,
+        total_pages=total_pages
+    )
     
     # Wrap engine with an immediate prelude to flush headers and show instant UI feedback
     async def sse_wrapper():
@@ -1322,11 +1364,10 @@ async def activate_document_for_session(request: Request, document_id: str):
             filename = doc_data.get('originalFileName', f'document_{document_id}.pdf')
             
             print(f"📁 Retrieved file: {filename} ({len(file_content)} bytes)")
-            
+
             # Create temporary file for RAG processing
             import tempfile
-            import os
-            
+
             with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
                 temp_file.write(file_content)
                 temp_path = temp_file.name

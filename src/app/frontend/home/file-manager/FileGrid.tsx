@@ -19,7 +19,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+} from "@/app/frontend/components/ui/dropdown-menu";
 import { FcFolder, FcOpenedFolder, FcFile } from "react-icons/fc";
 import { TbFileFilled } from "react-icons/tb";
 import { BiSolidFilePdf } from "react-icons/bi";

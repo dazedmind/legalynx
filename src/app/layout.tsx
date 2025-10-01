@@ -4,7 +4,7 @@ import './globals.css'
 import './appearance.css'
 
 import { AuthProvider } from '@/lib/context/AuthContext'
-import { ThemeProvider } from './frontend/components/ThemeProvider';
+import { ThemeProvider } from './frontend/components/layout/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin'] })
 

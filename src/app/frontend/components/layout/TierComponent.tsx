@@ -1,6 +1,6 @@
 import React from 'react'
 import { GoCheck } from 'react-icons/go'
-import SpotlightCard from './reactbits/SpotlightCard'
+import SpotlightCard from '../reactbits/SpotlightCard'
 import Link from 'next/link'
 
 const tierColor: Record<string, string> = {

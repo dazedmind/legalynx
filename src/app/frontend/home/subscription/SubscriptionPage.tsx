@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { profileService } from "../../../lib/api";
-import LoaderComponent from "../../../components/ui/LoaderComponent";
+import { profileService } from "../../../../lib/api";
+import LoaderComponent from "../../components/ui/LoaderComponent";
 import {
   Crown,
   Zap,
@@ -13,11 +13,11 @@ import {
   Ban,
   X,
 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
-import { paypalService } from "../../../lib/api";
+import { Progress } from "@/app/frontend/components/ui/progress";
+import { paypalService } from "../../../../lib/api";
 import { toast, Toaster } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
-import ConfirmationModal, { ModalType } from "../../../components/ConfirmationModal";
+import ConfirmationModal, { ModalType } from "../../components/layout/ConfirmationModal";
 import { FaPaypal } from "react-icons/fa";
 
 // Helper function to format MB to human readable format

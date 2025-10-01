@@ -1,5 +1,5 @@
 "use client";
-import { LogOut, Settings, Star, User } from "lucide-react";
+import { LogOut, Settings, Star } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import {
   DropdownMenu,
@@ -8,15 +8,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import avatar from "../img/user.png";
+} from "@/app/frontend/components/ui/dropdown-menu";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/lib/context/AuthContext";
-import { profileService, UserProfile } from "../lib/api";
-import { GoGift } from "react-icons/go";
-import logo from "../img/legalynxlogo.png";
-import ThemeToggle from "./ThemeToggle";
+import { profileService, UserProfile } from "../../../../lib/api";
+import logo from "../../img/legalynxlogo.png";
 import { useTheme } from "next-themes";
 
 export default function NavBar() {

@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import InputField from "../../components/ui/InputField";
 import Image from "next/image";
 import avatar from "../../img/user.png";
-import { profileService } from "../../lib/api";
+import { profileService } from "../../../../lib/api";
 import LoaderComponent from "../../components/ui/LoaderComponent";
 import { Save, Upload, Camera, X, Loader2, Trash2 } from "lucide-react";
 import { toast, Toaster } from "sonner";

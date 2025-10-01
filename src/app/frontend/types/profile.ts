@@ -1,5 +1,5 @@
 // src/app/frontend/types/profile.ts
-import { mainApi } from "../lib/api";
+import { mainApi } from "../../../lib/api";
 import { AxiosError } from "axios";
 
 export interface UserProfile {

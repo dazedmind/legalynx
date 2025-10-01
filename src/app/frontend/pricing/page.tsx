@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import Header from '../components/Header';
+import Header from '../components/layout/Header';
 import { Check, Star, Zap, Shield, Users, MessageSquare, FileText, Clock, Headphones, Crown, Sparkles } from 'lucide-react';
 import BlurText from '../components/reactbits/BlurText';
 import Link from 'next/link';
-import { paypalService } from '../lib/api';
+import { paypalService } from '../../../lib/api';
 import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
 import { authUtils } from '@/lib/auth';

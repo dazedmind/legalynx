@@ -6,7 +6,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/app/frontend/components/ui/table";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -20,7 +20,7 @@ import {
   VisibilityState,
   FilterFn,
 } from "@tanstack/react-table";
-import { profileService, SecurityLog } from "../../lib/api";
+import { profileService, SecurityLog } from "../../../../lib/api";
 import {
   Activity,
   Calendar,
@@ -33,14 +33,14 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import LoaderComponent from "../../components/ui/LoaderComponent";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/app/frontend/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/app/frontend/components/ui/select";
 
 const actionTypes = {
   LOGIN: "Login",

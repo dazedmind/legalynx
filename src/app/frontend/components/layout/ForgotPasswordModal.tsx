@@ -1,6 +1,6 @@
 import React from 'react'
-import InputField from './ui/InputField'
-import { Button } from '@/components/ui/button'
+import InputField from '../ui/InputField'
+import { Button } from '@/app/frontend/components/ui/button'
 
 function ForgotPasswordModal({showForgotPasswordSuccess, handleForgotPasswordSubmit, handleCloseForgotPasswordModal, forgotPasswordEmail, setForgotPasswordEmail, forgotPasswordMessage, isForgotPasswordLoading}: {showForgotPasswordSuccess: boolean, handleForgotPasswordSubmit: (e: React.FormEvent<HTMLFormElement>) => void, handleCloseForgotPasswordModal: () => void, forgotPasswordEmail: string, setForgotPasswordEmail: (email: string) => void, forgotPasswordMessage: string, isForgotPasswordLoading: boolean}) {
   return (

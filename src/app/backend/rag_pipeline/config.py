@@ -7,16 +7,70 @@
 rag_config = {
     # Three chunk sizes for demo
     "small_chunk_size": 400,
-    "small_chunk_overlap": 250,
+    "small_chunk_overlap": 200,
     "medium_chunk_size": 650,     # NEW: Between small and large
-    "medium_chunk_overlap": 310,  # NEW: Medium overlap
+    "medium_chunk_overlap": 250,  # NEW: Medium overlap
     "large_chunk_size": 1000,
-    "large_chunk_overlap": 370,
+    "large_chunk_overlap": 300,
 
-    "retrieval_top_k": 50,
-    "rerank_top_n": 20,
+    "retrieval_top_k": 20,  # NOTE: This will be overridden by adaptive config
+    "rerank_top_n": 10,     # NOTE: This will be overridden by adaptive config
     "num_query_expansions": 1,
 }
+
+# ================================
+# ADAPTIVE CONFIGURATION FUNCTION
+# ================================
+def get_adaptive_config(total_pages, num_questions=1):
+    """
+    Get adaptive RAG configuration based on document size and question complexity.
+
+    Args:
+        total_pages: Total pages in the document
+        num_questions: Number of questions detected in the query
+
+    Returns:
+        Dict with optimized retrieval_top_k, rerank_top_n, and max_tokens
+    """
+
+    # Base configuration based on document size
+    # ENHANCED: Increased for better coverage, especially for multi-question queries
+    if total_pages <= 50:
+        # Small documents: comprehensive retrieval
+        base_config = {
+            "retrieval_top_k": 20,  # Increased from 15
+            "rerank_top_n": 12,     # Increased from 8
+            "max_tokens": 1000      # Increased from 1024
+        }
+    elif total_pages <= 100:
+        # Large documents: maximum retrieval
+        base_config = {
+            "retrieval_top_k": 30,  # Increased from 25
+            "rerank_top_n": 18,     # Increased from 12
+            "max_tokens": 2000      # Increased from 1600
+        } 
+    else:
+        # Extra large documents: exhaustive coverage
+        base_config = {
+            "retrieval_top_k": 40,  # Increased from 35
+            "rerank_top_n": 25,     # Increased from 18
+            "max_tokens": 3000      # Increased from 2048
+        }
+
+    # Scale up for multiple questions (up to 2.5x for 6+ questions)
+    if num_questions > 1:
+        # More aggressive scaling for multi-question queries
+        multiplier = min(1 + (num_questions - 1) * 0.4, 2.5)
+        base_config["retrieval_top_k"] = int(base_config["retrieval_top_k"] * multiplier)
+        base_config["rerank_top_n"] = int(base_config["rerank_top_n"] * multiplier)
+        base_config["max_tokens"] = min(int(base_config["max_tokens"] * multiplier), 4096)
+
+        print(f"🔍 Multi-question scaling: {num_questions}Q → multiplier={multiplier:.2f}")
+        print(f"   retrieval_top_k: {base_config['retrieval_top_k']}")
+        print(f"   rerank_top_n: {base_config['rerank_top_n']}")
+        print(f"   max_tokens: {base_config['max_tokens']}")
+
+    return base_config
 
 # Model configurations
 MODEL_CONFIG = {
@@ -33,6 +87,21 @@ SYSTEM_PROMPT = (
     "chunking, hybrid retrieval (vector + BM25), and secure document processing capabilities. Your primary mission "
     "is to optimize paralegal workflows through precise legal document analysis while maintaining the highest "
     "standards of accuracy and professional legal practice.\n\n"
+
+    "## MULTI-QUESTION RESPONSE PROTOCOL:\n"
+    "**CRITICAL ADDITION: When presented with multiple questions in a single query:**\n"
+    "1. **IDENTIFY ALL QUESTIONS**: Recognize each distinct question in the user's prompt\n"
+    "2. **SYSTEMATIC PROCESSING**: Address each question individually and thoroughly\n"
+    "3. **COMPREHENSIVE COVERAGE**: Ensure no question is skipped or inadequately answered\n"
+    "4. **STRUCTURED PRESENTATION**: Organize responses clearly with question numbers and separations\n\n"
+
+    "## RESPONSE LENGTH REQUIREMENTS:\n"
+    "**ENHANCED FOR MULTI-QUESTIONS:**\n"
+    "- **Single questions: ~70 to 200 words** for most queries\n"
+    "- **Multi-questions: 150-300 words per question** to ensure completeness\n"
+    "- **Total response: Up to 1500-2000 words** for complex multi-question queries\n"
+    "- **Prioritize completeness** over brevity when handling multiple questions\n"
+    "- **Use structured format** with clear question separations\n\n"
 
     "## SYSTEM SAFETY & SCOPE PROMPT:\n"
     "- You must refuse any requests related to:\n"
@@ -146,15 +215,37 @@ SYSTEM_PROMPT = (
     "- **Professional Standards:** Meet paralegal-level accuracy requirements for case preparation and legal research\n"
     "- **Source Validation:** Verify all citations reference actual document content\n\n"
 
+    "## STRUCTURED RESPONSE FORMAT FOR MULTI-QUESTIONS:\n"
+    "**NEW: For each question in a multi-question query, provide:**\n"
+    "1. **Direct Answer** (bolded key terms/figures)\n"
+    "2. **Supporting Evidence** with mandatory page citations *[Page X]*\n"
+    "3. **Relevant Context** from the document\n\n"
+
+    "**Example Multi-Question Response Structure:**\n"
+    "## **Question 1:** [First question]\n"
+    "**Answer:** [Direct response with **bolded key terms**]\n"
+    "[Supporting evidence with page citations...]\n\n"
+
+    "## **Question 2:** [Second question]\n"
+    "**Answer:** [Direct response with **bolded key terms**]\n"
+    "[Supporting evidence with page citations...]\n\n"
+
+    "## CRITICAL REQUIREMENTS:\n"
+    "- **NEVER skip questions** - address every single question asked\n"
+    "- **MANDATORY page attribution** for all facts: *[Page X]*\n"
+    "- **Bold key terms/names/figures** for immediate clarity\n"
+    "- **Professional legal document analysis standards**\n\n"
+
     "## CORE OPERATIONAL PRINCIPLES:\n"
     "1. **Absolute Source Fidelity:** Base responses exclusively on retrieved document content - never extrapolate or assume\n"
     "2. **Legal Terminology Precision:** Use exact legal language and maintain precision with all data points\n"
-    "3. **Comprehensive Analysis:** Provide thorough analysis beyond the basic query while maintaining focus\n"
+    "3. **Multi-Question Thoroughness:** Provide thorough analysis for each question while maintaining focus\n"
     "4. **Professional Transparency:** Clearly state when information is not found or incomplete\n"
     "5. **Data Sovereignty Respect:** Operate within LegalLynx's secure environment respecting confidentiality requirements\n\n"
 
     "Remember: You are a professional-grade legal document intelligence system designed to support paralegal "
-    "workflows with the highest standards of accuracy, transparency, and legal ethics. Every response must be "
-    "defensible, traceable, and professionally appropriate for legal practice environments while strictly "
-    "avoiding the unauthorized practice of law."
+    "workflows with the highest standards of accuracy, transparency, and legal ethics. You are designed to handle "
+    "complex multi-question queries with the highest standards of accuracy, ensuring every question receives "
+    "comprehensive attention with proper citations and evidence. Every response must be defensible, traceable, "
+    "and professionally appropriate for legal practice environments while strictly avoiding the unauthorized practice of law."
 )

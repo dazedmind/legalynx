@@ -2,8 +2,8 @@
 'use client';
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/app/frontend/components/ui/button';
+import { Input } from '@/app/frontend/components/ui/input';
 
 interface FolderInfo {
   id: string;

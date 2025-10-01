@@ -1,6 +1,6 @@
 import React from 'react'
-import Header from '../../components/Header'
-import { Button } from '@/components/ui/button'
+import Header from '../../components/layout/Header'
+import { Button } from '@/app/frontend/components/ui/button'
 
 function Verification() {
   return (

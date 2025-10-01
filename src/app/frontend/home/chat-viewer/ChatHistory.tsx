@@ -6,8 +6,8 @@ import { FileText, Calendar, MessageSquare, AlertCircle, Eye, Trash2, RotateCcw,
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
 import { toast } from 'sonner';
-import ConfirmationModal from '../../../components/ConfirmationModal';
-import { ModalType } from '../../../components/ConfirmationModal';
+import ConfirmationModal from '../../components/layout/ConfirmationModal';
+import { ModalType } from '../../components/layout/ConfirmationModal';
 
 interface ChatMessage {
   id: string;
@@ -520,29 +520,20 @@ export default function SavedChatHistory({
 
                   {/* Actions */}
                   {editingSessionId !== session.id && (
-                    <div className="flex items-center space-x-2 ml-4">
+                    <div className="flex items-center ml-4">
                       {session.hasSession && (
                         <button
                           onClick={(e) => handleStartRename(session.id, session.title, e)}
-                          className="p-2 text-yellow-600 hover:bg-yellow/20 rounded-full transition-colors cursor-pointer"
+                          className="p-2 text-foreground hover:text-blue-600 hover:bg-blue/20 rounded-full transition-colors cursor-pointer"
                           title="Rename chat session"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                       )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSessionClick(session);
-                        }}
-                        className="p-2 text-blue-600 hover:bg-blue/20 rounded-full transition-colors cursor-pointer"
-                        title="Open chat session"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
+            
                       <button
                         onClick={(e) => handleDeleteItem(session.id, e)}
-                        className="p-2 text-destructive hover:bg-destructive/20 rounded-full transition-colors cursor-pointer"
+                        className="p-2 text-foreground hover:text-destructive hover:bg-destructive/20 rounded-full transition-colors cursor-pointer"
                         title={session.hasSession ? "Delete chat session" : "Delete document"}
                       >
                         <Trash2 className="w-4 h-4" />

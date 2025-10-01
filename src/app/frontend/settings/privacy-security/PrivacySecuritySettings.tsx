@@ -14,12 +14,12 @@ import {
   Undo,
   Activity
 } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
+import { Switch } from '@/app/frontend/components/ui/switch';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
 import LoaderComponent from '../../components/ui/LoaderComponent';
-import { Separator } from '@/components/ui/separator';
+import { Separator } from '@/app/frontend/components/ui/separator';
 import SecurityLogSettings from './SecurityLogSettings';
 
 interface SecuritySettings {

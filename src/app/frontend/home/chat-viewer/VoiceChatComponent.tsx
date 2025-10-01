@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Mic, MicOff, Volume2, VolumeX, MessageSquare, AudioLines} from 'lucide-react';
-import { apiService } from '../../../lib/api';
-import { SimpleVisualizer } from '../../../components/visualizer/SimpleVisualizer';
+import { apiService } from '../../../../lib/api';
+import { SimpleVisualizer } from '../../components/visualizer/SimpleVisualizer';
 import PuffLoader from 'react-spinners/PuffLoader';
 import { FaRegDotCircle } from 'react-icons/fa';
 import { RiSquareFill } from 'react-icons/ri';

@@ -2,9 +2,9 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Header from "../components/Header";
+import Header from "../components/layout/Header";
 import InputField from "../components/ui/InputField";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/app/frontend/components/ui/button";
 import { GoEye, GoEyeClosed } from "react-icons/go";
 import { Toaster, toast } from "sonner";
 import { Check, X } from "lucide-react";

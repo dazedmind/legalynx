@@ -78,24 +78,3 @@ def multi_granularity_chunking(documents: List[Document], pdf_path: str, text_th
     print(f"   - Total: {len(all_nodes)}")
 
     return all_nodes
-
-def create_semantic_chunks(documents: List[Document], chunk_size: int = 512, 
-                          chunk_overlap: int = 50) -> List[TextNode]:
-    """
-    Create semantic chunks using sentence-based splitting.
-    Alternative chunking method for different use cases.
-    """
-    splitter = SentenceSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap
-    )
-    
-    nodes = []
-    for doc in documents:
-        doc_nodes = splitter.get_nodes_from_documents([doc])
-        for node in doc_nodes:
-            node.metadata["chunk_type"] = "semantic"
-            node.metadata.update(doc.metadata)
-        nodes.extend(doc_nodes)
-    
-    return nodes

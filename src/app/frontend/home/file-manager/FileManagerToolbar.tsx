@@ -2,7 +2,7 @@
 'use client';
 import React from 'react';
 import { Search, Filter, Star, List, Grid, FolderPlus } from 'lucide-react';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/app/frontend/components/ui/dropdown-menu';
 
 type SortField = 'name' | 'size' | 'uploadedAt' | 'lastAccessed' | 'pages';
 type ViewMode = 'grid' | 'list';

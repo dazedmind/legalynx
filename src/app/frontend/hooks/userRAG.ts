@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { RAGApiClient } from '../utils/api-client';
-import { QueryResponse, StreamingChunk } from '../lib/api';
+import { QueryResponse, StreamingChunk } from '../../../lib/api';
 
 export function useRAG() {
   const [loading, setLoading] = useState(false);

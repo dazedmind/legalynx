@@ -1,17 +1,17 @@
 // src/app/frontend/login/page.tsx
 "use client";
 import React, { useEffect, useState, Suspense } from "react";
-import Header from "../components/Header";
-import { Button } from "@/components/ui/button";
+import Header from "../components/layout/Header";
+import { Button } from "@/app/frontend/components/ui/button";
 import { useAuth } from "@/lib/context/AuthContext";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/app/frontend/components/ui/input";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast, Toaster } from "sonner";
 import logo from "../img/legalynxlogo.png";
 import Image from "next/image";
 import { Loader2, Shield, ShieldAlert } from "lucide-react";
-import ForgotPasswordModal from "../components/ForgotPasswordModal";
+import ForgotPasswordModal from "../components/layout/ForgotPasswordModal";
 import { GoEye, GoEyeClosed } from "react-icons/go";
 
 function LoginContent() {

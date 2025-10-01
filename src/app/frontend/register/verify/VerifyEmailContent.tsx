@@ -3,9 +3,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/app/frontend/components/ui/button';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
-import Header from '../../components/Header';
+import Header from '../../components/layout/Header';
 import { authUtils } from '@/lib/auth';
 
 export default function VerifyEmailContent() {

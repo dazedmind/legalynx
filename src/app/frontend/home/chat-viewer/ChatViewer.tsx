@@ -3,13 +3,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import {
-  FileText,
   AlertCircle,
-  Plus,
   ArrowUp,
   Cloud,
   DiamondPlus,
-  Square,
   Eye,
 } from "lucide-react";
 import {
@@ -19,16 +16,16 @@ import {
   isSecurityError,
   getSecurityErrorMessage,
   profileService,
-} from "../../../lib/api";
+} from "../../../../lib/api";
 import { toast, Toaster } from "sonner";
 import { useAuth } from "@/lib/context/AuthContext";
 import { authUtils } from "@/lib/auth";
 import { useRAGCache } from "@/lib/ragCacheService";
-import ConfirmationModal from "../../../components/ConfirmationModal";
+import ConfirmationModal from "../../components/layout/ConfirmationModal";
 import { ChatContainer } from "./ChatContainer";
-import SessionLoader from "../../../components/SessionLoader";
+import SessionLoader from "../../components/layout/SessionLoader";
 import { CloudCheck, AudioLines } from "lucide-react";
-import { ModalType } from "../../../components/ConfirmationModal";
+import { ModalType } from "../../components/layout/ConfirmationModal";
 import VoiceChatComponent from "./VoiceChatComponent";
 import { BiSolidFilePdf } from "react-icons/bi";
 import { GoSquareFill } from "react-icons/go";
@@ -195,7 +192,16 @@ export default function ChatViewer({
   // FIXED: Clear all session state when new document is uploaded
   const [pdfViewer, setPdfViewer] = useState<{
     isOpen: boolean;
-    document: DocumentInfo | null;
+    document: {
+      id: string;
+      fileName: string;
+      originalFileName: string;
+      size: number;
+      uploadedAt: string;
+      pages?: number;
+      status: string;
+      mimeType?: string;
+    } | null;
   }>({ isOpen: false, document: null });
 
   const clearAllSessionState = () => {
@@ -2347,7 +2353,7 @@ export default function ChatViewer({
       // DO NOT set typing message ID - we only want the streaming content
 
       // Create RAG API client instance
-      const ragClient = new (await import('../../../utils/api-client')).RAGApiClient();
+      const ragClient = new (await import('../../utils/api-client')).RAGApiClient();
 
       // Prevent tab throttling during streaming
       let wakeLock: any = null;
@@ -2850,7 +2856,7 @@ export default function ChatViewer({
                     <span className="block md:hidden">
                       {truncateString(currentDocument.fileName, 20)}
                     </span>
-                    <span className="hidden md:block">
+                    <span className="text-lg hidden md:block">
                       {currentDocument.fileName}
                     </span>
                     {!documentExists && " (Document Deleted)"}
@@ -2876,20 +2882,7 @@ export default function ChatViewer({
                     documentExists ? "text-muted-foreground" : "text-red-600"
                   }`}
                 >
-                  {documentExists ? (
-                    <span className="flex items-center gap-2">
-                      {currentSessionId &&
-                      currentDocument.status === "INDEXED" ? (
-                        <span className="px-2 py-0.5 text-xs bg-blue/20 text-blue-600 rounded-full font-medium">
-                          Session Saved
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 text-xs bg-neutral/20 text-muted-foreground border-tertiary border-dashed border-2 rounded-full font-medium">
-                          Temporary Session
-                        </span>
-                      )}
-                    </span>
-                  ) : (
+                  {!documentExists && (
                     "Document no longer available. Please upload a new document."
                   )}
                 </p>
@@ -2983,7 +2976,6 @@ export default function ChatViewer({
           onMessageAction={handleMessageAction}
           typingMessageId={typingMessageId}
           onTypingComplete={() => setTypingMessageId(null)}
-          streamingMessageId={streamingMessageId}
         />
 
         {/* Input Area */}

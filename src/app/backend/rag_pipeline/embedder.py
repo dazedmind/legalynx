@@ -1,11 +1,15 @@
 import os
 import torch
 from typing import List
-from llama_index.core import VectorStoreIndex, Settings
+from llama_index.core import Settings
+from llama_index.vector_stores.faiss import FaissVectorStore
+from llama_index.core import VectorStoreIndex, StorageContext
+import faiss
 from openai import OpenAI
 from llama_index.core.schema import TextNode
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.core.embeddings import BaseEmbedding
 from rag_pipeline.config import MODEL_CONFIG, SYSTEM_PROMPT
 
 
@@ -36,58 +40,127 @@ class EmbeddingManager:
         # Initialize the HuggingFace embedding model for vector operations
         print("🔄 Initializing embedding model...")
         try:
-            # ✅ FIXED: Add device configuration and PyTorch compatibility settings
-            self.embed_model = HuggingFaceEmbedding(
-                model_name=MODEL_CONFIG["embedding_model"],
-                device="cpu",  # Force CPU to avoid device transfer issues
-                trust_remote_code=True,
-                model_kwargs={
-                    "torch_dtype": "float32",  # Use float32 instead of auto
-                    "device_map": None,  # Disable automatic device mapping
-                }
-            )
+            # Use sentence-transformers directly to avoid meta tensor issues
+            import sentence_transformers
+            print("📦 Using sentence-transformers directly...")
+
+            # Create a wrapper that inherits from BaseEmbedding
+            class SentenceTransformerWrapper(BaseEmbedding):
+                # FIXED: Configure model to allow arbitrary types and extra fields
+                class Config:
+                    arbitrary_types_allowed = True
+                    extra = "allow"
+
+                def __init__(self, model_name='all-MiniLM-L12-v2', **kwargs):
+                    # Initialize parent without model-specific attributes
+                    super().__init__(**kwargs)
+
+                    # CRITICAL FIX: Prevent meta tensor issues
+                    import torch
+                    from transformers import AutoTokenizer, AutoModel
+                    import numpy as np
+
+                    print(f"🔧 Loading {model_name} via transformers (workaround for meta tensor issue)...")
+
+                    # Load tokenizer and model separately using transformers
+                    # Use object.__setattr__ to bypass Pydantic validation completely
+                    object.__setattr__(self, '_model_name', model_name)
+                    object.__setattr__(self, '_tokenizer', AutoTokenizer.from_pretrained(f'sentence-transformers/{model_name}'))
+
+                    model = AutoModel.from_pretrained(
+                        f'sentence-transformers/{model_name}',
+                        torch_dtype=torch.float32  # Explicit dtype
+                    )
+
+                    # Move to CPU explicitly and set to eval mode
+                    model = model.to('cpu')
+                    model.eval()
+
+                    object.__setattr__(self, '_transformer_model', model)
+
+                    print("✅ Model loaded successfully via transformers")
+
+                @property
+                def tokenizer(self):
+                    return self._tokenizer
+
+                @property
+                def transformer_model(self):
+                    return self._transformer_model
+
+                def _mean_pooling(self, model_output, attention_mask):
+                    """Mean pooling - take attention mask into account for correct averaging."""
+                    import torch
+                    token_embeddings = model_output[0]  # First element contains all token embeddings
+                    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+                    return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+
+                def _encode_text(self, text: str) -> List[float]:
+                    """Encode text using transformers directly."""
+                    import torch
+
+                    # Tokenize
+                    encoded_input = self.tokenizer(text, padding=True, truncation=True, return_tensors='pt')
+
+                    # Move to CPU
+                    encoded_input = {k: v.to('cpu') for k, v in encoded_input.items()}
+
+                    # Compute embeddings
+                    with torch.no_grad():
+                        model_output = self.transformer_model(**encoded_input)
+
+                    # Perform pooling
+                    sentence_embeddings = self._mean_pooling(model_output, encoded_input['attention_mask'])
+
+                    # Normalize embeddings
+                    sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
+
+                    return sentence_embeddings[0].cpu().numpy().tolist()
+
+                def _get_query_embedding(self, query: str) -> List[float]:
+                    """Get embedding for a query."""
+                    return self._encode_text(query)
+
+                def _get_text_embedding(self, text: str) -> List[float]:
+                    """Get embedding for a single text."""
+                    return self._encode_text(text)
+
+                def _get_text_embeddings(self, texts: List[str]) -> List[List[float]]:
+                    """Get embeddings for multiple texts."""
+                    return [self._encode_text(text) for text in texts]
+
+                async def _aget_query_embedding(self, query: str) -> List[float]:
+                    """Async version of get_query_embedding."""
+                    return self._get_query_embedding(query)
+
+                async def _aget_text_embedding(self, text: str) -> List[float]:
+                    """Async version of get_text_embedding."""
+                    return self._get_text_embedding(text)
+
+                @classmethod
+                def class_name(cls) -> str:
+                    return "SentenceTransformerWrapper"
+
+            self.embed_model = SentenceTransformerWrapper(model_name='all-MiniLM-L6-v2')
             Settings.embed_model = self.embed_model
-            print(f"✅ Embedding model loaded: {MODEL_CONFIG['embedding_model']}")
+            print("✅ Sentence-transformers embedding model loaded successfully")
+
         except Exception as e:
-            print(f"❌ Primary embedding model failed: {e}")
-            print("🔄 Trying fallback embedding model...")
+            print(f"❌ Embedding model initialization failed: {e}")
+            print("🔄 Trying alternative approach...")
             try:
-                # Fallback to a simpler, more compatible model
+                # Alternative: Use HuggingFaceEmbedding with explicit device setting
                 self.embed_model = HuggingFaceEmbedding(
-                    model_name="sentence-transformers/all-MiniLM-L12-v2",  # Simpler, more compatible model
-                    device="cpu",
-                    trust_remote_code=True
+                    model_name="sentence-transformers/all-MiniLM-L12-v2",
+                    device="cpu"
                 )
                 Settings.embed_model = self.embed_model
-                print("✅ Fallback embedding model loaded: sentence-transformers/all-MiniLM-L12-v2")
-            except Exception as fallback_error:
-                print(f"❌ Fallback embedding model also failed: {fallback_error}")
-                print("🔄 Trying minimal embedding model as last resort...")
-                try:
-                    # Last resort: Use a very simple embedding model with minimal dependencies
-                    import sentence_transformers
-                    print("📦 Using sentence-transformers directly...")
-                    
-                    # Create a minimal wrapper that works with LlamaIndex
-                    class MinimalEmbeddingWrapper:
-                        def __init__(self):
-                            self.model = sentence_transformers.SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
-                        
-                        def get_text_embedding(self, text: str) -> list:
-                            return self.model.encode(text).tolist()
-                        
-                        def get_text_embeddings(self, texts: list) -> list:
-                            return [self.model.encode(text).tolist() for text in texts]
-                    
-                    self.embed_model = MinimalEmbeddingWrapper()
-                    print("✅ Minimal embedding model loaded successfully")
-                    
-                except Exception as minimal_error:
-                    print(f"❌ All embedding models failed. Errors:")
-                    print(f"   Primary: {e}")
-                    print(f"   Fallback: {fallback_error}")
-                    print(f"   Minimal: {minimal_error}")
-                    raise RuntimeError("Could not initialize any embedding model. This may be due to PyTorch compatibility issues or missing dependencies.")
+                print("✅ HuggingFace embedding model loaded")
+            except Exception as alt_error:
+                print(f"❌ All embedding model approaches failed:")
+                print(f"   Direct: {e}")
+                print(f"   Alternative: {alt_error}")
+                raise RuntimeError("Could not initialize any embedding model. This may be due to PyTorch compatibility issues or missing dependencies.")
         
         # Validate API key
         if not self.openai_api_key:
@@ -157,23 +230,37 @@ class IndexBuilder:
     
     def build_vector_index(self, nodes: List[TextNode]) -> VectorStoreIndex:
         """
-        Build a vector index from the provided nodes.
-        
+        Build a FAISS vector index from the provided nodes.
+
         Args:
             nodes: List of text nodes to index
-            
+
         Returns:
-            VectorStoreIndex: The built vector index
+            VectorStoreIndex: The built FAISS vector index
         """
         if not nodes:
             raise ValueError("No nodes provided for indexing")
-        
-        print(f"🔄 Building vector index with {len(nodes)} nodes...")
-        
-        # Create vector index with proper embeddings
-        vector_index = VectorStoreIndex(nodes, embed_model=self.embedding_manager.get_embedding_model())
-        print(f"✅ Indexed {len(nodes)} nodes in vector store")
-        
+
+        print(f"🔄 Building FAISS vector index with {len(nodes)} nodes...")
+
+        # Get embedding dimension from the model
+        embed_model = self.embedding_manager.get_embedding_model()
+        test_embedding = embed_model.get_text_embedding("test")
+        dimension = len(test_embedding)
+
+        # Create FAISS index
+        faiss_index = faiss.IndexFlatL2(dimension)
+        vector_store = FaissVectorStore(faiss_index=faiss_index)
+        storage_context = StorageContext.from_defaults(vector_store=vector_store)
+
+        # Create vector index with FAISS
+        vector_index = VectorStoreIndex(
+            nodes,
+            storage_context=storage_context,
+            embed_model=embed_model
+        )
+        print(f"✅ Indexed {len(nodes)} nodes in FAISS vector store")
+
         return vector_index
     
     def update_index(self, index: VectorStoreIndex, new_nodes: List[TextNode]) -> VectorStoreIndex:

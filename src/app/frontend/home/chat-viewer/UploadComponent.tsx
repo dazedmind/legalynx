@@ -3,18 +3,17 @@ import {
   Upload,
   FileText,
   MessageSquareDashed,
-  AlertCircle,
 } from "lucide-react";
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { handleApiError, UploadResponse } from "../../../lib/api";
+import { UploadResponse } from "../../../../lib/api";
 import { useAuth } from "@/lib/context/AuthContext";
 import { toast, Toaster } from "sonner";
 import { authUtils } from "@/lib/auth";
-import BlurText from "../../../components/reactbits/BlurText";
+import BlurText from "../../components/reactbits/BlurText";
 import {
   getSecurityErrorMessage,
   isSecurityError,
-} from "../../../lib/api";
+} from "../../../../lib/api";
 import { GoSquareFill } from "react-icons/go";
 
 interface UploadPageProps {
