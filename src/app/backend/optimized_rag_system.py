@@ -503,25 +503,59 @@ class RuleBasedFileNamer:
             # Clean the document type for filename safety
             if raw_type:
                 print(f"📝 Raw document type from LLM: {raw_type}")
-                
-                # First, split CamelCase into separate words
-                # e.g., "AcknowledgmentOfDebt" -> "Acknowledgment Of Debt"
-                camel_split = re.sub(r'(?<!^)(?=[A-Z])', ' ', raw_type)
-                print(f"📝 After CamelCase split: {camel_split}")
-                
-                # Remove special characters
-                cleaned_type = re.sub(r'[^\w\s-]', '', camel_split)
+
+                # Simple processing: just clean and format
+                # Remove special characters but keep spaces
+                cleaned_type = re.sub(r'[^\w\s-]', '', raw_type)
                 # Replace multiple spaces with single space and strip
                 cleaned_type = re.sub(r'\s+', ' ', cleaned_type).strip()
-                
-                # Filter out unknown words (case-insensitive)
-                words_to_remove = ['page', 'unknown', 'document', 'file', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
+
+                # Remove noise words
+                words_to_remove = ['page', 'unknown', 'file', 'sample', 'test', 'example']
                 words = cleaned_type.split()
                 filtered_words = [w for w in words if w.lower() not in words_to_remove and not w.isdigit()]
-                
+
                 if filtered_words:
-                    # Convert to uppercase and join with dash
-                    extracted_type = '-'.join(filtered_words).upper()[:50]
+                    # Convert to uppercase and join with hyphens
+                    extracted_type = '-'.join(filtered_words).upper()
+
+                    # CRITICAL: Detect and fix broken text (single letters separated by hyphens)
+                    # e.g., "S-A-M-P-L-E" or "U-N-C-A-T-E-G-O-R-I-Z-E-D"
+                    parts = extracted_type.split('-')
+                    single_letter_count = sum(1 for p in parts if len(p) == 1)
+
+                    # If more than 50% are single letters, it's broken - use fallback
+                    if len(parts) > 3 and single_letter_count / len(parts) > 0.5:
+                        print(f"⚠️ Detected broken text: {extracted_type}, using fallback")
+                        extracted_type = user_title.upper().replace(' ', '-') if user_title else 'DOCUMENT'
+                    else:
+                        # Remove duplicate consecutive words (e.g., "ACKNOWLEDGMENT-OF-DEBT-ACKNOWLEDGMENT-OF-DEBT")
+                        # Split into words and track what we've seen recently
+                        final_parts = []
+                        for i, part in enumerate(parts):
+                            # Check if this part + next few parts form a duplicate of previous parts
+                            is_duplicate = False
+                            if i > 0 and len(final_parts) >= 3:
+                                # Check if current position starts repeating the pattern
+                                pattern_len = min(3, len(final_parts))
+                                if parts[i:i+pattern_len] == final_parts[-pattern_len:]:
+                                    is_duplicate = True
+
+                            if not is_duplicate:
+                                final_parts.append(part)
+
+                        extracted_type = '-'.join(final_parts)
+
+                        # CRITICAL: Limit to max 4 words for conciseness
+                        # "COMMENT-ON-THE-FORMAL-OFFER-OF-EXHIBITS" -> "COMMENT-ON-FORMAL-OFFER"
+                        if len(final_parts) > 4:
+                            # Keep first 4 meaningful parts
+                            extracted_type = '-'.join(final_parts[:4])
+                            print(f"⚠️ Truncated long type to 4 words: {extracted_type}")
+
+                        # Final length limit
+                        extracted_type = extracted_type[:50]
+
                     print(f"✅ Cleaned document type: {extracted_type}")
                 else:
                     # If all words were filtered out, use fallback
@@ -530,7 +564,7 @@ class RuleBasedFileNamer:
             else:
                 extracted_type = 'DOCUMENT'
             
-            # Clean client name similarly
+            # Clean client name - extract surnames only, handle multiple parties
             if extracted_client:
                 print(f"📝 Raw client name from LLM: {extracted_client}")
 
@@ -544,6 +578,18 @@ class RuleBasedFileNamer:
 
                 # Only proceed with cleaning if not a test placeholder
                 if extracted_client:
+                    # CRITICAL VALIDATION: If multiple words exist without "vs", reject it
+                    # This prevents extracting both client and notary
+                    temp_words = extracted_client.strip().split()
+                    has_vs = any(w.lower() in ['vs', 'versus', 'v'] for w in temp_words)
+
+                    # If more than 2 words and no "vs", likely includes notary/witness - reject
+                    if len(temp_words) > 2 and not has_vs:
+                        print(f"⚠️ Detected multiple names without 'vs': '{extracted_client}'")
+                        print(f"   This likely includes notary/witnesses - using first surname only")
+                        # Extract just the first surname
+                        extracted_client = temp_words[0]
+
                     # CRITICAL FIX: Remove page references and common noise before processing
                     # Handle patterns like "ZAYVEN KORRIN Page 1", "JOHN DOE *[Page 1]*", etc.
                     noise_patterns = [
@@ -576,67 +622,94 @@ class RuleBasedFileNamer:
                     ]
                     words = cleaned_client.split()
 
-                    # Check for "vs" or "versus" to detect multi-party cases
-                    if 'vs' in [w.lower() for w in words] or 'versus' in [w.lower() for w in words]:
-                        # Multi-party case: extract surnames from both sides
-                        vs_index = -1
-                        for i, word in enumerate(words):
+                    # CRITICAL: ONLY treat as multi-party if "vs" separator exists
+                    # Otherwise, LLM might include notary/witnesses which we don't want
+                    has_vs_separator = any(w.lower() in ['vs', 'versus', 'v'] for w in words)
+
+                    if has_vs_separator:
+                        # Multi-party case: extract surnames from ALL parties
+                        # Example: "GUTIERREZ vs GOMEZ vs SUPETRAN" -> "GUTIERREZ-GOMEZ-SUPETRAN"
+
+                        # Split by vs/versus/v separators
+                        parties = []
+                        current_party = []
+
+                        for word in words:
                             if word.lower() in ['vs', 'versus', 'v']:
-                                vs_index = i
-                                break
-
-                        if vs_index > 0 and vs_index < len(words) - 1:
-                            # Get words before and after "vs"
-                            first_party_words = [w for w in words[:vs_index] if w.lower() not in words_to_remove and not w.isdigit()]
-                            second_party_words = [w for w in words[vs_index+1:] if w.lower() not in words_to_remove and not w.isdigit()]
-
-                            # Extract surnames (last word from each party)
-                            surnames = []
-                            if first_party_words:
-                                surnames.append(first_party_words[-1].upper())
-                            if second_party_words:
-                                surnames.append(second_party_words[-1].upper())
-
-                            if surnames:
-                                extracted_client = '-'.join(surnames)[:40]
-                                print(f"✅ Extracted multi-party surnames: {extracted_client}")
+                                if current_party:
+                                    # Filter and get surname (last word) from current party
+                                    party_words = [w for w in current_party if w.lower() not in words_to_remove and not w.isdigit()]
+                                    if party_words:
+                                        parties.append(party_words[-1].upper())  # Last word = surname
+                                    current_party = []
                             else:
-                                print(f"⚠️ Multi-party extraction failed, using user_client_name fallback")
-                                extracted_client = None
+                                current_party.append(word)
+
+                        # Don't forget the last party
+                        if current_party:
+                            party_words = [w for w in current_party if w.lower() not in words_to_remove and not w.isdigit()]
+                            if party_words:
+                                parties.append(party_words[-1].upper())
+
+                        if parties:
+                            extracted_client = '-'.join(parties)[:50]  # Join all surnames with hyphens
+                            print(f"✅ Extracted multi-party surnames ({len(parties)} parties): {extracted_client}")
                         else:
-                            # Fallback to single surname
-                            filtered_words = [w for w in words if w.lower() not in words_to_remove + ['vs', 'versus', 'v'] and not w.isdigit()]
-                            if filtered_words:
-                                extracted_client = filtered_words[-1].upper()[:20]
-                                print(f"✅ Extracted surname: {extracted_client}")
-                            else:
-                                print(f"⚠️ All words filtered, using user_client_name fallback")
-                                extracted_client = None
+                            print(f"⚠️ Multi-party extraction failed, using user_client_name fallback")
+                            extracted_client = None
                     else:
-                        # Single party case: extract last surname only
+                        # Single party case: extract LAST surname only
+                        # Special handling for "y" (Spanish "and") - extract word AFTER "y"
                         filtered_words = [w for w in words if w.lower() not in words_to_remove and not w.isdigit()]
 
                         if filtered_words:
-                            # Take LAST word (surname) and ensure it's substantial (not just 1 letter)
-                            surname = filtered_words[-1].upper()
+                            # Check for "y" connector (Spanish "and" used in surnames)
+                            # Example: "TORRES y YAMBAO" should extract "YAMBAO" (word after "y")
+                            y_indices = [i for i, w in enumerate(filtered_words) if w.lower() == 'y']
 
-                            # Validation: surname should be at least 2 characters
-                            if len(surname) >= 2:
-                                extracted_client = surname[:20]
-                                print(f"✅ Extracted surname: {extracted_client}")
-                            else:
-                                # Try second-to-last word if last word is too short
-                                if len(filtered_words) >= 2:
-                                    surname = filtered_words[-2].upper()
+                            if y_indices:
+                                # Take word AFTER the last "y"
+                                last_y_index = y_indices[-1]
+                                if last_y_index + 1 < len(filtered_words):
+                                    surname = filtered_words[last_y_index + 1].upper()
                                     if len(surname) >= 2:
                                         extracted_client = surname[:20]
-                                        print(f"✅ Extracted surname (from 2nd last): {extracted_client}")
+                                        print(f"✅ Extracted surname (after 'y'): {extracted_client}")
+                                    else:
+                                        print(f"⚠️ Surname after 'y' too short, using user_client_name fallback")
+                                        extracted_client = None
+                                else:
+                                    # "y" is last word, use word before it
+                                    surname = filtered_words[last_y_index - 1].upper() if last_y_index > 0 else filtered_words[0].upper()
+                                    if len(surname) >= 2:
+                                        extracted_client = surname[:20]
+                                        print(f"✅ Extracted surname (before 'y'): {extracted_client}")
                                     else:
                                         print(f"⚠️ Surname too short, using user_client_name fallback")
                                         extracted_client = None
+                            else:
+                                # No "y" connector: Take LAST word (primary surname)
+                                # This handles: "RAMOS BAUTISTA" -> "BAUTISTA" is likely notary, but we'll take LAST
+                                # Changed from FIRST to LAST based on Philippine naming conventions
+                                surname = filtered_words[-1].upper()
+
+                                # Validation: surname should be at least 2 characters
+                                if len(surname) >= 2:
+                                    extracted_client = surname[:20]
+                                    print(f"✅ Extracted surname (last word): {extracted_client}")
                                 else:
-                                    print(f"⚠️ Only one short word found, using user_client_name fallback")
-                                    extracted_client = None
+                                    # Try second-to-last word if last word is too short
+                                    if len(filtered_words) >= 2:
+                                        surname = filtered_words[-2].upper()
+                                        if len(surname) >= 2:
+                                            extracted_client = surname[:20]
+                                            print(f"✅ Extracted surname (2nd to last): {extracted_client}")
+                                        else:
+                                            print(f"⚠️ Surname too short, using user_client_name fallback")
+                                            extracted_client = None
+                                    else:
+                                        print(f"⚠️ Only one short word found, using user_client_name fallback")
+                                        extracted_client = None
                         else:
                             print(f"⚠️ No valid words after filtering, using user_client_name fallback")
                             extracted_client = None
@@ -672,32 +745,120 @@ class RuleBasedFileNamer:
             # Parse extracted date if available
             if extracted_date:
                 try:
-                    # Remove any trailing text like "*[Page 1]*"
+                    print(f"📅 Raw date from LLM: {extracted_date}")
+                    # Remove any markdown formatting, asterisks, brackets, and trailing text
                     date_clean = re.sub(r'\s*\*?\[.*?\]\*?', '', extracted_date).strip()
-                    
-                    # Parse date and format as YYYYMMDD
-                    if '-' in date_clean:
-                        date_obj = datetime.strptime(date_clean, "%Y-%m-%d")
-                        date_part = date_obj.strftime("%Y%m%d")
-                        print(f"✅ Extracted date: {date_part}")
+                    # Remove all asterisks (markdown bold markers)
+                    date_clean = date_clean.replace('*', '').strip()
+
+                    # Try multiple date formats
+                    date_obj = None
+                    date_format_used = None
+                    date_formats = [
+                        ("%Y-%m-%d", "full"),           # 2024-08-20
+                        ("%Y/%m/%d", "full"),           # 2024/08/20
+                        ("%m/%d/%Y", "full"),           # 08/20/2024
+                        ("%m-%d-%Y", "full"),           # 08-20-2024
+                        ("%d/%m/%Y", "full"),           # 20/08/2024
+                        ("%B %d, %Y", "full"),          # August 20, 2024
+                        ("%d %B %Y", "full"),           # 20 August 2024
+                        ("%b %d, %Y", "full"),          # Aug 20, 2024
+                        ("%d %b %Y", "full"),           # 20 Aug 2024
+                        ("%Y%m%d", "full"),             # 20240820
+                        ("%Y-%m", "month"),             # 2024-08 (month precision)
+                        ("%Y/%m", "month"),             # 2024/08
+                        ("%B %Y", "month"),             # August 2024
+                        ("%b %Y", "month"),             # Aug 2024
+                        ("%Y", "year"),                 # 2024 (year only)
+                    ]
+
+                    for fmt, precision in date_formats:
+                        try:
+                            date_obj = datetime.strptime(date_clean, fmt)
+                            date_format_used = precision
+                            break
+                        except ValueError:
+                            continue
+
+                    if date_obj:
+                        if date_format_used == "full":
+                            date_part = date_obj.strftime("%Y%m%d")
+                            print(f"✅ Parsed full date: {date_part}")
+                        elif date_format_used == "month":
+                            # Month precision: YYYYMM00
+                            date_part = date_obj.strftime("%Y%m") + "00"
+                            print(f"✅ Parsed month: {date_part}")
+                        elif date_format_used == "year":
+                            # Year precision: YYYY0000
+                            date_part = date_obj.strftime("%Y") + "0000"
+                            print(f"✅ Parsed year: {date_part}")
                     else:
-                        date_part = date_clean[:8] if len(date_clean) >= 8 else datetime.now().strftime("%Y%m%d")
+                        # Try to extract just year if full date parsing fails
+                        year_match = re.search(r'\b(19|20)\d{2}\b', date_clean)
+                        if year_match:
+                            year = year_match.group()
+                            date_part = f"{year}0000"  # Year with unknown month/day
+                            print(f"✅ Extracted year only: {date_part}")
+                        else:
+                            # Fallback to upload date if extraction failed
+                            print(f"⚠️ Could not parse date '{date_clean}', using upload date: {date_part}")
+
                 except Exception as date_err:
-                    print(f"⚠️ Date parsing error: {date_err}, using current date")
-                    date_part = datetime.now().strftime("%Y%m%d")
+                    print(f"⚠️ Date parsing error: {date_err}, using upload date: {date_part}")
             
+            # CRITICAL: Decide which document type to use
+            # Priority: valid user_title > LLM-extracted type > default
+            final_type = None
+
+            if user_title:
+                # Validate that user_title is not just a sanitized filename
+                cleaned_title = user_title.strip()
+
+                # Normalize both user_title and original_filename for comparison
+                # Remove all non-alphanumeric chars and convert to lowercase
+                normalized_title = re.sub(r'[^a-zA-Z0-9]', '', cleaned_title).lower()
+                normalized_filename = re.sub(r'[^a-zA-Z0-9]', '', os.path.splitext(original_filename)[0]).lower()
+
+                # Reject if it looks like filename artifacts:
+                # - Contains file extensions
+                # - Is very short (< 3 chars)
+                # - Matches common test/placeholder patterns
+                # - Matches the original filename (after normalization)
+                is_filename_artifact = (
+                    len(cleaned_title) < 3 or
+                    any(ext in cleaned_title.lower() for ext in ['.pdf', '.doc', '.txt']) or
+                    cleaned_title.lower() in ['document', 'file', 'untitled', 'test', 'testclient'] or
+                    normalized_title == normalized_filename or  # Catches sanitized filenames
+                    # Also check if user_title is suspiciously similar (>80% match)
+                    (len(normalized_title) > 0 and len(normalized_filename) > 0 and
+                     len(set(normalized_title) & set(normalized_filename)) / max(len(set(normalized_title)), len(set(normalized_filename))) > 0.9)
+                )
+
+                if not is_filename_artifact:
+                    final_type = cleaned_title.upper().replace(' ', '-')
+                    print(f"✅ Using user_title as document type: {final_type}")
+                else:
+                    print(f"⚠️ user_title '{user_title}' looks like filename artifact, using LLM-extracted type instead")
+
+            # Use LLM-extracted type if user_title was invalid or not provided
+            if not final_type:
+                if extracted_type and extracted_type != 'DOCUMENT':
+                    final_type = extracted_type
+                    print(f"✅ Using LLM-extracted document type: {final_type}")
+                else:
+                    final_type = 'DOCUMENT'
+                    print(f"⚠️ No valid type found, using default: {final_type}")
+
+            extracted_type = final_type
+
             # Build filename based on naming option
             if naming_option == "add_timestamp":
                 # Format: YYYYMMDD_DOCUMENTTYPE.ext (no client name, uppercase with dashes)
-                if not extracted_type or extracted_type == 'DOCUMENT':
-                    # Use user title as absolute fallback
-                    extracted_type = user_title.upper().replace(' ', '-') if user_title else 'DOCUMENT'
-                
                 filename = f"{date_part}_{extracted_type}{file_ext}"
-                    
+
             elif naming_option == "add_client_name":
                 # Format: YYYYMMDD_DOCUMENTTYPE_SURNAME.ext
-                
+
                 # CRITICAL FIX: Properly handle fallback to user_client_name
                 if not extracted_client:
                     if user_client_name:
@@ -731,12 +892,7 @@ class RuleBasedFileNamer:
                         # Only use default if absolutely no client information is available
                         extracted_client = "UNKNOWN"
                         print(f"⚠️ No client name available, using: {extracted_client}")
-                        
-                
-                # Ensure document type is set
-                if not extracted_type or extracted_type == 'DOCUMENT':
-                    extracted_type = user_title.upper().replace(' ', '-') if user_title else 'DOCUMENT'
-                
+
                 # CRITICAL: Build filename with client at the END
                 # Format: YYYYMMDD_DOCUMENTTYPE_SURNAME.ext
                 filename = f"{date_part}_{extracted_type}_{extracted_client}{file_ext}"
