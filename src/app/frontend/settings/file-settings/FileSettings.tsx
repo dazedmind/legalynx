@@ -31,16 +31,16 @@ const retentionOptions = [
 ];
 
 const renamingFormats = [
-  { value: "ORIGINAL", label: "Keep original names", example: "document.pdf" },
+  { value: "ORIGINAL", label: "Keep original names", example: "ORIGINAL DOCUMENT.pdf" },
   {
     value: "ADD_TIMESTAMP",
-    label: "Add timestamp",
-    example: "20250815_DOCUMENT.pdf",
+    label: "Add document type",
+    example: "YYYYMMDD_DOCUMENT-TYPE.pdf",
   },
   {
     value: "ADD_CLIENT_NAME",
-    label: "Add the Client Name",
-    example: "20250815_CLIENT_DOCUMENT.pdf",
+    label: "Add client name",
+    example: "YYYYMMDD_DOCUMENT-TYPE_ENTITY.pdf",
   },
 ];
 

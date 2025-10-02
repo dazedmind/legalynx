@@ -42,8 +42,13 @@ class LLMDocumentExtractor:
             print(f"⚠️ Failed to initialize LLM for extraction: {e}")
             self.llm = None
     
-    def extract_text_from_content(self, file_content: Union[bytes, str], max_pages: int = 3) -> str:
-        """Extract text from file content (bytes or file path)."""
+    def extract_text_from_content(self, file_content: Union[bytes, str], max_pages: Optional[int] = 3) -> str:
+        """Extract text from file content (bytes or file path).
+
+        Args:
+            file_content: File content as bytes or file path as string
+            max_pages: Maximum number of pages to extract. If None, extract all pages.
+        """
         try:
             if isinstance(file_content, str):
                 # It's a file path
@@ -51,17 +56,18 @@ class LLMDocumentExtractor:
             else:
                 # It's bytes content
                 doc = fitz.open(stream=file_content, filetype="pdf")
-            
+
             text_parts = []
-            max_pages = min(max_pages, len(doc))
-            
-            for page_num in range(max_pages):
+            # If max_pages is None, extract all pages
+            pages_to_extract = len(doc) if max_pages is None else min(max_pages, len(doc))
+
+            for page_num in range(pages_to_extract):
                 page = doc[page_num]
                 text_parts.append(page.get_text())
-            
+
             doc.close()
             return "\n".join(text_parts)
-            
+
         except Exception as e:
             print(f"⚠️ Text extraction failed: {e}")
             return ""
@@ -88,16 +94,17 @@ class LLMDocumentExtractor:
             return self._fallback_extraction(original_filename)
         
         try:
-            # Extract text from document - OPTIMIZED: Only first page for speed
-            text_content = self.extract_text_from_content(file_content, max_pages=1)
+            # Extract text from ENTIRE document for accurate date extraction
+            # Don't limit pages - we need full document text to find dates that may be at the end
+            text_content = self.extract_text_from_content(file_content, max_pages=None)
 
             if not text_content.strip():
                 print("⚠️ No text extracted from document")
                 return self._fallback_extraction(original_filename)
 
-            # OPTIMIZED: Truncate to first 1500 chars (was 2000) for faster LLM processing
-            if len(text_content) > 1500:
-                text_content = text_content[:1500] + "..."
+            # Send full document text to LLM - no truncation
+            # Dates are often at the end of documents (signature sections, notary blocks)
+            print(f"📄 Extracted {len(text_content)} characters from document for LLM analysis")
 
             # Create LLM prompt for document analysis
             prompt = self._create_extraction_prompt(text_content, original_filename)
@@ -143,17 +150,75 @@ class LLMDocumentExtractor:
     
     def _create_extraction_prompt(self, text_content: str, original_filename: str) -> str:
         """Create a prompt for LLM to extract document information."""
-        # OPTIMIZED: Shorter, more direct prompt for faster processing
-        return f"""Extract document info from this text. Respond ONLY in this format:
+        return f"""Extract document info. Respond ONLY in this format:
 
-DOCUMENT_TYPE: [Brief type in CamelCase, e.g. "Brief", "Motion", "Contract"]
-DATE: [YYYY-MM-DD or NONE]
-CLIENT_NAME: [Person/company name or NONE]
+DOCUMENT_TYPE: [Type only - max 3-4 words]
+DATE: [YYYY-MM-DD]
+CLIENT_NAME: [Name or NONE]
+
+Rules for DOCUMENT_TYPE:
+- Use SHORT, standard legal terms (e.g., "Complaint with Prayer", "Lease Agreement", "Affidavit", "Decision")
+- DO NOT include details like "for attachment", "bail hearing", "cancellation and termination"
+
+Your job is to identify the correct DATE in legal documents for filename generation.  
+
+The DATE must always be the **execution, filing, or promulgation date** — not incidental dates like birthdays, transaction dates, or citations.  
+
+--------------------------------
+Rules for DATE EXTRACTION:
+Search for dates in the following priority order depending on the document type and context:  
+
+1. **Before "RESPECTFULLY SUBMITTED"** →  
+   Usually for pleadings (e.g., complaints, petitions, comments, verified answers).  
+
+2. **After "WITNESS THEREOF"** →  
+   Common in contracts, acknowledgments of debt, special powers of attorney.  
+
+3. **After "RESPECTFULLY SUBMITTED"** →  
+   For some pleadings where the date is placed below the submission block.  
+
+4. **After "SUBSCRIBED AND SWORN"** →  
+   For affidavits, waivers, sworn statements, and notarized documents.  
+
+5. **After the word "SIGNED"** →  
+   For promissory notes, contracts, and undertakings.  
+
+6. **After "WHEREFORE, PREMISES CONSIDERED,"** →  
+   Found in verified answers and certain formal pleadings.  
+
+7. **Before "The Law Office"** →  
+   For pleadings and appellate briefs.  
+
+8. **After "EN BANC"** →  
+   For Supreme Court decisions or resolutions.  
+
+9. **After "PROMULGATED"** →  
+   For rulings, judgments, and decisions.  
+
+-------------------------------- 
+DATE FORMAT:
+- Return as YYYY-MM-DD if complete.
+- Return as YYYY-MM if only month/year is present.
+- Return as YYYY if only year is available.
+
+Rules for CLIENT_NAME:
+- Extract SURNAMES ONLY (last names), NO first names
+- For SINGLE party: extract ONLY ONE surname (the client's surname)
+  * If "Juan DELA CRUZ y SANTOS", extract: "SANTOS" (surname after "y")
+  * If "Maria REYES", extract: "REYES"
+  * If "Juan DELA CRUZ", extract: "DELA CRUZ"
+  * DO NOT include notary public names, witnesses, or attorneys
+- For MULTIPLE parties (with "vs"): extract all surnames separated by "vs"
+  * If "GUTIERREZ vs. GOMEZ vs. SUPETRAN", extract: "GUTIERREZ vs GOMEZ vs SUPETRAN"
+- If document contains "y" (Spanish "and"), extract the surname AFTER "y"
+  * "TORRES y YAMBAO" → extract "YAMBAO"
+  * "CASTILLO y ASUNCION" → extract "ASUNCION"
+- If no clear client/party names, use NONE
 
 TEXT:
 {text_content}
 
-Be concise. Use NONE if unclear."""
+Response:"""
     
     def _parse_llm_response(self, response_text: str, original_filename: str) -> Dict[str, Any]:
         """Parse LLM response to extract structured information."""
