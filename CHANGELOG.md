@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.3.7] - 2025-10-06
+
+### 🛠️ Fixes
+- **Response Time Optimization:** Reduced overall system latency by changing the model’s reasoning, leading to faster generation and output delivery.
+- **Streaming Response Refined:** Improved the live token streaming so answers appear in real time as they’re generated, improving interactivity and responsiveness.
+- **Non-Document Query Handler:** Added a dedicated response handler to properly manage general (non-document) user queries outside the RAG context.
+- **File Upload Error Handling:** Resolved an issue where failed uploads were incorrectly appearing in chat history; these are now properly flagged and isolated.
+
+### 🧩 What's New
+- **Updated Session Loader:** Changed the session loader component UI to a more unified and simple interface.
+- **Profile Settings Redesign:** Updated the layout of the profile settings page for better readability, accessibility, and user navigation flow.
+- **RAG Thinking Lock:** Disabled the “Send” button while the RAG pipeline is processing or thinking, preventing duplicate requests and ensuring smoother UX.
+
 ## [0.3.6] - 2025-10-01
 
 ### 🚀 Performance Improvements
