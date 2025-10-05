@@ -3,7 +3,8 @@
     "allow": [
       "Bash(dir /B \"C:\\Users\\allen\\Desktop\\legalynx\\src\\app\\backend\")",
       "Bash(git checkout:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []

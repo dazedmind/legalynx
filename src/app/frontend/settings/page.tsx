@@ -133,10 +133,7 @@ function SettingsContent() {
                       : 'text-foreground hover:bg-accent'
                   }`}
                 >
-                  {activeTab === item.id && (
-                    <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
-                  )}
-                  <IconComponent className={`${activeTab === item.id ? 'ml-2 stroke-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5} />
+                  <IconComponent className={`${activeTab === item.id ? 'ml-1 stroke-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5} />
                   <span className="text-sm lg:text-base">{item.label}</span>
                 </button>
               );

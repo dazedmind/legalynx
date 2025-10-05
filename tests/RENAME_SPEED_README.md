@@ -13,9 +13,8 @@ This test suite measures the performance of document renaming during the RAG pip
 ## Naming Options Tested
 
 1. **keep_original** - Keeps the original filename
-2. **intelligent** - Uses AI/RAG system for intelligent naming
-3. **client_based** - Names based on client information
-4. **title_based** - Names based on document title
+2. **add_timestamp** - Names based on document title
+3. **add_client_name** - Names based on client information
 
 ## Prerequisites
 
@@ -106,7 +105,7 @@ const CONFIG = {
   FASTAPI_URL: 'http://localhost:8000',
   TEST_DELAY_MS: 1000,           // Delay between uploads
   TEST_BATCH_SIZE: 5,            // Documents per naming option
-  NAMING_OPTIONS: ['keep_original', 'intelligent', 'client_based', 'title_based']
+  NAMING_OPTIONS: ['keep_original','add_timestamp', 'add_client_name']
 };
 ```
 

@@ -73,12 +73,16 @@ class EnhancedGPT5MiniLLM(CustomLLM):
             # Combine system prompt with user prompt
             full_prompt = f"{self.system_prompt}\n\nUser Query: {prompt}" if self.system_prompt else prompt
 
-            # Call GPT-5 API with streaming and high verbosity
+            # Adaptive reasoning effort based on query complexity
+            # Use "low" for simple queries to get faster responses
+            reasoning_effort = kwargs.get("reasoning_effort", "low")  # Default to "low" for speed
+
+            # Call GPT-5 API with streaming and adaptive reasoning
             response = self.client.responses.create(
                 model="gpt-5-nano",
                 input=full_prompt,
-                reasoning={"effort": "high"},
-                text={"verbosity": "high"},  # Changed to "high" for complete answers with citations
+                reasoning={"effort": reasoning_effort},  # Adaptive: low/medium/high
+                text={"verbosity": "high"},  # Keep high verbosity for complete answers
                 stream=True,  # Enable streaming
                 timeout=45    # Increased timeout for longer responses
             )
@@ -419,7 +423,18 @@ LEGALLYNX_SYSTEM_PROMPT = (
     "- \"Based on evidence from [Page X], combined with data from [Page Y], I can determine...\"\n"
     "- \"To compute this accurately: Step 1) Extract X from [Page A], Step 2) Find Y from [Page B], Step 3) Apply formula Z...\"\n\n"
 
-    "## RESPONSE FORMAT:\n"
+    "## HANDLING NON-DOCUMENT QUERIES:\n"
+    "**CRITICAL: Detect conversational messages that are NOT document analysis requests.**\n"
+    "- If the user sends a conversational message like 'thank you', 'thanks', 'you're helpful', 'great job', 'ok', 'okay', 'got it', or similar acknowledgments:\n"
+    "  • Respond with a BRIEF, friendly acknowledgment (1-2 sentences maximum)\n"
+    "  • DO NOT analyze the document or provide extensive information\n"
+    "  • DO NOT include page citations or document extracts\n"
+    "  • Example responses: 'You're welcome! Let me know if you need anything else.' or 'Happy to help! Feel free to ask more questions.'\n"
+    "- If the user sends greetings like 'hi', 'hello', 'how are you':\n"
+    "  • Respond briefly and ask what they'd like to know about the document\n"
+    "  • Example: 'Hello! How can I help you with your document today?'\n\n"
+
+    "## RESPONSE FORMAT (FOR DOCUMENT QUERIES ONLY):\n"
     "Begin with the direct answer to the user's query followed by the specific information requested with full page attribution.\n\n"
     "Always present responses primarily in clear, professional prose. Use bullets or numbering only when absolutely necessary (e.g., for lists of clauses, dates,"
     "or multi-step calculations). Responses should flow like a narrative explanation rather than rigid outlines. Always mention the proper names of the people involved in bold text (if possible and available) if referring to them to avoid confusion. \n\n"

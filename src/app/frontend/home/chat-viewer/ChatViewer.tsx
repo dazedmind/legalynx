@@ -2396,11 +2396,17 @@ export default function ChatViewer({
               );
             }
           } else if (chunk.type === 'end') {
-            // Mark streaming as complete and update final metadata
+            // Mark streaming as complete and update final content
             setChatHistory(prev =>
               prev.map(msg =>
                 msg.id === assistantMessageId
-                  ? { ...msg, sourceCount, isStreaming: false, isThinking: false }
+                  ? {
+                      ...msg,
+                      content: streamedContent || msg.content || "No response generated",
+                      sourceCount,
+                      isStreaming: false,
+                      isThinking: false
+                    }
                   : msg
               )
             );
@@ -2992,9 +2998,6 @@ export default function ChatViewer({
                       {tokenLimitInfo.resetTime}
                     </span>
                   </div>
-                  {/* <div className="mt-2 text-xs text-red-600">
-                     Tokens used: {tokenLimitInfo.tokensUsed} / {tokenLimitInfo.tokenLimit}
-                   </div> */}
                 </div>
               )}
 
@@ -3046,7 +3049,9 @@ export default function ChatViewer({
                         disabled={
                           !query.trim() ||
                           !documentExists ||
-                          tokenLimitInfo.isLimitReached
+                          tokenLimitInfo.isLimitReached ||
+                          isQuerying ||
+                          isSubmittingRef.current
                         }
                         className="flex items-center group top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-foreground text-primary hover:bg-muted-foreground disabled:bg-muted disabled:text-muted-foreground disabled:cursor-default h-fit transition-all duration-300 ease-in-out"
                       >

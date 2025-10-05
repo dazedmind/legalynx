@@ -923,6 +923,74 @@ async def stream_query_document(request: Request, query_request: QueryRequest = 
     print(f"🔍 Streaming query received: '{query_request.query}'")
     print(f"🔍 Query length: {len(query_request.query)} characters")
 
+    # Early detection: Check if this is a non-document query (greeting, etc.)
+    def is_non_document_query(query: str) -> bool:
+        """Quick check for greetings and general questions."""
+        query_lower = query.lower().strip()
+        non_doc_patterns = [
+            'hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening',
+            'how are you', 'what\'s up', 'whats up', 'sup',
+            'thank you', 'thanks', 'bye', 'goodbye',
+            'who are you', 'what are you', 'what can you do',
+        ]
+
+        # Very short queries without question marks
+        if len(query_lower) < 10 and '?' not in query_lower:
+            for pattern in non_doc_patterns:
+                if query_lower == pattern or query_lower.startswith(pattern + ' ') or query_lower == pattern + '?':
+                    return True
+        return False
+
+    # If non-document query, respond immediately without loading RAG system
+    if is_non_document_query(query_request.query):
+        print(f"💬 Non-document query detected early, fast-track response")
+
+        async def simple_response_stream():
+            """Generate a simple response without document context."""
+            responses = {
+                'hi': "Hello! How can I help you with your document today?",
+                'hello': "Hi there! How can I assist you?",
+                'hey': "Hey! What can I help you with?",
+                'how are you': "I'm doing well, thank you! How can I assist you with your document?",
+                'thanks': "You're welcome! Let me know if you need anything else.",
+                'thank you': "You're very welcome! Feel free to ask if you have more questions.",
+            }
+
+            query_lower = query_request.query.lower().strip()
+
+            # Find matching response
+            response_text = "Hello! I'm here to help you analyze your documents. Feel free to ask me anything about the uploaded document."
+            for key, value in responses.items():
+                if query_lower == key or query_lower.startswith(key + ' ') or query_lower == key + '?':
+                    response_text = value
+                    break
+
+            # Send start event
+            yield f"data: {json.dumps({'type': 'start', 'timestamp': time.time()})}\n\n"
+
+            # Send response as chunks (simulate streaming)
+            words = response_text.split()
+            partial_response = ""
+            for i, word in enumerate(words):
+                chunk = word + (' ' if i < len(words) - 1 else '')
+                partial_response += chunk
+                yield f"data: {json.dumps({'type': 'content_chunk', 'chunk': chunk, 'partial_response': partial_response})}\n\n"
+                await asyncio.sleep(0.01)  # Small delay for natural feel
+
+            # Send end event
+            yield f"data: {json.dumps({'type': 'stream_end', 'timestamp': time.time()})}\n\n"
+            yield f"data: {json.dumps({'type': 'end', 'timestamp': time.time()})}\n\n"
+
+        return StreamingResponse(
+            simple_response_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
+
     # Check if document is uploaded but RAG still building
     current_doc_id = None
     if user_id and user_id in rag_manager.user_sessions:

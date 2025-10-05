@@ -31,8 +31,41 @@ class StreamingQueryEngine:
         self.nodes = nodes
         self.embedding_manager = embedding_manager
         self.total_pages = total_pages
-        self.max_stream_time = 25  # 25 seconds max streaming time
+        self.max_stream_time = 60  # 60 seconds max streaming time (increased for slow API)
         
+    def is_document_related_query(self, query: str) -> bool:
+        """
+        Check if query is related to the document or is just a general question/greeting.
+        Returns True if query needs document retrieval, False otherwise.
+        """
+        query_lower = query.lower().strip()
+
+        # Common greetings and casual questions
+        non_document_patterns = [
+            'hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening',
+            'how are you', 'what\'s up', 'whats up', 'sup',
+            'thank you', 'thanks', 'bye', 'goodbye',
+            'who are you', 'what are you', 'what can you do',
+            'help', 'how do i', 'how can i',
+        ]
+
+        # If query is very short (< 10 chars) and not a question mark, likely not document-related
+        if len(query_lower) < 10 and '?' not in query_lower:
+            return False
+
+        # Check for exact matches or starts with patterns
+        for pattern in non_document_patterns:
+            if query_lower == pattern or query_lower.startswith(pattern + ' ') or query_lower == pattern + '?':
+                print(f"🔍 Non-document query detected: '{query}' matches pattern '{pattern}'")
+                return False
+
+        # If query doesn't contain document-related keywords, might be general
+        # But if it has question marks, assume it might be document-related
+        if '?' in query_lower or len(query) > 20:
+            return True
+
+        return True  # Default to document-related to be safe
+
     async def stream_query(self, query: str, user_id: str) -> AsyncGenerator[str, None]:
         """
         Stream query response in real-time to prevent timeouts.
@@ -57,6 +90,70 @@ class StreamingQueryEngine:
 
             # Force flush
             await asyncio.sleep(0.001)
+
+            # Check if query is document-related before doing retrieval
+            is_doc_query = self.is_document_related_query(query)
+
+            if not is_doc_query:
+                print(f"💬 Non-document query detected, returning instant hardcoded response")
+
+                # Use instant hardcoded responses for fast UX
+                query_lower = query.lower().strip()
+                response_text = None
+
+                # Common greetings and responses
+                instant_responses = {
+                    'hi': "Hello! I'm here to help you analyze your document. What would you like to know?",
+                    'hello': "Hi there! How can I assist you with your document today?",
+                    'hey': "Hey! What can I help you with?",
+                    'how are you': "I'm functioning well, thank you! Ready to help you analyze your document. What would you like to know?",
+                    'how are you?': "I'm doing great! How can I assist you with your document?",
+                    'thanks': "You're welcome! Let me know if you need anything else.",
+                    'thank you': "You're very welcome! Feel free to ask more questions.",
+                    'bye': "Goodbye! Come back anytime you need document analysis.",
+                    'goodbye': "See you later! Feel free to return when you need help.",
+                    'who are you': "I'm an AI assistant specialized in analyzing documents. Ask me anything about your uploaded document!",
+                    'what are you': "I'm an AI assistant designed to help you analyze and understand documents. Upload a document and ask questions!",
+                    'what can you do': "I can analyze documents and answer questions about their content. Upload a document and I'll extract insights, summarize information, and answer your questions.",
+                }
+
+                # Find exact or partial match
+                for pattern, response in instant_responses.items():
+                    if query_lower == pattern or query_lower.startswith(pattern + ' '):
+                        response_text = response
+                        break
+
+                # Generic fallback
+                if response_text is None:
+                    response_text = "I'm here to help you analyze documents. Please ask me a question about your uploaded document, or upload a new one to get started!"
+
+                print(f"💬 Instant response: '{response_text[:50]}...'")
+
+                # Send instant response as streaming chunks for natural feel
+                current_time = time.time()
+                partial_response = ""
+
+                # Split into words for word-by-word streaming effect
+                words = response_text.split()
+                for i, word in enumerate(words):
+                    chunk_text = word + (' ' if i < len(words) - 1 else '')
+                    partial_response += chunk_text
+
+                    chunk_data = {
+                        'type': 'content_chunk',
+                        'timestamp': time.time(),
+                        'chunk': chunk_text,
+                        'partial_response': partial_response
+                    }
+                    yield f"data: {json.dumps(chunk_data)}\n\n"
+                    await asyncio.sleep(0.02)  # Small delay for natural streaming feel
+
+                # Send completion
+                completion_time = time.time()
+                completion_data = {'type': 'stream_end', 'timestamp': completion_time, 'total_time': completion_time - start_time}
+                yield f"data: {json.dumps(completion_data)}\n\n"
+                print(f"✅ Instant response completed in {completion_time - start_time:.3f}s")
+                return
             
             # Step 1: Retrieval (fast)
             retrieval_time = time.time()
@@ -235,7 +332,7 @@ class StreamingQueryEngine:
 
                         # Include more text for better context
                         text = actual_node.text[:800] + "..." if len(actual_node.text) > 800 else actual_node.text
-                        context_parts.append(f"[Source {i} | Page {page_info} | Score: {score:.3f}]\n{text}")
+                        context_parts.append(f"[Page {page_info}]\n{text}")
 
                     context_text = "\n\n---\n\n".join(context_parts)
 
@@ -337,6 +434,14 @@ A:"""
                     final_time = time.time()
                     total_time = final_time - start_time
                     print(f"⏱️ STREAMING COMPLETE: {total_time:.3f}s total, {chunk_count} chunks processed")
+                    print(f"📊 Final stats: partial_response length = {len(partial_response)} chars")
+
+                    # If no content was received, send an error
+                    if not partial_response or len(partial_response) == 0:
+                        print(f"⚠️ WARNING: No content received from GPT-5!")
+                        error_msg = "I apologize, but I didn't receive a response from the AI. Please try again."
+                        error_chunk_data = {'type': 'content_chunk', 'timestamp': final_time, 'chunk': error_msg, 'partial_response': error_msg}
+                        yield f"data: {json.dumps(error_chunk_data)}\n\n"
 
                     # Send completion signal without final_response to avoid duplication
                     completion_data = {'type': 'stream_end', 'timestamp': final_time, 'total_time': total_time, 'source_nodes': len(retrieved_nodes), 'chunks_processed': chunk_count, 'content_length': len(partial_response)}

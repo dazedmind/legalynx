@@ -374,7 +374,7 @@ function ConfirmationModal({
       }`}
       onClick={onClose}
     >
-      <div className="flex items-center justify-center min-h-full p-4">
+      <div className="flex items-center justify-center min-h-full">
         <div 
           className={`bg-primary rounded-lg p-6 w-md mx-4 border border-tertiary max-w-md shadow-xl transition-all duration-200 ease-out transform ${
             isVisible 

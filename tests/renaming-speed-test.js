@@ -63,14 +63,14 @@ function loadExpectedFilenamesFromCSV() {
 
     // Build the mapping object from the CSV
     // Skip the first row (headers) and process the rest
-    const mappingData = parsed.data.slice(1).filter(row =>
-      row['_1'] && row['ADD ENTITY (20250815_DOCUMENT-TYPE_ENTITY.pdf)']
+    const mappingData = parsed.data.slice(1).filter(row => 
+      row['_1'] && row['ADD DATE (YYYYMMDD_DOCUMENT-TYPE.pdf)']
     );
 
     const expectedFilenames = {};
     mappingData.forEach(row => {
       const original = row['_1']?.trim();
-      const expected = row['ADD ENTITY (20250815_DOCUMENT-TYPE_ENTITY.pdf)']?.trim();
+      const expected = row['ADD DATE (YYYYMMDD_DOCUMENT-TYPE.pdf)']?.trim();
       
       if (original && expected) {
         // Add .pdf extension if not present in expected
@@ -160,42 +160,42 @@ function createTestToken(userId) {
   }, JWT_SECRET, { expiresIn: '2h' });
 }
 
-async function createTestUser(namingFormat = 'ADD_CLIENT_NAME') {
+async function createTestUser() {
   const testId = crypto.randomBytes(4).toString('hex');
   const userId = `speed-test-user-${testId}`;
   const email = `speed-test-${testId}@example.com`;
   const hashedPassword = await bcrypt.hash('test-password-123', 10);
-
+  
   try {
     const user = await prisma.user.create({
-      data: {
-        id: userId,
-        email: email,
-        password: hashedPassword,
-        name: `Speed Test User ${testId}`,
-        email_verified: true
+      data: { 
+        id: userId, 
+        email: email, 
+        password: hashedPassword, 
+        name: `Speed Test User ${testId}`, 
+        email_verified: true 
       }
     });
 
     await prisma.subscription.create({
-      data: {
-        user_id: userId,
-        plan_type: 'PREMIUM',
-        token_limit: 1000000,
-        tokens_used: 0,
-        storage: 100000,
-        storage_used: 0,
-        billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        days_remaining: 30,
-        is_active: true
+      data: { 
+        user_id: userId, 
+        plan_type: 'PREMIUM', 
+        token_limit: 1000000, 
+        tokens_used: 0, 
+        storage: 100000, 
+        storage_used: 0, 
+        billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 
+        days_remaining: 30, 
+        is_active: true 
       }
     });
 
     await prisma.userSettings.create({
-      data: {
-        user_id: userId,
-        auto_rename_files: true,
-        file_naming_format: namingFormat
+      data: { 
+        user_id: userId, 
+        auto_rename_files: true, 
+        file_naming_format: 'ADD_CLIENT_NAME' 
       }
     });
 
@@ -279,28 +279,27 @@ async function uploadDocumentWithTiming(userId, pdfFileName, token, namingOption
   }
 }
 
-async function testTimestampNaming(samplePDFs, user, token, expectedFilenames, namingOption = 'ADD_CLIENT_NAME') {
+async function testTimestampNaming(samplePDFs, user, token, expectedFilenames) {
   const tracker = new PerformanceTracker();
-  log(`\n🧪 Testing ${namingOption} naming on all documents...`, 'bold');
+  // log('\n🧪 Testing ADD_TIMESTAMP naming on all documents...', 'bold');
+  log('\n🧪 Testing ADD_CLIENT_NAME naming on all documents...', 'bold');
   log('=' .repeat(100), 'cyan');
-
-  const apiNamingOption = namingOption === 'ADD_CLIENT_NAME' ? 'add_client_name' : 'add_timestamp';
-
+  
   for (let i = 0; i < samplePDFs.length; i++) {
     const pdfFile = samplePDFs[i];
     const testTitle = `${pdfFile.replace('.pdf', '').replace(/[^a-zA-Z0-9]/g, ' ').trim()}`;
     const clientName = `TestClient`;
-
+    
     log(`\n📄 Processing ${i + 1}/${samplePDFs.length}: ${pdfFile}`, 'cyan');
-
+    
     try {
       const result = await uploadDocumentWithTiming(
-        user.id,
-        pdfFile,
-        token,
-        apiNamingOption,
-        testTitle,
-        clientName,
+        user.id, 
+        pdfFile, 
+        token, 
+        'add_client_name', 
+        testTitle, 
+        clientName, 
         expectedFilenames
       );
       tracker.addResult(result);
@@ -312,15 +311,6 @@ async function testTimestampNaming(samplePDFs, user, token, expectedFilenames, n
       log(`   ✅ Actual:   ${result.renamedFilename}`, result.matchesExpected ? 'green' : 'green');
       log(`   ⚡ Speed: ${result.overallSpeed}s`, 'magenta');
       
-      // if (result.expectedFilename) {
-      //   if (result.matchesExpected) {
-      //     log(`   ✓ Match: YES`, 'green');
-      //   } else {
-      //     log(`   ✗ Match: NO - naming doesn't match expected`, 'red');
-      //   }
-      // } else {
-      //   log(`   ℹ No expected filename defined for this file`, 'blue');
-      // }
       
       if (i < samplePDFs.length - 1) {
         await new Promise(resolve => setTimeout(resolve, CONFIG.TEST_DELAY_MS));
@@ -328,15 +318,15 @@ async function testTimestampNaming(samplePDFs, user, token, expectedFilenames, n
     } catch (error) {
       log(`❌ Test failed for ${pdfFile}: ${error.message}`, 'red');
       tracker.addResult({
-        originalFilename: pdfFile,
-        renamedFilename: pdfFile,
+        originalFilename: pdfFile, 
+        renamedFilename: pdfFile, 
         expectedFilename: expectedFilenames[pdfFile] || null,
-        wasRenamed: false,
-        matchesExpected: false,
-        namingOption: apiNamingOption,
-        fileSizeKB: 'unknown',
-        overallSpeed: 0,
-        success: false,
+        wasRenamed: false, 
+        matchesExpected: false, 
+        namingOption: 'add_client_name',
+        fileSizeKB: 'unknown', 
+        overallSpeed: 0, 
+        success: false, 
         error: error.message
       });
     }
@@ -369,44 +359,20 @@ async function cleanupTestUser(userId) {
 async function runRenamingSpeedTests() {
   log('🚀 Starting Document Renaming Speed Test Suite', 'cyan');
   let testUser = null;
-
+  
   try {
-    // Prompt user to select naming option
-    const readline = require('readline');
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
-
-    const namingOption = await new Promise((resolve) => {
-      rl.question('\n📝 Select naming option:\n   1. ADD_CLIENT_NAME\n   2. ADD_TIMESTAMP\nEnter choice (1 or 2): ', (answer) => {
-        rl.close();
-        const choice = answer.trim();
-        if (choice === '1') {
-          resolve('ADD_CLIENT_NAME');
-        } else if (choice === '2') {
-          resolve('ADD_TIMESTAMP');
-        } else {
-          log('⚠️ Invalid choice, defaulting to ADD_CLIENT_NAME', 'yellow');
-          resolve('ADD_CLIENT_NAME');
-        }
-      });
-    });
-
-    log(`\n✅ Selected naming option: ${namingOption}`, 'green');
-
     // Load expected filenames from CSV
     const expectedFilenames = loadExpectedFilenamesFromCSV();
-
+    
     const samplePDFs = getSamplePDFs();
-    testUser = await createTestUser(namingOption);
-
+    testUser = await createTestUser();
+    
     log(`\n🎯 Test Configuration:`, 'blue');
     log(`   Sample documents: ${samplePDFs.length} PDF files`, 'white');
     log(`   Expected filenames loaded: ${Object.keys(expectedFilenames).length}`, 'white');
-    log(`   Naming option: ${namingOption.toLowerCase()}`, 'white');
-
-    const tracker = await testTimestampNaming(samplePDFs, testUser.user, testUser.token, expectedFilenames, namingOption);
+    log(`   Naming option: add_client_name`, 'white');
+      
+    const tracker = await testTimestampNaming(samplePDFs, testUser.user, testUser.token, expectedFilenames);
     const report = tracker.generateReport();
     
     log('\n📊 DOCUMENT RENAMING SPEED TEST REPORT', 'bold');

@@ -1107,6 +1107,25 @@ function UploadComponent({
         } catch (error) {
           console.error("RAG-first workflow failed:", error);
 
+          // ✅ CRITICAL FIX: Delete the document from database if it was saved but RAG processing failed
+          if (documentInfo?.documentId || documentInfo?.id) {
+            const docIdToDelete = documentInfo.documentId || documentInfo.id;
+            console.log(`🗑️ Deleting failed document ${docIdToDelete} from database...`);
+
+            try {
+              await fetch(`/backend/api/documents/${docIdToDelete}`, {
+                method: "DELETE",
+                headers: getAuthHeaders(),
+              });
+              console.log(`✅ Successfully deleted failed document ${docIdToDelete} from database`);
+            } catch (deleteError) {
+              console.error(`❌ Failed to delete document ${docIdToDelete} from database:`, deleteError);
+            }
+
+            // Reset documentInfo so it won't be used later
+            documentInfo = null;
+          }
+
           if (isSecurityError(error)) {
             setUploadStatus("error");
             setStatusMessage(getSecurityErrorMessage(error));
@@ -1239,6 +1258,11 @@ function UploadComponent({
         }
 
         setUploadStatus("success");
+      }
+
+      // ✅ CRITICAL FIX: Only proceed with success handling if we have valid response data
+      if (!ragResponse || !ragResponse.document_id) {
+        throw new Error("Upload completed but did not receive valid document information");
       }
 
       const uploadResponse: UploadResponse = {

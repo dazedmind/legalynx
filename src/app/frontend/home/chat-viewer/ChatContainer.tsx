@@ -166,7 +166,7 @@ export function ChatContainer({
             <div
               className={`relative px-4 py-3 rounded-2xl max-w-full transition-all duration-200 ${
                 isUser
-                  ? 'bg-blue-600 text-white rounded-br-md'
+                  ? 'bg-blue-600 text-white rounded-br-xl'
                   : 'bg-primary text-foreground border border-tertiary rounded-bl-md '
                 } ${isEditing ? 'bg-blue/10 text-gray-900  rounded-bl-md md:w-240' : ''}
               } ${isRegeneratingThis ? 'opacity-50' : ''}`}

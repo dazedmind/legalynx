@@ -2,7 +2,8 @@
 'use client';
 
 import React from 'react';
-import { FileText, MessageSquare, Zap, Clock } from 'lucide-react';
+import { FileText, MessageSquare, Zap, Clock, Sparkles } from 'lucide-react';
+import { Loader, LoaderType } from '@progress/kendo-react-indicators';
 
 interface SessionLoaderProps {
   sessionTitle?: string;
@@ -10,120 +11,114 @@ interface SessionLoaderProps {
   stage?: 'loading_session' | 'loading_document' | 'loading_rag' | 'preparing_chat';
 }
 
-export default function SessionLoader({ 
-  sessionTitle = "Loading session...", 
+export default function SessionLoader({
+  sessionTitle = "Loading session...",
   documentName,
   stage = 'loading_session'
 }: SessionLoaderProps) {
-  
+
   const getStageInfo = () => {
     switch (stage) {
       case 'loading_session':
         return {
-          icon: <MessageSquare className="w-6 h-6" />,
+          icon: MessageSquare,
           title: "Loading Chat Session",
-          description: "Retrieving conversation history...",
-          color: "text-blue-600"
+          description: "Retrieving conversation history",
+          gradient: "from-blue-500 to-cyan-500"
         };
       case 'loading_document':
         return {
-          icon: <FileText className="w-6 h-6" />,
+          icon: FileText,
           title: "Loading Document",
-          description: "Fetching document from storage...",
-          color: "text-purple-600"
+          description: "Fetching document from storage",
+          gradient: "from-purple-500 to-pink-500"
         };
       case 'loading_rag':
         return {
-          icon: <Zap className="w-6 h-6" />,
+          icon: Zap,
           title: "Initializing AI",
-          description: "Processing document for intelligent search...",
-          color: "text-green-600"
+          description: "Processing document for intelligent search",
+          gradient: "from-green-500 to-emerald-500"
         };
       case 'preparing_chat':
         return {
-          icon: <Clock className="w-6 h-6" />,
+          icon: Sparkles,
           title: "Preparing Chat",
-          description: "Setting up conversation interface...",
-          color: "text-orange-600"
+          description: "Setting up conversation interface",
+          gradient: "from-orange-500 to-amber-500"
         };
       default:
         return {
-          icon: <MessageSquare className="w-6 h-6" />,
+          icon: MessageSquare,
           title: "Loading",
-          description: "Please wait...",
-          color: "text-gray-600"
+          description: "Please wait",
+          gradient: "from-gray-500 to-slate-500"
         };
     }
   };
 
   const stageInfo = getStageInfo();
+  const IconComponent = stageInfo.icon;
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8">
-      <div className="max-w-md w-full text-center">
-        
-        {/* Animated Icon */}
-        <div className={`${stageInfo.color} mb-6 flex justify-center`}>
-          <div className="relative">
-            <div className="animate-pulse">
-              {stageInfo.icon}
-            </div>
-          </div>
+      <div className="max-w-md w-full">
+
+        {/* Title & Description */}
+        <div className="text-center space-y-1 mb-4">
+          <h2 className={`text-2xl font-semibold bg-gradient-to-br ${stageInfo.gradient} bg-clip-text text-transparent`}>
+            {stageInfo.title}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {stageInfo.description}
+          </p>
         </div>
 
-        {/* Title */}
-        <h2 className="text-2xl font-bold text-foreground mb-2">
-          {stageInfo.title}
-        </h2>
-
-        {/* Session/Document Info */}
-        {sessionTitle && (
-          <div className="bg-primary rounded-lg p-4 py-6 mb-4 shadow-sm border">
-            {documentName && (
-              <div className="flex items-center justify-center text-sm text-muted-foreground">
-                <FileText className="w-4 h-4 mr-1" />
-                <span className="truncate">{documentName}</span>
-              </div>
-            )}
+        {/* Document Info */}
+        {documentName && (
+          <div className="mb-8 px-4 py-3 rounded-xl bg-muted/50 border border-border backdrop-blur-sm">
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <span className="truncate text-foreground/90 font-medium">{documentName}</span>
+            </div>
           </div>
         )}
 
-        {/* Stage Description */}
-        <p className="text-muted-foreground mb-6">
-          {stageInfo.description}
-        </p>
-
-        {/* Progress Dots */}
-        <div className="flex justify-center space-x-2 mb-6">
+        {/* Loading Dots */}
+        <div className="flex justify-center items-center gap-1.5">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className={`w-2 h-2 rounded-full ${stageInfo.color.replace('text-', 'bg-')} opacity-30 animate-pulse`}
+              className={`w-2 h-2 rounded-full bg-gradient-to-r ${stageInfo.gradient}`}
               style={{
-                animationDelay: `${i * 0.2}s`,
-                animationDuration: '1.4s'
+                animation: 'bounce-dot 1.4s ease-in-out infinite',
+                animationDelay: `${i * 0.15}s`,
               }}
             />
           ))}
         </div>
 
-        {/* Loading Bar */}
-        {/* <div className="w-full bg-tertiary rounded-full h-1 overflow-hidden">
-          <div 
-            className={`h-full ${stageInfo.color.replace('text-', 'bg-')} rounded-full animate-pulse`}
-            style={{
-              width: '60%',
-              animation: 'loading 2s ease-in-out infinite'
-            }}
-          />
-        </div> */}
       </div>
 
       <style jsx>{`
-        @keyframes loading {
-          0% { transform: translateX(-100%); width: 0%; }
-          50% { width: 60%; }
-          100% { transform: translateX(100%); width: 60%; }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+
+        @keyframes bounce-dot {
+          0%, 100% {
+            transform: translateY(0) scale(1);
+            opacity: 0.4;
+          }
+          50% {
+            transform: translateY(-6px) scale(1.2);
+            opacity: 1;
+          }
+        }
+
+        .animate-shimmer {
+          animation: shimmer 2s ease-in-out infinite;
         }
       `}</style>
     </div>

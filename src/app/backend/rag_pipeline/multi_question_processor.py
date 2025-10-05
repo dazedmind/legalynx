@@ -330,7 +330,7 @@ def build_multi_question_context(nodes: List[NodeWithScore], questions: List[str
 
         # OPTIMIZED: Simpler formatting to save space and include more chunks
         # Use compact headers without emojis
-        header = f"[Source {i+1} | Page {page_num}]"
+        header = f"Page {page_num}]"
         formatted = f"{header}\n{text}\n"
 
         # Check if adding this would exceed budget
@@ -396,12 +396,12 @@ QUESTIONS TO ANSWER (all from the same query):
     prompt += """
 INSTRUCTIONS:
 - Answer ALL questions comprehensively
-- For each answer, cite the specific [Source #] and page number
-- If information for a question is not in the provided context, explicitly state "Information not found in provided excerpts [Source context reviewed]"
+- For each answer, cite the specific page number
+- If information for a question is not in the provided context, explicitly state "Information not found in provided excerpts [Page context reviewed]"
 - Use this format:
 
 **Question 1:** [Repeat question]
-**Answer:** [Your answer with citations like [Source 1, Page X]]
+**Answer:** [Your answer with citations]
 
 **Question 2:** [Repeat question]
 **Answer:** [Your answer with citations]

@@ -66,6 +66,7 @@ export default function SavedChatHistory({
   } | null>(null);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState<string>('');
+  const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && isAuthenticated) {
@@ -458,13 +459,15 @@ export default function SavedChatHistory({
             {savedSessions.map((session) => (
               <div
                 key={session.id}
-                className={`p-4 border rounded-lg transition-all duration-200 cursor-pointer hover:shadow-md hover:border-blue-300 ${
+                className={`p-4 border rounded-lg transition-all duration-200 cursor-pointer hover:border-blue-400 ${
                   currentSessionId === session.id
-                    ? 'border-blue-500 bg-blue/20 hover:bg-blue/30 shadow-sm'
+                    ? 'border-blue-500 bg-blue/20 hover:bg-blue/10 shadow-sm'
                     : 'border-tertiary hover:bg-accent'
                 }`}
                 // ✅ Fixed: Direct function call that properly loads the session
                 onClick={() => handleSessionClick(session)}
+                onMouseEnter={() => setHoveredSessionId(session.id)}
+                onMouseLeave={() => setHoveredSessionId(null)}
               >
                 {/* Session Header */}
                 <div className="flex items-start justify-between mb-3">
@@ -521,7 +524,7 @@ export default function SavedChatHistory({
                   {/* Actions */}
                   {editingSessionId !== session.id && (
                     <div className="flex items-center ml-4">
-                      {session.hasSession && (
+                      {session.hasSession && hoveredSessionId === session.id && (
                         <button
                           onClick={(e) => handleStartRename(session.id, session.title, e)}
                           className="p-2 text-foreground hover:text-blue-600 hover:bg-blue/20 rounded-full transition-colors cursor-pointer"
@@ -530,7 +533,7 @@ export default function SavedChatHistory({
                           <Pencil className="w-4 h-4" />
                         </button>
                       )}
-            
+
                       <button
                         onClick={(e) => handleDeleteItem(session.id, e)}
                         className="p-2 text-foreground hover:text-destructive hover:bg-destructive/20 rounded-full transition-colors cursor-pointer"

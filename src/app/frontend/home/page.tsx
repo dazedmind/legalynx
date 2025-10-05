@@ -526,7 +526,6 @@ export default function Home() {
             }
           `}
           >
-
             {/* Mobile Close Button */}
             <button
               onClick={() => setIsMobileSidebarOpen(false)}
@@ -537,8 +536,6 @@ export default function Home() {
 
             {/* Navigation Buttons */}
             <div className={`space-y-2 mb-8 flex flex-col ${!isDesktopSidebarCollapsed ? 'items-end' : 'items-center'}`}>
-
-              {/* NEW: Desktop Collapse Button - Top Right Corner */}
               <div className="hidden mb-4 md:flex">
                 <button
                   onClick={toggleDesktopSidebar}
@@ -574,14 +571,11 @@ export default function Home() {
                     onClick={() => handleTabClick(item.id as ActiveTab)}
                     className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
                       activeTab === item.id
-                        ? 'bg-blue/10 text-blue-700 font-semibold rounded-r-lg '
+                        ? 'bg-blue/10 text-blue-700 font-semibold rounded-r-lg'
                         : 'text-foreground hover:bg-accent'
                     }`}
                   >
-                    {activeTab === item.id && (
-                      <div className="h-full w-1 bg-blue-700 absolute left-0 overflow-hidden rounded-full"></div>
-                    )}
-                    <IconComponent className={`${activeTab === item.id && !isDesktopSidebarCollapsed ? 'ml-2 stroke-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5}/>
+                    <IconComponent className={`${activeTab === item.id && !isDesktopSidebarCollapsed ? 'ml-1 stroke-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5}/>
                     <div className="flex items-center justify-between gap-2 w-full">
                       {!isDesktopSidebarCollapsed && <span className="truncate">{item.label}</span>}
                       {item.id === "documents" && subscriptionStatus === "BASIC" && (
@@ -673,7 +667,7 @@ export default function Home() {
                 <a href="/frontend/privacy-policy" target="_blank" rel="noopener noreferrer">
                   Privacy Policy •
                 </a>
-                <p className="text-xs text-muted-foreground">v 0.3.6</p>
+                <p className="text-xs text-muted-foreground">v 0.3.7</p>
               </div>
             )}
           </aside>

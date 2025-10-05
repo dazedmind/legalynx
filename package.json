@@ -12,6 +12,8 @@
     "test-document-limits": "node tests/document-limits-test.js",
     "test-prompt-injection": "node tests/prompt-injection-test.js",
     "test-renaming-speed": "node tests/renaming-speed-test.js",
+    "test-rag-pipeline": "node tests/rag-pipeline-test.js",
+    "test-sop": "node tests/sop-test.js",
     "postinstall": "npx prisma generate --schema=./prisma/schema.prisma"
   },
   "dependencies": {
@@ -25,6 +27,7 @@
     "@fontsource/fusion-pixel-8px-proportional-kr": "^5.2.5",
     "@prisma/client": "^6.11.1",
     "@prisma/extension-accelerate": "^2.0.2",
+    "@progress/kendo-react-indicators": "^12.1.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-checkbox": "^1.3.2",
     "@radix-ui/react-dropdown-menu": "^2.1.15",
@@ -67,7 +70,8 @@
     "speakeasy": "^2.0.0",
     "tailwind-merge": "^3.3.1",
     "three": "^0.178.0",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
