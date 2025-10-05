@@ -10,6 +10,9 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import LightRays from "./frontend/components/reactbits/LightRays";
 import SpotlightCard from "./frontend/components/reactbits/SpotlightCard";
+import { BsFillLightningFill, BsFillShieldLockFill, BsFolderFill } from "react-icons/bs";
+import AnimatedContent from "./frontend/components/reactbits/AnimatedContent";
+import CountUp from "./frontend/components/reactbits/CountUp";
 
 export default function Home() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
@@ -84,7 +87,7 @@ export default function Home() {
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Link href="/frontend/pricing">
-                  <button className="px-6 py-3 text-lg rounded-full font-semibold bg-foreground text-primary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer">
+                  <button className="px-6 py-3 text-lg rounded-full font-semibold bg-foreground text-primary shadow-lg hover:bg-foreground/90 transition-all duration-300 transform cursor-pointer">
                     Get Started
                   </button>
                 </Link>
@@ -105,8 +108,22 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
+
       <section className="py-24 bg-primary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <AnimatedContent
+          distance={100}
+          direction="vertical"
+          reverse={false}
+          duration={1}
+          initialOpacity={0}
+          animateOpacity
+          scale={1}
+          threshold={0.2}
+          onComplete={() => {
+            console.log("Animation completed");
+          }}
+        >
           <div className="flex flex-col items-center text-center mb-20">
             <h3 className="text-3xl lg:text-5xl font-bold font-serif text-foreground mb-6">
               Powerful Features for Legal Excellence
@@ -119,12 +136,10 @@ export default function Home() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-            <SpotlightCard className="group bg-primary rounded-2xl p-8 mx-4 md:mx-0 transition-all duration-300 border border-tertiary"
-              spotlightColor="rgba(255, 214, 0, 0.25)"
+            <SpotlightCard className="group bg-gradient-to-tl via-blue/10 from-blue/40 to-primary rounded-2xl p-8 mx-4 md:mx-0 transition-all duration-300 cursor-default relative z-10"
+              spotlightColor="rgba(46, 46, 255, 0.25)"
             >
-              <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300">
-                <Shield className="w-8 h-8 text-white" />
-              </div>
+              <BsFillShieldLockFill className="w-40 h-40 text-blue absolute -bottom-10 right-0 opacity-20 -z-10" />
               <h4 className="text-2xl mb-2 font-bold text-foreground">
                 Privacy Focused
               </h4>
@@ -135,26 +150,23 @@ export default function Home() {
               </p>
             </SpotlightCard>
 
-            <SpotlightCard className="group bg-primary p-8 mx-4 md:mx-0  transition-all duration-300 border border-tertiary"
-              spotlightColor="rgba(255, 214, 0, 0.25)"
+            <SpotlightCard className="group bg-gradient-to-tl via-blue/10 from-blue/40 p-8 mx-4 md:mx-0  transition-all duration-300 cursor-default relative z-10"
+              spotlightColor="rgba(46, 46, 255, 0.25)"
             >
-              <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300">
-                <Folder className="w-8 h-8 text-white" />
-              </div>
+              <BsFolderFill className="w-40 h-40 text-blue absolute -bottom-10 right-0 opacity-20 -z-10" />
               <h4 className="text-2xl mb-2 font-bold text-foreground">
-                Smart File Management
+                File Management
               </h4>
               <p className="text-muted-foreground text-md leading-relaxed">
-                Advanced file management and auto-rename features to help you organize your documents efficiently. 
+                Smart file management and auto-rename feature to help organize your documents efficiently. 
               </p>
             </SpotlightCard>
 
-            <SpotlightCard className="group bg-primary rounded-2xl p-8 mx-4 md:mx-0 transition-all duration-300 border border-tertiary"
-              spotlightColor="rgba(255, 214, 0, 0.25)"
+            <SpotlightCard className="group bg-gradient-to-tl via-blue/10 from-blue/40 rounded-2xl p-8 mx-4 md:mx-0 transition-all duration-300 cursor-default relative z-10"
+              spotlightColor="rgba(46, 46, 255, 0.25)"
             >
-              <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300">
-                <Zap className="w-8 h-8 text-white" />
-              </div>
+              <BsFillLightningFill className="w-40 h-40 text-blue absolute -bottom-10 right-0 opacity-20 -z-10" />
+
               <h4 className="text-2xl mb-2 font-bold text-foreground">
                 Swift Resolution
               </h4>
@@ -163,12 +175,26 @@ export default function Home() {
               </p>
             </SpotlightCard>
           </div>
+        </AnimatedContent>
         </div>
       </section>
 
       {/* Benefits Section */}
       <section className="py-24 bg-primary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-4">
+        <AnimatedContent
+          distance={100}
+          direction="vertical"
+          reverse={false}
+          duration={1}
+          initialOpacity={0}
+          animateOpacity
+          scale={1}
+          threshold={0.2}
+          onComplete={() => {
+            console.log("Animation completed");
+          }}
+        >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mx-8 md:mx-0">
             <div>
               <h3 className="text-3xl font-bold font-serif text-foreground mb-8">
@@ -221,14 +247,22 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="bg-accent rounded-3xl p-8 border border-tertiary">
+            <div className="bg-tertiary rounded-3xl p-8 border border-tertiary">
               <h4 className="text-2xl font-bold text-foreground mb-8">
                 Performance Metrics
               </h4>
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-500 mb-2">
+                  <CountUp from={0} to={99} duration={1} separator="," direction="up" className="count-up text" />
+                  %
+                  </div>
+                  <div className="text-muted-foreground">Extraction Accuracy</div>
+                </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-blue-600 mb-2">
-                    80%
+                    <CountUp from={0} to={80} duration={1} separator="," direction="up" className="count-up text" />
+                    %
                   </div>
                   <div className="text-muted-foreground">Time Saved</div>
                 </div>
@@ -238,10 +272,10 @@ export default function Home() {
                   </div>
                   <div className="text-muted-foreground">Support</div>
                 </div>
-    
               </div>
             </div>
           </div>
+          </AnimatedContent>
         </div>
       </section>
 
@@ -304,14 +338,6 @@ export default function Home() {
                     className="hover:text-blue-600 transition-colors"
                   >
                     Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/security"
-                    className="hover:text-blue-600 transition-colors"
-                  >
-                    Security
                   </Link>
                 </li>
               </ul>
