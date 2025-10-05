@@ -116,6 +116,7 @@ function ProfileSettings() {
       setPreview(imageUrl);
       setSelectedFile(file);
       setImageError(false);
+      setHasUnsavedChanges(true);
       toast.success('Image selected! Click "Save Changes" to upload.');
     }
   };
@@ -137,13 +138,15 @@ function ProfileSettings() {
         throw new Error(errorData.error || "Failed to remove profile picture");
       }
 
+      // Update local state to reflect removal
+      setProfilePicture("");
       setSettings({ ...settings, profile_picture: "" });
+      setOriginalSettings({ ...originalSettings, profile_picture: "" });
       setPreview(null);
       setSelectedFile(null);
-      setHasUnsavedChanges(true);
       setImageError(false);
 
-      toast.success("Profile picture removed successfully");
+      toast.success("Profile picture removed from S3 and database");
     } catch (error) {
       console.error("Failed to remove profile picture:", error);
       toast.error(error instanceof Error ? error.message : "Failed to remove profile picture");
@@ -153,12 +156,14 @@ function ProfileSettings() {
   };
 
   const removeTemporaryProfilePicture = () => {
+    // Remove preview of newly selected file (not yet uploaded to S3)
+    // No S3 deletion needed as the file hasn't been uploaded yet
     if (preview) {
       URL.revokeObjectURL(preview);
     }
     setPreview(null);
     setSelectedFile(null);
-    setHasUnsavedChanges(true);
+    setHasUnsavedChanges(false); // No unsaved changes since we're reverting to original
     setImageError(false);
   };
 
@@ -214,8 +219,8 @@ function ProfileSettings() {
       }
 
       const updateData: any = {
-        name: settings.name,
-        job_title: settings.job_title,
+        name: name,
+        job_title: jobTitle,
         profile_picture: uploadedImageUrl,
       };
 

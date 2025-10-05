@@ -114,7 +114,7 @@ export default function NavBar() {
     );
   };
 
-  const ProfileAvatar = ({ size = 40 }: { size?: number }) => {
+  const ProfileAvatar = ({ size = 40 }) => {
     if (loading) {
       return (
         <div
@@ -136,7 +136,8 @@ export default function NavBar() {
           alt="Profile"
           width={size}
           height={size}
-          className="rounded-full cursor-pointer border border-gray-300"
+          className="rounded-full cursor-pointer border border-gray-300 object-cover"
+          style={{ width: `${size}px`, height: `${size}px`, minWidth: `${size}px`, minHeight: `${size}px` }}
           unoptimized={false} // Let Next.js optimize since it's now a valid external URL
           onError={(e) => {
             // On error, hide the image element and show fallback
