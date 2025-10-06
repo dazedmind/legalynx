@@ -5,6 +5,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Copy, ThumbsUp, ThumbsDown, RotateCcw, User, Bot, Edit, Check, X, Send, ArrowUp, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 import TypingAnimation from '../../components/layout/TypingAnimation';
+import { BranchSelector } from '../../components/ui/BranchSelector';
+import { Loader } from '../../components/ui/Loader';
+import { TbCopy, TbEdit, TbRotateClockwise, TbTrash } from 'react-icons/tb';
+import { HiChatBubbleBottomCenterText } from 'react-icons/hi2';
 
 interface ChatMessage {
   id: string;
@@ -15,6 +19,9 @@ interface ChatMessage {
   sourceCount?: number;
   isThinking?: boolean; // For pulse animation
   isStreaming?: boolean; // For streaming cursor animation
+  branches?: string[]; // Array of message IDs that are alternative responses
+  currentBranch?: number; // Current branch index being displayed
+  parentId?: string; // ID of the parent message (for branching)
 }
 
 interface ChatContainerProps {
@@ -25,16 +32,18 @@ interface ChatContainerProps {
   typingMessageId?: string | null;
   onTypingComplete?: () => void;
   streamingMessageId?: string | null;
+  onBranchChange?: (messageId: string, branchIndex: number) => void;
 }
 
-export function ChatContainer({ 
-  chatHistory, 
-  isQuerying, 
-  documentExists, 
+export function ChatContainer({
+  chatHistory,
+  isQuerying,
+  documentExists,
   onMessageAction,
   typingMessageId,
   onTypingComplete,
-  streamingMessageId
+  streamingMessageId,
+  onBranchChange
 }: ChatContainerProps) {
 
   // Use ref for scroll container
@@ -54,9 +63,23 @@ export function ChatContainer({
     }
   };
 
-  // Scroll to bottom whenever chat history changes or when querying state changes
+  // Track previous chat history length to detect new messages
+  const prevChatHistoryLengthRef = useRef<number>(0);
+
+  // Scroll to bottom only when new messages are added, not on every chat history change
   useEffect(() => {
-    scrollToBottom();
+    const currentLength = chatHistory.length;
+    const previousLength = prevChatHistoryLengthRef.current;
+
+    // Only scroll if:
+    // 1. A new message was added (length increased)
+    // 2. Currently querying (thinking/typing state)
+    if (currentLength > previousLength || isQuerying) {
+      scrollToBottom();
+    }
+
+    // Update the ref for next comparison
+    prevChatHistoryLengthRef.current = currentLength;
   }, [chatHistory, isQuerying]);
   
   const copyToClipboard = async (text: string, messageId: string) => {
@@ -149,12 +172,12 @@ export function ChatContainer({
     const isAssistant = message.type === 'ASSISTANT';
     const isEditing = editingMessageId === message.id;
     const isRegeneratingThis = isRegenerating === message.id;
-    
+
     return (
       <div
         key={message.id}
         className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'} ${
-          isUser ? 'chat-message-user' : 'chat-message-assistant'
+          isUser ? 'chat-message-user group' : 'chat-message-assistant'
         }`}
       >
         <div className={`flex ${isUser ? '' : 'flex-row'} items-start gap-3 max-w-[85%]`}>
@@ -212,7 +235,8 @@ export function ChatContainer({
                   {/* Render ASSISTANT messages with pulse animation for thinking */}
                   {message.type === 'ASSISTANT' && (
                     message.isThinking ? (
-                      <div className="animate-pulse">
+                      <div className="flex items-center gap-2">
+                        <Loader size={16} className="text-blue-500" />
                         <span className="text-muted-foreground italic">
                           {message.content}
                         </span>
@@ -233,19 +257,16 @@ export function ChatContainer({
             </div>
 
             {/* Message Footer */}
-            {!isEditing && (
+            {!isEditing && !message.isThinking && !message.isStreaming && (
               <div
-                className={`flex items-center gap-2 mt-1 text-xs text-muted-foreground opacity-0 ${
-                  isUser ? 'flex-row-reverse' : 'flex-row'
+                className={`flex items-center gap-2 mt-1 text-xs text-muted-foreground ${
+                  isUser ? 'flex-row-reverse opacity-0 group-hover:opacity-100 transition-opacity duration-200' : 'flex-row'
                 }`}
-                style={{
-                  animation: 'fadeIn 0.3s ease-out 0.2s forwards'
-                }}
               >
-                
+
                 {/* Timestamp - Now always shows */}
-                <span>{formatTime(message.createdAt)}</span>
-                
+                {/* <span>{formatTime(message.createdAt)}</span> */}
+
                 {/* Action Buttons */}
                 <div className="flex items-center gap-1">
                   
@@ -257,7 +278,7 @@ export function ChatContainer({
                       className="p-1 hover:bg-accent rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Edit message"
                     >
-                      <Edit className="w-3 h-3" />
+                      <TbEdit className="w-4 h-4" />
                     </button>
                   )}
 
@@ -268,7 +289,7 @@ export function ChatContainer({
                     className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
                     title="Copy message"
                   >
-                    <Copy className="w-3 h-3" />
+                    <TbCopy className="w-4 h-4" />
                   </button>
 
                   <button
@@ -278,8 +299,18 @@ export function ChatContainer({
                     className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
                     title="Delete message"
                   >
-                    <Trash className="w-3 h-3" />
+                    <TbTrash className="w-4 h-4" />
                   </button>
+
+                  {/* Branch Navigation - Only for Assistant messages with branches */}
+                  {isAssistant && message.branches && message.branches.length > 0 && onBranchChange && (
+                    <BranchSelector
+                      currentBranch={message.currentBranch || 0}
+                      totalBranches={message.branches.length + 1}
+                      onBranchChange={(branchIndex) => onBranchChange(message.id, branchIndex)}
+                      className="ml-2"
+                    />
+                  )}
 
                   {/* Assistant-only action buttons */}
                   {isAssistant && (
@@ -291,7 +322,7 @@ export function ChatContainer({
                         className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Regenerate response"
                       >
-                        <RotateCcw className="w-3 h-3" />
+                        <TbRotateClockwise  className="w-4 h-4" />
                       </button>
                     </>
                   )}
@@ -313,9 +344,9 @@ export function ChatContainer({
         
         {/* Welcome Message */}
         {chatHistory.length === 0 && !isQuerying && (
-          <div className="text-center py-12">
+          <div className="text-center py-12 mt-10">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Bot className="w-8 h-8 text-blue-600" />
+              <HiChatBubbleBottomCenterText className="w-8 h-8 text-blue-600" />
             </div>
             <h3 className="text-xl font-semibold text-foreground mb-2">
               Ready to Chat!

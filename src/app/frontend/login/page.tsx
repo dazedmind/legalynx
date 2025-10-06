@@ -13,6 +13,7 @@ import Image from "next/image";
 import { Loader2, Shield, ShieldAlert } from "lucide-react";
 import ForgotPasswordModal from "../components/layout/ForgotPasswordModal";
 import { GoEye, GoEyeClosed } from "react-icons/go";
+import { validateEmail } from "@/lib/utils/emailValidation";
 
 function LoginContent() {
   const { login } = useAuth();
@@ -81,6 +82,11 @@ function LoginContent() {
         // Invalid 2FA code
         toast.error("Invalid authentication code. Please try again.");
         setTwoFactorCode("");
+      } else if (response.status === 403) {
+        // Account locked
+        toast.error(data.message || "Account locked", {
+          duration: 8000,
+        });
       } else {
         toast.error(data.message || "Login failed");
       }
@@ -117,11 +123,11 @@ function LoginContent() {
     e.preventDefault();
     setIsForgotPasswordLoading(true);
     setForgotPasswordMessage("");
-  
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(forgotPasswordEmail)) {
-      setForgotPasswordMessage("Please enter a valid email address.");
+
+    // Validate email with trusted domain check
+    const emailValidation = validateEmail(forgotPasswordEmail);
+    if (!emailValidation.isValid) {
+      setForgotPasswordMessage(emailValidation.error || "Invalid email address.");
       setIsForgotPasswordLoading(false);
       return;
     }
@@ -144,9 +150,8 @@ function LoginContent() {
         setShowForgotPasswordSuccess(true);
         setForgotPasswordMessage(result.message || "Password reset instructions have been sent to your email.");
       } else if (response.status === 404) {
-        // ✅ NEW: Handle email not found case
-        setShowForgotPasswordModal(false); // Close forgot password modal
-        // setShowEmailNotFoundModal(true); // Show email not found modal
+        // Handle email not found case
+        setForgotPasswordMessage("No registered email found. Please try again or create a new account.");
       } else {
         // Other errors
         setForgotPasswordMessage(result.error || "Failed to send reset instructions.");

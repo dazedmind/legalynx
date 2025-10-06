@@ -1,9 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-    serverExternalPackages: ['@prisma/client'],
-  },
+  serverExternalPackages: ['@prisma/client', 'pdfkit'],
   images: {
     remotePatterns: [
       {

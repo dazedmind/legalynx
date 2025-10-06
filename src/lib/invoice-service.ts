@@ -4,6 +4,7 @@ import type { BillingCycle } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import sgMail from "@sendgrid/mail";
 import { v4 as uuidv4 } from "uuid";
+import PDFDocument from "pdfkit";
 
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -550,6 +551,152 @@ class PrismaInvoiceService {
   }
 
   /**
+   * Generate PDF invoice buffer
+   */
+  async generateInvoicePDF(invoiceData: {
+    invoiceNumber: string;
+    userName: string;
+    userEmail: string;
+    planType: string;
+    billingCycle: string;
+    amount: number;
+    currency: string;
+    billingDate: Date;
+    items: InvoiceItemData[];
+  }): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 50 });
+        const chunks: Buffer[] = [];
+
+        doc.on("data", (chunk) => chunks.push(chunk));
+        doc.on("end", () => resolve(Buffer.concat(chunks)));
+        doc.on("error", reject);
+
+        // Header
+        doc
+          .fontSize(20)
+          .font("Helvetica-Bold")
+          .text("LEGALYNX", 50, 50)
+          .fontSize(10)
+          .font("Helvetica")
+          .text("Linking you to legal clarity", 50, 75);
+
+        // Invoice title
+        doc
+          .fontSize(24)
+          .font("Helvetica-Bold")
+          .text("INVOICE", 400, 50, { align: "right" });
+
+        // Invoice details
+        doc
+          .fontSize(10)
+          .font("Helvetica")
+          .text(`Invoice #: ${invoiceData.invoiceNumber}`, 400, 80, { align: "right" })
+          .text(
+            `Date: ${invoiceData.billingDate.toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}`,
+            400,
+            95,
+            { align: "right" }
+          );
+
+        // Bill to section
+        doc.fontSize(12).font("Helvetica-Bold").text("BILL TO:", 50, 150);
+        doc
+          .fontSize(10)
+          .font("Helvetica")
+          .text(invoiceData.userName || "N/A", 50, 170)
+          .text(invoiceData.userEmail, 50, 185);
+
+        // Line separator
+        doc.moveTo(50, 220).lineTo(550, 220).stroke();
+
+        // Table header
+        let yPosition = 240;
+        doc
+          .fontSize(10)
+          .font("Helvetica-Bold")
+          .text("Description", 50, yPosition)
+          .text("Quantity", 300, yPosition)
+          .text("Unit Price", 380, yPosition)
+          .text("Total", 480, yPosition, { align: "right" });
+
+        yPosition += 20;
+
+        // Table rows
+        doc.font("Helvetica");
+        invoiceData.items.forEach((item) => {
+          doc
+            .text(item.description, 50, yPosition, { width: 240 })
+            .text(item.quantity.toString(), 300, yPosition)
+            .text(`${invoiceData.currency} ${item.unitPrice.toFixed(2)}`, 380, yPosition)
+            .text(`${invoiceData.currency} ${item.total.toFixed(2)}`, 480, yPosition, {
+              align: "right",
+            });
+          yPosition += 25;
+        });
+
+        // Line before total
+        yPosition += 10;
+        doc.moveTo(50, yPosition).lineTo(550, yPosition).stroke();
+
+        // Subtotal and total
+        yPosition += 20;
+        const subtotal = invoiceData.items.reduce((sum, item) => sum + item.total, 0);
+
+        doc
+          .fontSize(10)
+          .font("Helvetica-Bold")
+          .text("Subtotal:", 380, yPosition)
+          .text(`${invoiceData.currency} ${subtotal.toFixed(2)}`, 480, yPosition, {
+            align: "right",
+          });
+
+        yPosition += 20;
+        doc
+          .fontSize(12)
+          .text("TOTAL:", 380, yPosition)
+          .text(`${invoiceData.currency} ${invoiceData.amount.toFixed(2)}`, 480, yPosition, {
+            align: "right",
+          });
+
+        // Payment information
+        yPosition += 40;
+        doc.fontSize(10).font("Helvetica-Bold").text("Payment Information:", 50, yPosition);
+
+        yPosition += 20;
+        doc
+          .font("Helvetica")
+          .text(`Plan: ${invoiceData.planType}`, 50, yPosition)
+          .text(`Billing Cycle: ${invoiceData.billingCycle}`, 50, yPosition + 15)
+          .text(`Status: PAID`, 50, yPosition + 30);
+
+        // Footer
+        doc
+          .fontSize(8)
+          .font("Helvetica")
+          .text("Thank you for your business!", 50, doc.page.height - 100, {
+            align: "center",
+          })
+          .text(
+            "For questions about this invoice, contact support@legalynx.com",
+            50,
+            doc.page.height - 85,
+            { align: "center" }
+          );
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
    * Send invoice email using SendGrid
    */
   async sendInvoiceEmail(invoiceData: {
@@ -571,6 +718,10 @@ class PrismaInvoiceService {
 
       const htmlContent = this.generateInvoiceHTML(invoiceData);
 
+      // Generate PDF attachment
+      const pdfBuffer = await this.generateInvoicePDF(invoiceData);
+      const pdfBase64 = pdfBuffer.toString("base64");
+
       const msg = {
         to: invoiceData.userEmail,
         from: {
@@ -586,6 +737,8 @@ Amount: ₱${invoiceData.amount.toFixed(2)} ${invoiceData.currency}
 Date: ${invoiceData.billingDate.toLocaleDateString()}
 
 Thank you for subscribing to ${this.companyDetails.name}!
+
+Please find your invoice attached as a PDF.
         `.trim(),
         categories: ["invoice", "subscription"],
         customArgs: {
@@ -593,6 +746,14 @@ Thank you for subscribing to ${this.companyDetails.name}!
           plan_type: invoiceData.planType,
           user_id: "user_id_placeholder",
         },
+        attachments: [
+          {
+            content: pdfBase64,
+            filename: `invoice-${invoiceData.invoiceNumber}.pdf`,
+            type: "application/pdf",
+            disposition: "attachment",
+          },
+        ],
       };
 
       const response = await sgMail.send(msg);
@@ -620,6 +781,35 @@ Thank you for subscribing to ${this.companyDetails.name}!
     error?: string;
   }> {
     try {
+      // Check if invoice already exists for this subscription activation
+      // Prevent duplicate invoices by checking recent invoices (within last 5 minutes)
+      if (data.subscriptionId) {
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        const existingInvoice = await prisma.invoice.findFirst({
+          where: {
+            user_id: data.userId,
+            subscription_id: data.subscriptionId,
+            created_at: {
+              gte: fiveMinutesAgo
+            }
+          }
+        });
+
+        if (existingInvoice) {
+          console.log('⚠️ Invoice already exists for this subscription, skipping duplicate:', {
+            existingInvoiceId: existingInvoice.id,
+            existingInvoiceNumber: existingInvoice.invoice_number,
+            subscriptionId: data.subscriptionId
+          });
+
+          return {
+            success: true,
+            invoiceId: existingInvoice.id,
+            invoiceNumber: existingInvoice.invoice_number,
+          };
+        }
+      }
+
       const invoiceNumber = this.generateInvoiceNumber();
       const billingDate = new Date();
       const dueDate = new Date();

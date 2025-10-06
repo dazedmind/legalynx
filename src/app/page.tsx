@@ -195,7 +195,7 @@ export default function Home() {
             console.log("Animation completed");
           }}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mx-8 md:mx-0">
+          <div className="flex flex-col gap-16 items-center mx-8 md:mx-0">
             <div>
               <h3 className="text-3xl font-bold font-serif text-foreground mb-8">
                 Why Professionals Choose LegalynX?
@@ -207,7 +207,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h4 className="text-xl font-semibold text-foreground mb-2">
-                      80% Time Reduction
+                      Time Reduction
                     </h4>
                     <p className="text-muted-foreground">
                       Dramatically reduce document review time from hours to
@@ -225,7 +225,7 @@ export default function Home() {
                       Enterprise Security
                     </h4>
                     <p className="text-muted-foreground">
-                      Bank-grade encryption with legal industry security
+                      Encryption with legal industry security
                       standards.
                     </p>
                   </div>
@@ -240,14 +240,14 @@ export default function Home() {
                       24/7 Support
                     </h4>
                     <p className="text-muted-foreground">
-                      24/7 Support for all your legal needs.
+                      Support for any technical issues you might face.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-tertiary rounded-3xl p-8 border border-tertiary">
+            {/* <div className="bg-tertiary rounded-3xl p-8 border border-tertiary">
               <h4 className="text-2xl font-bold text-foreground mb-8">
                 Performance Metrics
               </h4>
@@ -273,7 +273,7 @@ export default function Home() {
                   <div className="text-muted-foreground">Support</div>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
           </AnimatedContent>
         </div>
@@ -307,7 +307,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="bg-primary border-t">
         <div className="max-w-7xl mx-auto px-8 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
             <div className="col-span-2">
               <h4 className="text-2xl font-serif font-bold text-foreground mb-4">
                 LegalynX
@@ -322,16 +322,8 @@ export default function Home() {
             </div>
 
             <div className="col-span-1">
-              <h5 className="font-semibold text-foreground mb-4">Product</h5>
+              <h5 className="font-semibold text-foreground mb-4">Company</h5>
               <ul className="space-y-2 text-muted-foreground">
-                <li>
-                  <Link
-                    href="/features"
-                    className="hover:text-blue-600 transition-colors"
-                  >
-                    Features
-                  </Link>
-                </li>
                 <li>
                   <Link
                     href="/frontend/pricing"
@@ -340,15 +332,9 @@ export default function Home() {
                     Pricing
                   </Link>
                 </li>
-              </ul>
-            </div>
-
-            <div className="col-span-1">
-              <h5 className="font-semibold text-foreground mb-4">Company</h5>
-              <ul className="space-y-2 text-muted-foreground">
                 <li>
                   <Link
-                    href="/contact"
+                    href="/frontend/contact"
                     className="hover:text-blue-600 transition-colors"
                   >
                     Contact
@@ -360,14 +346,6 @@ export default function Home() {
                     className="hover:text-blue-600 transition-colors"
                   >
                     Privacy
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/terms"
-                    className="hover:text-blue-600 transition-colors"
-                  >
-                    Terms
                   </Link>
                 </li>
               </ul>

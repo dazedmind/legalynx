@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import sgMail from "@sendgrid/mail";
 import { SecurityAction } from "@prisma/client";
+import { validateEmail } from "@/lib/utils/emailValidation";
 
 const SECRET_KEY = process.env.JWT_SECRET!;
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY!;
@@ -141,11 +142,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Validate email with trusted domain check
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
       return NextResponse.json(
-        { error: "Invalid email format" },
+        { error: emailValidation.error },
         { status: 400 }
       );
     }

@@ -25,6 +25,8 @@ model User {
   created_at        DateTime  @default(now()) @map("created_at")
   updated_at        DateTime  @updatedAt @map("updated_at")
   last_login_at     DateTime? @map("last_login_at")
+  failed_login_attempts Int   @default(0) @map("failed_login_attempts")
+  account_locked_until  DateTime? @map("account_locked_until")
 
   // Relationships
   documents          Document[]
@@ -381,4 +383,7 @@ enum SecurityAction {
   DOCUMENT_DOWNLOAD
   CHAT_SAVE
   CHAT_DELETE
+  FAILED_LOGIN
+  ACCOUNT_LOCKED
+  ACCOUNT_UNLOCKED
 }

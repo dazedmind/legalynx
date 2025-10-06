@@ -19,6 +19,7 @@ import { toast, Toaster } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import ConfirmationModal, { ModalType } from "../../components/layout/ConfirmationModal";
 import { FaPaypal } from "react-icons/fa";
+import BillingHistory from "./BillingHistory";
 
 // Helper function to format MB to human readable format
 function formatStorage(mb: number): string {
@@ -43,6 +44,7 @@ function SubscriptionPage() {
   const [lastFourDigits, setLastFourDigits] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
   const [confirmationModal, setConfirmationModal] = useState<boolean>(false);
+  const [showBillingHistory, setShowBillingHistory] = useState(false);
 
   useEffect(() => {
     const fetchSubscription = async () => {
@@ -233,6 +235,10 @@ function SubscriptionPage() {
     return <LoaderComponent />;
   }
 
+  if (showBillingHistory) {
+    return <BillingHistory onBack={() => setShowBillingHistory(false)} />;
+  }
+
   return (
     <div>
       <span className="flex flex-col gap-1 p-4 px-4">
@@ -398,7 +404,9 @@ function SubscriptionPage() {
             </div>
 
             <div className="flex flex-col md:flex-row gap-2 pt-2 border-t border-tertiary">
-              <button className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors cursor-pointer">
+              <button
+                onClick={() => setShowBillingHistory(true)}
+                className="flex items-center gap-2 px-3 py-2 text-sm border border-tertiary rounded hover:bg-accent transition-colors cursor-pointer">
                 <ExternalLink className="w-4 h-4" />
                 View Billing History
               </button>
@@ -407,8 +415,8 @@ function SubscriptionPage() {
                 disabled={isCancelling}
                 className={`flex items-center gap-2 px-3 py-2 text-sm border rounded transition-colors cursor-pointer ${
                   isCancelling
-                    ? "border-gray-300 text-gray-400 cursor-not-allowed"
-                    : "hover:border-red-300 hover:text-red-600 hover:bg-red-50"
+                    ? "border-tertiary text-muted-foreground cursor-not-allowed"
+                    : "hover:border-destructive hover:text-destructive hover:bg-destructive/10"
                 }`}
               >
                 {isCancelling ? (

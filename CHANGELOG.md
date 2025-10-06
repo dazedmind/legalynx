@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.8] - 2025-10-07 - Pre-Defense QA
+
+### 🚀 What's New
+- **Account Protection:** Implemented anti-brute-force mechanism that locks accounts for 24 hours after 5 failed login attempts
+- **Email Validation:** Added acceptable email domains list to prevent burner accounts and temporary email registrations
+- **Billing History:** Users can now view complete billing history and invoices directly on the Subscription page
+- **Invoice Delivery:** PDF invoices are now automatically sent to registered email addresses
+- **Message Branching:** Added support for conversation branching when regenerating or editing responses
+
+
+### 🛠️ Fixes
+- **File Storage Display:** Adjusted file size display to automatically adapt between KB/MB/GB units for better readability
+- **Duplicate Invoice:** Fix a bug that duplicates the generation of invoice
+
+### ⚙️ Technical Changes
+- **System Prompt Refinement:** Updated system prompt to focus on text-based extraction and generation, removing multi-modal references
+
+### ⛔ Removed
+- **Landing Page:** Removed unnecessary information to streamline content for panel review
 
 ## [0.3.7] - 2025-10-06
 
@@ -14,14 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Non-Document Query Handler:** Added a dedicated response handler to properly manage general (non-document) user queries outside the RAG context.
 - **File Upload Error Handling:** Resolved an issue where failed uploads were incorrectly appearing in chat history; these are now properly flagged and isolated.
 
-### 🧩 What's New
+### 🧩 UI Changes
 - **Updated Session Loader:** Changed the session loader component UI to a more unified and simple interface.
 - **Profile Settings Redesign:** Updated the layout of the profile settings page for better readability, accessibility, and user navigation flow.
 - **RAG Thinking Lock:** Disabled the “Send” button while the RAG pipeline is processing or thinking, preventing duplicate requests and ensuring smoother UX.
 
 ## [0.3.6] - 2025-10-01
 
-### 🚀 Performance Improvements
+### 🚀 What's New
 - **Adaptive Multi-Question Processing:** Implemented intelligent query analysis that detects and optimizes handling of multi-question queries
 - **Enhanced Retrieval System:** Added hybrid Vector + BM25 retrieval with automatic configuration based on document size and query complexity
 - **Smart Context Building:** Improved token budgeting with adaptive chunk selection and prioritization for comprehensive multi-question responses
@@ -37,20 +56,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Debug Logging:** Added detailed debug output for RAG system parameter extraction to improve troubleshooting
 - **Import Cleanup:** Removed unused `pymupdf.extra.page_count` import that was causing naming conflicts
 - **RAG Builder Optimization:** Enhanced `VectorizedRAGBuilder.build_rag_system_fast()` to properly calculate and store page count from PDF files
-
-### 📊 Features Added
 - **Entity Detection:** Automatic extraction and prioritized retrieval of named entities from multi-question queries
 - **Batch Processing:** Single-pass retrieval and reranking for multiple questions, reducing latency and improving efficiency
 - **Adaptive Configuration:** Dynamic adjustment of retrieval parameters based on document size (pages) and query complexity (number of questions)
 - **Enhanced Deduplication:** Improved node deduplication with diversity optimization through interleaved retrieval results
 
-### 🎯 User Impact
-- **Faster Multi-Question Responses:** Users asking multiple questions in one query now get comprehensive answers with better accuracy
-- **Improved Context Coverage:** System now retrieves and includes more relevant document sections for complex queries
-- **Better Answer Quality:** Enhanced retrieval ranking ensures most relevant information is prioritized in responses
-
 ## [0.3.5] - 2025-09-30
-### 🧩 What's New
+
+### 🚀 What's New
 - **Chat Message Animations:** Added smooth slide-in animations for user and assistant messages
 - **Smooth Scrolling:** Chat container now scrolls smoothly to new messages
 - **Message Management:** Added delete button for individual chat messages
@@ -68,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.4] - 2025-09-28
 
-### 🧩 What's New
+### 🚀 What's New
 - **Response Streaming:** Now uses response streaming from OpenAI for faster response time
 - **Landing Page Refinements:** Added some visual refinements on the landing page
 
@@ -77,14 +90,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.3] - 2025-09-20
 
-### 🧩 What’s New
+### 🚀 What's New
 - **Subscription Invoice:** Subscriptions now automatically send invoices to the registered email.
 - Canceling a subscription now stops future payments but keeps access until the billing cycle ends.
 - **[FIX]** Voice Mode: improved stability and removed the outdated visualizer.
 
 ## [0.3.2] - 2025-09-17
 
-### 🧩 What's New
+### 🚀 What's New
 - **Forgot Password:** Users can now securely reset their password.
 - **Password Visibility Toggle:** Option to show or hide password text during entry.
 - **Security Logs Relocation:** Security logs are now housed under _Privacy & Security_ for a more streamlined experience.
@@ -95,7 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Code Settings Page:** Refactored for improved stability and maintainability.
 
 ## [0.3.1] - 2025-09-11
-### 🧩 What's new?
+### 🚀 What's New
 - **View File Button:** Introduced a quick-access button to open and view uploaded files directly from the chat interface
 - **Payment Gateway Integration:** Integrated PayPal as payment gateway for subscription
 - **Delete Account API:** Backend endpoint for permanent account deletion is now available
@@ -108,7 +121,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ⚠️ Note: We skipped version 0.2.3 to 0.2.x in order to align with the scope of new features and improvements. The jump reflects a larger set of changes that warranted a minor version bump.
 
-### 🧩 What's new?
+### 🚀 What's New
 
 - **GPT 5-mini integration:** the pipeline now runs on OpenAI’s GPT 5-nano model (previously Gemini Flash 2.0).  
 - **Smarter responses:** improved verbosity and reasoning making the assistant more helpful and proactive in asking clarifying questions.  
@@ -132,7 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🛠️ Fixed
 - **Smarter auto-rename:** feature now powered by rule-based pattern matching (previously regex only) for higher accuracy.  
 
-### 🧩 Changed
+### 🧩 UI Changes
 - **Add Client Name Format**: Replaced sequential_numbering with add client name format (20250815_Client_Document.pdf)
 
 ## [0.2.1] - 2025-08-12
@@ -233,8 +246,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Mobile Responsiveness**: Enhanced UI/UX compatibility for mobile and small screen devices
-
----
 
 ## [0.1.3] - 2025-07-17
 

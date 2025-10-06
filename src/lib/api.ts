@@ -90,11 +90,13 @@ export interface QueryResponse {
 }
 
 export interface StreamingChunk {
-  type: 'start' | 'retrieval' | 'retrieval_complete' | 'llm_start' | 'content_chunk' | 'complete' | 'error' | 'end';
+  type: 'start' | 'retrieval' | 'retrieval_complete' | 'llm_start' | 'content_chunk' | 'sources' | 'streaming_start' | 'complete' | 'error' | 'end';
   message?: string;
   chunk?: string;
   partial_response?: string;
   final_response?: string;
+  response?: string;
+  source_count?: number;
   timestamp: string;
   user_id?: string;
   execution_time?: number;

@@ -36,6 +36,52 @@ function ProfileSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [imageError, setImageError] = useState(false);
+
+  // Password strength calculator
+  const calculatePasswordStrength = (password: string) => {
+    if (!password) return { strength: 0, label: "", color: "" };
+
+    let score = 0;
+
+    // Length check
+    if (password.length >= 8) score += 1;
+    if (password.length >= 12) score += 1;
+
+    // Character variety checks
+    if (/[a-z]/.test(password)) score += 1;
+    if (/[A-Z]/.test(password)) score += 1;
+    if (/[0-9]/.test(password)) score += 1;
+    if (/[^A-Za-z0-9]/.test(password)) score += 1;
+
+    // Determine strength level
+    if (score <= 2) {
+      return {
+        strength: (score / 6) * 100,
+        label: "Weak",
+        color: "bg-red-500",
+      };
+    } else if (score <= 4) {
+      return {
+        strength: (score / 6) * 100,
+        label: "Medium",
+        color: "bg-yellow-500",
+      };
+    } else if (score <= 5) {
+      return {
+        strength: (score / 6) * 100,
+        label: "Strong",
+        color: "bg-green-400",
+      };
+    } else {
+      return {
+        strength: (score / 6) * 100,
+        label: "Very Strong",
+        color: "bg-green-500",
+      };
+    }
+  };
+
+  const passwordStrength = calculatePasswordStrength(newPassword);
   
 
   const [settings, setSettings] = useState<UserSettings>({
@@ -502,6 +548,33 @@ function ProfileSettings() {
                     placeholder="Enter new password (min 8 characters)"
                     className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-foreground"
                   />
+
+                  {/* Password Strength Indicator */}
+                  {newPassword && (
+                    <div className="w-full space-y-2 mt-3">
+                      <div className="relative w-full h-2 bg-accent rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${passwordStrength.color}`}
+                          style={{ width: `${passwordStrength.strength}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span
+                          className={`text-xs font-medium ${
+                            passwordStrength.label === "Weak"
+                              ? "text-red-500"
+                              : passwordStrength.label === "Medium"
+                              ? "text-yellow-600"
+                              : passwordStrength.label === "Strong"
+                              ? "text-green-400"
+                              : "text-green-500"
+                          }`}
+                        >
+                          {passwordStrength.label}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -518,6 +591,19 @@ function ProfileSettings() {
                     placeholder="Confirm new password"
                     className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-foreground"
                   />
+
+                  {/* Password Match Indicator */}
+                  {confirmNewPassword && newPassword && (
+                    <p className={`text-xs mt-2 ${
+                      newPassword === confirmNewPassword
+                        ? "text-green-500"
+                        : "text-red-500"
+                    }`}>
+                      {newPassword === confirmNewPassword
+                        ? "✓ Passwords match"
+                        : "✗ Passwords do not match"}
+                    </p>
+                  )}
                 </div>
 
                 <p className="text-xs text-muted-foreground">

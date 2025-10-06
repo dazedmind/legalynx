@@ -23,6 +23,23 @@ import { profileService } from "../../../../lib/api";
 import { Separator } from "@/app/frontend/components/ui/separator";
 import { FloatingSaveBar } from "../../components/layout/FloatingSaveBar";
 
+// Helper function to format bytes to appropriate unit (KB, MB, GB)
+const formatStorageSize = (bytes: number): { value: number; unit: string } => {
+  if (bytes === 0) return { value: 0, unit: 'MB' };
+
+  const kb = bytes / 1024;
+  const mb = kb / 1024;
+  const gb = mb / 1024;
+
+  if (gb >= 1) {
+    return { value: parseFloat(gb.toFixed(2)), unit: 'GB' };
+  } else if (mb >= 1) {
+    return { value: parseFloat(mb.toFixed(2)), unit: 'MB' };
+  } else {
+    return { value: parseFloat(kb.toFixed(2)), unit: 'KB' };
+  }
+};
+
 const retentionOptions = [
   { value: null, label: "Never" },
   { value: 7, label: "7 days" },
@@ -53,9 +70,9 @@ interface UserSettings {
 }
 
 interface StorageInfo {
-  used: number;
-  total: number;
-  available: number;
+  used: number; // in bytes
+  total: number; // in bytes
+  available: number; // in bytes
 }
 
 export default function FileSettings() {
@@ -83,17 +100,20 @@ export default function FileSettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [storageInfo, setStorageInfo] = useState<StorageInfo>({
     used: 0,
-    total: 10,
-    available: 10,
+    total: 100 * 1024 * 1024, // 100MB in bytes (default for BASIC)
+    available: 100 * 1024 * 1024,
   });
   const [subscription, setSubscription] = useState<string>("BASIC");
 
   // Load settings on component mount
   useEffect(() => {
     if (isAuthenticated && user) {
-      loadUserSettings();
-      loadStorageInfo();
-      getSubscription();
+      const loadData = async () => {
+        await getSubscription();
+        await loadUserSettings();
+        await loadStorageInfo();
+      };
+      loadData();
     }
   }, [isAuthenticated, user]);
 
@@ -108,7 +128,7 @@ export default function FileSettings() {
   const getSubscription = async () => {
     const response = await profileService.getProfile();
     const subscription = response.subscription;
-    setSubscription(subscription.plan_type);
+    setSubscription(subscription.plan_type.toUpperCase());
   };
 
   const loadUserSettings = async () => {
@@ -156,40 +176,44 @@ export default function FileSettings() {
   const loadStorageInfo = async () => {
     try {
       console.log('🔄 Loading storage info...');
-      
+
       const response = await fetch("/backend/api/user-settings/storage", {
         method: "GET",
         headers: getAuthHeaders(),
       });
-  
+
       if (response.ok) {
         const data = await response.json();
         console.log('📊 Storage response:', data);
-        
-        // ✅ Use the correct fields based on plan
-        const unit = data.storage_unit || 'MB';
-        
+
+        // API returns used, total, and available in bytes
+        const usedBytes = data.used || 0;
+        const totalBytes = data.total || (subscription === "BASIC" ? 100 * 1024 * 1024 : subscription === "STANDARD" ? 1 * 1024 * 1024 * 1024 : 10 * 1024 * 1024 * 1024);
+        const availableBytes = data.available || (totalBytes - usedBytes);
+
         setStorageInfo({
-          used: unit === 'MB' ? data.used_mb || 0 : data.used_gb || 0,
-          total: unit === 'MB' ? data.total_mb || 50 : data.total_gb || 1,
-          available: unit === 'MB' ? data.available_mb || 50 : data.available_gb || 1,
+          used: usedBytes,
+          total: totalBytes,
+          available: availableBytes,
         });
-        
+
         console.log('💾 Storage info set:', {
-          used: unit === 'MB' ? data.used_mb : data.used_gb,
-          total: unit === 'MB' ? data.total_mb : data.total_gb,
-          unit
+          used: usedBytes,
+          total: totalBytes,
+          available: availableBytes,
+          formattedUsed: formatStorageSize(usedBytes)
         });
       } else {
         console.error('❌ Storage API error:', response.status);
       }
     } catch (error) {
       console.error("Failed to load storage info:", error);
-      // Use default values on error
+      // Use default values on error (in bytes)
+      const totalBytes = subscription === "BASIC" ? 100 * 1024 * 1024 : subscription === "STANDARD" ? 1 * 1024 * 1024 * 1024 : 10 * 1024 * 1024 * 1024;
       setStorageInfo({
         used: 0,
-        total: subscription === "BASIC" ? 50 : 1000,
-        available: subscription === "BASIC" ? 50 : 1000,
+        total: totalBytes,
+        available: totalBytes,
       });
     }
   };
@@ -255,6 +279,24 @@ export default function FileSettings() {
 
   const storagePercentage =
     storageInfo.total > 0 ? (storageInfo.used / storageInfo.total) * 100 : 0;
+
+  // Format only the used storage dynamically (KB/MB/GB)
+  const formattedUsed = formatStorageSize(storageInfo.used);
+
+  // Total and Available are fixed based on subscription tier
+  const getTierStorage = () => {
+    if (subscription === "BASIC") {
+      return { value: 50, unit: "MB" };
+    } else if (subscription === "STANDARD") {
+      return { value: 1, unit: "GB" };
+    } else { // PREMIUM
+      return { value: 10, unit: "GB" };
+    }
+  };
+
+  const tierStorage = getTierStorage();
+  const availableInBytes = storageInfo.total - storageInfo.used;
+  const formattedAvailable = formatStorageSize(availableInBytes);
 
   return (
     <div className="space-y-4 pb-6"> {/* Added padding bottom for floating bar */}
@@ -402,7 +444,7 @@ export default function FileSettings() {
           <div className="flex justify-between items-center w-full">
             <h2 className="text-xl font-semibold">Storage Usage</h2>
             <p className="text-md font-bold text-foreground">
-              {subscription === "BASIC" ? "50MB limit" : subscription === "STANDARD" ? "1GB limit" : "10GB limit"}
+              {tierStorage.value} {tierStorage.unit} limit
             </p>
           </div>
         </div>
@@ -414,7 +456,7 @@ export default function FileSettings() {
           <span className="flex items-center gap-2">
             <HardDrive className="w-8 h-8" />
             <h1 className="text-xl font-bold">
-              {storageInfo.used.toFixed(1)} {subscription === "BASIC" ? "MB" : "GB"} / {storageInfo.total} {subscription === "BASIC" ? "MB" : "GB"}
+              {formattedUsed.value} {formattedUsed.unit} / {tierStorage.value} {tierStorage.unit}
             </h1>
             <p className="text-sm text-muted-foreground">used ({storagePercentage.toFixed(1)}%)</p>
           </span>
@@ -441,13 +483,13 @@ export default function FileSettings() {
         <div className="grid grid-cols-2 gap-4 text-center mt-4">
           <div className="p-3 bg-blue/20 rounded">
             <div className="text-lg font-bold text-blue-700">
-              {storageInfo.used.toFixed(1)} {subscription === "BASIC" ? "MB" : "GB"}
+              {formattedUsed.value} {formattedUsed.unit}
             </div>
             <div className="text-xs text-blue-700">Used</div>
           </div>
           <div className="p-3 bg-accent rounded">
             <div className="text-lg font-bold text-muted-foreground">
-              {storageInfo.available.toFixed(1)} {subscription === "BASIC" ? "MB" : "GB"}
+              {formattedAvailable.value} {formattedAvailable.unit}
             </div>
             <div className="text-xs text-muted-foreground">Available</div>
           </div>

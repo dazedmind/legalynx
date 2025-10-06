@@ -3,6 +3,7 @@ import sgMail from '@sendgrid/mail';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import { validateEmail } from '@/lib/utils/emailValidation';
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY as string);
 const EMAIL_FROM = process.env.EMAIL_FROM as string;
@@ -10,10 +11,16 @@ const EMAIL_FROM = process.env.EMAIL_FROM as string;
 export async function POST(req: Request) {
     try {
       const { email, password, confirmPassword } = await req.json();
-      
+
       // Basic validation
       if (!email || !password || password !== confirmPassword) {
         return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
+      }
+
+      // Validate email with trusted domain check
+      const emailValidation = validateEmail(email);
+      if (!emailValidation.isValid) {
+        return NextResponse.json({ error: emailValidation.error }, { status: 400 });
       }
 
       const hashedPassword = await bcrypt.hash(password, 12);

@@ -13,6 +13,7 @@ import logo from "../img/legalynxlogo.png";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { GoEye, GoEyeClosed } from "react-icons/go";
+import { validateEmail as validateEmailDomain, isValidEmailFormat } from "@/lib/utils/emailValidation";
 
 function RegisterContent() {
   const router = useRouter();
@@ -78,8 +79,7 @@ function RegisterContent() {
   };
 
   const emailValidation = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    return isValidEmailFormat(email);
   };
 
   const validateForm = () => {
@@ -87,6 +87,14 @@ function RegisterContent() {
       toast.error("Please fill in all fields");
       return false;
     }
+
+    // Validate email with trusted domain check
+    const emailCheck = validateEmailDomain(formData.email);
+    if (!emailCheck.isValid) {
+      toast.error(emailCheck.error || "Invalid email address");
+      return false;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match");
       return false;

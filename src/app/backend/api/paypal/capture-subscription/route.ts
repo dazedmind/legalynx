@@ -100,87 +100,18 @@ export async function POST(request: NextRequest) {
       is_active: updatedSubscription.is_active
     });
 
-    // 🎯 SEND INVOICE TO LEGALYNX USER EMAIL (NOT PAYPAL EMAIL)
-    if (plan === 'STANDARD' || plan === 'PREMIUM') {
-      console.log('📧 Sending invoice to LegalynX registered email:', {
-        legalynxEmail: user.email,  // This is the LegalynX registered email
-        userName: user.name || 'User',
-        plan,
-        billing,
-        subscriptionId
-      });
+    // Invoice will be sent via PayPal webhook (BILLING.SUBSCRIPTION.ACTIVATED)
+    // This prevents duplicate invoices
+    console.log('ℹ️ Subscription activated, invoice will be sent via webhook');
 
-      try {
-        const invoiceResult = await prismaInvoiceService.createAndSendInvoice({
-          userId: user.id,
-          userEmail: user.email,  // 🎯 Using LegalynX email, not PayPal email
-          userName: user.name || user.email.split('@')[0],  // 🎯 Using LegalynX user name
-          planType: plan,
-          billingCycle: billing,
-          subscriptionId: subscriptionId,
-          paypalTransactionId: data.id
-        });
-
-        if (invoiceResult.success) {
-          console.log('✅ Invoice sent successfully to LegalynX user:', {
-            invoiceNumber: invoiceResult.invoiceNumber,
-            invoiceId: invoiceResult.invoiceId,
-            sentToEmail: user.email,  // Confirming it was sent to LegalynX email
-            plan,
-            billing
-          });
-
-          return NextResponse.json({ 
-            status: 'ok', 
-            nextBillingDate: nextBilling.toISOString(),
-            invoice: {
-              sent: true,
-              invoiceNumber: invoiceResult.invoiceNumber,
-              invoiceId: invoiceResult.invoiceId,
-              sentTo: user.email  // Return confirmation of email address
-            }
-          });
-        } else {
-          console.error('⚠️ Subscription activated but invoice sending failed:', {
-            userEmail: user.email,
-            error: invoiceResult.error
-          });
-
-          return NextResponse.json({ 
-            status: 'ok', 
-            nextBillingDate: nextBilling.toISOString(),
-            invoice: {
-              sent: false,
-              error: invoiceResult.error,
-              note: 'Subscription active, but invoice email failed'
-            }
-          });
-        }
-      } catch (invoiceError) {
-        console.error('❌ Invoice creation error:', invoiceError);
-        
-        return NextResponse.json({ 
-          status: 'ok', 
-          nextBillingDate: nextBilling.toISOString(),
-          invoice: {
-            sent: false,
-            error: 'Invoice creation failed',
-            note: 'Subscription is active, but invoice could not be generated'
-          }
-        });
+    return NextResponse.json({
+      status: 'ok',
+      nextBillingDate: nextBilling.toISOString(),
+      invoice: {
+        sent: false,
+        note: 'Invoice will be sent via PayPal webhook to avoid duplicates'
       }
-    } else {
-      // BASIC plan or no invoice needed
-      console.log('ℹ️ No invoice needed for plan:', plan);
-      return NextResponse.json({ 
-        status: 'ok', 
-        nextBillingDate: nextBilling.toISOString(),
-        invoice: {
-          sent: false,
-          note: 'No invoice required for this plan'
-        }
-      });
-    }
+    });
 
   } catch (error) {
     console.error('❌ PayPal capture-subscription error:', error);

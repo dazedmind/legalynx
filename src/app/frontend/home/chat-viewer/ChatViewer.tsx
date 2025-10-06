@@ -30,6 +30,7 @@ import VoiceChatComponent from "./VoiceChatComponent";
 import { BiSolidFilePdf } from "react-icons/bi";
 import { GoSquareFill } from "react-icons/go";
 import { PDFViewer } from "../file-manager/PDFViewer";
+import { HiOutlinePaperClip } from "react-icons/hi2";
 
 interface ChatMessage {
   id: string;
@@ -40,6 +41,9 @@ interface ChatMessage {
   sourceCount?: number;
   isThinking?: boolean; // For pulse animation
   isStreaming?: boolean; // For streaming cursor animation
+  branches?: string[]; // Array of message IDs that are alternative responses
+  currentBranch?: number; // Current branch index being displayed
+  parentId?: string; // ID of the parent message (for branching)
 }
 
 interface ChatSession {
@@ -1180,13 +1184,35 @@ export default function ChatViewer({
         setCurrentDocument(documentInfo);
 
         const formattedMessages: ChatMessage[] = sessionData.messages.map(
-          (msg: any) => ({
-            id: msg.id,
-            type: msg.role?.toUpperCase() as "USER" | "ASSISTANT",
-            content: msg.content,
-            createdAt: new Date(msg.created_at),
-            sourceCount: msg.tokens_used,
-          })
+          (msg: any) => {
+            const messageId = msg.id;
+
+            // Restore branches from sessionStorage if they exist
+            const branchesKey = `branches_${sessionId}_${messageId}`;
+            const originalKey = `original_${messageId}`;
+            const storedBranches = JSON.parse(sessionStorage.getItem(branchesKey) || '[]');
+            const hasOriginal = sessionStorage.getItem(originalKey) !== null;
+
+            // Build branches array from stored branch IDs
+            const branches = storedBranches.length > 0 ? storedBranches.map((b: any) => b.id) : undefined;
+            const currentBranch = branches ? 0 : undefined; // Default to original (index 0)
+
+            // If branches exist but no original content stored, store it now
+            if (branches && !hasOriginal) {
+              sessionStorage.setItem(originalKey, msg.content);
+            }
+
+            return {
+              id: messageId,
+              type: msg.role?.toUpperCase() as "USER" | "ASSISTANT",
+              content: msg.content,
+              createdAt: new Date(msg.created_at),
+              sourceCount: msg.tokens_used,
+              isThinking: false,
+              isStreaming: false,
+              ...(branches && { branches, currentBranch })
+            };
+          }
         );
 
         setChatHistory(formattedMessages);
@@ -1536,12 +1562,34 @@ export default function ChatViewer({
 
           if (messagesResponse.ok) {
             const messages = await messagesResponse.json();
-            const formattedMessages = messages.map((msg: any) => ({
-              id: msg.id,
-              type: msg.role?.toUpperCase() as "USER" | "ASSISTANT",
-              content: msg.content,
-              createdAt: new Date(msg.created_at || msg.timestamp),
-            }));
+            const formattedMessages = messages.map((msg: any) => {
+              const messageId = msg.id;
+
+              // Restore branches from sessionStorage if they exist
+              const branchesKey = `branches_${mostRecentSession.id}_${messageId}`;
+              const originalKey = `original_${messageId}`;
+              const storedBranches = JSON.parse(sessionStorage.getItem(branchesKey) || '[]');
+              const hasOriginal = sessionStorage.getItem(originalKey) !== null;
+
+              // Build branches array from stored branch IDs
+              const branches = storedBranches.length > 0 ? storedBranches.map((b: any) => b.id) : undefined;
+              const currentBranch = branches ? 0 : undefined; // Default to original (index 0)
+
+              // If branches exist but no original content stored, store it now
+              if (branches && !hasOriginal) {
+                sessionStorage.setItem(originalKey, msg.content);
+              }
+
+              return {
+                id: messageId,
+                type: msg.role?.toUpperCase() as "USER" | "ASSISTANT",
+                content: msg.content,
+                createdAt: new Date(msg.created_at || msg.timestamp),
+                isThinking: false,
+                isStreaming: false,
+                ...(branches && { branches, currentBranch })
+              };
+            });
             setChatHistory(formattedMessages);
           }
         } else {
@@ -2028,16 +2076,85 @@ export default function ChatViewer({
         }
       }
 
-      // Generate new response based on the edited message
-      const result = await apiService.queryDocuments(newContent);
+      // Generate new response based on the edited message using streaming
+      const newMessageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      let streamedContent = "";
+      let sourceCount = 0;
 
-      // Add the new assistant response
-      await addMessage({
-        type: "ASSISTANT",
-        content: result.response,
-        query: newContent,
-        sourceCount: result.sourceCount,
-      });
+      // Add a thinking message immediately
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          id: newMessageId,
+          type: "ASSISTANT",
+          content: "Regenerating response...",
+          createdAt: new Date(),
+          isThinking: true,
+          isStreaming: true,
+        },
+      ]);
+
+      const ragClient = new (await import('../../utils/api-client')).RAGApiClient();
+
+      await ragClient.streamQueryDocument(
+        newContent,
+        (chunk) => {
+          if (chunk.type === 'content_chunk') {
+            if (chunk.partial_response !== undefined) {
+              streamedContent = chunk.partial_response;
+
+              setChatHistory((prev) =>
+                prev.map((msg) =>
+                  msg.id === newMessageId
+                    ? {
+                        ...msg,
+                        content: streamedContent,
+                        isThinking: false,
+                        isStreaming: true,
+                      }
+                    : msg
+                )
+              );
+            }
+          } else if (chunk.type === 'sources') {
+            sourceCount = chunk.source_count || 0;
+          } else if (chunk.type === 'complete' || chunk.type === 'end') {
+            setChatHistory((prev) =>
+              prev.map((msg) =>
+                msg.id === newMessageId
+                  ? {
+                      ...msg,
+                      content: chunk.response || streamedContent,
+                      query: newContent,
+                      sourceCount: sourceCount,
+                      isStreaming: false,
+                      isThinking: false,
+                    }
+                  : msg
+              )
+            );
+          }
+        },
+        (error) => {
+          console.error("Streaming error:", error);
+          setChatHistory((prev) => prev.filter((msg) => msg.id !== newMessageId));
+          setError(error.message);
+          toast.error("Failed to regenerate response: " + error.message);
+        }
+      );
+
+      // Ensure streaming state is cleared after completion
+      setChatHistory((prev) =>
+        prev.map((msg) =>
+          msg.id === newMessageId
+            ? {
+                ...msg,
+                isStreaming: false,
+                isThinking: false,
+              }
+            : msg
+        )
+      );
 
       toast.success("Message updated and response regenerated");
     } catch (error) {
@@ -2088,34 +2205,135 @@ export default function ChatViewer({
     try {
       setIsQuerying(true);
 
-      // Remove the assistant message we're regenerating
-      setChatHistory((prev) => prev.filter((msg) => msg.id !== messageId));
+      // Create new branch message ID first
+      const newBranchMessageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      let streamedContent = "";
+      let sourceCount = 0;
 
-      // Delete from database if we have session
-      if (currentSessionId && user && documentExists) {
-        try {
-          await fetch(`/backend/api/chat-messages/${messageId}`, {
-            method: "DELETE",
-            headers: getAuthHeaders(),
-          });
-        } catch (error) {
-          console.warn("Failed to delete message from database:", error);
-        }
-      }
-
-      // Re-run the query with a slight modification to encourage different response
-      const result = await apiService.queryDocuments(
-        userMessage.content + " (Please provide a more detailed response)"
+      // Add thinking indicator to the current message
+      setChatHistory((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId
+            ? {
+                ...msg,
+                content: "Generating alternative response...",
+                isThinking: true,
+                isStreaming: true,
+              }
+            : msg
+        )
       );
 
-      await addMessage({
+      const ragClient = new (await import('../../utils/api-client')).RAGApiClient();
+
+      // Stream the alternative response
+      await ragClient.streamQueryDocument(
+        userMessage.content + " (Please provide an alternative perspective)",
+        (chunk) => {
+          if (chunk.type === 'content_chunk') {
+            if (chunk.partial_response !== undefined) {
+              streamedContent = chunk.partial_response;
+
+              setChatHistory((prev) =>
+                prev.map((msg) =>
+                  msg.id === messageId
+                    ? {
+                        ...msg,
+                        content: streamedContent,
+                        isThinking: false,
+                        isStreaming: true,
+                      }
+                    : msg
+                )
+              );
+            }
+          } else if (chunk.type === 'sources') {
+            sourceCount = chunk.source_count || 0;
+          } else if (chunk.type === 'complete' || chunk.type === 'end') {
+            // Don't update here, we'll update after setting up branches
+            streamedContent = chunk.response || streamedContent;
+          }
+        },
+        (error) => {
+          console.error("Streaming error:", error);
+          setError(error.message);
+          toast.error("Failed to regenerate response: " + error.message);
+          // Clear streaming state on error
+          setChatHistory((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId
+                ? { ...msg, isStreaming: false, isThinking: false }
+                : msg
+            )
+          );
+        }
+      );
+
+      // Create new branch message with the streamed content
+      const newBranchMessage: ChatMessage = {
+        id: newBranchMessageId,
         type: "ASSISTANT",
-        content: result.response,
+        content: streamedContent,
         query: userMessage.content,
-        sourceCount: result.sourceCount,
+        sourceCount: sourceCount,
+        createdAt: new Date(),
+        parentId: messageId,
+      };
+
+      // Update the chat history with branching logic
+      setChatHistory((prev) => {
+        const updated = [...prev];
+        const msgIndex = updated.findIndex((msg) => msg.id === messageId);
+
+        if (msgIndex !== -1) {
+          const currentMsg = updated[msgIndex];
+
+          // Initialize branches array if it doesn't exist
+          if (!currentMsg.branches) {
+            // Check if branches exist in sessionStorage first (after page refresh)
+            const branchesKey = `branches_${currentSessionId}_${messageId}`;
+            const storedBranches = JSON.parse(sessionStorage.getItem(branchesKey) || '[]');
+
+            if (storedBranches.length > 0) {
+              // Restore from sessionStorage - branches already exist
+              currentMsg.branches = storedBranches.map((b: any) => b.id);
+              currentMsg.currentBranch = 0; // Default to original
+            } else {
+              // First time branching - store original content
+              const originalBranchKey = `original_${messageId}`;
+              sessionStorage.setItem(originalBranchKey, currentMsg.content);
+              currentMsg.branches = []; // Start with empty array
+              currentMsg.currentBranch = 0;
+            }
+          }
+
+          // Add new branch ID (each regeneration adds one branch)
+          currentMsg.branches?.push(newBranchMessageId);
+          currentMsg.currentBranch = currentMsg.branches?.length; // Switch to new branch
+
+          // Store the new branch message separately (we'll manage display through branches array)
+          // For now, we'll update the content to show the new branch
+          updated[msgIndex] = {
+            ...currentMsg,
+            content: newBranchMessage.content,
+            sourceCount: newBranchMessage.sourceCount,
+            isStreaming: false,
+            isThinking: false,
+          };
+        }
+
+        return updated;
       });
 
-      toast.success("Response regenerated");
+      // Store branch in session storage for persistence
+      if (currentSessionId) {
+        const branchesKey = `branches_${currentSessionId}_${messageId}`;
+        const existingBranches = JSON.parse(sessionStorage.getItem(branchesKey) || '[]');
+        existingBranches.push(newBranchMessage);
+        sessionStorage.setItem(branchesKey, JSON.stringify(existingBranches));
+      }
+
+      toast.success("Alternative response generated");
     } catch (error) {
       const errorMessage = handleApiError(error);
       setError(errorMessage);
@@ -2123,6 +2341,64 @@ export default function ChatViewer({
     } finally {
       setIsQuerying(false);
     }
+  };
+
+  // Handle branch navigation
+  const handleBranchChange = (messageId: string, newBranchIndex: number) => {
+    console.log('🔀 Branch change requested:', { messageId, newBranchIndex });
+
+    setChatHistory((prev) => {
+      const updated = [...prev];
+      const msgIndex = updated.findIndex((msg) => msg.id === messageId);
+
+      if (msgIndex !== -1 && updated[msgIndex].branches) {
+        const currentMsg = updated[msgIndex];
+        const branchesKey = `branches_${currentSessionId}_${messageId}`;
+        const storedBranches = JSON.parse(sessionStorage.getItem(branchesKey) || '[]');
+
+        console.log('📦 Stored branches:', storedBranches);
+        console.log('🎯 Current branch index:', currentMsg.currentBranch);
+
+        // Get the content for the selected branch
+        if (newBranchIndex === 0) {
+          // Original message - get from stored original or keep current
+          const originalBranchKey = `original_${messageId}`;
+          const originalContent = sessionStorage.getItem(originalBranchKey);
+          console.log('📜 Original content:', originalContent?.substring(0, 50));
+
+          if (originalContent) {
+            updated[msgIndex] = {
+              ...currentMsg,
+              content: originalContent,
+              currentBranch: newBranchIndex,
+            };
+            console.log('✅ Switched to original branch');
+          } else {
+            console.warn('⚠️ No original content found in sessionStorage');
+          }
+        } else {
+          // Alternative branch - get from stored branches
+          const branchMessage = storedBranches[newBranchIndex - 1];
+          console.log('🌿 Branch message:', branchMessage);
+
+          if (branchMessage) {
+            updated[msgIndex] = {
+              ...currentMsg,
+              content: branchMessage.content,
+              sourceCount: branchMessage.sourceCount,
+              currentBranch: newBranchIndex,
+            };
+            console.log('✅ Switched to branch', newBranchIndex);
+          } else {
+            console.warn('⚠️ Branch message not found at index', newBranchIndex - 1);
+          }
+        }
+      } else {
+        console.warn('⚠️ Message not found or no branches');
+      }
+
+      return updated;
+    });
   };
 
   const handleDeleteMessage = async (messageId: string) => {
@@ -2374,11 +2650,14 @@ export default function ChatViewer({
         await ragClient.streamQueryDocument(
         currentQuery,
         (chunk) => {
+          console.log('🔄 FRONTEND: Received chunk:', chunk.type, chunk);
+
           // Handle different chunk types
           if (chunk.type === 'content_chunk') {
             // Update streamedContent even if partial_response is empty (for first chunk)
             if (chunk.partial_response !== undefined) {
               streamedContent = chunk.partial_response;
+              console.log(`📝 FRONTEND: Content chunk - ${streamedContent.length} chars total`);
 
               // Update the streaming message with the partial response
               // Only remove thinking state when we have actual content
@@ -2395,24 +2674,28 @@ export default function ChatViewer({
                 )
               );
             }
-          } else if (chunk.type === 'end') {
+          } else if (chunk.type === 'end' || chunk.type === 'complete') {
             // Mark streaming as complete and update final content
+            const finalContent = chunk.response || streamedContent || "No response generated";
+            console.log(`✅ FRONTEND: Streaming ended (${chunk.type}) - final content: ${finalContent.length} chars`);
+
             setChatHistory(prev =>
               prev.map(msg =>
                 msg.id === assistantMessageId
                   ? {
                       ...msg,
-                      content: streamedContent || msg.content || "No response generated",
-                      sourceCount,
+                      content: finalContent,
+                      sourceCount: chunk.source_count || sourceCount,
                       isStreaming: false,
                       isThinking: false
                     }
                   : msg
               )
             );
-
-            console.log(`✅ FRONTEND: Streaming ended (${chunk.type}) - ${streamedContent.length} chars`);
-          } else if (chunk.type === 'start' || chunk.type === 'retrieval' || chunk.type === 'llm_start') {
+          } else if (chunk.type === 'sources') {
+            sourceCount = chunk.source_count || 0;
+            console.log(`📚 FRONTEND: Sources received - ${sourceCount} sources`);
+          } else if (chunk.type === 'start' || chunk.type === 'retrieval' || chunk.type === 'llm_start' || chunk.type === 'streaming_start') {
             // Keep thinking animation during these stages
             console.log(`💬 FRONTEND: ${chunk.type} event received`);
           }
@@ -2439,7 +2722,22 @@ export default function ChatViewer({
           );
         },
         () => {
-          console.log('🏁 FRONTEND: Streaming completed');
+          console.log('🏁 FRONTEND: Streaming completed callback called');
+          console.log(`Final streamedContent: "${streamedContent}" (${streamedContent.length} chars)`);
+
+          // Ensure streaming state is cleared and content is saved
+          setChatHistory(prev =>
+            prev.map(msg =>
+              msg.id === assistantMessageId
+                ? {
+                    ...msg,
+                    content: streamedContent || msg.content || "No response generated",
+                    isStreaming: false,
+                    isThinking: false
+                  }
+                : msg
+            )
+          );
         },
         undefined, // documentId
         abortController.signal // Pass abort signal to enable stopping
@@ -2848,7 +3146,8 @@ export default function ChatViewer({
                 <AlertCircle className="w-6 h-6 text-red-500" />
               )}
               {/* <FileText className={`w-8 h-8 ${documentExists ? 'text-blue-600' : 'text-gray-400'}`} /> */}
-              <BiSolidFilePdf className="w-8 h-8 text-red-500 flex-shrink-0" />
+              {/* <BiSolidFilePdf className="w-8 h-8 text-red-500 flex-shrink-0" /> */}
+              <HiOutlinePaperClip className="w-6 h-6 text-red-500 flex-shrink-0" />
 
               <div>
                 <div className="flex items-center">
@@ -2927,9 +3226,9 @@ export default function ChatViewer({
                     ? () =>
                         openConfirmationModal(
                           {
-                            header: "Unsaved Files and Session",
+                            header: "Unsaved File and Session",
                             message:
-                              "You have unsaved changes. Are you sure you want to discard all files and start a new chat?",
+                              "You have unsaved changes. Are you sure you want to discard the file and start a new chat?",
                             trueButton: "Discard All",
                             falseButton: "Cancel",
                             type: ModalType.WARNING,
@@ -2982,6 +3281,7 @@ export default function ChatViewer({
           onMessageAction={handleMessageAction}
           typingMessageId={typingMessageId}
           onTypingComplete={() => setTypingMessageId(null)}
+          onBranchChange={handleBranchChange}
         />
 
         {/* Input Area */}

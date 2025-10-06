@@ -6,11 +6,11 @@ function ForgotPasswordModal({showForgotPasswordSuccess, handleForgotPasswordSub
   return (
     <>
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-          <div className="bg-white border-2 rounded-2xl shadow-lg p-8 max-w-md w-full mx-4 animate-modal-in">
+          <div className="bg-primary border-2 rounded-2xl shadow-lg p-8 max-w-md w-full mx-4 animate-modal-in">
             {!showForgotPasswordSuccess ? (
               <form onSubmit={handleForgotPasswordSubmit}>
                 <h2 className="text-2xl font-bold text-gold mb-4 text-center">Reset Password</h2>
-                <p className="text-gray-600 mb-2 text-center text-sm">
+                <p className="text-muted-foreground mb-2 text-center text-sm">
                   Enter your email address and we&apos;ll send you instructions to reset your password.
                 </p>
                 
@@ -28,8 +28,8 @@ function ForgotPasswordModal({showForgotPasswordSuccess, handleForgotPasswordSub
                 </div>
 
                 {forgotPasswordMessage && (
-                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm">{forgotPasswordMessage}</p>
+                    <div className="mb-4 p-3 mx-2 bg-destructive/10 border border-destructive rounded-lg">
+                    <p className="text-destructive text-sm">{forgotPasswordMessage}</p>
                   </div>
                 )}
 
@@ -37,7 +37,7 @@ function ForgotPasswordModal({showForgotPasswordSuccess, handleForgotPasswordSub
                   <button
                     type="button"
                     onClick={handleCloseForgotPasswordModal}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium cursor-pointer text-sm"
+                    className="px-4 py-2 text-muted-foreground hover:text-foreground font-medium cursor-pointer text-sm"
                     disabled={isForgotPasswordLoading}
                   >
                     Cancel
@@ -63,7 +63,7 @@ function ForgotPasswordModal({showForgotPasswordSuccess, handleForgotPasswordSub
                   </svg>
                 </div>
                 <h2 className="text-2xl font-bold text-blue mb-4">Instructions Sent!</h2>
-                <p className="text-gray-600 mb-6 text-sm">
+                <p className="text-muted-foreground mb-6 text-sm">
                   {forgotPasswordMessage}
                 </p>
                 <button
