@@ -23,7 +23,12 @@ const TypingAnimation = ({ text, delay, onComplete }: TypingAnimationProps) => {
     }
   }, [index, text, delay, onComplete]);
 
-  return <span>{displayedText}</span>;
+  return (
+    <span className="inline-block animate-fade-in">
+      {displayedText}
+      {index < text.length && <span className="animate-pulse">|</span>}
+    </span>
+  );
 };
 
 export default TypingAnimation;

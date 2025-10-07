@@ -10,7 +10,7 @@ from llama_index.core.schema import TextNode
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.embeddings import BaseEmbedding
-from rag_pipeline.config import MODEL_CONFIG, SYSTEM_PROMPT
+from rag_pipeline.config import MODEL_CONFIG
 
 
 class EmbeddingManager:
@@ -187,11 +187,6 @@ class EmbeddingManager:
                     api_key=self.openai_api_key
                 )
                 print(f"✅ Initialized OpenAI LLM: {MODEL_CONFIG['llm_model']}")
-            
-            # Test the LLM with a simple call
-            # print("🧪 Testing LLM connection...")
-            # test_response = self.llm.complete("Hello")
-            # print(f"✅ LLM test successful: {str(test_response)[:50]}...")
             
         except Exception as e:
             print(f"❌ LLM initialization failed: {e}")

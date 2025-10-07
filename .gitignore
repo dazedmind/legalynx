@@ -241,10 +241,6 @@ cython_debug/
 /src/app/backend/main.pyc
 /public/uploads/
 
-# Test files
-test_groq.py
-test-rag-backend.js
-
 # Configuration files
 .prettierrc
 

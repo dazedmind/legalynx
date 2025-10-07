@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Zap, Shield, Clock, Users, Folder } from "lucide-react";
+import { Shield, Clock, Users, ArrowUp } from "lucide-react";
 import Header from "./frontend/components/layout/Header";
 import BlurText from "./frontend/components/reactbits/BlurText";
 import Image from "next/image";
-import heroImg from "./frontend/img/legalynxlogo.png";
+import heroImg from "./frontend/img/hero-img.png";
+import heroImgDark from "./frontend/img/hero-img-dark.png";
+import chatBubble from "./frontend/img/chat-bubble.png";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import LightRays from "./frontend/components/reactbits/LightRays";
@@ -13,12 +15,16 @@ import SpotlightCard from "./frontend/components/reactbits/SpotlightCard";
 import { BsFillLightningFill, BsFillShieldLockFill, BsFolderFill } from "react-icons/bs";
 import AnimatedContent from "./frontend/components/reactbits/AnimatedContent";
 import CountUp from "./frontend/components/reactbits/CountUp";
+import TypingAnimation from "./frontend/components/layout/TypingAnimation";
 
 export default function Home() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const { theme } = useTheme();
   const [windowWidth, setWindowWidth] = useState(0); 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [showChatBubble, setShowChatBubble] = useState(false);
+  const [startTyping, setStartTyping] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -73,43 +79,84 @@ export default function Home() {
                 className="is-background"
               />
         )}
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-30 pb-10 md:pt-40 md:pb-32">
-          <div className="flex flex-col-reverse lg:flex-row items-center justify-between md:gap-16">
-            <div className="flex-1 text-center lg:text-left">
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-30 pb-10 md:pb-32">
+          <div className="flex flex-col items-center justify-center gap-10 md:gap-16 pt-40">
+            <div className="flex flex-col gap-4 text-center items-center lg:text-left">
               <BlurText
-                text="LegalynX"
-                className="text-5xl lg:text-7xl font-bold text-foreground font-serif  md:mt-0  mb-2"
+                text="Linking You to Legal Clarity"
+                className="text-5xl lg:text-7xl text-center justify-center font-bold text-foreground font-serif  md:mt-0  mb-2"
               />
-
-              <h2 className="text-1xl lg:text-2xl text-muted-foreground mb-4 font-light">
-                Linking you to legal clarity
-              </h2>
-
+              
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link href="/frontend/pricing">
+                <Link href="/frontend/login">
                   <button className="px-6 py-3 text-lg rounded-full font-semibold bg-foreground text-primary shadow-lg hover:bg-foreground/90 transition-all duration-300 transform cursor-pointer">
                     Get Started
                   </button>
                 </Link>
-              </div>
-            </div>
 
-            <div className="block">
+                <Link href="/frontend/pricing">
+                  <button className="px-6 py-3 text-lg hover:underline underline-offset-8 transition-all ease-in-out duration-300 transform cursor-pointer">
+                    View Pricing
+                  </button>
+                </Link>
+              </div>
+             
+            </div>
+            <div className="flex flex-col items-end md:relative" id="hero-image">
+              {theme === "dark" ? (
+                <Image
+                  src={heroImgDark}
+                  alt="LegalynX Logo"
+                  width={800}
+                  height={800}
+                  className="fade-gradient border-2 border-tertiary p-2 rounded-lg"
+                />
+              ) : (
               <Image
                 src={heroImg}
                 alt="LegalynX Logo"
-                width={400}
-                height={400}
-                className="fade-gradient"
+                width={800}
+                height={800}
+                className="fade-gradient border-2 border-tertiary p-2 rounded-lg"
               />
+              )}
+              <span className="flex flex-col items-end gap-5">
+                {/* PROMPT SAMPLE */}
+                <div className="flex items-center gap-2">
+                  <p className={`md:absolute top-54 -right-16 bg-blue p-4 rounded-2xl rounded-br-sm text-md text-white`}>
+                    <TypingAnimation text="What's the ruling on Devie Fuertes?" delay={40}/>
+                  </p>
+                  <button className="md:absolute top-56 -right-30 p-2 rounded-full bg-blue cursor-pointer" onClick={() => setShowAnswer(true)}>
+                    <ArrowUp className="w-6 h-6 text-white" />
+                  </button>
+                </div>
+   
+  
+                {/* ANSWER SAMPLE */}
+                {showAnswer && (
+                <>
+                <p className="md:absolute bottom-0 -left-10 max-w-3xl bg-primary text-md text-foreground border border-tertiary text-justify p-4 rounded-lg">
+                  <TypingAnimation 
+                    text="
+                      Devie Fuertes was found administratively liable for grave misconduct and suspended from service for six (6) months without pay.
+
+                      The Court held that Fuertes&apos; actions constituted a serious breach of ethical standards expected of public officers. The decision emphasized that government employees must uphold integrity and fairness in all official dealings.
+
+                      Supporting evidence is detailed in the decision&apos;s dispositive portion [Page 12, Section V], where the Court affirmed the suspension and directed the Civil Service Commission to monitor compliance."
+                    delay={5} />
+                </p>
+                </>
+                )}
+              </span>
             </div>
+
           </div>
         </div>
       </section>
 
       {/* Features Section */}
 
-      <section className="py-24 bg-primary">
+      <section className="pb-24 bg-primary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatedContent
           distance={100}
