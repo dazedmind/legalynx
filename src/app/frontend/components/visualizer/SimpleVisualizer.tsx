@@ -74,6 +74,19 @@ interface VisualizerOptions {
       }
     }
   
+    disconnectAudio(): void {
+      if (this.audioContext) {
+        this.audioContext.close().catch(err =>
+          console.error('Error closing audio context:', err)
+        );
+        this.audioContext = null;
+      }
+      this.analyser = null;
+      this.dataArray = null;
+      this.bufferLength = 0;
+      console.log('🔇 Audio disconnected from visualizer');
+    }
+
     setColors(red: number, green: number, blue: number): void {
       this.colors = { red, green, blue };
     }
@@ -95,14 +108,18 @@ interface VisualizerOptions {
   
     private animate = (): void => {
       if (!this.isPlaying) return;
-  
+
       this.animationId = requestAnimationFrame(this.animate);
-  
+
       const width = this.canvas.width;
       const height = this.canvas.height;
-      
-      // Clear canvas with dark background
-      this.ctx.fillStyle = 'rgb(17, 24, 39)';
+
+      // Get adaptive background color from parent element
+      const parentBg = this.container.parentElement
+        ? getComputedStyle(this.container.parentElement).backgroundColor
+        : 'rgb(255, 255, 255)';
+
+      this.ctx.fillStyle = parentBg;
       this.ctx.fillRect(0, 0, width, height);
   
       if (this.analyser && this.dataArray) {

@@ -7,6 +7,8 @@ import BlurText from "./frontend/components/reactbits/BlurText";
 import Image from "next/image";
 import heroImg from "./frontend/img/hero-img.png";
 import heroImgDark from "./frontend/img/hero-img-dark.png";
+import voiceMode from "./frontend/img/voice-mode.png";
+import voiceModeDark from "./frontend/img/voice-mode-dark.png";
 import chatBubble from "./frontend/img/chat-bubble.png";
 import Link from "next/link";
 import { useTheme } from "next-themes";
@@ -111,7 +113,7 @@ export default function Home() {
             <div className="flex flex-col items-end md:relative" id="hero-image">
               {theme === "dark" ? (
                 <Image
-                  src={heroImgDark}
+                  src={voiceModeDark}
                   alt="LegalynX Logo"
                   width={800}
                   height={800}
@@ -119,7 +121,7 @@ export default function Home() {
                 />
               ) : (
               <Image
-                src={heroImg}
+                src={voiceMode}
                 alt="LegalynX Logo"
                 width={800}
                 height={800}
@@ -141,7 +143,7 @@ export default function Home() {
                 {/* ANSWER SAMPLE */}
                 {showAnswer && (
                 <>
-                <p className="md:absolute bottom-0 -left-10 max-w-3xl bg-primary text-md text-foreground border border-tertiary text-justify p-4 rounded-2xl">
+                <p className="md:absolute -bottom-10 -left-10 max-w-3xl bg-primary text-md text-foreground border border-tertiary text-justify p-4 rounded-2xl">
                   <TypingAnimation 
                     text="
                       Devie Fuertes was found administratively liable for grave misconduct and suspended from service for six (6) months without pay.

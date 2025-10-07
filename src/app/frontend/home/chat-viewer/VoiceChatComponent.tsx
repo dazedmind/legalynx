@@ -125,6 +125,11 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
       });
       mediaStreamRef.current = null;
     }
+
+    // Disconnect audio from visualizer to show idle animation
+    if (visualizerRef.current) {
+      visualizerRef.current.disconnectAudio();
+    }
   };
 
   useEffect(() => {
@@ -654,7 +659,7 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
         <div>
           <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
             <AudioLines className="w-6 h-6" />
-            Voice Chat Mode
+            Voice Mode
           </h2>
         </div>
       </div>

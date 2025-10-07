@@ -2880,7 +2880,6 @@ export default function ChatViewer({
   const handleManualInput = () => {
     setIsVoiceChat(false);
     loadOrCreateSession();
-    setChatHistory([]);
   };
 
   // Modified save file handler
@@ -3266,7 +3265,7 @@ export default function ChatViewer({
             setCurrentSessionId(sessionId);
             if (handleNewChat) handleNewChat();
           }}
-          handleManualInput={() => setIsVoiceChat(false)} // Changed to close voice chat
+          handleManualInput={() => handleManualInput()} // Changed to close voice chat
           toast={toast}
         />
       )}
