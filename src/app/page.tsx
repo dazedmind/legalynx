@@ -52,7 +52,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="bg-primary relative overflow-hidden ">
         {/* Background light rays */}
-        {windowWidth > 768 ? (
+        {windowWidth > 768 && theme === "dark" ? (
         <LightRays
                 raysOrigin="top-center"
                 raysColor="#C7EDE4"
@@ -68,10 +68,10 @@ export default function Home() {
         ) : (
           <LightRays
                 raysOrigin="top-center"
-                raysColor="#C7EDE4"
+                raysColor="#F0FFFF"
                 raysSpeed={1.5}
                 lightSpread={0.8}
-                rayLength={1.5}
+                rayLength={0.5}
                 followMouse={true}
                 mouseInfluence={0.1}
                 noiseAmount={0.1}
@@ -79,23 +79,29 @@ export default function Home() {
                 className="is-background"
               />
         )}
+
+        <div className="bg-gradient-to-b from-blue/30 to-transparent w-full h-1/3 rounded-3xl rounded-tr-none rounded-tl-none absolute top-0 left-0">
+        </div>
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-30 pb-10 md:pb-32">
           <div className="flex flex-col items-center justify-center gap-10 md:gap-16 pt-40">
             <div className="flex flex-col gap-4 text-center items-center lg:text-left">
               <BlurText
                 text="Linking You to Legal Clarity"
-                className="text-5xl lg:text-7xl text-center justify-center font-bold text-foreground font-serif  md:mt-0  mb-2"
+                className="text-5xl lg:text-7xl text-center justify-center font-bold text-foreground font-serif  md:mt-0  mb-1"
               />
+              <p className="text-muted-foreground text-md">
+                Your trusted AI-powered legal assistant for fast, accurate document analysis.
+              </p>
               
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+              <div className="flex flex-row gap-4 justify-center lg:justify-start">
                 <Link href="/frontend/login">
-                  <button className="px-6 py-3 text-lg rounded-full font-semibold bg-foreground text-primary shadow-lg hover:bg-foreground/90 transition-all duration-300 transform cursor-pointer">
-                    Get Started
+                  <button className="px-6 py-3 text-md md:text-lg rounded-full font-semibold bg-foreground text-primary shadow-lg hover:bg-foreground/90 transition-all duration-300 transform cursor-pointer">
+                    Try for Free
                   </button>
                 </Link>
 
                 <Link href="/frontend/pricing">
-                  <button className="px-6 py-3 text-lg hover:underline underline-offset-8 transition-all ease-in-out duration-300 transform cursor-pointer">
+                  <button className="px-6 py-3 text-md md:text-lg border border-foreground text-foreground rounded-full transition-all ease-in-out duration-300 transform cursor-pointer">
                     View Pricing
                   </button>
                 </Link>
@@ -109,7 +115,7 @@ export default function Home() {
                   alt="LegalynX Logo"
                   width={800}
                   height={800}
-                  className="fade-gradient border-2 border-tertiary p-2 rounded-lg"
+                  className="fade-gradient border-2 border-tertiary p-4 rounded-2xl"
                 />
               ) : (
               <Image
@@ -117,7 +123,7 @@ export default function Home() {
                 alt="LegalynX Logo"
                 width={800}
                 height={800}
-                className="fade-gradient border-2 border-tertiary p-2 rounded-lg"
+                className="fade-gradient border-2 border-tertiary p-4 rounded-2xl"
               />
               )}
               <span className="flex flex-col items-end gap-5">
@@ -135,7 +141,7 @@ export default function Home() {
                 {/* ANSWER SAMPLE */}
                 {showAnswer && (
                 <>
-                <p className="md:absolute bottom-0 -left-10 max-w-3xl bg-primary text-md text-foreground border border-tertiary text-justify p-4 rounded-lg">
+                <p className="md:absolute bottom-0 -left-10 max-w-3xl bg-primary text-md text-foreground border border-tertiary text-justify p-4 rounded-2xl">
                   <TypingAnimation 
                     text="
                       Devie Fuertes was found administratively liable for grave misconduct and suspended from service for six (6) months without pay.
