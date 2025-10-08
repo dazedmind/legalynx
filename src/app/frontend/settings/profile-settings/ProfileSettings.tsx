@@ -5,7 +5,7 @@ import Image from "next/image";
 import avatar from "../../img/user.png";
 import { profileService } from "../../../../lib/api";
 import LoaderComponent from "../../components/ui/LoaderComponent";
-import { Save, Upload, Camera, X, Loader2, Trash2, User, Lock, Briefcase, Mail } from "lucide-react";
+import { Save, Upload, Camera, X, Loader2, Trash2, User, Lock, Briefcase, Mail, IdCard } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { authUtils } from "@/lib/auth";
 import { FloatingSaveBar } from "../../components/layout/FloatingSaveBar";
@@ -455,23 +455,26 @@ function ProfileSettings() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Full Name
+                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">
+                    Name
                   </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      setHasUnsavedChanges(true);
-                    }}
-                    placeholder="Enter your full name"
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-foreground"
-                  />
+                  <div className="relative">
+                    <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        setHasUnsavedChanges(true);
+                      }}
+                      placeholder="Enter your name"
+                      className="w-full pl-11 pr-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-foreground"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
+                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                     Email Address
                   </label>
                   <div className="relative">
@@ -484,13 +487,13 @@ function ProfileSettings() {
                         setHasUnsavedChanges(true);
                       }}
                       placeholder="your@email.com"
-                      className="w-full pl-11 pr-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-foreground"
+                      className="w-full pl-11 pr-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ease-in-out text-foreground"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
+                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                     Job Title
                   </label>
                   <div className="relative">

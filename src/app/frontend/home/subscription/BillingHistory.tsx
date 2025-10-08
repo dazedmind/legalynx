@@ -199,7 +199,7 @@ function BillingHistory({ onBack }: BillingHistoryProps) {
                   <button
                     onClick={() => handleViewInvoice(invoice.id)}
                     disabled={downloadingInvoiceId === invoice.id}
-                    className="flex items-center justify-center gap-2 md:mr-8 px-4 py-2 bg-foreground text-primary text-sm rounded-lg hover:bg-foreground/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="flex items-center justify-center gap-2 md:mr-8 px-4 py-2 bg-foreground text-primary text-sm rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {downloadingInvoiceId === invoice.id ? (
                       <>

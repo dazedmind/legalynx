@@ -521,7 +521,7 @@ export default function Home() {
             transform transition-all duration-300 ease-in-out
             ${
               isMobileSidebarOpen
-                ? "translate-x-0"
+                ? "translate-x-0 p-6"
                 : "-translate-x-full md:translate-x-0"
             }
           `}
@@ -529,13 +529,13 @@ export default function Home() {
             {/* Mobile Close Button */}
             <button
               onClick={() => setIsMobileSidebarOpen(false)}
-              className="md:hidden self-end mb-4 p-2 rounded-lg hover:bg-gray-200 transition-colors"
+              className="md:hidden self-end mb-2 p-2 rounded-lg hover:bg-gray-200 transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
 
             {/* Navigation Buttons */}
-            <div className={`space-y-2 mb-8 flex flex-col ${!isDesktopSidebarCollapsed ? 'items-end' : 'items-center'}`}>
+            <div className={`space-y-1 mb-8 flex flex-col ${!isDesktopSidebarCollapsed ? 'items-end' : 'items-center'}`}>
               <div className="hidden mb-4 md:flex">
                 <button
                   onClick={toggleDesktopSidebar}
@@ -553,7 +553,7 @@ export default function Home() {
               {/* TAB BUTTONS */}
               <button
                 onClick={() => handleTabClick("upload")}
-                className={`w-full relative text-white bg-gradient-to-bl from-blue-800 to-blue-400 cursor-pointer flex items-center ${isDesktopSidebarCollapsed ? 'justify-center' : 'gap-3'} text-left p-3 rounded-lg transition-colors`}
+                className={`w-full relative text-white bg-blue cursor-pointer flex items-center ${isDesktopSidebarCollapsed ? 'justify-center' : 'gap-3'} text-left p-3 mb-2 rounded-lg transition-colors`}
                 title={isDesktopSidebarCollapsed ? "New Chat" : ""}
               >
                 <DiamondPlus
@@ -650,10 +650,10 @@ export default function Home() {
 
               <button
                 onClick={handleSignOut}
-                className={`w-full flex items-center ${isDesktopSidebarCollapsed ? 'justify-center' : 'justify-center gap-2'} text-sm p-3 rounded-lg ${
+                className={`w-full flex items-center ${isDesktopSidebarCollapsed ? 'justify-center' : 'justify-center gap-2'} text-sm p-3 py-2 rounded-md ${
                   theme === "dark"
-                    ? "text-red-600 hover:bg-red-100 border border-red-500"
-                    : "text-red-600 hover:bg-red-100 border border-red-200"
+                    ? "text-destructive hover:bg-destructive/10 border border-destructive"
+                    : "text-destructive hover:bg-destructive/10 border border-destructive"
                 } transition-colors cursor-pointer`}
                 title={isDesktopSidebarCollapsed ? "Sign out" : ""}
               >

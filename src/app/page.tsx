@@ -96,7 +96,7 @@ export default function Home() {
               </p>
               
               <div className="flex flex-row gap-4 justify-center lg:justify-start">
-                <Link href="/frontend/login">
+                <Link href="/frontend/register">
                   <button className="px-6 py-3 text-md md:text-lg rounded-full font-semibold bg-foreground text-primary shadow-lg hover:bg-foreground/90 transition-all duration-300 transform cursor-pointer">
                     Try for Free
                   </button>
@@ -143,14 +143,13 @@ export default function Home() {
                 {/* ANSWER SAMPLE */}
                 {showAnswer && (
                 <>
-                <p className="md:absolute -bottom-10 -left-10 max-w-3xl bg-primary text-md text-foreground border border-tertiary text-justify p-4 rounded-2xl">
+                <p className="md:absolute -bottom-20 -left-10 max-w-3xl bg-primary text-md text-foreground border border-tertiary text-justify p-4 rounded-2xl">
                   <TypingAnimation 
-                    text="
-                      Devie Fuertes was found administratively liable for grave misconduct and suspended from service for six (6) months without pay.
-
-                      The Court held that Fuertes&apos; actions constituted a serious breach of ethical standards expected of public officers. The decision emphasized that government employees must uphold integrity and fairness in all official dealings.
-
-                      Supporting evidence is detailed in the decision&apos;s dispositive portion [Page 12, Section V], where the Court affirmed the suspension and directed the Civil Service Commission to monitor compliance."
+                    text={`
+                      Devie Fuertes was found administratively liable for grave misconduct and suspended from service for six (6) months without pay. The Court held that Fuertes' actions constituted a serious breach of ethical standards expected of public officers. The decision emphasized that government employees must uphold integrity and fairness in all official dealings.
+                      \n
+                      \n
+                      Supporting evidence is detailed in the decision's dispositive portion [Page 12, Section V], where the Court affirmed the suspension and directed the Civil Service Commission to monitor compliance. Would you like me to explain this in more detail?`}
                     delay={5} />
                 </p>
                 </>
@@ -179,8 +178,8 @@ export default function Home() {
             console.log("Animation completed");
           }}
         >
-          <div className="flex flex-col items-center text-center mb-20">
-            <h3 className="text-3xl lg:text-5xl font-bold font-serif text-foreground mb-6">
+          <div className="flex flex-col items-center text-center mb-5 md:mb-20">
+            <h3 className="text-3xl lg:text-5xl font-bold font-serif text-foreground mt-10 mb-6">
               Powerful Features for Legal Excellence
             </h3>
             <p className="text-md tex text-muted-foreground max-w-3xl mx-4">
@@ -189,8 +188,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
             <SpotlightCard className="group bg-gradient-to-tl via-blue/10 from-blue/40 to-primary rounded-2xl p-8 mx-4 md:mx-0 transition-all duration-300 cursor-default relative z-10"
               spotlightColor="rgba(46, 46, 255, 0.25)"
             >

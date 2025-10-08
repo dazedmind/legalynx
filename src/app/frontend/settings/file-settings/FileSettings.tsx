@@ -49,15 +49,14 @@ const retentionOptions = [
 ];
 
 const renamingFormats = [
-  { value: "ORIGINAL", label: "Keep original names", example: "ORIGINAL DOCUMENT.pdf" },
   {
     value: "ADD_TIMESTAMP",
-    label: "Add document type",
+    label: "Add Document Type",
     example: "YYYYMMDD_DOCUMENT-TYPE.pdf",
   },
   {
     value: "ADD_CLIENT_NAME",
-    label: "Add client name",
+    label: "Add Document Type and Client Name",
     example: "YYYYMMDD_DOCUMENT-TYPE_ENTITY.pdf",
   },
 ];
@@ -324,21 +323,6 @@ export default function FileSettings() {
         <Separator className="my-4"/>
 
         <div className="space-y-6">
-          {/* Auto-rename files */}
-          <div className="flex items-center justify-between">
-            <span>
-              <h3 className="font-bold">Auto-rename files</h3>
-              <p className="text-sm text-muted-foreground">Enable auto-rename files</p>
-            </span>
-            <Switch
-              checked={settings.auto_rename_files}
-              onCheckedChange={(checked) =>
-                handleSettingChange("auto_rename_files", checked)
-              }
-              className="cursor-pointer"
-            />
-          </div>
-
           {/* File Expiration */}
           <div className="flex items-center justify-between">
             <span>
@@ -386,7 +370,20 @@ export default function FileSettings() {
                 ?.label.toLowerCase()}
             </div>
           )}
-
+          {/* Auto-rename files */}
+          <div className="flex items-center justify-between">
+              <span>
+                <h3 className="font-bold">Auto-rename files</h3>
+                <p className="text-sm text-muted-foreground">Auto-format file names on upload</p>
+              </span>
+              <Switch
+                checked={settings.auto_rename_files}
+                onCheckedChange={(checked) =>
+                  handleSettingChange("auto_rename_files", checked)
+                }
+                className="cursor-pointer"
+              />
+          </div>
           {/* File Renaming Format */}
           {settings.auto_rename_files && (
             <div className="p-1 rounded-md  flex flex-col gap-3">
@@ -398,7 +395,7 @@ export default function FileSettings() {
                 {renamingFormats.map((format) => (
                   <label
                     key={format.value}
-                    className={`flex items-center gap-3 p-3 border rounded cursor-pointer transition-colors ${
+                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
                       settings.file_naming_format === format.value
                         ? "border-blue/20 bg-blue/20"
                         : "border-tertiary hover:border-accent"

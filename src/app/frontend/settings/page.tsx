@@ -104,12 +104,12 @@ function SettingsContent() {
         {/* Sidebar */}
         <aside className={`
           lg:w-1/5 lg:relative lg:translate-x-0 lg:shadow-none
-          fixed top-0 left-0 h-full w-80 bg-primary p-6 gap-2 flex flex-col flex-shrink-0 z-40 shadow-2xl border-r border-tertiary
+          fixed top-0 left-0 h-full w-64 bg-primary p-4 gap-2 flex flex-col flex-shrink-0 z-40 shadow-2xl border-r border-tertiary
           transform transition-transform duration-300 ease-in-out
           ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
           {/* Mobile Header */}
-          <div className="lg:hidden flex items-center justify-between mb-6 pt-4">
+          <div className="lg:hidden flex items-center justify-between mb-2 pt-4">
             <h2 className="text-lg font-semibold text-foreground">Settings</h2>
             <button
               onClick={() => setIsMobileSidebarOpen(false)}
@@ -120,7 +120,7 @@ function SettingsContent() {
           </div>
 
           {/* Menu Items */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             {menuItems.map((item) => {
               const IconComponent = item.icon;
               return (
@@ -134,7 +134,7 @@ function SettingsContent() {
                   }`}
                 >
                   <IconComponent className={`${activeTab === item.id ? 'ml-1 stroke-2' : 'ml-0' } transition-all duration-300 w-5 h-5 flex-shrink-0`} strokeWidth={1.5} />
-                  <span className="text-sm lg:text-base">{item.label}</span>
+                  <span>{item.label}</span>
                 </button>
               );
             })}
@@ -144,11 +144,18 @@ function SettingsContent() {
           <div className="mt-auto space-y-3">
             <button
               onClick={logout}
-              className="w-full flex items-center justify-center gap-2 text-sm p-3 rounded-lg hover:bg-destructive/20 border border-destructive transition-colors cursor-pointer text-destructive"
+              className="w-full flex items-center justify-center gap-2 text-sm p-3 py-2 rounded-md hover:bg-destructive/20 border border-destructive transition-colors cursor-pointer text-destructive"
             >
               <LogOut className="w-4 h-4" />
               Sign out
             </button>
+          </div>
+
+          <div className="flex items-center text-xs gap-1 mt-4 border-t border-tertiary pt-2 text-muted-foreground">
+            <a href="/frontend/privacy-policy" target="_blank" rel="noopener noreferrer">
+              Privacy Policy •
+            </a>
+            <p className="text-xs text-muted-foreground">v 0.3.8</p>
           </div>
         </aside>
         

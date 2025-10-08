@@ -1,22 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
   Shield,
-  Smartphone,
   Key,
   AlertTriangle,
   Copy,
-  RefreshCw,
   Check,
-  X,
-  Lock,
   Loader2,
-  Save,
-  Undo,
   Activity,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import { Switch } from '@/app/frontend/components/ui/switch';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
 import { authUtils } from '@/lib/auth';
@@ -24,6 +17,7 @@ import LoaderComponent from '../../components/ui/LoaderComponent';
 import { Separator } from '@/app/frontend/components/ui/separator';
 import SecurityLogSettings from './SecurityLogSettings';
 import { FloatingSaveBar } from '../../components/layout/FloatingSaveBar';
+import { Button } from '@/app/frontend/components/ui/button';
 
 interface SecuritySettings {
   two_factor_enabled: boolean;
@@ -353,10 +347,10 @@ export default function PrivacySecuritySettings() {
                 </div>
         
 
-                <button
+                <Button
                     onClick={generate2FASecret}
                     disabled={isGenerating2FA}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    className="flex items-center gap-2 px-4 py-2 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
                     >
                     {isGenerating2FA ? (
                         <>
@@ -369,7 +363,7 @@ export default function PrivacySecuritySettings() {
                         Enable 2FA
                         </>
                     )}
-                </button>
+                </Button>
               </div>
             </div>
             
@@ -533,12 +527,12 @@ export default function PrivacySecuritySettings() {
                   Permanently delete your account and all associated data. This action cannot be undone.
                 </p>
               </div>
-              <button
+              <Button
                 onClick={() => setShowDeleteConfirm(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors cursor-pointer"
               >
                 Delete Account
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="p-4 bg-primary border border-tertiary rounded-lg space-y-4">
@@ -566,7 +560,7 @@ export default function PrivacySecuritySettings() {
               </div>
               
               <div className="flex gap-3">
-                <button
+                <Button
                   onClick={handleDeleteAccount}
                   disabled={isDeletingAccount || deleteConfirmText !== 'DELETE MY ACCOUNT'}
                   className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
@@ -581,9 +575,10 @@ export default function PrivacySecuritySettings() {
                       Confirm Delete
                     </>
                   )}
-                </button>
+                </Button>
                 
-                <button
+                <Button 
+                  variant="secondary"
                   onClick={() => {
                     setShowDeleteConfirm(false);
                     setDeleteConfirmText('');
@@ -591,7 +586,7 @@ export default function PrivacySecuritySettings() {
                   className="px-4 py-2 border border-tertiary rounded-md hover:bg-accent transition-colors cursor-pointer"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           )}

@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Ban,
   X,
+  Link,
 } from "lucide-react";
 import { Progress } from "@/app/frontend/components/ui/progress";
 import { paypalService } from "../../../../lib/api";
@@ -251,8 +252,15 @@ function SubscriptionPage() {
       <section className="space-y-4 mb-8">
         {/* Current Subscription Card */}
         <div className="p-4 rounded-md border flex flex-col gap-2 border-tertiary mx-4">
-          <p className="text-sm text-muted-foreground">
-            Your current subscription is
+        <p className="text-sm text-muted-foreground">
+            You are currently on the{" "}
+            <span className="font-medium">{subscription}</span> plan
+            {subscription === "BASIC" && (
+              <span className="text-blue-600">
+                {" "}
+                Upgrade to unlock more features!
+              </span>
+            )}
           </p>
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
             <span
@@ -282,7 +290,7 @@ function SubscriptionPage() {
               </div>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">
+          {/* <p className="text-sm text-muted-foreground">
             You are currently on the{" "}
             <span className="font-medium">{subscription}</span> plan.
             {subscription === "BASIC" && (
@@ -291,7 +299,7 @@ function SubscriptionPage() {
                 Upgrade to unlock more features!
               </span>
             )}
-          </p>
+          </p> */}
         </div>
 
         {/* Token Usage Card */}
@@ -372,6 +380,7 @@ function SubscriptionPage() {
                         <FaPaypal />
                       </div>
                       <span className="text-sm">PayPal</span>
+                      <p className="text-xs text-blue p-1 bg-accent rounded">Account Linked</p>
                     </>
                   ) : paymentMethod === "card" && lastFourDigits ? (
                     <>
@@ -506,7 +515,7 @@ function SubscriptionPage() {
                       );
                     }
                   }}
-                  className="flex items-center justify-center gap-2 w-full mt-3 px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors cursor-pointer"
+                  className="flex items-center justify-center gap-2 w-full mt-3 px-3 py-2 bg-blue-600 text-white rounded-sm text-sm hover:bg-blue-700 transition-colors cursor-pointer"
                 >
                   <FaPaypal />
                   {subscription === "BASIC" ? "Upgrade to Standard" : "Downgrade to Basic"}
@@ -558,7 +567,7 @@ function SubscriptionPage() {
                       );
                     }
                   }}
-                  className="flex items-center justify-center gap-2 w-full mt-3 px-3 py-2 bg-gray-800 text-white rounded text-sm hover:bg-gray-900 transition-colors cursor-pointer"
+                  className="flex items-center justify-center gap-2 w-full mt-3 px-3 py-2 bg-gray-800 text-white rounded-sm text-sm hover:bg-gray-900 transition-colors cursor-pointer"
                 >
                   <FaPaypal />
                   Upgrade to Premium
@@ -576,8 +585,8 @@ function SubscriptionPage() {
           onSave={cancelSubscription}
           modal={{
             header: 'Cancel Subscription?',
-            message: `Are you sure you want to cancel your subscription? Your payment method will be removed and your subscription will remain active until the end of your billing period.`,
-            trueButton: 'Cancel Subscription',
+            message: `Your payment method will be removed and your subscription will remain active until the end of your billing period.`,
+            trueButton: 'Yes',
             falseButton: 'No',
             type: ModalType.DANGER
           }}

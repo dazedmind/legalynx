@@ -1,20 +1,15 @@
 // Fixed version of the UploadComponent with proper state management
-import {
-  Upload,
-  FileText,
-  MessageSquareDashed,
-} from "lucide-react";
+import { Upload, FileText, MessageSquareDashed, X, Paperclip, LucideCircleDashed, LucideMessageCircleDashed, LucideCircleDotDashed } from "lucide-react";
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { UploadResponse } from "../../../../lib/api";
 import { useAuth } from "@/lib/context/AuthContext";
 import { toast, Toaster } from "sonner";
 import { authUtils } from "@/lib/auth";
 import BlurText from "../../components/reactbits/BlurText";
-import {
-  getSecurityErrorMessage,
-  isSecurityError,
-} from "../../../../lib/api";
+import { getSecurityErrorMessage, isSecurityError } from "../../../../lib/api";
 import { GoSquareFill } from "react-icons/go";
+import { TbCircleDashedLetterT } from "react-icons/tb";
+import { PiTriangleDashedFill } from "react-icons/pi";
 
 interface UploadPageProps {
   onUploadSuccess: (response: UploadResponse) => void;
@@ -65,22 +60,38 @@ const formatElapsedTime = (seconds: number): string => {
   }
 };
 
-const ProgressSteps: React.FC<ProgressStepProps> = ({ currentStep, steps, stepProgress, elapsedTime, isUploading, isStopping, stopUpload }) => {
+const ProgressSteps: React.FC<ProgressStepProps> = ({
+  currentStep,
+  steps,
+  stepProgress,
+  elapsedTime,
+  isUploading,
+  isStopping,
+  stopUpload,
+}) => {
   const getStepColor = (stepIndex: number) => {
-    switch(stepIndex) {
-      case 0: return 'bg-blue-600'; // Initializing - Blue
-      case 1: return 'bg-purple-600'; // Processing - Purple  
-      case 2: return 'bg-yellow-500'; // Preparing - Yellow
-      default: return 'bg-blue-600';
+    switch (stepIndex) {
+      case 0:
+        return "bg-blue-600"; // Initializing - Blue
+      case 1:
+        return "bg-purple-600"; // Processing - Purple
+      case 2:
+        return "bg-yellow-500"; // Preparing - Yellow
+      default:
+        return "bg-blue-600";
     }
   };
 
   const getTextColor = (stepIndex: number) => {
-    switch(stepIndex) {
-      case 0: return 'text-blue-600'; // Initializing - Blue
-      case 1: return 'text-purple-600'; // Processing - Purple
-      case 2: return 'text-yellow-600'; // Preparing - Yellow
-      default: return 'text-blue-600';
+    switch (stepIndex) {
+      case 0:
+        return "text-blue-600"; // Initializing - Blue
+      case 1:
+        return "text-purple-600"; // Processing - Purple
+      case 2:
+        return "text-yellow-600"; // Preparing - Yellow
+      default:
+        return "text-blue-600";
     }
   };
 
@@ -88,26 +99,28 @@ const ProgressSteps: React.FC<ProgressStepProps> = ({ currentStep, steps, stepPr
     <div className="w-full space-y-2">
       {/* Progress Bar */}
       <div className="w-full bg-tertiary rounded-full h-2 overflow-hidden">
-        <div 
-          className={`h-full rounded-full transition-all duration-700 ease-out ${getStepColor(currentStep)}`}
-          style={{ 
-            width: `${stepProgress}%` 
+        <div
+          className={`h-full rounded-full transition-all duration-700 ease-out ${getStepColor(
+            currentStep
+          )}`}
+          style={{
+            width: `${stepProgress}%`,
           }}
         />
       </div>
-      
+
       {/* Step Labels and Elapsed Time */}
       <div className="flex justify-between items-center text-xs">
         <div className="flex justify-between flex-1">
           {steps.map((step, index) => (
-            <span 
+            <span
               key={index}
               className={`transition-colors duration-300 ${
-                index === currentStep 
-                  ? `${getTextColor(index)} font-medium` 
+                index === currentStep
+                  ? `${getTextColor(index)} font-medium`
                   : index < currentStep
-                  ? 'text-muted-foreground opacity-20 font-medium'
-                  : 'text-muted-foreground opacity-20'
+                  ? "text-muted-foreground opacity-20 font-medium"
+                  : "text-muted-foreground opacity-20"
               }`}
             >
               {step}
@@ -115,34 +128,31 @@ const ProgressSteps: React.FC<ProgressStepProps> = ({ currentStep, steps, stepPr
           ))}
         </div>
       </div>
-      <div>
-
-      </div>
+      <div></div>
 
       <div className="flex justify-between">
-      {/* Elapsed Time Display */}
-      {elapsedTime !== undefined && elapsedTime > 0 && (
+        {/* Elapsed Time Display */}
+        {elapsedTime !== undefined && elapsedTime > 0 && (
           <div className="text-muted-foreground font-mono text-xs bg-tertiary py-1 rounded">
             Time elapsed: {formatElapsedTime(elapsedTime)}
           </div>
         )}
-        
+
         {isUploading && (
           <button
             className={`font-mono text-xs p-1 rounded-full transition-colors ${
-              isStopping 
-                ? 'bg-primary text-foreground cursor-not-allowed' 
-                : 'bg-foreground text-primary hover:bg-red-600 cursor-pointer'
+              isStopping
+                ? "bg-primary text-foreground cursor-not-allowed"
+                : "bg-foreground text-primary hover:bg-red-600 cursor-pointer"
             }`}
             onClick={isStopping ? undefined : stopUpload}
             disabled={isStopping}
             type="button"
           >
-            <GoSquareFill className="w-5 h-5"/>
+            <GoSquareFill className="w-5 h-5" />
           </button>
         )}
       </div>
-
     </div>
   );
 };
@@ -162,24 +172,26 @@ function UploadComponent({
   >("idle");
   const [warning, setWarning] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
-  
+
   // Progress tracking
   const [currentProgressStep, setCurrentProgressStep] = useState(-1);
   const [stepProgress, setStepProgress] = useState(0);
   const progressSteps = ["Initializing", "Processing", "Preparing"];
-  
+
   // Time elapsed tracking
   const [elapsedTime, setElapsedTime] = useState(0);
   const [uploadStartTime, setUploadStartTime] = useState<number | null>(null);
-  
+
   // Upload cancellation
-  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [abortController, setAbortController] =
+    useState<AbortController | null>(null);
   const [isStopping, setIsStopping] = useState(false);
+  const [showNotice, setShowNotice] = useState(true);
 
   // Real-time elapsed time counter
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
-    
+
     if (uploadStartTime && isUploading) {
       interval = setInterval(() => {
         const now = Date.now();
@@ -302,7 +314,7 @@ function UploadComponent({
       setStepProgress(0);
       setUploadStartTime(null);
       setElapsedTime(0);
-      
+
       const fileExt = selectedFile.name.toLowerCase().split(".").pop();
       const supportedExts = uploadOptions?.supported_file_types?.map((t) =>
         t.extension.replace(".", "")
@@ -313,11 +325,15 @@ function UploadComponent({
         if (selectedFile.size > maxSizeMB * 1024 * 1024) {
           setFile(null);
           setUploadStatus("error");
-          setStatusMessage(`File is too large. Maximum allowed size is ${maxSizeMB}MB. Please choose a smaller file.`);
-          toast.error(`File is too large. Maximum allowed size is ${maxSizeMB}MB.`);
+          setStatusMessage(
+            `File is too large. Maximum allowed size is ${maxSizeMB}MB. Please choose a smaller file.`
+          );
+          toast.error(
+            `File is too large. Maximum allowed size is ${maxSizeMB}MB.`
+          );
           return;
         }
-        
+
         if (selectedFile.size === 0) {
           setFile(null);
           setUploadStatus("error");
@@ -325,7 +341,7 @@ function UploadComponent({
           toast.error("File is empty. Please choose a non-empty file.");
           return;
         }
-        
+
         // File is valid
         setFile(selectedFile);
       } else {
@@ -336,7 +352,9 @@ function UploadComponent({
             .join(", ")
             .toUpperCase()}. Please choose a valid PDF or DOCX file.`
         );
-        toast.error("Unsupported file type. Please select a valid PDF or DOCX file.");
+        toast.error(
+          "Unsupported file type. Please select a valid PDF or DOCX file."
+        );
       }
     }
   };
@@ -374,10 +392,14 @@ function UploadComponent({
         return savedDocument;
       } else {
         let errorMessage = `Database save failed: ${response.status} ${response.statusText}`;
-        
+
         try {
           const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || errorData.detail || errorMessage;
+          errorMessage =
+            errorData.error ||
+            errorData.message ||
+            errorData.detail ||
+            errorMessage;
         } catch (parseError) {
           // If we can't parse JSON, provide meaningful error based on status
           if (response.status === 413) {
@@ -392,7 +414,7 @@ function UploadComponent({
             errorMessage = "You don't have permission to save this file";
           }
         }
-        
+
         console.error("❌ Database save failed:", errorMessage);
         throw new Error(errorMessage);
       }
@@ -415,21 +437,24 @@ function UploadComponent({
     try {
       console.log("🔄 Updating document filename after RAG processing:", {
         documentId,
-        ragFilename
+        ragFilename,
       });
 
-      const response = await fetch(`/backend/api/documents/${documentId}/rename`, {
-        method: "PATCH",
-        headers: {
-          ...getAuthHeaders(),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          newName: ragFilename,
-          updateProcessedName: true // Flag to indicate this is from RAG processing
-        }),
-        signal, // Add abort signal
-      });
+      const response = await fetch(
+        `/backend/api/documents/${documentId}/rename`,
+        {
+          method: "PATCH",
+          headers: {
+            ...getAuthHeaders(),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            newName: ragFilename,
+            updateProcessedName: true, // Flag to indicate this is from RAG processing
+          }),
+          signal, // Add abort signal
+        }
+      );
 
       if (response.ok) {
         const updatedDocument = await response.json();
@@ -457,23 +482,23 @@ function UploadComponent({
       const RAG_BASE_URL = isDevelopment
         ? "http://localhost:8000"
         : process.env.NEXT_PUBLIC_RAG_API_URL;
-  
+
       const sessionId = getSessionId();
-  
+
       const response = await fetch(`${RAG_BASE_URL}/current-document`, {
         method: "GET",
         headers: {
           // Include authentication if available
           ...(isAuthenticated ? getAuthHeaders() : {}),
           // Include session ID for proper isolation
-          'X-Session-Id': sessionId,
+          "X-Session-Id": sessionId,
         },
       });
-  
+
       if (response.ok) {
         const currentDoc = await response.json();
         console.log("📄 Current document on backend:", currentDoc);
-  
+
         if (currentDoc.document_id !== documentId) {
           console.warn(
             `⚠️ Document ID mismatch! Expected: ${documentId}, Current: ${currentDoc.document_id}`
@@ -493,34 +518,42 @@ function UploadComponent({
 
   const getSessionId = () => {
     // Try to get existing session ID from localStorage or generate new one
-    let sessionId = localStorage.getItem('rag_session_id');
+    let sessionId = localStorage.getItem("rag_session_id");
     if (!sessionId) {
       // Generate a unique session ID
-      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem('rag_session_id', sessionId);
+      sessionId = `session_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+      localStorage.setItem("rag_session_id", sessionId);
     }
     return sessionId;
   };
 
-  const uploadToRagSystemWithId = async (file: File, documentId: string, signal?: AbortSignal): Promise<any> => {
+  const uploadToRagSystemWithId = async (
+    file: File,
+    documentId: string,
+    signal?: AbortSignal
+  ): Promise<any> => {
     try {
-      console.log(`🚀 Uploading to RAG system with database ID: ${documentId}...`);
-  
+      console.log(
+        `🚀 Uploading to RAG system with database ID: ${documentId}...`
+      );
+
       // [Unverified] Move the session clearing to be asynchronous to prevent setState during render
       if (onClearPreviousSession) {
         console.log("🧹 Clearing previous frontend session state");
         // Use setTimeout to prevent setState during render
         setTimeout(() => onClearPreviousSession(), 0);
       }
-  
+
       const isDevelopment = process.env.NODE_ENV === "development";
       // Use the same URL consistently - MODIFY: Update to use correct port
       const RAG_BASE_URL = isDevelopment
-        ? "http://localhost:8000"  // Updated to match Railway backend port
+        ? "http://localhost:8000" // Updated to match Railway backend port
         : process.env.NEXT_PUBLIC_RAG_API_URL;
-  
+
       console.log("🔗 Using RAG URL:", RAG_BASE_URL);
-  
+
       // Convert enum to string format expected by backend
       const getNamingOption = (format: string) => {
         switch (format) {
@@ -534,7 +567,7 @@ function UploadComponent({
             return "keep_original";
         }
       };
-  
+
       // Prepare form data with user settings and database ID
       const formData = new FormData();
       formData.append("file", file);
@@ -543,7 +576,7 @@ function UploadComponent({
         "naming_option",
         getNamingOption(userSettings?.file_naming_format || "ORIGINAL")
       );
-  
+
       if (userSettings?.title?.trim()) {
         formData.append("title", userSettings.title.trim());
       }
@@ -552,12 +585,16 @@ function UploadComponent({
       }
 
       // ADD: Include session ID for proper isolation
-      const sessionId = typeof window !== 'undefined' 
-        ? (localStorage.getItem('rag_session_id') || `sess_${Date.now()}`)
-        : `sess_${Date.now()}`;
-      
-      if (typeof window !== 'undefined' && !localStorage.getItem('rag_session_id')) {
-        localStorage.setItem('rag_session_id', sessionId);
+      const sessionId =
+        typeof window !== "undefined"
+          ? localStorage.getItem("rag_session_id") || `sess_${Date.now()}`
+          : `sess_${Date.now()}`;
+
+      if (
+        typeof window !== "undefined" &&
+        !localStorage.getItem("rag_session_id")
+      ) {
+        localStorage.setItem("rag_session_id", sessionId);
       }
 
       const response = await fetch(`${RAG_BASE_URL}/upload-pdf-ultra-fast`, {
@@ -565,7 +602,7 @@ function UploadComponent({
         headers: {
           // Don't set Content-Type - let browser set it with boundary for FormData
           Authorization: `Bearer ${authUtils.getToken()}`,
-          'X-Session-Id': sessionId
+          "X-Session-Id": sessionId,
         },
         body: formData,
         signal, // Add abort signal
@@ -574,9 +611,9 @@ function UploadComponent({
       if (!response.ok) {
         const errorText = await response.text();
         console.error("❌ RAG upload failed:", errorText);
-        
+
         let errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
-        
+
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.detail || errorData.message || errorText;
@@ -594,7 +631,7 @@ function UploadComponent({
             errorMessage = errorText;
           }
         }
-        
+
         throw new Error(errorMessage);
       }
 
@@ -607,25 +644,28 @@ function UploadComponent({
     }
   };
 
-  const uploadToRagSystem = async (file: File, signal?: AbortSignal): Promise<any> => {
+  const uploadToRagSystem = async (
+    file: File,
+    signal?: AbortSignal
+  ): Promise<any> => {
     try {
       console.log("🚀 Uploading to RAG system...");
-  
+
       // [Unverified] Move the session clearing to be asynchronous to prevent setState during render
       if (onClearPreviousSession) {
         console.log("🧹 Clearing previous frontend session state");
         // Use setTimeout to prevent setState during render
         setTimeout(() => onClearPreviousSession(), 0);
       }
-  
+
       const isDevelopment = process.env.NODE_ENV === "development";
       // Use the same URL consistently - MODIFY: Update to use correct port
       const RAG_BASE_URL = isDevelopment
-        ? "http://localhost:8000"  // Updated to match Railway backend port
+        ? "http://localhost:8000" // Updated to match Railway backend port
         : process.env.NEXT_PUBLIC_RAG_API_URL;
-  
+
       console.log("🔗 Using RAG URL:", RAG_BASE_URL);
-  
+
       // Convert enum to string format expected by backend
       const getNamingOption = (format: string) => {
         switch (format) {
@@ -639,7 +679,7 @@ function UploadComponent({
             return "keep_original";
         }
       };
-  
+
       // Prepare form data with user settings
       const formData = new FormData();
       formData.append("file", file);
@@ -647,17 +687,17 @@ function UploadComponent({
         "naming_option",
         getNamingOption(userSettings?.file_naming_format || "ORIGINAL")
       );
-  
+
       if (userSettings?.title?.trim()) {
         formData.append("title", userSettings.title.trim());
       }
       if (userSettings?.client_name?.trim()) {
         formData.append("client_name", userSettings.client_name.trim());
       }
-  
+
       // ADD: Include session ID for proper isolation
       const sessionId = getSessionId();
-  
+
       const response = await fetch(`${RAG_BASE_URL}/upload-pdf-ultra-fast`, {
         method: "POST",
         body: formData,
@@ -665,14 +705,14 @@ function UploadComponent({
           // Include authentication if available
           ...(isAuthenticated ? getAuthHeaders() : {}),
           // Include session ID for anonymous users
-          'X-Session-Id': sessionId,
+          "X-Session-Id": sessionId,
         },
         signal, // Add abort signal
       });
-  
+
       if (!response.ok) {
         let errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
-        
+
         try {
           const errorData = await response.json();
           errorMessage = errorData.detail || errorData.message || errorMessage;
@@ -688,19 +728,19 @@ function UploadComponent({
             errorMessage = "Upload timed out - please try again";
           }
         }
-        
+
         throw new Error(errorMessage);
       }
-  
+
       const ragResponse = await response.json();
       console.log("✅ RAG upload successful:", ragResponse);
       console.log(`🆔 NEW Document ID: ${ragResponse.document_id}`);
       console.log(
         `⚡ Processing time: ${ragResponse.processing_time?.toFixed(2)}s`
       );
-  
+
       await verifyDocumentIsActive(ragResponse.document_id);
-  
+
       return ragResponse;
     } catch (error) {
       console.error("❌ RAG upload failed:", error);
@@ -710,70 +750,70 @@ function UploadComponent({
 
   const sendQueryToRAG = async (query: string) => {
     try {
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      const RAG_BASE_URL = isDevelopment ?
-        'http://localhost:8000' :
-        process.env.NEXT_PUBLIC_RAG_API_URL;
-  
+      const isDevelopment = process.env.NODE_ENV === "development";
+      const RAG_BASE_URL = isDevelopment
+        ? "http://localhost:8000"
+        : process.env.NEXT_PUBLIC_RAG_API_URL;
+
       const sessionId = getSessionId();
-  
+
       const response = await fetch(`${RAG_BASE_URL}/query`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           // Include authentication if available
           ...(isAuthenticated ? getAuthHeaders() : {}),
           // Include session ID for proper isolation
-          'X-Session-Id': sessionId,
+          "X-Session-Id": sessionId,
         },
         body: JSON.stringify({ query }),
       });
-  
+
       if (!response.ok) {
         const errorText = await response.text();
         let errorMessage = `Query failed (${response.status})`;
-        
+
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.detail || errorMessage;
         } catch {
           errorMessage = errorText || errorMessage;
         }
-        
+
         throw new Error(errorMessage);
       }
-  
+
       return await response.json();
     } catch (error) {
       console.error("❌ RAG query failed:", error);
       throw error;
     }
   };
-  
+
   // ADD: Function to check RAG status with session management
   const checkRAGStatus = async () => {
     try {
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      const RAG_BASE_URL = isDevelopment ?
-        'http://localhost:8000' :
-        process.env.NEXT_PUBLIC_RAG_API_URL;
-  
+      const isDevelopment = process.env.NODE_ENV === "development";
+      const RAG_BASE_URL = isDevelopment
+        ? "http://localhost:8000"
+        : process.env.NEXT_PUBLIC_RAG_API_URL;
+
       const sessionId = getSessionId();
-  
+
       const response = await fetch(`${RAG_BASE_URL}/status`, {
-        method: 'GET',
+        method: "GET",
         headers: {
           // Include authentication if available
           ...(isAuthenticated ? getAuthHeaders() : {}),
           // Include session ID for proper isolation
-          'X-Session-Id': sessionId,
+          "X-Session-Id": sessionId,
         },
       });
-  
+
       if (!response.ok) {
         throw new Error(`Status check failed (${response.status})`);
       }
-  
+
       return await response.json();
     } catch (error) {
       console.error("❌ RAG status check failed:", error);
@@ -783,27 +823,27 @@ function UploadComponent({
 
   const resetRAGSession = async () => {
     try {
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      const RAG_BASE_URL = isDevelopment ?
-        'http://localhost:8000' :
-        process.env.NEXT_PUBLIC_RAG_API_URL;
-  
+      const isDevelopment = process.env.NODE_ENV === "development";
+      const RAG_BASE_URL = isDevelopment
+        ? "http://localhost:8000"
+        : process.env.NEXT_PUBLIC_RAG_API_URL;
+
       const sessionId = getSessionId();
-  
+
       const response = await fetch(`${RAG_BASE_URL}/reset`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
           // Include authentication if available
           ...(isAuthenticated ? getAuthHeaders() : {}),
           // Include session ID for proper isolation
-          'X-Session-Id': sessionId,
+          "X-Session-Id": sessionId,
         },
       });
-  
+
       if (response.ok) {
         console.log("✅ RAG session reset successfully");
         // Generate new session ID for fresh start
-        localStorage.removeItem('rag_session_id');
+        localStorage.removeItem("rag_session_id");
         return true;
       } else {
         console.warn("⚠️ RAG session reset failed");
@@ -814,7 +854,7 @@ function UploadComponent({
       return false;
     }
   };
-  
+
   // ADD: Function to clean up session on component unmount
   useEffect(() => {
     // Cleanup function when component unmounts
@@ -823,46 +863,46 @@ function UploadComponent({
       console.log("🧹 UploadComponent unmounting");
     };
   }, []);
-  
+
   // ADD: Function to handle session conflicts
   const handleSessionConflict = async () => {
     console.log("🔄 Handling session conflict");
-    
+
     // Clear current session
-    localStorage.removeItem('rag_session_id');
-    
+    localStorage.removeItem("rag_session_id");
+
     // Reset any existing state
     setFile(null);
     setUploadStatus("idle");
     setStatusMessage(null);
     setCurrentProgressStep(-1);
     setStepProgress(0);
-    
+
     // Clear previous session if callback provided
     if (onClearPreviousSession) {
       onClearPreviousSession();
     }
-    
+
     // Reset RAG backend session
     await resetRAGSession();
-    
+
     toast.info("Session refreshed for better isolation");
   };
-  
+
   // Stop upload function
   const stopUpload = useCallback(async () => {
     if (!isUploading) return;
-    
+
     console.log("🛑 Stopping upload process...");
     setIsStopping(true);
-    
+
     try {
       // Abort any ongoing fetch requests
       if (abortController) {
         abortController.abort();
         console.log("✅ Fetch requests aborted");
       }
-      
+
       // Reset upload state
       setIsUploading(false);
       setUploadStatus("idle");
@@ -871,13 +911,13 @@ function UploadComponent({
       setUploadStartTime(null);
       setElapsedTime(0);
       setStatusMessage("Upload cancelled");
-      
+
       // Clear file selection
       setFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-      
+
       // Reset RAG session to clean up any partial processing
       try {
         await resetRAGSession();
@@ -885,11 +925,11 @@ function UploadComponent({
       } catch (error) {
         console.warn("⚠️ Failed to reset RAG session:", error);
       }
-      
+
       // Clear previous session if callback provided
       if (onClearPreviousSession) {
         setTimeout(() => onClearPreviousSession(), 0);
-      }      
+      }
     } catch (error) {
       console.error("❌ Error during upload cancellation:", error);
       toast.error("Error cancelling upload");
@@ -901,12 +941,12 @@ function UploadComponent({
 
   // Make stopUpload available globally for the button
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       (window as any).stopUpload = stopUpload;
     }
-    
+
     return () => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         delete (window as any).stopUpload;
       }
     };
@@ -918,30 +958,31 @@ function UploadComponent({
     const supportedExts = uploadOptions?.supported_file_types?.map((t) =>
       t.extension.replace(".", "")
     ) || ["pdf", "docx"];
-  
+
     if (!supportedExts.includes(fileExt || "")) {
       const msg = `Unsupported file type. Supported: ${supportedExts
         .join(", ")
         .toUpperCase()}`;
-      toast.error("Unsupported file type. Please select a valid PDF or DOCX file.");
+      toast.error(
+        "Unsupported file type. Please select a valid PDF or DOCX file."
+      );
       return msg;
     }
-  
+
     const maxSizeMB = uploadOptions?.max_file_size_mb || 50;
     if (file.size > maxSizeMB * 1024 * 1024) {
       toast.error(`File is too large. Maximum allowed is ${maxSizeMB}MB.`);
       return `File size too large. Maximum: ${maxSizeMB}MB`;
     }
-  
+
     if (file.size === 0) {
       toast.error("File is empty. Please choose a non-empty file.");
       return "File is empty";
     }
-  
+
     return null; // File is valid
   };
 
-  
   const handleUpload = async () => {
     if (!file) {
       setUploadStatus("error");
@@ -961,11 +1002,11 @@ function UploadComponent({
     setStepProgress(0);
     setStatusMessage("Initializing ultra-fast processing...");
     setIsStopping(false);
-    
+
     // Create abort controller for cancellation
     const controller = new AbortController();
     setAbortController(controller);
-    
+
     // Start the elapsed time counter
     const uploadStart = Date.now();
     setUploadStartTime(uploadStart);
@@ -1001,7 +1042,7 @@ function UploadComponent({
             setCurrentProgressStep(1);
             setStepProgress(0);
             setStatusMessage("Saving document...");
-            
+
             const processStep = () => {
               let progress = 0;
               const interval = setInterval(() => {
@@ -1014,17 +1055,21 @@ function UploadComponent({
             };
             processStep();
           }, 600);
-          
-          await new Promise(resolve => setTimeout(resolve, 600));
+
+          await new Promise((resolve) => setTimeout(resolve, 600));
           // Save to database with RAG-generated intelligent filename
-          documentInfo = await saveDocumentToDatabaseWithFilename(file, ragResponse?.filename || file.name, controller.signal);
+          documentInfo = await saveDocumentToDatabaseWithFilename(
+            file,
+            ragResponse?.filename || file.name,
+            controller.signal
+          );
 
           // Step 2: Upload to RAG system using the database cuid ID
           setTimeout(() => {
             setCurrentProgressStep(2);
             setStepProgress(0);
             setStatusMessage("Processing with AI...");
-            
+
             const prepareStep = () => {
               let progress = 0;
               const interval = setInterval(() => {
@@ -1037,26 +1082,33 @@ function UploadComponent({
             };
             prepareStep();
           }, 100);
-          
-          await new Promise(resolve => setTimeout(resolve, 500));
+
+          await new Promise((resolve) => setTimeout(resolve, 500));
           // Upload to RAG system with database ID
-          ragResponse = await uploadToRagSystemWithId(file, documentInfo.documentId || documentInfo.id, controller.signal);
+          ragResponse = await uploadToRagSystemWithId(
+            file,
+            documentInfo.documentId || documentInfo.id,
+            controller.signal
+          );
 
           // Step 3: Update database with RAG-processed filename if it changed
           if (ragResponse?.filename && ragResponse.filename !== file.name) {
             console.log("🔄 RAG system renamed file, updating database:", {
               original: file.name,
-              ragProcessed: ragResponse.filename
+              ragProcessed: ragResponse.filename,
             });
-            
+
             try {
               await updateDocumentFilenameAfterRag(
-                documentInfo.documentId || documentInfo.id, 
+                documentInfo.documentId || documentInfo.id,
                 ragResponse.filename,
                 controller.signal
               );
             } catch (updateError) {
-              console.warn("⚠️ Failed to update filename in database (non-critical):", updateError);
+              console.warn(
+                "⚠️ Failed to update filename in database (non-critical):",
+                updateError
+              );
             }
           }
 
@@ -1110,16 +1162,23 @@ function UploadComponent({
           // ✅ CRITICAL FIX: Delete the document from database if it was saved but RAG processing failed
           if (documentInfo?.documentId || documentInfo?.id) {
             const docIdToDelete = documentInfo.documentId || documentInfo.id;
-            console.log(`🗑️ Deleting failed document ${docIdToDelete} from database...`);
+            console.log(
+              `🗑️ Deleting failed document ${docIdToDelete} from database...`
+            );
 
             try {
               await fetch(`/backend/api/documents/${docIdToDelete}`, {
                 method: "DELETE",
                 headers: getAuthHeaders(),
               });
-              console.log(`✅ Successfully deleted failed document ${docIdToDelete} from database`);
+              console.log(
+                `✅ Successfully deleted failed document ${docIdToDelete} from database`
+              );
             } catch (deleteError) {
-              console.error(`❌ Failed to delete document ${docIdToDelete} from database:`, deleteError);
+              console.error(
+                `❌ Failed to delete document ${docIdToDelete} from database:`,
+                deleteError
+              );
             }
 
             // Reset documentInfo so it won't be used later
@@ -1139,7 +1198,7 @@ function UploadComponent({
               setCurrentProgressStep(2);
               setStepProgress(0);
               setStatusMessage("Preparing the Document...");
-              
+
               const prepareStep = () => {
                 let progress = 0;
                 const interval = setInterval(() => {
@@ -1152,8 +1211,8 @@ function UploadComponent({
               };
               prepareStep();
             }, 100);
-            
-            await new Promise(resolve => setTimeout(resolve, 500));
+
+            await new Promise((resolve) => setTimeout(resolve, 500));
             ragResponse = await uploadToRagSystem(file, controller.signal);
 
             const processingTime = (Date.now() - startTime) / 1000;
@@ -1197,7 +1256,7 @@ function UploadComponent({
           setCurrentProgressStep(1);
           setStepProgress(0);
           setStatusMessage("Processing with ultra-fast AI system...");
-          
+
           const processStep = () => {
             let progress = 0;
             const interval = setInterval(() => {
@@ -1210,14 +1269,14 @@ function UploadComponent({
           };
           processStep();
         }, 600);
-        
-        await new Promise(resolve => setTimeout(resolve, 600));
+
+        await new Promise((resolve) => setTimeout(resolve, 600));
         ragResponse = await uploadToRagSystem(file, controller.signal);
 
         setTimeout(() => {
           setCurrentProgressStep(2);
           setStepProgress(0);
-          
+
           const prepareStep = () => {
             let progress = 0;
             const interval = setInterval(() => {
@@ -1231,7 +1290,7 @@ function UploadComponent({
           prepareStep();
         }, 100);
 
-        await new Promise(resolve => setTimeout(resolve, 400));
+        await new Promise((resolve) => setTimeout(resolve, 400));
 
         const processingTime = (Date.now() - startTime) / 1000;
         const speedup = 300 / processingTime;
@@ -1262,12 +1321,17 @@ function UploadComponent({
 
       // ✅ CRITICAL FIX: Only proceed with success handling if we have valid response data
       if (!ragResponse || !ragResponse.document_id) {
-        throw new Error("Upload completed but did not receive valid document information");
+        throw new Error(
+          "Upload completed but did not receive valid document information"
+        );
       }
 
       const uploadResponse: UploadResponse = {
         // 🔥 FIXED: Use database cuid ID if available, otherwise use RAG document_id as fallback
-        documentId: documentInfo?.documentId || documentInfo?.id || ragResponse?.document_id,
+        documentId:
+          documentInfo?.documentId ||
+          documentInfo?.id ||
+          ragResponse?.document_id,
         fileName: ragResponse?.filename || file.name, // RAG-generated intelligent filename
         originalFileName: file.name, // ✅ FIXED: Always use the actual original file name from user
         fileSize: file.size,
@@ -1289,8 +1353,14 @@ function UploadComponent({
 
       const documentForStorage = {
         // 🔥 FIXED: Use database cuid ID if available, otherwise use RAG document_id as fallback
-        id: documentInfo?.documentId || documentInfo?.id || ragResponse?.document_id,
-        documentId: documentInfo?.documentId || documentInfo?.id || ragResponse?.document_id,
+        id:
+          documentInfo?.documentId ||
+          documentInfo?.id ||
+          ragResponse?.document_id,
+        documentId:
+          documentInfo?.documentId ||
+          documentInfo?.id ||
+          ragResponse?.document_id,
         fileName: ragResponse?.filename || file.name, // RAG-generated intelligent filename
         originalFileName: file.name, // ✅ FIXED: Always use the actual original file name from user
         original_file_name: file.name, // ✅ FIXED: Always use the actual original file name from user
@@ -1301,7 +1371,10 @@ function UploadComponent({
         status: uploadResponse.status,
         uploadedAt: uploadResponse.uploadedAt,
         uploaded_at: uploadResponse.uploadedAt,
-        databaseId: documentInfo?.documentId || documentInfo?.id || ragResponse?.document_id,
+        databaseId:
+          documentInfo?.documentId ||
+          documentInfo?.id ||
+          ragResponse?.document_id,
         // No more separate RAG ID - everything uses database ID
         processingTime: ragResponse?.processing_time,
         optimizationUsed: ragResponse?.optimization_used,
@@ -1328,7 +1401,7 @@ function UploadComponent({
       console.error("❌ Upload failed completely:", error);
 
       // Check if the error is due to abort (user cancelled)
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (error instanceof Error && error.name === "AbortError") {
         console.log("🛑 Upload was cancelled by user");
         setUploadStatus("idle");
         setStatusMessage("Upload cancelled");
@@ -1339,7 +1412,7 @@ function UploadComponent({
       // Enhanced error handling with specific error types
       let errorMessage = "Upload failed";
       let userFriendlyMessage = "An unexpected error occurred during upload";
-      
+
       if (isSecurityError(error)) {
         const securityMessage = getSecurityErrorMessage(error);
         setUploadStatus("error");
@@ -1351,42 +1424,79 @@ function UploadComponent({
       // Handle different error types
       if (error instanceof Error) {
         const errorText = error.message.toLowerCase();
-        
+
         if (errorText.includes("network") || errorText.includes("fetch")) {
-          userFriendlyMessage = "Network error. Please check your internet connection and try again.";
+          userFriendlyMessage =
+            "Network error. Please check your internet connection and try again.";
         } else if (errorText.includes("timeout")) {
-          userFriendlyMessage = "Upload timed out. Please try again with a smaller file or check your connection.";
-        } else if (errorText.includes("file too large") || errorText.includes("size")) {
-          userFriendlyMessage = `File is too large. Maximum allowed size is ${uploadOptions?.max_file_size_mb || 50}MB.`;
-        } else if (errorText.includes("unsupported") || errorText.includes("invalid")) {
-          userFriendlyMessage = "Unsupported file type. Please upload a PDF or DOCX file.";
+          userFriendlyMessage =
+            "Upload timed out. Please try again with a smaller file or check your connection.";
+        } else if (
+          errorText.includes("file too large") ||
+          errorText.includes("size")
+        ) {
+          userFriendlyMessage = `File is too large. Maximum allowed size is ${
+            uploadOptions?.max_file_size_mb || 50
+          }MB.`;
+        } else if (
+          errorText.includes("unsupported") ||
+          errorText.includes("invalid")
+        ) {
+          userFriendlyMessage =
+            "Unsupported file type. Please upload a PDF or DOCX file.";
         } else if (errorText.includes("conversion")) {
-          userFriendlyMessage = "DOCX conversion failed. Please try converting the file to PDF manually.";
-        } else if (errorText.includes("extractable text") || errorText.includes("text extraction")) {
-          userFriendlyMessage = "Document does not contain extractable text. Please ensure it's not a scanned document.";
-        } else if (errorText.includes("corrupted") || errorText.includes("damaged")) {
-          userFriendlyMessage = "File appears to be corrupted or damaged. Please try a different file.";
+          userFriendlyMessage =
+            "DOCX conversion failed. Please try converting the file to PDF manually.";
+        } else if (
+          errorText.includes("extractable text") ||
+          errorText.includes("text extraction")
+        ) {
+          userFriendlyMessage =
+            "Document does not contain extractable text. Please ensure it's not a scanned document.";
+        } else if (
+          errorText.includes("corrupted") ||
+          errorText.includes("damaged")
+        ) {
+          userFriendlyMessage =
+            "File appears to be corrupted or damaged. Please try a different file.";
         } else if (errorText.includes("server") || errorText.includes("500")) {
-          userFriendlyMessage = "Server error occurred. Please try again in a few moments.";
-        } else if (errorText.includes("unauthorized") || errorText.includes("401")) {
+          userFriendlyMessage =
+            "Server error occurred. Please try again in a few moments.";
+        } else if (
+          errorText.includes("unauthorized") ||
+          errorText.includes("401")
+        ) {
           userFriendlyMessage = "Authentication failed. Please sign in again.";
-        } else if (errorText.includes("forbidden") || errorText.includes("403")) {
-          userFriendlyMessage = "You don't have permission to upload this file.";
-        } else if (errorText.includes("not found") || errorText.includes("404")) {
-          userFriendlyMessage = "Upload service not found. Please contact support.";
-        } else if (errorText.includes("invalid argument") || errorText.includes("errno 22")) {
-          userFriendlyMessage = "Invalid file name. Please rename your file to remove special characters and try again.";
+        } else if (
+          errorText.includes("forbidden") ||
+          errorText.includes("403")
+        ) {
+          userFriendlyMessage =
+            "You don't have permission to upload this file.";
+        } else if (
+          errorText.includes("not found") ||
+          errorText.includes("404")
+        ) {
+          userFriendlyMessage =
+            "Upload service not found. Please contact support.";
+        } else if (
+          errorText.includes("invalid argument") ||
+          errorText.includes("errno 22")
+        ) {
+          userFriendlyMessage =
+            "Invalid file name. Please rename your file to remove special characters and try again.";
         } else if (error.message && error.message.length > 0) {
           // Use the original error message if it's descriptive
           userFriendlyMessage = error.message;
         }
-        
+
         errorMessage = error.message;
       } else {
         // Handle non-Error objects
         const errorStr = String(error);
         if (errorStr.includes("Failed to fetch")) {
-          userFriendlyMessage = "Unable to connect to server. Please check your internet connection.";
+          userFriendlyMessage =
+            "Unable to connect to server. Please check your internet connection.";
         }
         errorMessage = errorStr;
       }
@@ -1394,7 +1504,7 @@ function UploadComponent({
       console.error("📋 Error details:", {
         originalError: error,
         errorMessage,
-        userFriendlyMessage
+        userFriendlyMessage,
       });
 
       setUploadStatus("error");
@@ -1424,7 +1534,7 @@ function UploadComponent({
       setStepProgress(0);
       setUploadStartTime(null);
       setElapsedTime(0);
-      
+
       const fileExt = droppedFile.name.toLowerCase().split(".").pop();
       const supportedExts = uploadOptions?.supported_file_types?.map((t) =>
         t.extension.replace(".", "")
@@ -1435,11 +1545,15 @@ function UploadComponent({
         if (droppedFile.size > maxSizeMB * 1024 * 1024) {
           setFile(null);
           setUploadStatus("error");
-          setStatusMessage(`File is too large. Maximum allowed size is ${maxSizeMB}MB. Please choose a smaller file.`);
-          toast.error(`File is too large. Maximum allowed size is ${maxSizeMB}MB.`);
+          setStatusMessage(
+            `File is too large. Maximum allowed size is ${maxSizeMB}MB. Please choose a smaller file.`
+          );
+          toast.error(
+            `File is too large. Maximum allowed size is ${maxSizeMB}MB.`
+          );
           return;
         }
-        
+
         if (droppedFile.size === 0) {
           setFile(null);
           setUploadStatus("error");
@@ -1447,7 +1561,7 @@ function UploadComponent({
           toast.error("File is empty. Please choose a non-empty file.");
           return;
         }
-        
+
         // File is valid
         setFile(droppedFile);
       } else {
@@ -1465,6 +1579,10 @@ function UploadComponent({
 
   const handleClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const dismissNotice = () => {
+    setShowNotice(false);
   };
 
   return (
@@ -1500,13 +1618,13 @@ function UploadComponent({
 
         <div className="flex flex-col items-center">
           {file ? (
-            <FileText className="w-12 h-12 text-blue-600 mb-3" />
+            <Paperclip className="w-12 h-12 text-yellow-600 mb-3" />
           ) : (
-            <Upload className="w-12 h-12 text-gray-400 mb-3" />
+            <Upload className="w-12 h-12 text-foreground mb-3" />
           )}
 
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            {file ? file.name : "Upload PDF or DOCX Document"}
+          <h3 className="text-lg font-medium text-foreground mb-1">
+            {file ? file.name : "Upload Document"}
           </h3>
 
           <p className="text-sm text-muted-foreground">
@@ -1518,8 +1636,7 @@ function UploadComponent({
           </p>
 
           <p className="text-xs text-muted-foreground">
-            Maximum file size:{" "}
-            {uploadOptions?.max_file_size_mb || 50}MB
+            Maximum file size: {uploadOptions?.max_file_size_mb || 50}MB
           </p>
         </div>
       </div>
@@ -1571,9 +1688,9 @@ function UploadComponent({
       {/* Progress Bar - Only show when uploading */}
       {isUploading && currentProgressStep >= 0 && (
         <div className="mt-3">
-          <ProgressSteps 
-            currentStep={currentProgressStep} 
-            steps={progressSteps} 
+          <ProgressSteps
+            currentStep={currentProgressStep}
+            steps={progressSteps}
             stepProgress={stepProgress}
             elapsedTime={elapsedTime}
             isUploading={isUploading}
@@ -1584,16 +1701,14 @@ function UploadComponent({
       )}
 
       {/* Session Mode Notice */}
-      <div className="mt-2 p-4 flex gap-4 items-center bg-tertiary border-dashed border-2 border-yellow rounded-md text-foreground text-sm">
-        <MessageSquareDashed className="w-8 h-8 mt-0.5 flex-shrink-0 text-yellow" />
-        <span className="flex flex-col">
-          <p className="font-medium text-yellow">Temporary Session Mode</p>
-          <p className="text-yellow">
-            Documents are processed for this session only unless you save them
-            permanently.
-          </p>
-        </span>
-      </div>
+      {showNotice && (
+         <div className="mt-6 flex bg-blue/10 items-center gap-3 p-3 px-4 rounded-lg">
+         <LucideCircleDotDashed   className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+         <p className="text-sm text-blue-600">
+           Documents are stored temporarily for this session only unless you save them.
+         </p>
+         </div>
+      )}
 
       <Toaster />
     </div>

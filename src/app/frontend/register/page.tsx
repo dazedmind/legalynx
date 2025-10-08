@@ -174,7 +174,7 @@ function RegisterContent() {
   
 
         <div className="flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 md:py-10 md:px-6 justify-center gap-2 overflow-y-auto">
-          <div className="md:hidden mt-20 flex bg-gradient-to-bl from-blue/0 to-blue/20 items-center mb-10 pr-10 justify-center w-full md:w-1/2 gap-2 relative">
+          {/* <div className="md:hidden mt-20 flex bg-gradient-to-bl from-blue/0 to-blue/20 items-center mb-10 pr-10 justify-center w-full md:w-1/2 gap-2 relative">
             <Image
                 src={logo}
                 alt="Login"
@@ -183,9 +183,9 @@ function RegisterContent() {
                 className="fade-gradient"
               />
             <p className="text-muted-foreground">Linking you to legal clarity</p>
-          </div>
+          </div> */}
 
-          <div className="w-full md:w-md flex flex-col md:border border-tertiary rounded-lg md:shadow-sm items-start gap-2 mx-0 md:mx-auto pt-0 md:pt-10 p-10 md:mt-20">
+          <div className="w-full mt-30 md:w-md flex flex-col md:border border-tertiary rounded-lg md:shadow-sm items-start gap-2 mx-0 md:mx-auto pt-0 md:pt-10 p-10 md:mt-20">
             <span>
               <h1 className="text-4xl font-bold font-serif">Sign Up</h1>
               <p className="text-muted-foreground mb-4">
@@ -290,7 +290,7 @@ function RegisterContent() {
                   )}
               </span>
 
-              <span className="text-sm text-muted-foreground flex flex-row justify-start gap-1">
+              <span className="text-sm text-muted-foreground flex flex-row justify-start gap-1 py-2">
                 <Checkbox
                   className="w-4 h-4 mr-2"
                   checked={formData.acceptTerms}
@@ -298,7 +298,7 @@ function RegisterContent() {
                 />
                 <p className="text-xs text-muted-foreground">
                   By creating your account, you agree to the processing of your
-                  personal data by LegalynX as described in the{" "}
+                  data as described in the{" "}
                   <Link
                     href="/frontend/privacy-policy"
                     className="cursor-pointer underline text-blue-600 hover:text-blue-600"

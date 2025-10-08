@@ -6,6 +6,7 @@ import {
   AlertCircle,
   ArrowUp,
   Cloud,
+  CloudDownload,
   DiamondPlus,
   Eye,
 } from "lucide-react";
@@ -31,6 +32,7 @@ import { BiSolidFilePdf } from "react-icons/bi";
 import { GoSquareFill } from "react-icons/go";
 import { PDFViewer } from "../file-manager/PDFViewer";
 import { HiOutlinePaperClip } from "react-icons/hi2";
+import { Button } from "../../components/ui/button";
 
 interface ChatMessage {
   id: string;
@@ -2914,10 +2916,10 @@ export default function ChatViewer({
 
     // If user has access, show regular save confirmation
     setConfirmationModalConfig({
-      header: "Save to Account",
+      header: "Save Session?",
       message:
-        "Save this document to your account for permanent access across all your devices. The document will be securely stored in cloud storage.",
-      trueButton: "Save File",
+        "Save your document securely to the cloud and access them from any device.",
+      trueButton: "Save",
       falseButton: "Cancel",
       type: ModalType.SAVE,
       onConfirm: handleSaveFile,
@@ -3137,7 +3139,7 @@ export default function ChatViewer({
   return (
     <div className="h-full flex flex-col">
       {/* Fixed Document Header */}
-      <div className="flex-shrink-0 bg-primary p-4">
+      <div className="flex-shrink-0 p-4">
         {currentDocument ? (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -3193,33 +3195,33 @@ export default function ChatViewer({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
+              <Button
                 onClick={handleSaveFileClick}
                 disabled={
                   !documentExists || currentDocument?.status === "INDEXED"
                 }
-                className={`flex items-center p-3 px-3 text-sm rounded-lg transition-all duration-300 ${
+                className={`flex items-center p-3 px-3 text-sm rounded-md transition-all duration-300 ${
                   !documentExists || currentDocument?.status === "INDEXED"
                     ? "bg-tertiary text-muted-foreground cursor-default"
-                    : "text-foreground bg-accent hover:brightness-90  cursor-pointer"
+                    : "text-foreground bg-accent hover:bg-accent/0  cursor-pointer"
                 }`}
               >
                 {!documentExists ? (
                   "Unavailable"
                 ) : currentDocument?.status === "INDEXED" ? (
                   <>
-                    <CloudCheck className="w-4 h-4 md:mr-1" />{" "}
+                    <CloudCheck className="w-4 h-4" />{" "}
                     <span className="hidden md:block">Saved</span>
                   </>
                 ) : (
                   <>
-                    <Cloud className="w-4 h-4 md:mr-1" />{" "}
+                    <CloudDownload className="w-4 h-4" />{" "}
                     <span className="hidden md:block">Save File</span>
                   </>
                 )}
-              </button>
+              </Button>
 
-              <button
+              <Button
                 onClick={
                   currentDocument.status === "TEMPORARY"
                     ? () =>
@@ -3242,11 +3244,11 @@ export default function ChatViewer({
                         }
                       }
                 }
-                className="flex items-center cursor-pointer p-3 px-3 gap-1 text-sm bg-gradient-to-bl from-blue-500 to-indigo-700 hover:brightness-110 transition-all duration-300 text-white rounded-lg"
+                className="flex items-center cursor-pointer p-3 px-3 gap-1 text-sm hover:brightness-110 transition-all duration-300 text-white rounded-md"
               >
                 <DiamondPlus className="w-5 h-5" strokeWidth={1.5} />
                 <span className="hidden md:block">New Chat</span>
-              </button>
+              </Button>
             </div>
           </div>
         ) : null}
