@@ -5,10 +5,24 @@ import Image from "next/image";
 import avatar from "../../img/user.png";
 import { profileService } from "../../../../lib/api";
 import LoaderComponent from "../../components/ui/LoaderComponent";
-import { Save, Upload, Camera, X, Loader2, Trash2, User, Lock, Briefcase, Mail, IdCard } from "lucide-react";
+import {
+  Save,
+  Upload,
+  Camera,
+  X,
+  Loader2,
+  Trash2,
+  User,
+  Lock,
+  Briefcase,
+  Mail,
+  IdCard,
+} from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { authUtils } from "@/lib/auth";
 import { FloatingSaveBar } from "../../components/layout/FloatingSaveBar";
+import { GoEyeClosed } from "react-icons/go";
+import { GoEye } from "react-icons/go";
 
 interface UserSettings {
   name: string;
@@ -19,7 +33,6 @@ interface UserSettings {
   new_password: string;
   confirm_new_password: string;
 }
-
 
 function ProfileSettings() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -36,6 +49,8 @@ function ProfileSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Password strength calculator
   const calculatePasswordStrength = (password: string) => {
@@ -82,7 +97,6 @@ function ProfileSettings() {
   };
 
   const passwordStrength = calculatePasswordStrength(newPassword);
-  
 
   const [settings, setSettings] = useState<UserSettings>({
     name: "",
@@ -146,7 +160,13 @@ function ProfileSettings() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+      const allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
       if (!allowedTypes.includes(file.type)) {
         toast.error("Please select a valid image file (JPEG, PNG, GIF, WebP)");
         return;
@@ -166,7 +186,7 @@ function ProfileSettings() {
       toast.success('Image selected! Click "Save Changes" to upload.');
     }
   };
-  
+
   const removeProfilePicture = async () => {
     try {
       setUploading(true);
@@ -180,7 +200,9 @@ function ProfileSettings() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
         throw new Error(errorData.error || "Failed to remove profile picture");
       }
 
@@ -195,7 +217,11 @@ function ProfileSettings() {
       toast.success("Profile picture removed from S3 and database");
     } catch (error) {
       console.error("Failed to remove profile picture:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to remove profile picture");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to remove profile picture"
+      );
     } finally {
       setUploading(false);
     }
@@ -214,7 +240,10 @@ function ProfileSettings() {
   };
 
   const validatePasswords = () => {
-    if (settings.new_password && settings.new_password !== settings.confirm_new_password) {
+    if (
+      settings.new_password &&
+      settings.new_password !== settings.confirm_new_password
+    ) {
       toast.error("New passwords do not match");
       return false;
     }
@@ -241,19 +270,26 @@ function ProfileSettings() {
         const formData = new FormData();
         formData.append("file", selectedFile);
 
-        const uploadResponse = await fetch("/backend/api/profile/upload-picture", {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: formData,
-        });
+        const uploadResponse = await fetch(
+          "/backend/api/profile/upload-picture",
+          {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: formData,
+          }
+        );
 
         if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json().catch(() => ({ error: "Upload failed" }));
+          const errorData = await uploadResponse
+            .json()
+            .catch(() => ({ error: "Upload failed" }));
           throw new Error(errorData.error || "Failed to upload image");
         }
 
         const uploadResult = await uploadResponse.json();
-        uploadedImageUrl = uploadResult.profile_picture_url || uploadResult.user?.profile_picture;
+        uploadedImageUrl =
+          uploadResult.profile_picture_url ||
+          uploadResult.user?.profile_picture;
 
         if (preview) {
           URL.revokeObjectURL(preview);
@@ -285,7 +321,9 @@ function ProfileSettings() {
       toast.success("Profile updated successfully");
     } catch (error) {
       console.error("Failed to update profile:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to update profile");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update profile"
+      );
     } finally {
       setUploading(false);
     }
@@ -341,7 +379,7 @@ function ProfileSettings() {
 
   return (
     <div className="min-h-screen pb-6">
-      <span className='flex flex-col gap-1 p-4 pb-2 px-4'>
+      <span className="flex flex-col gap-1 p-4 pb-2 px-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold font-serif">Profile Settings</h1>
@@ -358,7 +396,9 @@ function ProfileSettings() {
           {/* Profile Picture Card */}
           <div className="lg:col-span-1">
             <div className="bg-primary rounded-xl p-6 ">
-              <h2 className="text-lg text-center font-semibold mb-4 text-foreground">Profile Picture</h2>
+              <h2 className="text-lg text-center font-semibold mb-4 text-foreground">
+                Profile Picture
+              </h2>
 
               <div className="flex flex-col items-center gap-4">
                 {/* Profile Picture Display */}
@@ -422,7 +462,9 @@ function ProfileSettings() {
 
                 {/* Upload Info */}
                 <div className="text-center">
-                  <p className="text-sm font-medium text-primary">Change profile picture</p>
+                  <p className="text-sm font-medium text-primary">
+                    Change profile picture
+                  </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     JPEG, PNG, GIF, or WebP · Max 5MB
                   </p>
@@ -538,19 +580,32 @@ function ProfileSettings() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    New Password
-                  </label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => {
-                      setNewPassword(e.target.value);
-                      setHasUnsavedChanges(true);
-                    }}
-                    placeholder="Enter new password (min 8 characters)"
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-foreground"
-                  />
+                  <span className="flex flex-col items-start gap-2 justify-start w-full relative">
+                    <label className="block text-sm font-medium text-foreground mb-1.5">
+                      New Password
+                    </label>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value);
+                        setHasUnsavedChanges(true);
+                      }}
+                      placeholder="Enter new password"
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-foreground"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 -bottom-0 -translate-y-1/2 hover:bg-foreground/10 p-1 rounded text-gray-500 hover:text-gray-700 cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <GoEyeClosed size={15} />
+                      ) : (
+                        <GoEye size={15} />
+                      )}
+                    </button>
+                  </span>
 
                   {/* Password Strength Indicator */}
                   {newPassword && (
@@ -581,27 +636,41 @@ function ProfileSettings() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Confirm New Password
-                  </label>
-                  <input
-                    type="password"
-                    value={confirmNewPassword}
-                    onChange={(e) => {
-                      setConfirmNewPassword(e.target.value);
-                      setHasUnsavedChanges(true);
-                    }}
-                    placeholder="Confirm new password"
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-foreground"
-                  />
-
+                  <span className="flex flex-col items-start gap-2 justify-start w-full relative">
+                    <label className="block text-sm font-medium text-foreground mb-1.5">
+                      Confirm New Password
+                    </label>
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmNewPassword}
+                      onChange={(e) => {
+                        setConfirmNewPassword(e.target.value);
+                        setHasUnsavedChanges(true);
+                      }}
+                      placeholder="Confirm new password"
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-foreground"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-2 -bottom-0 -translate-y-1/2 hover:bg-foreground/10 p-1 rounded text-gray-500 hover:text-gray-700 cursor-pointer"
+                    >
+                      {showConfirmPassword ? (
+                        <GoEyeClosed size={15} />
+                      ) : (
+                        <GoEye size={15} />
+                      )}
+                    </button>
+                  </span>
                   {/* Password Match Indicator */}
                   {confirmNewPassword && newPassword && (
-                    <p className={`text-xs mt-2 ${
-                      newPassword === confirmNewPassword
-                        ? "text-green-500"
-                        : "text-red-500"
-                    }`}>
+                    <p
+                      className={`text-xs mt-2 ${
+                        newPassword === confirmNewPassword
+                          ? "text-green-500"
+                          : "text-red-500"
+                      }`}
+                    >
                       {newPassword === confirmNewPassword
                         ? "✓ Passwords match"
                         : "✗ Passwords do not match"}
@@ -610,11 +679,11 @@ function ProfileSettings() {
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  Leave password fields empty if you don't want to change your password
+                  Leave password fields empty if you don't want to change your
+                  password
                 </p>
               </div>
             </div>
-          
           </div>
         </div>
       </div>

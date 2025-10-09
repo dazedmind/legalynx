@@ -521,7 +521,7 @@ export default function Home() {
             transform transition-all duration-300 ease-in-out
             ${
               isMobileSidebarOpen
-                ? "translate-x-0 p-6"
+                ? "translate-x-0"
                 : "-translate-x-full md:translate-x-0"
             }
           `}
