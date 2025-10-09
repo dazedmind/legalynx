@@ -7,7 +7,8 @@ import InputField from "../components/ui/InputField";
 import { Button } from "@/app/frontend/components/ui/button";
 import { GoEye, GoEyeClosed } from "react-icons/go";
 import { Toaster, toast } from "sonner";
-import { Check, X } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { Input } from "../components/ui/input";
 
 // Separate component for the form content that uses useSearchParams
 const ResetPasswordForm = () => {
@@ -36,7 +37,6 @@ const ResetPasswordForm = () => {
 
     // Length check
     if (password.length >= 8) score += 1;
-    if (password.length >= 12) score += 1;
 
     // Character variety checks
     if (/[a-z]/.test(password)) score += 1;
@@ -47,26 +47,20 @@ const ResetPasswordForm = () => {
     // Determine strength level
     if (score <= 2) {
       return {
-        strength: (score / 6) * 100,
+        strength: (score / 5) * 100,
         label: "Weak",
         color: "bg-red-500",
       };
     } else if (score <= 4) {
       return {
-        strength: (score / 6) * 100,
+        strength: (score / 5) * 100,
         label: "Medium",
         color: "bg-yellow-500",
       };
-    } else if (score <= 5) {
-      return {
-        strength: (score / 6) * 100,
-        label: "Strong",
-        color: "bg-green-400",
-      };
     } else {
       return {
-        strength: (score / 6) * 100,
-        label: "Very Strong",
+        strength: (score / 5) * 100,
+        label: "Strong",
         color: "bg-green-500",
       };
     }
@@ -74,12 +68,25 @@ const ResetPasswordForm = () => {
 
   const passwordStrength = calculatePasswordStrength(formData.newPassword);
 
+  const getPasswordRequirements = (password: string) => {
+    return {
+      minLength: password.length >= 8,
+      hasLowercase: /[a-z]/.test(password),
+      hasUppercase: /[A-Z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSymbol: /[^A-Za-z0-9]/.test(password),
+    };
+  };
+
+  const passwordRequirements = getPasswordRequirements(formData.newPassword);
+  const allRequirementsMet = formData.newPassword && Object.values(passwordRequirements).every(req => req);
+
   // Check if password meets minimum requirements
   const isPasswordValid = (password: string): boolean => {
-    return password.length >= 8 && 
-           /[a-z]/.test(password) && 
-           /[A-Z]/.test(password) && 
-           /[0-9]/.test(password) && 
+    return password.length >= 8 &&
+           /[a-z]/.test(password) &&
+           /[A-Z]/.test(password) &&
+           /[0-9]/.test(password) &&
            /[^A-Za-z0-9]/.test(password);
   };
 
@@ -258,7 +265,7 @@ const ResetPasswordForm = () => {
 
   // Main reset password form
   return (
-    <div className="w-80 md:w-96 m-5 p-6 h-fit rounded-xl bg-primary border border-tertiary shadow-sm relative z-10">
+    <div className="w-80 md:w-96 m-5 p-8 h-fit rounded-xl bg-primary border border-tertiary shadow-sm relative z-10">
       {/* Title */}
       <div className="flex flex-col justify-center gap-2 items-center pt-2 mb-4">
         <h1 className="text-3xl font-serif font-bold text-blue">Reset Password</h1>
@@ -268,59 +275,86 @@ const ResetPasswordForm = () => {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="">
+      <form onSubmit={handleSubmit} className="space-y-3">
         {/* New Password */}
-        <div className="relative">
-          <InputField
-            label="New Password"
+        <div className="relative space-y-4">
+          <label className="text-sm font-medium text-foreground">New Password</label>
+          <Input
             type={showNewPassword ? "text" : "password"}
             name="newPassword"
             value={formData.newPassword}
             onChange={handleInputChange}
-            className="w-full"
+            className="w-full pr-20"
             id="new_password"
             placeholder="Enter your new password"
           />
           <button
             type="button"
             onClick={() => setShowNewPassword(!showNewPassword)}
-            className="absolute right-5 bottom-1/8 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-          >
+            className="absolute right-2 -bottom-1 -translate-y-1/2 hover:bg-foreground/10 p-1 rounded text-gray-500 hover:text-gray-700 cursor-pointer"
+            >
             {showNewPassword ? <GoEyeClosed size={15} /> : <GoEye size={15} />}
           </button>
         </div>
 
         {/* Password Strength Progress Bar */}
         {formData.newPassword && (
-          <div className="w-full space-y-2 px-2">
-            <div className="relative w-full h-2 bg-accent rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-300 ${passwordStrength.color}`}
-                style={{ width: `${passwordStrength.strength}%` }}
-              />
+          <div className="flex items-center gap-2 w-full">
+            <div className="space-y-2 w-full">
+              <div className="relative w-full h-2 bg-accent rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${passwordStrength.color}`}
+                  style={{ width: `${passwordStrength.strength}%` }}
+                />
+              </div>
+              <div className="flex justify-between items-center">
+                <span
+                  className={`text-xs font-medium ${
+                    passwordStrength.label === "Weak"
+                      ? "text-red-500"
+                      : passwordStrength.label === "Medium"
+                      ? "text-yellow-600"
+                      : "text-green-500"
+                  }`}
+                >
+                  {passwordStrength.label}
+                </span>
+              </div>
             </div>
-            <div className="flex justify-between items-center">
-              <span
-                className={`text-xs font-medium ${
-                  passwordStrength.label === "Weak"
-                    ? "text-red-500"
-                    : passwordStrength.label === "Medium"
-                    ? "text-yellow-600"
-                    : passwordStrength.label === "Strong"
-                    ? "text-green-400"
-                    : "text-green-500"
-                }`}
-              >
-                {passwordStrength.label}
-              </span>
+          
+
+            {formData.newPassword && !allRequirementsMet && (
+            <div className="-translate-y-1/2 group z-100">
+              <AlertCircle size={16} className={` ${passwordStrength.label === "Weak" ? "text-red-500" : passwordStrength.label === "Medium" ? "text-yellow-600" : passwordStrength.label === "Strong" ? "text-green-400" : "text-green-500"}`} />
+              <div className="absolute right-0 top-6 w-56 p-3 bg-popover border border-border rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <p className="text-xs font-medium mb-2">Password must contain:</p>
+                <ul className="space-y-1 text-xs">
+                  <li className={passwordRequirements.minLength ? "text-green-500" : "text-muted-foreground"}>
+                    • At least 8 characters
+                  </li>
+                  <li className={passwordRequirements.hasLowercase ? "text-green-500" : "text-muted-foreground"}>
+                    • Lowercase letter (a-z)
+                  </li>
+                  <li className={passwordRequirements.hasUppercase ? "text-green-500" : "text-muted-foreground"}>
+                    • Uppercase letter (A-Z)
+                  </li>
+                  <li className={passwordRequirements.hasNumber ? "text-green-500" : "text-muted-foreground"}>
+                    • Number (0-9)
+                  </li>
+                  <li className={passwordRequirements.hasSymbol ? "text-green-500" : "text-muted-foreground"}>
+                    • Special character (!@#$...)
+                  </li>
+                </ul>
+              </div>
             </div>
+          )}
           </div>
         )}
 
         {/* Confirm Password */}
         <div className="relative">
-          <InputField
-            label="Confirm New Password"
+          <label className="text-sm font-medium text-foreground">Confirm New Password</label>
+          <Input
             type={showConfirmPassword ? "text" : "password"}
             name="confirmPassword"
             value={formData.confirmPassword}
@@ -332,8 +366,8 @@ const ResetPasswordForm = () => {
           <button
             type="button"
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-5 bottom-1/8 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-          >
+            className="absolute right-2 -bottom-1 -translate-y-1/2 hover:bg-foreground/10 p-1 rounded text-gray-500 hover:text-gray-700 cursor-pointer"
+            >
             {showConfirmPassword ? <GoEyeClosed size={15} /> : <GoEye size={15} />}
           </button>
         </div>
@@ -341,7 +375,7 @@ const ResetPasswordForm = () => {
         {/* Password Match Indicator */}
         {formData.confirmPassword && (
           <div className={`flex px-2 items-center text-xs ${passwordsMatch ? 'text-green-600' : 'text-red-600'}`}>
-            <span className="mr-2">{passwordsMatch ? "Passwords match" : "Passwords do not match"}</span>
+            <span className="mr-2">{passwordsMatch ? "" : "Passwords do not match"}</span>
           </div>
         )}
 
@@ -353,7 +387,7 @@ const ResetPasswordForm = () => {
         )}
 
         {/* Submit Button */}
-        <div className="pt-4">
+        <div>
           <Button
             type="submit"
             disabled={isLoading || !isPasswordValid(formData.newPassword) || !passwordsMatch}

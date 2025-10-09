@@ -13,7 +13,11 @@ import logo from "../img/legalynxlogo.png";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { GoEye, GoEyeClosed } from "react-icons/go";
-import { validateEmail as validateEmailDomain, isValidEmailFormat } from "@/lib/utils/emailValidation";
+import { AlertCircle } from "lucide-react";
+import {
+  validateEmail as validateEmailDomain,
+  isValidEmailFormat,
+} from "@/lib/utils/emailValidation";
 
 function RegisterContent() {
   const router = useRouter();
@@ -36,7 +40,6 @@ function RegisterContent() {
 
     // Length check
     if (password.length >= 8) score += 1;
-    if (password.length >= 12) score += 1;
 
     // Character variety checks
     if (/[a-z]/.test(password)) score += 1;
@@ -47,32 +50,41 @@ function RegisterContent() {
     // Determine strength level
     if (score <= 2) {
       return {
-        strength: (score / 6) * 100,
+        strength: (score / 5) * 100,
         label: "Weak",
         color: "bg-red-500",
       };
     } else if (score <= 4) {
       return {
-        strength: (score / 6) * 100,
+        strength: (score / 5) * 100,
         label: "Medium",
         color: "bg-yellow-500",
       };
-    } else if (score <= 5) {
-      return {
-        strength: (score / 6) * 100,
-        label: "Strong",
-        color: "bg-green-400",
-      };
     } else {
       return {
-        strength: (score / 6) * 100,
-        label: "Very Strong",
+        strength: (score / 5) * 100,
+        label: "Strong",
         color: "bg-green-500",
       };
     }
   };
 
   const passwordStrength = calculatePasswordStrength(formData.password);
+
+  const getPasswordRequirements = (password: string) => {
+    return {
+      minLength: password.length >= 8,
+      hasLowercase: /[a-z]/.test(password),
+      hasUppercase: /[A-Z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSymbol: /[^A-Za-z0-9]/.test(password),
+    };
+  };
+
+  const passwordRequirements = getPasswordRequirements(formData.password);
+  const allRequirementsMet =
+    formData.password &&
+    Object.values(passwordRequirements).every((req) => req);
 
   const validatePassword = (password: string) => {
     return formData.password === formData.confirmPassword;
@@ -103,8 +115,8 @@ function RegisterContent() {
       toast.error("You must accept the terms and conditions");
       return false;
     }
-    if (formData.password.length < 8) {
-      toast.error("Password must be at least 8 characters long");
+    if (!allRequirementsMet) {
+      toast.error("Password does not meet all requirements");
       return false;
     }
     return true;
@@ -171,20 +183,7 @@ function RegisterContent() {
       </header>
 
       <main className="flex flex-col md:flex-row-reverse w-full h-full">
-  
-
         <div className="flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 md:py-10 md:px-6 justify-center gap-2 overflow-y-auto">
-          {/* <div className="md:hidden mt-20 flex bg-gradient-to-bl from-blue/0 to-blue/20 items-center mb-10 pr-10 justify-center w-full md:w-1/2 gap-2 relative">
-            <Image
-                src={logo}
-                alt="Login"
-                width={100}
-                height={100}
-                className="fade-gradient"
-              />
-            <p className="text-muted-foreground">Linking you to legal clarity</p>
-          </div> */}
-
           <div className="w-full mt-30 md:w-md flex flex-col md:border border-tertiary rounded-lg md:shadow-sm items-start gap-2 mx-0 md:mx-auto pt-0 md:pt-10 p-10 md:mt-20">
             <span>
               <h1 className="text-4xl font-bold font-serif">Sign Up</h1>
@@ -223,39 +222,101 @@ function RegisterContent() {
                     placeholder="Enter your password"
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full"
+                    className="w-full pr-16"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-2 -bottom-1 -translate-y-1/2 hover:bg-foreground/10 p-1 rounded text-gray-500 hover:text-gray-700 cursor-pointer"
-                    >
-                    {showPassword ? <GoEyeClosed size={15} /> : <GoEye size={15} />}
-                  </button>                  
+                  >
+                    {showPassword ? (
+                      <GoEyeClosed size={15} />
+                    ) : (
+                      <GoEye size={15} />
+                    )}
+                  </button>
                 </div>
                 {formData.password && (
-                  <div className="w-full space-y-2">
-                    <div className="relative w-full h-2 bg-accent rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-300 ${passwordStrength.color}`}
-                        style={{ width: `${passwordStrength.strength}%` }}
-                      />
+                  <div className="flex items-center gap-2 p-2 w-full">
+                    <div className="w-full space-y-2">
+                      <div className="relative w-full h-2 bg-accent rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${passwordStrength.color}`}
+                          style={{ width: `${passwordStrength.strength}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span
+                          className={`text-xs font-medium ${
+                            passwordStrength.label === "Weak"
+                              ? "text-red-500"
+                              : passwordStrength.label === "Medium"
+                              ? "text-yellow-600"
+                              : "text-green-500"
+                          }`}
+                        >
+                          {passwordStrength.label}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span
-                        className={`text-xs font-medium ${
-                          passwordStrength.label === "Weak"
-                            ? "text-red-500"
-                            : passwordStrength.label === "Medium"
-                            ? "text-yellow-600"
-                            : passwordStrength.label === "Strong"
-                            ? "text-green-400"
-                            : "text-green-500"
-                        }`}
-                      >
-                        {passwordStrength.label}
-                      </span>
-                    </div>
+
+                    {formData.password && !allRequirementsMet && (
+                      <div className="p-1 -translate-y-1/2 group z-60">
+                        <AlertCircle size={16} className={` ${passwordStrength.label === "Weak" ? "text-red-500" : passwordStrength.label === "Medium" ? "text-yellow-600" : passwordStrength.label === "Strong" ? "text-green-400" : "text-green-500"}`} />
+                        <div className="absolute right-0 top-6 w-56 p-3 bg-popover border border-border rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                          <p className="text-xs font-medium mb-2">
+                            Password must contain:
+                          </p>
+                          <ul className="space-y-1 text-xs">
+                            <li
+                              className={
+                                passwordRequirements.minLength
+                                  ? "text-green-500"
+                                  : "text-muted-foreground"
+                              }
+                            >
+                              • At least 8 characters
+                            </li>
+                            <li
+                              className={
+                                passwordRequirements.hasLowercase
+                                  ? "text-green-500"
+                                  : "text-muted-foreground"
+                              }
+                            >
+                              • Lowercase letter (a-z)
+                            </li>
+                            <li
+                              className={
+                                passwordRequirements.hasUppercase
+                                  ? "text-green-500"
+                                  : "text-muted-foreground"
+                              }
+                            >
+                              • Uppercase letter (A-Z)
+                            </li>
+                            <li
+                              className={
+                                passwordRequirements.hasNumber
+                                  ? "text-green-500"
+                                  : "text-muted-foreground"
+                              }
+                            >
+                              • Number (0-9)
+                            </li>
+                            <li
+                              className={
+                                passwordRequirements.hasSymbol
+                                  ? "text-green-500"
+                                  : "text-muted-foreground"
+                              }
+                            >
+                              • Special character (!@#$...)
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </span>
@@ -277,11 +338,15 @@ function RegisterContent() {
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-2 -bottom-1 -translate-y-1/2 hover:bg-foreground/10 p-1 rounded text-gray-500 hover:text-gray-700 cursor-pointer"
-                    >
-                    {showConfirmPassword ? <GoEyeClosed size={15} /> : <GoEye size={15} />}
+                  >
+                    {showConfirmPassword ? (
+                      <GoEyeClosed size={15} />
+                    ) : (
+                      <GoEye size={15} />
+                    )}
                   </button>
                 </div>
-               
+
                 {formData.confirmPassword &&
                   !validatePassword(formData.confirmPassword) && (
                     <p className="text-destructive text-xs">

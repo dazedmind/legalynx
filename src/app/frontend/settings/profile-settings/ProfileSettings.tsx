@@ -17,6 +17,7 @@ import {
   Briefcase,
   Mail,
   IdCard,
+  AlertCircle,
 } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { authUtils } from "@/lib/auth";
@@ -60,7 +61,6 @@ function ProfileSettings() {
 
     // Length check
     if (password.length >= 8) score += 1;
-    if (password.length >= 12) score += 1;
 
     // Character variety checks
     if (/[a-z]/.test(password)) score += 1;
@@ -71,32 +71,39 @@ function ProfileSettings() {
     // Determine strength level
     if (score <= 2) {
       return {
-        strength: (score / 6) * 100,
+        strength: (score / 5) * 100,
         label: "Weak",
         color: "bg-red-500",
       };
     } else if (score <= 4) {
       return {
-        strength: (score / 6) * 100,
+        strength: (score / 5) * 100,
         label: "Medium",
         color: "bg-yellow-500",
       };
-    } else if (score <= 5) {
-      return {
-        strength: (score / 6) * 100,
-        label: "Strong",
-        color: "bg-green-400",
-      };
     } else {
       return {
-        strength: (score / 6) * 100,
-        label: "Very Strong",
+        strength: (score / 5) * 100,
+        label: "Strong",
         color: "bg-green-500",
       };
     }
   };
 
   const passwordStrength = calculatePasswordStrength(newPassword);
+
+  const getPasswordRequirements = (password: string) => {
+    return {
+      minLength: password.length >= 8,
+      hasLowercase: /[a-z]/.test(password),
+      hasUppercase: /[A-Z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSymbol: /[^A-Za-z0-9]/.test(password),
+    };
+  };
+
+  const passwordRequirements = getPasswordRequirements(newPassword);
+  const allRequirementsMet = newPassword && Object.values(passwordRequirements).every(req => req);
 
   const [settings, setSettings] = useState<UserSettings>({
     name: "",
@@ -248,8 +255,8 @@ function ProfileSettings() {
       return false;
     }
 
-    if (settings.new_password && settings.new_password.length < 8) {
-      toast.error("New password must be at least 8 characters");
+    if (newPassword && !allRequirementsMet) {
+      toast.error("Password does not meet all requirements");
       return false;
     }
 
@@ -378,7 +385,7 @@ function ProfileSettings() {
   }
 
   return (
-    <div className="min-h-screen pb-6">
+    <div className={`min-h-screen ${hasUnsavedChanges ? "pb-20" : "pb-6"}`}>
       <span className="flex flex-col gap-1 p-4 pb-2 px-4">
         <div className="flex items-center justify-between">
           <div>
@@ -592,7 +599,7 @@ function ProfileSettings() {
                         setHasUnsavedChanges(true);
                       }}
                       placeholder="Enter new password"
-                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-foreground"
+                      className="w-full px-4 py-2.5 pr-20 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-foreground"
                     />
                     <button
                       type="button"
@@ -609,28 +616,55 @@ function ProfileSettings() {
 
                   {/* Password Strength Indicator */}
                   {newPassword && (
-                    <div className="w-full space-y-2 mt-3">
-                      <div className="relative w-full h-2 bg-accent rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 ${passwordStrength.color}`}
-                          style={{ width: `${passwordStrength.strength}%` }}
-                        />
+                    <div className="flex items-center gap-2 p-2 w-full mt-3">
+                      <div className="w-full space-y-2">
+                        <div className="relative w-full h-2 bg-accent rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${passwordStrength.color}`}
+                            style={{ width: `${passwordStrength.strength}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span
+                            className={`text-xs font-medium ${
+                              passwordStrength.label === "Weak"
+                                ? "text-red-500"
+                                : passwordStrength.label === "Medium"
+                                ? "text-yellow-600"
+                                : "text-green-500"
+                            }`}
+                          >
+                            {passwordStrength.label}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span
-                          className={`text-xs font-medium ${
-                            passwordStrength.label === "Weak"
-                              ? "text-red-500"
-                              : passwordStrength.label === "Medium"
-                              ? "text-yellow-600"
-                              : passwordStrength.label === "Strong"
-                              ? "text-green-400"
-                              : "text-green-500"
-                          }`}
-                        >
-                          {passwordStrength.label}
-                        </span>
+  
+
+                      {newPassword && !allRequirementsMet && (
+                      <div className="-translate-y-1/2 group z-60">
+                        <AlertCircle size={16} className={` ${passwordStrength.label === "Weak" ? "text-red-500" : passwordStrength.label === "Medium" ? "text-yellow-600" : passwordStrength.label === "Strong" ? "text-green-400" : "text-green-500"}`} />
+                        <div className="absolute right-0 top-6 w-56 p-3 bg-popover border border-border rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                          <p className="text-xs font-medium mb-2">Password must contain:</p>
+                          <ul className="space-y-1 text-xs">
+                            <li className={passwordRequirements.minLength ? "text-green-500" : "text-muted-foreground"}>
+                              • At least 8 characters
+                            </li>
+                            <li className={passwordRequirements.hasLowercase ? "text-green-500" : "text-muted-foreground"}>
+                              • Lowercase letter (a-z)
+                            </li>
+                            <li className={passwordRequirements.hasUppercase ? "text-green-500" : "text-muted-foreground"}>
+                              • Uppercase letter (A-Z)
+                            </li>
+                            <li className={passwordRequirements.hasNumber ? "text-green-500" : "text-muted-foreground"}>
+                              • Number (0-9)
+                            </li>
+                            <li className={passwordRequirements.hasSymbol ? "text-green-500" : "text-muted-foreground"}>
+                              • Special character (!@#$...)
+                            </li>
+                          </ul>
+                        </div>
                       </div>
+                    )}
                     </div>
                   )}
                 </div>
@@ -672,8 +706,8 @@ function ProfileSettings() {
                       }`}
                     >
                       {newPassword === confirmNewPassword
-                        ? "✓ Passwords match"
-                        : "✗ Passwords do not match"}
+                        ? ""
+                        : "Passwords do not match"}
                     </p>
                   )}
                 </div>

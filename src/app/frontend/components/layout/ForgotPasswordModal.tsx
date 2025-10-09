@@ -1,34 +1,34 @@
 import React from 'react'
 import InputField from '../ui/InputField'
 import { Button } from '@/app/frontend/components/ui/button'
+import { Input } from '../ui/input'
 
 function ForgotPasswordModal({showForgotPasswordSuccess, handleForgotPasswordSubmit, handleCloseForgotPasswordModal, forgotPasswordEmail, setForgotPasswordEmail, forgotPasswordMessage, isForgotPasswordLoading}: {showForgotPasswordSuccess: boolean, handleForgotPasswordSubmit: (e: React.FormEvent<HTMLFormElement>) => void, handleCloseForgotPasswordModal: () => void, forgotPasswordEmail: string, setForgotPasswordEmail: (email: string) => void, forgotPasswordMessage: string, isForgotPasswordLoading: boolean}) {
   return (
     <>
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-          <div className="bg-primary border-2 rounded-2xl shadow-lg p-8 max-w-md w-full mx-4 animate-modal-in">
+          <div className="bg-primary border-2 rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4 animate-modal-in">
             {!showForgotPasswordSuccess ? (
               <form onSubmit={handleForgotPasswordSubmit}>
-                <h2 className="text-2xl font-bold text-gold mb-4 text-center">Reset Password</h2>
+                <h2 className="text-2xl font-bold text-gold mb-2 text-center">Reset Password</h2>
                 <p className="text-muted-foreground mb-2 text-center text-sm">
                   Enter your email address and we&apos;ll send you instructions to reset your password.
                 </p>
                 
                 <div className="mb-4">
-                  <InputField
+                  <Input
                     type="email"
                     name="email"
                     value={forgotPasswordEmail}
                     onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                    className="w-auto"
+                    className="w-full"
                     id="email"
                     placeholder="Enter your email"
-                    label=""
                   />
                 </div>
 
                 {forgotPasswordMessage && (
-                    <div className="mb-4 p-3 mx-2 bg-destructive/10 border border-destructive rounded-lg">
+                    <div className="mb-4 p-3 bg-destructive/10 rounded-lg">
                     <p className="text-destructive text-sm">{forgotPasswordMessage}</p>
                   </div>
                 )}
