@@ -497,7 +497,7 @@ function SubscriptionPage() {
                 <div>• Access to Chat History</div>
                 <div>• Save Chat Sessions</div>
               </div>
-              {subscription !== "STANDARD" && (
+              {subscription === "BASIC" && (
                 <button
                   onClick={async () => {
                     try {
@@ -518,7 +518,7 @@ function SubscriptionPage() {
                   className="flex items-center justify-center gap-2 w-full mt-3 px-3 py-2 bg-blue-600 text-white rounded-sm text-sm hover:bg-blue-700 transition-colors cursor-pointer"
                 >
                   <FaPaypal />
-                  {subscription === "BASIC" ? "Upgrade to Standard" : "Downgrade to Basic"}
+                  Upgrade to Standard
                 </button>
               )}    
             </div>

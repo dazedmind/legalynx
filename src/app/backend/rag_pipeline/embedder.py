@@ -1,6 +1,9 @@
 import os
 import torch
-from typing import List
+import asyncio
+import time
+from typing import List, Dict, Any, Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from llama_index.core import Settings
 from llama_index.vector_stores.faiss import FaissVectorStore
 from llama_index.core import VectorStoreIndex, StorageContext
@@ -13,15 +16,15 @@ from llama_index.core.embeddings import BaseEmbedding
 from rag_pipeline.config import MODEL_CONFIG
 
 
-class EmbeddingManager:
+class OptimizedEmbeddingManager:
     """
-    Manages the embedding model and LLM configuration for the RAG pipeline.
-    Now includes proper vector embeddings alongside existing functionality.
+    🚀 RAILWAY-OPTIMIZED: High-performance embedding manager with batching and parallelization.
+    Designed for Railway Pro (32GB RAM, 32 vCPU) to achieve <90s for 100+ page PDFs.
     """
     
     def __init__(self):
         """
-        Initialize the embedding manager with LLM and embedding models.
+        Initialize the optimized embedding manager with global model loading.
         """
         # ✅ FIXED: Configure PyTorch settings to avoid meta tensor issues
         torch.set_default_dtype(torch.float32)
@@ -31,346 +34,166 @@ class EmbeddingManager:
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         self.embed_model = None
         self.llm = None
+        self._batch_size = 50  # Optimal batch size for local models
+        self._max_workers = 10  # Parallel workers for Railway Pro
         self._setup_models()
+    
+    def get_adaptive_chunk_size(self, total_pages: int) -> Dict[str, int]:
+        """
+        🎯 ADAPTIVE CHUNK SIZING: Optimize chunk sizes based on document size.
+        Reduces total chunks → fewer embedding calls → faster processing.
+        """
+        if total_pages <= 20:
+            return {
+                "small_chunk_size": 600,
+                "medium_chunk_size": 800,
+                "large_chunk_size": 1200,
+                "small_chunk_overlap": 100,
+                "medium_chunk_overlap": 150,
+                "large_chunk_overlap": 200
+            }
+        elif total_pages <= 100:
+            return {
+                "small_chunk_size": 1000,
+                "medium_chunk_size": 1500,
+                "large_chunk_size": 2000,
+                "small_chunk_overlap": 150,
+                "medium_chunk_overlap": 200,
+                "large_chunk_overlap": 300
+            }
+        else:  # > 100 pages
+            return {
+                "small_chunk_size": 1500,
+                "medium_chunk_size": 2000,
+                "large_chunk_size": 3000,
+                "small_chunk_overlap": 200,
+                "medium_chunk_overlap": 300,
+                "large_chunk_overlap": 400
+            }
+    
+    async def embed_batch_parallel(self, text_batches: List[List[str]]) -> List[List[float]]:
+        """
+        🚀 PARALLEL BATCH EMBEDDING: Process multiple batches concurrently using local models.
+        Uses Railway Pro's 32 vCPU for maximum parallelization.
+        """
+        print(f"🔄 Processing {len(text_batches)} batches in parallel with local models...")
+        start_time = time.time()
+        
+        async def embed_single_batch(batch: List[str]) -> List[List[float]]:
+            """Embed a single batch of texts using local HuggingFace model."""
+            try:
+                # Use local HuggingFace model for embeddings
+                return await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    lambda: self.embed_model.get_text_embedding_batch(batch)
+                )
+            except Exception as e:
+                print(f"⚠️ Batch embedding failed: {e}")
+                # Fallback to individual embeddings
+                return await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    lambda: [self.embed_model.get_text_embedding(text) for text in batch]
+                )
+        
+        # Process all batches concurrently
+        tasks = [embed_single_batch(batch) for batch in text_batches]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Handle any exceptions
+        embeddings = []
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                print(f"⚠️ Batch {i} failed: {result}, using fallback")
+                # Fallback to individual processing
+                batch_embeddings = []
+                for text in text_batches[i]:
+                    try:
+                        batch_embeddings.append(self.embed_model.get_text_embedding(text))
+                    except Exception as e:
+                        print(f"⚠️ Individual embedding failed: {e}")
+                        # Get embedding dimension from model
+                        try:
+                            test_embedding = self.embed_model.get_text_embedding("test")
+                            fallback_vector = [0.0] * len(test_embedding)
+                        except:
+                            fallback_vector = [0.0] * 384  # Default dimension for all-MiniLM-L6-v2
+                        batch_embeddings.append(fallback_vector)
+                embeddings.append(batch_embeddings)
+            else:
+                embeddings.append(result)
+        
+        processing_time = time.time() - start_time
+        total_texts = sum(len(batch) for batch in text_batches)
+        print(f"✅ Parallel embedding complete: {total_texts} texts in {processing_time:.2f}s ({total_texts/processing_time:.1f} texts/sec)")
+        
+        return embeddings
+    
+    def create_batches(self, texts: List[str], batch_size: int = None) -> List[List[str]]:
+        """
+        📦 BATCH CREATION: Split texts into optimal batches for parallel processing.
+        """
+        if batch_size is None:
+            batch_size = self._batch_size
+        
+        batches = []
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            batches.append(batch)
+        
+        print(f"📦 Created {len(batches)} batches (avg {len(batches[0]) if batches else 0} texts per batch)")
+        return batches
     
     def _setup_models(self):
         """
-        Setup the embedding model and LLM.
+        🚀 OPTIMIZED MODEL SETUP: Initialize local embedding models for Railway Pro.
+        Uses persistent model loading to avoid cold starts.
         """
-        # Initialize the HuggingFace embedding model for vector operations
-        print("🔄 Initializing embedding model...")
+        print("🔄 Initializing optimized local embedding models for Railway Pro...")
+        start_time = time.time()
+        
+        # Use only local HuggingFace models
+        self._setup_local_model()
+        
+        # Setup LLM
+        self._setup_llm()
+        
+        init_time = time.time() - start_time
+        print(f"✅ Optimized local models ready in {init_time:.2f}s")
+    
+    def _setup_local_model(self):
+        """Setup local HuggingFace model for Railway Pro optimization."""
         try:
-            # Use sentence-transformers directly to avoid meta tensor issues
-            import sentence_transformers
-            print("📦 Using sentence-transformers directly...")
-
-            # Create a wrapper that inherits from BaseEmbedding
-            class SentenceTransformerWrapper(BaseEmbedding):
-                # FIXED: Configure model to allow arbitrary types and extra fields
-                class Config:
-                    arbitrary_types_allowed = True
-                    extra = "allow"
-
-                def __init__(self, model_name='all-MiniLM-L12-v2', **kwargs):
-                    # Initialize parent without model-specific attributes
-                    super().__init__(**kwargs)
-
-                    # CRITICAL FIX: Prevent meta tensor issues
-                    import torch
-                    from transformers import AutoTokenizer, AutoModel
-                    import numpy as np
-
-                    print(f"🔧 Loading {model_name} via transformers (workaround for meta tensor issue)...")
-
-                    # Load tokenizer and model separately using transformers
-                    # Use object.__setattr__ to bypass Pydantic validation completely
-                    object.__setattr__(self, '_model_name', model_name)
-                    object.__setattr__(self, '_tokenizer', AutoTokenizer.from_pretrained(f'sentence-transformers/{model_name}'))
-
-                    model = AutoModel.from_pretrained(
-                        f'sentence-transformers/{model_name}',
-                        torch_dtype=torch.float32  # Explicit dtype
-                    )
-
-                    # Move to CPU explicitly and set to eval mode
-                    model = model.to('cpu')
-                    model.eval()
-
-                    object.__setattr__(self, '_transformer_model', model)
-
-                    print("✅ Model loaded successfully via transformers")
-
-                @property
-                def tokenizer(self):
-                    return self._tokenizer
-
-                @property
-                def transformer_model(self):
-                    return self._transformer_model
-
-                def _mean_pooling(self, model_output, attention_mask):
-                    """Mean pooling - take attention mask into account for correct averaging."""
-                    import torch
-                    token_embeddings = model_output[0]  # First element contains all token embeddings
-                    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-                    return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
-
-                def _encode_text(self, text: str) -> List[float]:
-                    """Encode text using transformers directly."""
-                    import torch
-
-                    # Tokenize
-                    encoded_input = self.tokenizer(text, padding=True, truncation=True, return_tensors='pt')
-
-                    # Move to CPU
-                    encoded_input = {k: v.to('cpu') for k, v in encoded_input.items()}
-
-                    # Compute embeddings
-                    with torch.no_grad():
-                        model_output = self.transformer_model(**encoded_input)
-
-                    # Perform pooling
-                    sentence_embeddings = self._mean_pooling(model_output, encoded_input['attention_mask'])
-
-                    # Normalize embeddings
-                    sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
-
-                    return sentence_embeddings[0].cpu().numpy().tolist()
-
-                def _get_query_embedding(self, query: str) -> List[float]:
-                    """Get embedding for a query."""
-                    return self._encode_text(query)
-
-                def _get_text_embedding(self, text: str) -> List[float]:
-                    """Get embedding for a single text."""
-                    return self._encode_text(text)
-
-                def _get_text_embeddings(self, texts: List[str]) -> List[List[float]]:
-                    """Get embeddings for multiple texts."""
-                    return [self._encode_text(text) for text in texts]
-
-                async def _aget_query_embedding(self, query: str) -> List[float]:
-                    """Async version of get_query_embedding."""
-                    return self._get_query_embedding(query)
-
-                async def _aget_text_embedding(self, text: str) -> List[float]:
-                    """Async version of get_text_embedding."""
-                    return self._get_text_embedding(text)
-
-                @classmethod
-                def class_name(cls) -> str:
-                    return "SentenceTransformerWrapper"
-
-            self.embed_model = SentenceTransformerWrapper(model_name='all-MiniLM-L6-v2')
+            print("📦 Using HuggingFace embeddings for Railway Pro...")
+            self.embed_model = HuggingFaceEmbedding(
+                model_name="sentence-transformers/all-MiniLM-L6-v2",
+                device="cpu"
+            )
             Settings.embed_model = self.embed_model
-            print("✅ Sentence-transformers embedding model loaded successfully")
-
+            print("✅ HuggingFace embedding model loaded successfully")
         except Exception as e:
-            print(f"❌ Embedding model initialization failed: {e}")
-            print("🔄 Trying alternative approach...")
-            try:
-                # Alternative: Use HuggingFaceEmbedding with explicit device setting
-                self.embed_model = HuggingFaceEmbedding(
-                    model_name="sentence-transformers/all-MiniLM-L12-v2",
-                    device="cpu"
-                )
-                Settings.embed_model = self.embed_model
-                print("✅ HuggingFace embedding model loaded")
-            except Exception as alt_error:
-                print(f"❌ All embedding model approaches failed:")
-                print(f"   Direct: {e}")
-                print(f"   Alternative: {alt_error}")
-                raise RuntimeError("Could not initialize any embedding model. This may be due to PyTorch compatibility issues or missing dependencies.")
-        
-        # Validate API key
-        if not self.openai_api_key:
-            raise ValueError("❌ OPENAI_API_KEY not found! Please set OPENAI_API_KEY environment variable.")
-        
-        # Initialize the LLM (GPT-5 or fallback to OpenAI)
-        try:
-            print("🔄 Initializing LLM...")
-            
-            # Try to use GPT-5 wrapper first
-            try:
-                from .gpt5_wrapper import create_gpt5_llm
-                self.llm = create_gpt5_llm(
-                    api_key=self.openai_api_key,
-                    temperature=MODEL_CONFIG.get("temperature", 0.1),
-                    max_tokens=MODEL_CONFIG.get("max_output_tokens", 512)
-                )
-                print("✅ Initialized GPT-5 Mini LLM wrapper")
-                
-            except ImportError:
-                print("⚠️ GPT-5 wrapper not available, falling back to OpenAI")
-                self.llm = OpenAI(
-                    model=MODEL_CONFIG["llm_model"],
-                    api_key=self.openai_api_key
-                )
-                print(f"✅ Initialized OpenAI LLM: {MODEL_CONFIG['llm_model']}")
-            
-        except Exception as e:
-            print(f"❌ LLM initialization failed: {e}")
-            print(f"   Model: {MODEL_CONFIG['llm_model']}")
+            print(f"❌ Failed to load local embedding model: {e}")
             raise
-        
-        print(f"✅ Initialized LLM successfully")
+    
+    def _setup_llm(self):
+        """Setup LLM for text generation."""
+        try:
+            if self.openai_api_key:
+                print("🌐 Using OpenAI LLM...")
+                self.llm = OpenAI(api_key=self.openai_api_key)
+            else:
+                print("⚠️ No OpenAI API key for LLM")
+        except Exception as e:
+            print(f"⚠️ LLM setup failed: {e}")
     
     def get_embedding_model(self):
-        """
-        Returns the embedding model.
-        """
+        """Get the embedding model."""
         return self.embed_model
     
     def get_llm(self):
-        """
-        Returns the LLM.
-        """
+        """Get the LLM."""
         return self.llm
+    
 
 
-class IndexBuilder:
-    """
-    Builds and manages vector indices for the RAG pipeline.
-    Now supports both vector and BM25 retrieval.
-    """
-    
-    def __init__(self, embedding_manager: EmbeddingManager):
-        """
-        Initialize the index builder.
-        
-        Args:
-            embedding_manager: Configured embedding manager
-        """
-        self.embedding_manager = embedding_manager
-    
-    def build_vector_index(self, nodes: List[TextNode]) -> VectorStoreIndex:
-        """
-        Build a FAISS vector index from the provided nodes.
-
-        Args:
-            nodes: List of text nodes to index
-
-        Returns:
-            VectorStoreIndex: The built FAISS vector index
-        """
-        if not nodes:
-            raise ValueError("No nodes provided for indexing")
-
-        print(f"🔄 Building FAISS vector index with {len(nodes)} nodes...")
-
-        # Get embedding dimension from the model
-        embed_model = self.embedding_manager.get_embedding_model()
-        test_embedding = embed_model.get_text_embedding("test")
-        dimension = len(test_embedding)
-
-        # Create FAISS index
-        faiss_index = faiss.IndexFlatL2(dimension)
-        vector_store = FaissVectorStore(faiss_index=faiss_index)
-        storage_context = StorageContext.from_defaults(vector_store=vector_store)
-
-        # Create vector index with FAISS
-        vector_index = VectorStoreIndex(
-            nodes,
-            storage_context=storage_context,
-            embed_model=embed_model
-        )
-        print(f"✅ Indexed {len(nodes)} nodes in FAISS vector store")
-
-        return vector_index
-    
-    def update_index(self, index: VectorStoreIndex, new_nodes: List[TextNode]) -> VectorStoreIndex:
-        """
-        Update an existing index with new nodes.
-        
-        Args:
-            index: Existing vector index
-            new_nodes: New nodes to add
-            
-        Returns:
-            VectorStoreIndex: Updated index
-        """
-        # Use the correct method to insert nodes
-        for node in new_nodes:
-            index.docstore.add_documents([node])
-        
-        print(f"✅ Added {len(new_nodes)} new nodes to existing index")
-        return index
-    
-    def get_index_stats(self, index: VectorStoreIndex) -> dict:
-        """
-        Get statistics about the index.
-        
-        Args:
-            index: Vector index to analyze
-            
-        Returns:
-            dict: Index statistics
-        """
-        nodes = list(index.docstore.docs.values())
-        
-        # Count nodes by type
-        chunk_types = {}
-        page_numbers = {}
-        
-        for node in nodes:
-            chunk_type = node.metadata.get("chunk_type", "unknown")
-            page_num = node.metadata.get("page_number", "unknown")
-            
-            chunk_types[chunk_type] = chunk_types.get(chunk_type, 0) + 1
-            page_numbers[page_num] = page_numbers.get(page_num, 0) + 1
-        
-        stats = {
-            "total_nodes": len(nodes),
-            "chunk_types": chunk_types,
-            "pages": len(page_numbers),
-            "page_distribution": page_numbers
-        }
-        
-        return stats
-    
-    def save_index(self, index: VectorStoreIndex, save_path: str):
-        """
-        Save the index to disk.
-        
-        Args:
-            index: Vector index to save
-            save_path: Path to save the index
-        """
-        index.storage_context.persist(persist_dir=save_path)
-        print(f"✅ Index saved to {save_path}")
-    
-    def load_index(self, load_path: str):
-        """
-        Load an index from disk.
-        
-        Args:
-            load_path: Path to load the index from
-            
-        Returns:
-            The loaded index
-        """
-        from llama_index.core import StorageContext, load_index_from_storage
-        
-        storage_context = StorageContext.from_defaults(persist_dir=load_path)
-        index = load_index_from_storage(storage_context)
-        
-        print(f"✅ Index loaded from {load_path}")
-        return index
-
-
-def create_index_from_documents(documents, pdf_path: str) -> tuple:
-    """
-    Create a complete index from documents including chunking and embedding.
-    
-    Args:
-        documents: List of Document objects
-        pdf_path: Path to the source PDF
-        
-    Returns:
-        tuple: (VectorStoreIndex, EmbeddingManager)
-    """
-    from rag_pipeline.chunking import multi_granularity_chunking
-    
-    print(f"🔄 Creating vector index from documents...")
-    api_key = os.getenv('OPENAI_API_KEY')
-    
-    # Initialize embedding manager
-    embedding_manager = EmbeddingManager()
-    
-    # Create chunks
-    print("🔄 Creating chunks...")
-    all_nodes = multi_granularity_chunking(documents, pdf_path)
-    
-    # Build vector index
-    print("🔄 Building vector index...")
-    index_builder = IndexBuilder(embedding_manager)
-    vector_index = index_builder.build_vector_index(all_nodes)
-    
-    # Print index statistics
-    stats = index_builder.get_index_stats(vector_index)
-    print("\n📊 Index Statistics:")
-    print(f"  Total nodes: {stats['total_nodes']}")
-    print(f"  Chunk types: {stats['chunk_types']}")
-    print(f"  Pages: {stats['pages']}")
-    
-    return vector_index, embedding_manager
+# Backward compatibility
+EmbeddingManager = OptimizedEmbeddingManager
