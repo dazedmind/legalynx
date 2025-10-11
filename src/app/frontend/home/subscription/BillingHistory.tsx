@@ -109,6 +109,17 @@ function BillingHistory({ onBack }: BillingHistoryProps) {
     });
   };
 
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "SENT":
@@ -177,18 +188,14 @@ function BillingHistory({ onBack }: BillingHistoryProps) {
                         {invoice.status}
                       </span>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
                       <div>
                         <span className="font-medium">Plan:</span>{" "}
                         {invoice.plan_type}
                       </div>
                       <div>
-                        <span className="font-medium">Billing:</span>{" "}
-                        {invoice.billing_cycle}
-                      </div>
-                      <div>
                         <span className="font-medium">Date:</span>{" "}
-                        {formatDate(invoice.created_at)}
+                        {formatDateTime(invoice.created_at)}
                       </div>
                     </div>
                     <div className="mt-2 text-lg font-semibold">

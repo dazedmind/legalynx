@@ -71,11 +71,12 @@ export async function POST(request: NextRequest) {
         }
 
         const legalynxUser = subscription.user;
-        console.log('✅ Found LegalynX user for subscription:', {
+        console.log('✅ [WEBHOOK] Found LegalynX user for subscription:', {
           userId: legalynxUser.id,
           userEmail: legalynxUser.email,  // This is the LegalynX email
           subscriptionId,
-          planType: planDetails.planType
+          planType: planDetails.planType,
+          timestamp: new Date().toISOString()
         });
 
         // Create and send invoice to LegalynX user email

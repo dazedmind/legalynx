@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, MicOff, Volume2, VolumeX, MessageSquare, AudioLines} from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, MessageSquare, AudioLines, FileText} from 'lucide-react';
 import { apiService } from '../../../../lib/api';
 import { SimpleVisualizer } from '../../components/visualizer/SimpleVisualizer';
 import PuffLoader from 'react-spinners/PuffLoader';
@@ -21,12 +21,20 @@ interface VoiceChatComponentProps {
   toast?: any;
 }
 
+interface MessageBranch {
+  content: string;
+  timestamp: Date;
+  subsequentMessages: ChatMessage[];
+}
+
 interface ChatMessage {
   id: string;
   content: string;
   type: 'USER' | 'ASSISTANT';
   createdAt: Date;
   isTranscribed?: boolean;
+  branches?: MessageBranch[];
+  currentBranch?: number;
 }
 
 interface SpeechRecognitionEvent extends Event {
@@ -79,13 +87,163 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
   const [isStreaming, setIsStreaming] = useState(false);
   const streamAbortControllerRef = useRef<AbortController | null>(null);
 
-  // Sync selectedSessionId prop with internal state
+  // Transcript feature states
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [currentTranscriptWords, setCurrentTranscriptWords] = useState<string[]>([]);
+  const [displayedWordCount, setDisplayedWordCount] = useState(0);
+  const wordAnimationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper function to reconstruct chat history with branches properly displayed
+  const reconstructChatHistoryWithBranches = (messages: ChatMessage[]): ChatMessage[] => {
+    const result: ChatMessage[] = [];
+    
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+      
+      // If this is a USER message with branches, show the current branch content
+      if (msg.type === "USER" && msg.branches && msg.branches.length > 0 && msg.currentBranch !== undefined) {
+        const currentBranch = msg.branches[msg.currentBranch];
+        if (currentBranch) {
+          // Add the user message with branch content
+          result.push({
+            ...msg,
+            content: currentBranch.content,
+          });
+          
+          // Add the subsequent messages from this branch
+          // These messages are stored in the branch and were deleted from the main chat_messages table
+          if (currentBranch.subsequentMessages && currentBranch.subsequentMessages.length > 0) {
+            result.push(...currentBranch.subsequentMessages);
+            
+            // Skip any messages in the database that are already in subsequentMessages
+            // to prevent duplicates (this can happen if messages were added to the branch later)
+            const subsequentMessageIds = new Set(
+              currentBranch.subsequentMessages.map((m: ChatMessage) => m.id)
+            );
+            
+            let skippedCount = 0;
+            while (i + 1 < messages.length) {
+              const nextMsg = messages[i + 1];
+              if (subsequentMessageIds.has(nextMsg.id)) {
+                i++; // Skip this message as it's already in the branch
+                skippedCount++;
+              } else {
+                // This is a new message not in the branch, stop skipping
+                break;
+              }
+            }
+            
+            if (skippedCount > 0) {
+              console.log(`🔀 Skipped ${skippedCount} duplicate messages already in branch ${msg.currentBranch}`);
+            }
+          }
+        } else {
+          // Branch index is invalid, just show the message as-is
+          result.push(msg);
+        }
+      } else {
+        // Regular message without branches
+        result.push(msg);
+      }
+    }
+    
+    return result;
+  };
+
+  // Load messages from database for a session
+  const loadMessagesFromDatabase = async (sessionId: string) => {
+    try {
+      console.log('📚 Loading messages for session:', sessionId);
+      const response = await fetch(`/backend/api/chat-messages?sessionId=${sessionId}`, {
+        headers: getAuthHeaders()
+      });
+
+      if (response.ok) {
+        const dbMessages = await response.json();
+        console.log('✅ Loaded', dbMessages.length, 'messages from database');
+        
+        // Transform database messages to our ChatMessage format
+        const formattedMessages: ChatMessage[] = dbMessages.map((msg: any) => ({
+          id: msg.id || msg.messageId || Date.now().toString(),
+          content: msg.content,
+          type: msg.role as 'USER' | 'ASSISTANT',
+          createdAt: new Date(msg.createdAt || msg.created_at),
+          isTranscribed: msg.role === 'USER', // Mark user messages as potentially transcribed
+          // Load branches from database if they exist
+          ...(msg.branches && {
+            branches: msg.branches,
+            currentBranch: msg.current_branch ?? 0,
+          }),
+        }));
+        
+        // Reconstruct chat history with branches properly displayed
+        const reconstructedMessages = reconstructChatHistoryWithBranches(formattedMessages);
+        setMessages(reconstructedMessages);
+        console.log(`📚 Showing ${reconstructedMessages.length} messages after branch reconstruction`);
+      } else {
+        console.warn('⚠️ Failed to load messages:', response.status);
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error('❌ Error loading messages:', error);
+      setMessages([]);
+    }
+  };
+
+  // Sync selectedSessionId prop with internal state and load messages
   useEffect(() => {
     if (selectedSessionId && selectedSessionId !== currentSessionId) {
       setCurrentSessionId(selectedSessionId);
+      // Load existing messages from database
+      loadMessagesFromDatabase(selectedSessionId);
+    } else if (!selectedSessionId && currentSessionId) {
+      // If session was cleared, clear messages too
       setMessages([]);
+      setCurrentSessionId(null);
     }
   }, [selectedSessionId, currentSessionId]);
+
+  // Load chat history when component mounts or document changes
+  useEffect(() => {
+    const loadInitialChatHistory = async () => {
+      if (!currentDocument?.id || !user) return;
+
+      try {
+        console.log('🔍 Checking for existing chat sessions for document:', currentDocument.id);
+        const response = await fetch('/backend/api/chat', {
+          method: 'GET',
+          headers: getAuthHeaders()
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const sessions = data.sessions || [];
+
+          // Find sessions for current document
+          const documentSessions = sessions.filter(
+            (session: any) => session.documentId === currentDocument.id
+          );
+
+          if (documentSessions.length > 0 && !selectedSessionId) {
+            // Load the most recent session
+            const mostRecentSession = documentSessions[0];
+            console.log('📖 Found existing session:', mostRecentSession.id);
+            setCurrentSessionId(mostRecentSession.id);
+            await loadMessagesFromDatabase(mostRecentSession.id);
+            
+            // Notify parent if callback exists
+            if (onSessionCreated) {
+              onSessionCreated(mostRecentSession.id);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error loading initial chat history:', error);
+      }
+    };
+
+    loadInitialChatHistory();
+  }, [currentDocument?.id]);
 
   // Setup microphone stream for visualizer
   const setupMicrophoneStream = async (): Promise<MediaStream | null> => {
@@ -219,6 +377,60 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
       stopMicrophoneStream();
     };
   }, []);
+
+  // Cleanup word animation interval on unmount
+  useEffect(() => {
+    return () => {
+      if (wordAnimationIntervalRef.current) {
+        clearInterval(wordAnimationIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Animate words when streaming content changes
+  useEffect(() => {
+    if (!showTranscript) return;
+
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage || lastMessage.type !== 'ASSISTANT' || !lastMessage.content) {
+      setCurrentTranscriptWords([]);
+      setDisplayedWordCount(0);
+      return;
+    }
+
+    const words = lastMessage.content.split(' ').filter(w => w.trim());
+
+    // Only reset if content has changed
+    if (words.join(' ') !== currentTranscriptWords.join(' ')) {
+      setCurrentTranscriptWords(words);
+      setDisplayedWordCount(0);
+
+      // Clear previous interval
+      if (wordAnimationIntervalRef.current) {
+        clearInterval(wordAnimationIntervalRef.current);
+      }
+
+      // Only animate during speaking
+      if (isSpeaking) {
+        let currentIndex = 0;
+        wordAnimationIntervalRef.current = setInterval(() => {
+          if (currentIndex < words.length) {
+            setDisplayedWordCount(currentIndex + 1);
+            currentIndex++;
+          } else {
+            if (wordAnimationIntervalRef.current) {
+              clearInterval(wordAnimationIntervalRef.current);
+              wordAnimationIntervalRef.current = null;
+            }
+          }
+        }, 120); // 120ms per word for smooth animation
+      } else {
+        // If not speaking, show all words immediately
+        setDisplayedWordCount(words.length);
+      }
+    }
+
+  }, [messages, isSpeaking, showTranscript]);
 
   useEffect(() => {
     if (finalTranscript.trim() && !isProcessing) {
@@ -747,6 +959,58 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
                 {isSpeaking && '🟡 Speaking'}
                 {isProcessing && '🧠 Processing'}
                 {!isListening && !isSpeaking && !isProcessing && '⚪ Ready'}
+              </div>
+            )}
+
+            {/* Transcript Toggle Button */}
+            <div className="absolute top-2 right-2">
+              <button
+                onClick={() => setShowTranscript(!showTranscript)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  showTranscript
+                    ? 'bg-blue-500 text-white hover:bg-blue-600'
+                    : 'bg-black/50 text-white hover:bg-black/70'
+                }`}
+                title={showTranscript ? 'Hide transcript' : 'Show transcript'}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                {showTranscript ? 'Hide' : 'Show'} Transcript
+              </button>
+            </div>
+
+            {/* Transcript Display */}
+            {showTranscript && currentTranscriptWords.length > 0 && (
+              <div className="absolute bottom-4 left-4 right-4 backdrop-blur-sm rounded-lg p-4 max-h-30 overflow-y-auto scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-transparent">
+                <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/20">
+                  <span className="text-foreground text-xs font-medium uppercase tracking-wide">Transcript</span>
+                  {isSpeaking && (
+                    <span className="text-yellow-400 text-xs flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse"></span>
+                      Speaking...
+                    </span>
+                  )}
+                </div>
+                <div className="text-foreground text-sm leading-relaxed">
+                  {currentTranscriptWords.slice(0, displayedWordCount).map((word, index) => {
+                    // Add line breaks approximately every 12-15 words to prevent clutter
+                    const shouldBreak = index > 0 && index % 12 === 0;
+                    return (
+                      <React.Fragment key={index}>
+                        {shouldBreak && <br />}
+                        <span
+                          className="inline animate-fadeIn"
+                          style={{
+                            animationDelay: isSpeaking ? `${index * 0.03}s` : '0s',
+                            animationFillMode: 'both'
+                          }}
+                        >
+                          {word}
+                        </span>
+                        {' '}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

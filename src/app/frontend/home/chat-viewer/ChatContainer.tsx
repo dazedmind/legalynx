@@ -10,6 +10,12 @@ import { Loader } from '../../components/ui/Loader';
 import { TbCopy, TbEdit, TbRotateClockwise, TbTrash } from 'react-icons/tb';
 import { HiChatBubbleBottomCenterText } from 'react-icons/hi2';
 
+interface MessageBranch {
+  content: string; // The edited version of the user message
+  createdAt: Date;
+  subsequentMessages: ChatMessage[]; // All assistant messages that followed this version
+}
+
 interface ChatMessage {
   id: string;
   type: 'USER' | 'ASSISTANT';
@@ -19,9 +25,12 @@ interface ChatMessage {
   sourceCount?: number;
   isThinking?: boolean; // For pulse animation
   isStreaming?: boolean; // For streaming cursor animation
-  branches?: string[]; // Array of message IDs that are alternative responses
-  currentBranch?: number; // Current branch index being displayed
-  parentId?: string; // ID of the parent message (for branching)
+  branches?: MessageBranch[]; // Array of alternative conversation paths (for USER messages)
+  currentBranch?: number; // Current branch index being displayed (0 = original, 1+ = edited versions)
+  belongsToBranch?: {
+    userMessageId: string;
+    branchIndex: number;
+  }; // For ASSISTANT messages that belong to a specific branch
 }
 
 interface ChatContainerProps {
@@ -134,8 +143,6 @@ export function ChatContainer({
       // Reset editing state
       setEditingMessageId(null);
       setEditedContent('');
-      
-      toast.success('Message updated and response regenerated');
     } catch (error) {
       console.error('Failed to edit message:', error);
       toast.error('Failed to update message');
@@ -167,11 +174,33 @@ export function ChatContainer({
     });
   };
 
-  const renderMessage = (message: ChatMessage) => {
+  const renderMessage = (message: ChatMessage, index: number) => {
     const isUser = message.type === 'USER';
     const isAssistant = message.type === 'ASSISTANT';
     const isEditing = editingMessageId === message.id;
     const isRegeneratingThis = isRegenerating === message.id;
+
+    // Check if this assistant message's user prompt has branches (for regeneration)
+    let userMessageWithBranches: ChatMessage | null = null;
+    let hasRegenerationBranches = false;
+    
+    if (isAssistant) {
+      // Find the previous USER message
+      for (let i = index - 1; i >= 0; i--) {
+        if (chatHistory[i].type === 'USER') {
+          userMessageWithBranches = chatHistory[i];
+          break;
+        }
+      }
+      
+      // Check if all branches have the same content (regeneration) vs different content (edit)
+      if (userMessageWithBranches?.branches && userMessageWithBranches.branches.length > 0) {
+        const allSameContent = userMessageWithBranches.branches.every(
+          branch => branch.content === userMessageWithBranches!.content
+        );
+        hasRegenerationBranches = allSameContent;
+      }
+    }
 
     return (
       <div
@@ -302,11 +331,11 @@ export function ChatContainer({
                     <TbTrash className="w-4 h-4" />
                   </button>
 
-                  {/* Branch Navigation - Only for Assistant messages with branches */}
-                  {isAssistant && message.branches && message.branches.length > 0 && onBranchChange && (
+                  {/* Branch Navigation - For USER messages with edited prompts (different content) */}
+                  {isUser && message.branches && message.branches.length > 0 && onBranchChange && !message.branches.every(branch => branch.content === message.content) && (
                     <BranchSelector
                       currentBranch={message.currentBranch || 0}
-                      totalBranches={message.branches.length + 1}
+                      totalBranches={message.branches.length}
                       onBranchChange={(branchIndex) => onBranchChange(message.id, branchIndex)}
                       className="ml-2"
                     />
@@ -324,6 +353,16 @@ export function ChatContainer({
                       >
                         <TbRotateClockwise  className="w-4 h-4" />
                       </button>
+                      
+                      {/* Branch Navigation - For regenerated responses (same prompt, different response) */}
+                      {hasRegenerationBranches && userMessageWithBranches && onBranchChange && (
+                        <BranchSelector
+                          currentBranch={userMessageWithBranches.currentBranch || 0}
+                          totalBranches={userMessageWithBranches.branches!.length}
+                          onBranchChange={(branchIndex) => onBranchChange(userMessageWithBranches.id, branchIndex)}
+                          className="ml-2"
+                        />
+                      )}
                     </>
                   )}
                 </div>
@@ -359,7 +398,7 @@ export function ChatContainer({
 
         {/* Chat Messages */}
         <div className="space-y-1">
-          {chatHistory.map(renderMessage)}
+          {chatHistory.map((msg, index) => renderMessage(msg, index))}
         </div>
 
         {/* Typing Indicator - only show when not streaming */}

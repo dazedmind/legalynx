@@ -124,10 +124,13 @@ class PrismaInvoiceService {
       items,
     } = invoiceData;
 
-    const formattedBillingDate = billingDate.toLocaleDateString("en-US", {
+    const formattedBillingDate = billingDate.toLocaleString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     });
 
     const formattedDueDate = dueDate.toLocaleDateString("en-US", {
@@ -594,10 +597,13 @@ class PrismaInvoiceService {
           .font("Helvetica")
           .text(`Invoice #: ${invoiceData.invoiceNumber}`, 400, 80, { align: "right" })
           .text(
-            `Date: ${invoiceData.billingDate.toLocaleDateString("en-US", {
+            `Date: ${invoiceData.billingDate.toLocaleString("en-US", {
               year: "numeric",
               month: "long",
               day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
             })}`,
             400,
             95,
@@ -779,19 +785,30 @@ Please find your invoice attached as a PDF.
     invoiceId?: string;
     invoiceNumber?: string;
     error?: string;
+    isDuplicate?: boolean; // Flag to indicate if this was a duplicate
   }> {
     try {
+      console.log('🔍 Checking for duplicate invoice with data:', {
+        userId: data.userId,
+        subscriptionId: data.subscriptionId,
+        planType: data.planType,
+        billingCycle: data.billingCycle
+      });
+
       // Check if invoice already exists for this subscription activation
-      // Prevent duplicate invoices by checking recent invoices (within last 5 minutes)
+      // Prevent duplicate invoices by checking recent invoices (within last 10 minutes)
       if (data.subscriptionId) {
-        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
         const existingInvoice = await prisma.invoice.findFirst({
           where: {
             user_id: data.userId,
             subscription_id: data.subscriptionId,
             created_at: {
-              gte: fiveMinutesAgo
+              gte: tenMinutesAgo
             }
+          },
+          orderBy: {
+            created_at: 'desc'
           }
         });
 
@@ -799,16 +816,21 @@ Please find your invoice attached as a PDF.
           console.log('⚠️ Invoice already exists for this subscription, skipping duplicate:', {
             existingInvoiceId: existingInvoice.id,
             existingInvoiceNumber: existingInvoice.invoice_number,
-            subscriptionId: data.subscriptionId
+            subscriptionId: data.subscriptionId,
+            alreadySentTo: existingInvoice.email_sent_to,
+            createdAt: existingInvoice.created_at
           });
 
           return {
             success: true,
             invoiceId: existingInvoice.id,
             invoiceNumber: existingInvoice.invoice_number,
+            isDuplicate: true, // Mark as duplicate
           };
         }
       }
+
+      console.log('✅ No duplicate found, creating new invoice...');
 
       const invoiceNumber = this.generateInvoiceNumber();
       const billingDate = new Date();
@@ -826,7 +848,31 @@ Please find your invoice attached as a PDF.
           : ("YEARLY" as BillingCycle);
 
       // Create invoice with items in a transaction
+      // Use serializable isolation to prevent race conditions
       const result = await prisma.$transaction(async (tx) => {
+        // Double-check for existing invoice within the transaction to prevent race conditions
+        if (data.subscriptionId) {
+          const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+          const existingInvoice = await tx.invoice.findFirst({
+            where: {
+              user_id: data.userId,
+              subscription_id: data.subscriptionId,
+              created_at: {
+                gte: tenMinutesAgo
+              }
+            }
+          });
+
+          if (existingInvoice) {
+            console.log('⚠️ Race condition detected: Invoice created by concurrent request:', {
+              existingInvoiceId: existingInvoice.id,
+              existingInvoiceNumber: existingInvoice.invoice_number,
+            });
+            // Return the existing invoice instead of creating a duplicate
+            return existingInvoice;
+          }
+        }
+
         // Create the invoice
         const invoice = await tx.invoice.create({
           data: {
@@ -872,6 +918,24 @@ Please find your invoice attached as a PDF.
         return invoice;
       });
 
+      // Check if we got back an existing invoice (from race condition check)
+      const isRaceDuplicate = result.invoice_number !== invoiceNumber;
+
+      if (isRaceDuplicate) {
+        console.log("⚠️ Returning existing invoice due to race condition:", {
+          existingInvoiceId: result.id,
+          existingInvoiceNumber: result.invoice_number,
+          attemptedInvoiceNumber: invoiceNumber,
+        });
+
+        return {
+          success: true,
+          invoiceId: result.id,
+          invoiceNumber: result.invoice_number,
+          isDuplicate: true,
+        };
+      }
+
       console.log("✅ Invoice created in database:", {
         invoiceId: result.id,
         invoiceNumber: result.invoice_number,
@@ -883,6 +947,7 @@ Please find your invoice attached as a PDF.
         success: true,
         invoiceId: result.id,
         invoiceNumber: result.invoice_number,
+        isDuplicate: false,
       };
     } catch (error: any) {
       console.error("❌ Failed to create invoice in database:", error);
@@ -910,6 +975,21 @@ Please find your invoice attached as a PDF.
         return {
           success: false,
           error: dbResult.error || "Failed to create invoice in database",
+        };
+      }
+
+      // If this is a duplicate invoice, skip email sending
+      if (dbResult.isDuplicate) {
+        console.log('✅ Duplicate invoice detected, skipping email send:', {
+          invoiceNumber: dbResult.invoiceNumber,
+          invoiceId: dbResult.invoiceId,
+          userEmail: data.userEmail,
+        });
+
+        return {
+          success: true,
+          invoiceNumber: dbResult.invoiceNumber,
+          invoiceId: dbResult.invoiceId,
         };
       }
 

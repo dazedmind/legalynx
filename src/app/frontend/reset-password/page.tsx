@@ -189,7 +189,7 @@ const ResetPasswordForm = () => {
         
         // Redirect to login after 3 seconds
         setTimeout(() => {
-          router.push("/login");
+          router.push("/frontend/login");
         }, 3000);
       } else {
         setError(result.error || "Failed to reset password");
@@ -228,7 +228,7 @@ const ResetPasswordForm = () => {
           {error || "This password reset link is invalid or has expired. Please request a new one."}
         </p>
         <button
-          onClick={() => router.push("/login")}
+          onClick={() => router.push("/frontend/login")}
           className="px-6 py-2 bg-blue hover:brightness-105 text-white rounded-lg font-semibold"
         >
           Back to Login

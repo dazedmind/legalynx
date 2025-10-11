@@ -46,6 +46,10 @@ export async function POST(request: Request) {
       // aliases for tokens used
       tokens_used,
       tokensUsed,
+      // branching support
+      branches,
+      currentBranch,
+      current_branch,
     } = body || {};
 
     console.log('Creating message with data:', {
@@ -98,6 +102,7 @@ export async function POST(request: Request) {
 
     const effectiveCreatedAt = createdAt || timestamp;
     const effectiveTokens = typeof tokensUsed === 'number' ? tokensUsed : tokens_used;
+    const effectiveCurrentBranch = currentBranch ?? current_branch;
 
     const message = await prisma.chatMessage.create({
       data: {
@@ -108,6 +113,9 @@ export async function POST(request: Request) {
         content,
         created_at: effectiveCreatedAt ? new Date(effectiveCreatedAt) : new Date(),
         tokens_used: effectiveTokens ?? null,
+        // Branching support
+        branches: branches ?? null,
+        current_branch: effectiveCurrentBranch ?? null,
       }
     });
 
@@ -148,7 +156,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, sessionId, content, sourceCount, tokensUsed } = body;
+    const { id, sessionId, content, sourceCount, tokensUsed, branches, currentBranch } = body;
 
     console.log('Updating message:', { id, sessionId, content: content?.substring(0, 50) });
 
@@ -194,6 +202,9 @@ export async function PUT(request: Request) {
         content: content,
         source_nodes: sourceCount || existingMessage.source_nodes,
         tokens_used: tokensUsed || existingMessage.tokens_used,
+        // Update branching fields if provided
+        ...(branches !== undefined && { branches: branches }),
+        ...(currentBranch !== undefined && { current_branch: currentBranch }),
       }
     });
 

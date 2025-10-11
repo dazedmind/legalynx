@@ -31,7 +31,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getUserFromToken(request);
     const { messageId } = await params;
-    const { content, updatedAt } = await request.json();
+    const { content, updatedAt, branches, currentBranch } = await request.json();
 
     if (!content || !content.trim()) {
       return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
@@ -64,7 +64,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       where: { id: messageId },
       data: {
         content: content.trim(),
-        created_at: updatedAt ? new Date(updatedAt) : new Date()
+        created_at: updatedAt ? new Date(updatedAt) : new Date(),
+        // Update branching fields if provided
+        ...(branches !== undefined && { branches: branches }),
+        ...(currentBranch !== undefined && { current_branch: currentBranch }),
       }
     });
 
@@ -79,7 +82,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       content: updatedMessage.content,
       role: updatedMessage.role,
       createdAt: updatedMessage.created_at,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      branches: updatedMessage.branches,
+      currentBranch: updatedMessage.current_branch,
     });
 
   } catch (error) {

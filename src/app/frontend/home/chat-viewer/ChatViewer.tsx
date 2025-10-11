@@ -34,6 +34,12 @@ import { PDFViewer } from "../file-manager/PDFViewer";
 import { HiOutlinePaperClip } from "react-icons/hi2";
 import { Button } from "../../components/ui/button";
 
+interface MessageBranch {
+  content: string; // The edited version of the user message
+  createdAt: Date;
+  subsequentMessages: ChatMessage[]; // All assistant messages that followed this version
+}
+
 interface ChatMessage {
   id: string;
   type: "USER" | "ASSISTANT";
@@ -43,9 +49,12 @@ interface ChatMessage {
   sourceCount?: number;
   isThinking?: boolean; // For pulse animation
   isStreaming?: boolean; // For streaming cursor animation
-  branches?: string[]; // Array of message IDs that are alternative responses
-  currentBranch?: number; // Current branch index being displayed
-  parentId?: string; // ID of the parent message (for branching)
+  branches?: MessageBranch[]; // Array of alternative conversation paths (for USER messages)
+  currentBranch?: number; // Current branch index being displayed (0 = original, 1+ = edited versions)
+  belongsToBranch?: {
+    userMessageId: string;
+    branchIndex: number;
+  }; // For ASSISTANT messages that belong to a specific branch
 }
 
 interface ChatSession {
@@ -83,6 +92,63 @@ type LoadingStage =
   | "loading_document"
   | "loading_rag"
   | "preparing_chat";
+
+// Helper function to reconstruct chat history with branches properly displayed
+function reconstructChatHistoryWithBranches(messages: ChatMessage[]): ChatMessage[] {
+  const result: ChatMessage[] = [];
+  
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    
+    // If this is a USER message with branches, show the current branch content
+    if (msg.type === "USER" && msg.branches && msg.branches.length > 0 && msg.currentBranch !== undefined) {
+      const currentBranch = msg.branches[msg.currentBranch];
+      if (currentBranch) {
+        // Add the user message with branch content
+        result.push({
+          ...msg,
+          content: currentBranch.content,
+        });
+        
+        // Add the subsequent messages from this branch
+        // These messages are stored in the branch and were deleted from the main chat_messages table
+        if (currentBranch.subsequentMessages && currentBranch.subsequentMessages.length > 0) {
+          result.push(...currentBranch.subsequentMessages);
+          
+          // Skip any messages in the database that are already in subsequentMessages
+          // to prevent duplicates (this can happen if messages were added to the branch later)
+          const subsequentMessageIds = new Set(
+            currentBranch.subsequentMessages.map((m: ChatMessage) => m.id)
+          );
+          
+          let skippedCount = 0;
+          while (i + 1 < messages.length) {
+            const nextMsg = messages[i + 1];
+            if (subsequentMessageIds.has(nextMsg.id)) {
+              i++; // Skip this message as it's already in the branch
+              skippedCount++;
+            } else {
+              // This is a new message not in the branch, stop skipping
+              break;
+            }
+          }
+          
+          if (skippedCount > 0) {
+            console.log(`🔀 Skipped ${skippedCount} duplicate messages already in branch ${msg.currentBranch}`);
+          }
+        }
+      } else {
+        // Branch index is invalid, just show the message as-is
+        result.push(msg);
+      }
+    } else {
+      // Regular message without branches
+      result.push(msg);
+    }
+  }
+  
+  return result;
+}
 
 export default function ChatViewer({
   isSystemReady,
@@ -1186,38 +1252,25 @@ export default function ChatViewer({
         setCurrentDocument(documentInfo);
 
         const formattedMessages: ChatMessage[] = sessionData.messages.map(
-          (msg: any) => {
-            const messageId = msg.id;
-
-            // Restore branches from sessionStorage if they exist
-            const branchesKey = `branches_${sessionId}_${messageId}`;
-            const originalKey = `original_${messageId}`;
-            const storedBranches = JSON.parse(sessionStorage.getItem(branchesKey) || '[]');
-            const hasOriginal = sessionStorage.getItem(originalKey) !== null;
-
-            // Build branches array from stored branch IDs
-            const branches = storedBranches.length > 0 ? storedBranches.map((b: any) => b.id) : undefined;
-            const currentBranch = branches ? 0 : undefined; // Default to original (index 0)
-
-            // If branches exist but no original content stored, store it now
-            if (branches && !hasOriginal) {
-              sessionStorage.setItem(originalKey, msg.content);
-            }
-
-            return {
-              id: messageId,
-              type: msg.role?.toUpperCase() as "USER" | "ASSISTANT",
-              content: msg.content,
-              createdAt: new Date(msg.created_at),
-              sourceCount: msg.tokens_used,
-              isThinking: false,
-              isStreaming: false,
-              ...(branches && { branches, currentBranch })
-            };
-          }
+          (msg: any) => ({
+            id: msg.id,
+            type: msg.role?.toUpperCase() as "USER" | "ASSISTANT",
+            content: msg.content,
+            createdAt: new Date(msg.created_at),
+            sourceCount: msg.tokens_used,
+            isThinking: false,
+            isStreaming: false,
+            // Load branches from database if they exist
+            ...(msg.branches && {
+              branches: msg.branches,
+              currentBranch: msg.current_branch ?? 0,
+            }),
+          })
         );
 
-        setChatHistory(formattedMessages);
+        // Reconstruct chat history with branches properly displayed
+        const reconstructedMessages = reconstructChatHistoryWithBranches(formattedMessages);
+        setChatHistory(reconstructedMessages);
 
         await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -1564,35 +1617,24 @@ export default function ChatViewer({
 
           if (messagesResponse.ok) {
             const messages = await messagesResponse.json();
-            const formattedMessages = messages.map((msg: any) => {
-              const messageId = msg.id;
-
-              // Restore branches from sessionStorage if they exist
-              const branchesKey = `branches_${mostRecentSession.id}_${messageId}`;
-              const originalKey = `original_${messageId}`;
-              const storedBranches = JSON.parse(sessionStorage.getItem(branchesKey) || '[]');
-              const hasOriginal = sessionStorage.getItem(originalKey) !== null;
-
-              // Build branches array from stored branch IDs
-              const branches = storedBranches.length > 0 ? storedBranches.map((b: any) => b.id) : undefined;
-              const currentBranch = branches ? 0 : undefined; // Default to original (index 0)
-
-              // If branches exist but no original content stored, store it now
-              if (branches && !hasOriginal) {
-                sessionStorage.setItem(originalKey, msg.content);
-              }
-
-              return {
-                id: messageId,
-                type: msg.role?.toUpperCase() as "USER" | "ASSISTANT",
-                content: msg.content,
-                createdAt: new Date(msg.created_at || msg.timestamp),
-                isThinking: false,
-                isStreaming: false,
-                ...(branches && { branches, currentBranch })
-              };
-            });
-            setChatHistory(formattedMessages);
+            const formattedMessages = messages.map((msg: any) => ({
+              id: msg.id,
+              type: msg.role?.toUpperCase() as "USER" | "ASSISTANT",
+              content: msg.content,
+              createdAt: new Date(msg.created_at || msg.timestamp),
+              sourceCount: msg.tokens_used,
+              isThinking: false,
+              isStreaming: false,
+              // Load branches from database if they exist
+              ...(msg.branches && {
+                branches: msg.branches,
+                currentBranch: msg.current_branch ?? 0,
+              }),
+            }));
+            
+            // Reconstruct chat history with branches properly displayed
+            const reconstructedMessages = reconstructChatHistoryWithBranches(formattedMessages);
+            setChatHistory(reconstructedMessages);
           }
         } else {
           setCurrentSessionId(null);
@@ -1755,11 +1797,18 @@ export default function ChatViewer({
               createdAt: new Date(msg.createdAt || msg.created_at),
               sourceNodes: msg.sourceNodes || msg.source_nodes,
               tokensUsed: msg.tokensUsed || msg.tokens_used,
+              // Load branches from database if they exist
+              ...(msg.branches && {
+                branches: msg.branches,
+                currentBranch: msg.current_branch ?? 0,
+              }),
             }));
 
-            setChatHistory(formattedMessages);
+            // Reconstruct chat history with branches properly displayed
+            const reconstructedMessages = reconstructChatHistoryWithBranches(formattedMessages);
+            setChatHistory(reconstructedMessages);
             console.log(
-              `📚 Loaded ${formattedMessages.length} existing messages`
+              `📚 Loaded ${formattedMessages.length} existing messages (${reconstructedMessages.length} after branch reconstruction)`
             );
           }
         } catch (messageError) {
@@ -2040,48 +2089,84 @@ export default function ChatViewer({
         return;
       }
 
-      // Update the message content in chat history
-      const updatedChatHistory = [...chatHistory];
-      updatedChatHistory[messageIndex] = {
-        ...messageToEdit,
+      // Get ALL subsequent messages (USER and ASSISTANT) - these will be stored in branches
+      const subsequentMessages = chatHistory.slice(messageIndex + 1);
+
+      console.log(`🌿 Creating branch for edit. Subsequent messages to preserve: ${subsequentMessages.length}`);
+
+      // If this is the first edit, create a branch for the original content
+      let branches = messageToEdit.branches || [];
+      let currentBranch = messageToEdit.currentBranch ?? 0;
+
+      if (branches.length === 0) {
+        // First edit - save the original as branch 0
+        console.log("📝 First edit - saving original content as branch 0");
+        branches.push({
+          content: messageToEdit.content,
+          createdAt: messageToEdit.createdAt instanceof Date 
+            ? messageToEdit.createdAt 
+            : new Date(messageToEdit.createdAt),
+          subsequentMessages: subsequentMessages
+        });
+      }
+
+      // Create new branch with the edited content (empty subsequent messages for now)
+      const newBranch: MessageBranch = {
         content: newContent,
-        createdAt: new Date(), // Update timestamp to show it was edited
+        createdAt: new Date(),
+        subsequentMessages: [] // Will be filled when we generate the response
+      };
+      branches.push(newBranch);
+      currentBranch = branches.length - 1; // Switch to the new branch
+
+      console.log(`🌿 Created branch ${currentBranch}. Total branches: ${branches.length}`);
+
+      // Update the message with branches
+      const updatedMessage = {
+        ...messageToEdit,
+        content: newContent, // Show the edited content
+        branches: branches,
+        currentBranch: currentBranch,
       };
 
-      // Remove all messages after the edited message (including assistant responses)
-      const messagesToKeep = updatedChatHistory.slice(0, messageIndex + 1);
-      setChatHistory(messagesToKeep);
-
-      // Update the message in the database if we have a session
-      if (currentSessionId && user && documentExists) {
-        try {
-          const response = await fetch(
-            `/backend/api/chat-messages/${messageId}`,
-            {
-              method: "PATCH",
-              headers: getAuthHeaders(),
-              body: JSON.stringify({
-                content: newContent,
-                updatedAt: new Date().toISOString(),
-              }),
+      // Update chat history - keep only messages up to the edited one
+      // Remove subsequent messages (they're now stored in branches)
+      const messagesBeforeEdit = chatHistory.slice(0, messageIndex);
+      const subsequentMessagesToDelete = chatHistory.slice(messageIndex + 1);
+      
+      // Delete subsequent messages from database
+      if (subsequentMessagesToDelete.length > 0) {
+        console.log(`🗑️ Deleting ${subsequentMessagesToDelete.length} subsequent messages from database`);
+        for (const msgToDelete of subsequentMessagesToDelete) {
+          try {
+            const deleteResponse = await fetch(`/backend/api/chat-messages/${msgToDelete.id}`, {
+              method: 'DELETE',
+              headers: getAuthHeaders()
+            });
+            
+            if (deleteResponse.ok) {
+              console.log(`✅ Deleted message ${msgToDelete.id} from database`);
+            } else {
+              console.warn(`⚠️ Failed to delete message ${msgToDelete.id} from database`);
             }
-          );
-
-          if (!response.ok) {
-            console.warn(
-              "Failed to update message in database, but continuing with regeneration"
-            );
+          } catch (deleteErr) {
+            console.error(`❌ Error deleting message ${msgToDelete.id}:`, deleteErr);
           }
-        } catch (error) {
-          console.warn("Failed to update message in database:", error);
-          // Continue with regeneration even if database update fails
         }
       }
+      
+      setChatHistory([...messagesBeforeEdit, updatedMessage]);
 
       // Generate new response based on the edited message using streaming
       const newMessageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       let streamedContent = "";
       let sourceCount = 0;
+
+      // Calculate timestamp for new assistant response (1ms after edited message to maintain order)
+      const editedMessageDate = messageToEdit.createdAt instanceof Date 
+        ? messageToEdit.createdAt 
+        : new Date(messageToEdit.createdAt);
+      const newAssistantTimestamp = new Date(editedMessageDate.getTime() + 1);
 
       // Add a thinking message immediately
       setChatHistory((prev) => [
@@ -2090,7 +2175,7 @@ export default function ChatViewer({
           id: newMessageId,
           type: "ASSISTANT",
           content: "Regenerating response...",
-          createdAt: new Date(),
+          createdAt: newAssistantTimestamp,
           isThinking: true,
           isStreaming: true,
         },
@@ -2098,12 +2183,15 @@ export default function ChatViewer({
 
       const ragClient = new (await import('../../utils/api-client')).RAGApiClient();
 
+      let finalResponseContent = '';
+
       await ragClient.streamQueryDocument(
         newContent,
         (chunk) => {
           if (chunk.type === 'content_chunk') {
             if (chunk.partial_response !== undefined) {
               streamedContent = chunk.partial_response;
+              finalResponseContent = streamedContent;
 
               setChatHistory((prev) =>
                 prev.map((msg) =>
@@ -2121,12 +2209,13 @@ export default function ChatViewer({
           } else if (chunk.type === 'sources') {
             sourceCount = chunk.source_count || 0;
           } else if (chunk.type === 'complete' || chunk.type === 'end') {
+            finalResponseContent = chunk.response || streamedContent;
             setChatHistory((prev) =>
               prev.map((msg) =>
                 msg.id === newMessageId
                   ? {
                       ...msg,
-                      content: chunk.response || streamedContent,
+                      content: finalResponseContent,
                       query: newContent,
                       sourceCount: sourceCount,
                       isStreaming: false,
@@ -2145,20 +2234,83 @@ export default function ChatViewer({
         }
       );
 
-      // Ensure streaming state is cleared after completion
-      setChatHistory((prev) =>
-        prev.map((msg) =>
-          msg.id === newMessageId
-            ? {
-                ...msg,
-                isStreaming: false,
-                isThinking: false,
+      // Store the new assistant response in the current branch and update state
+      let branchesToSave: MessageBranch[] | undefined = undefined;
+      let currentBranchToSave: number | undefined = undefined;
+      
+      setChatHistory((prev) => {
+        return prev.map((msg) => {
+          if (msg.id === messageId && msg.branches && msg.currentBranch !== undefined) {
+            // Find the assistant message in chat history
+            const assistantMsg = prev.find(m => m.id === newMessageId);
+            
+            if (assistantMsg) {
+              // Update the branch to include the new response
+              const updatedBranches = [...msg.branches];
+              if (updatedBranches[msg.currentBranch]) {
+                updatedBranches[msg.currentBranch] = {
+                  ...updatedBranches[msg.currentBranch],
+                  subsequentMessages: [{
+                    ...assistantMsg,
+                    isStreaming: false,
+                    isThinking: false,
+                  }]
+                };
               }
-            : msg
-        )
-      );
 
-      toast.success("Message updated and response regenerated");
+              // Store for database save
+              branchesToSave = updatedBranches;
+              currentBranchToSave = msg.currentBranch;
+
+              return {
+                ...msg,
+                branches: updatedBranches
+              };
+            }
+          }
+          
+          // Clear streaming state for the assistant message
+          if (msg.id === newMessageId) {
+            return {
+              ...msg,
+              isStreaming: false,
+              isThinking: false,
+            };
+          }
+          
+          return msg;
+        });
+      });
+
+      // Save branches to database
+      if (currentSessionId && user && documentExists && branchesToSave) {
+        console.log('💾 Saving branches to database');
+        try {
+          const response = await fetch(`/backend/api/chat-messages/${messageId}`, {
+            method: "PATCH",
+            headers: {
+              ...getAuthHeaders(),
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              content: newContent,
+              branches: branchesToSave,
+              currentBranch: currentBranchToSave,
+            }),
+          });
+
+          if (!response.ok) {
+            console.warn('⚠️ Failed to save branches to database, but continuing');
+          } else {
+            console.log('✅ Branches saved to database');
+          }
+        } catch (err) {
+          console.error('❌ Error saving branches to database:', err);
+        }
+      }
+
+      console.log('✅ Branch updated with new response');
+      toast.success("Message edited - new branch created!");
     } catch (error) {
       console.error("Edit message error:", error);
       const errorMessage = handleApiError(error);
@@ -2201,36 +2353,124 @@ export default function ChatViewer({
     const assistantMessage = chatHistory[messageIndex];
     if (assistantMessage.type !== "ASSISTANT") return;
 
-    const userMessage = chatHistory[messageIndex - 1];
-    if (!userMessage || userMessage.type !== "USER") return;
-
     try {
       setIsQuerying(true);
 
-      // Create new branch message ID first
-      const newBranchMessageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // Find the root USER message that has (or should have) branches
+      // We need to search backwards to find a USER message, which might be before this assistant message
+      let rootUserMessage: ChatMessage | null = null;
+      let rootUserMessageIndex = -1;
+      
+      for (let i = messageIndex - 1; i >= 0; i--) {
+        if (chatHistory[i].type === "USER") {
+          rootUserMessage = chatHistory[i];
+          rootUserMessageIndex = i;
+          break;
+        }
+      }
+
+      if (!rootUserMessage) {
+        toast.error("Could not find user message to regenerate from");
+        return;
+      }
+
+      console.log(`🔄 Regenerating response. Root user message: ${rootUserMessage.id}, Current branch: ${rootUserMessage.currentBranch}`);
+
+      // Get all subsequent messages after the assistant message (these will be discarded)
+      const subsequentMessages = chatHistory.slice(messageIndex + 1);
+      
+      // Initialize or update branches
+      let userBranches = rootUserMessage.branches || [];
+      let currentBranchIndex = rootUserMessage.currentBranch ?? 0;
+
+      if (userBranches.length === 0) {
+        // First time branching - save the original as branch 0
+        console.log("📝 First regeneration - saving original as branch 0");
+        userBranches.push({
+          content: rootUserMessage.content,
+          createdAt: rootUserMessage.createdAt instanceof Date 
+            ? rootUserMessage.createdAt 
+            : new Date(rootUserMessage.createdAt),
+          subsequentMessages: [assistantMessage, ...subsequentMessages]
+        });
+      } else {
+        // Update the CURRENT branch with the old response (preserve it before creating new branch)
+        userBranches[currentBranchIndex] = {
+          ...userBranches[currentBranchIndex],
+          subsequentMessages: [assistantMessage, ...subsequentMessages]
+        };
+      }
+
+      // Create NEW branch for the regenerated response (always a sibling branch)
+      const newBranchIndex = userBranches.length;
+      userBranches.push({
+        content: rootUserMessage.content, // Same prompt, different response
+        createdAt: new Date(),
+        subsequentMessages: [] // Will be filled with the new response
+      });
+
+      console.log(`🌿 Created branch ${newBranchIndex} for regeneration. Total branches: ${userBranches.length}`);
+
+      // Update the root user message with all branches
+      const updatedUserMessage = {
+        ...rootUserMessage,
+        branches: userBranches,
+        currentBranch: newBranchIndex, // Switch to the new branch
+      };
+
+      // Delete the old assistant message and subsequent messages from database
+      // (they're now preserved in the branch's subsequentMessages)
+      try {
+        await fetch(`/backend/api/chat-messages/${messageId}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+        console.log(`🗑️ Deleted old assistant message ${messageId} from database`);
+      } catch (deleteErr) {
+        console.error(`❌ Error deleting assistant message:`, deleteErr);
+      }
+
+      if (subsequentMessages.length > 0) {
+        console.log(`🗑️ Deleting ${subsequentMessages.length} subsequent messages from database`);
+        for (const msgToDelete of subsequentMessages) {
+          try {
+            await fetch(`/backend/api/chat-messages/${msgToDelete.id}`, {
+              method: 'DELETE',
+              headers: getAuthHeaders()
+            });
+          } catch (deleteErr) {
+            console.error(`❌ Error deleting subsequent message:`, deleteErr);
+          }
+        }
+      }
+
+      // Update chat history - keep only messages up to and including the updated user message
+      const messagesBeforeAssistant = chatHistory.slice(0, rootUserMessageIndex);
+      setChatHistory([...messagesBeforeAssistant, updatedUserMessage]);
+
+      // Generate new response
+      const newAssistantMessageId = crypto.randomUUID();
       let streamedContent = "";
       let sourceCount = 0;
 
-      // Add thinking indicator to the current message
-      setChatHistory((prev) =>
-        prev.map((msg) =>
-          msg.id === messageId
-            ? {
-                ...msg,
-                content: "Generating alternative response...",
-                isThinking: true,
-                isStreaming: true,
-              }
-            : msg
-        )
-      );
+      // Add thinking message
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          id: newAssistantMessageId,
+          type: "ASSISTANT",
+          content: "Generating alternative response...",
+          createdAt: new Date(),
+          isThinking: true,
+          isStreaming: true,
+        },
+      ]);
 
       const ragClient = new (await import('../../utils/api-client')).RAGApiClient();
 
       // Stream the alternative response
       await ragClient.streamQueryDocument(
-        userMessage.content + " (Please provide an alternative perspective)",
+        rootUserMessage.content,
         (chunk) => {
           if (chunk.type === 'content_chunk') {
             if (chunk.partial_response !== undefined) {
@@ -2238,7 +2478,7 @@ export default function ChatViewer({
 
               setChatHistory((prev) =>
                 prev.map((msg) =>
-                  msg.id === messageId
+                  msg.id === newAssistantMessageId
                     ? {
                         ...msg,
                         content: streamedContent,
@@ -2252,7 +2492,6 @@ export default function ChatViewer({
           } else if (chunk.type === 'sources') {
             sourceCount = chunk.source_count || 0;
           } else if (chunk.type === 'complete' || chunk.type === 'end') {
-            // Don't update here, we'll update after setting up branches
             streamedContent = chunk.response || streamedContent;
           }
         },
@@ -2260,82 +2499,86 @@ export default function ChatViewer({
           console.error("Streaming error:", error);
           setError(error.message);
           toast.error("Failed to regenerate response: " + error.message);
-          // Clear streaming state on error
-          setChatHistory((prev) =>
-            prev.map((msg) =>
-              msg.id === messageId
-                ? { ...msg, isStreaming: false, isThinking: false }
-                : msg
-            )
-          );
+          setChatHistory((prev) => prev.filter(msg => msg.id !== newAssistantMessageId));
         }
       );
 
-      // Create new branch message with the streamed content
-      const newBranchMessage: ChatMessage = {
-        id: newBranchMessageId,
-        type: "ASSISTANT",
-        content: streamedContent,
-        query: userMessage.content,
-        sourceCount: sourceCount,
-        createdAt: new Date(),
-        parentId: messageId,
-      };
-
-      // Update the chat history with branching logic
+      // Update the new branch with the regenerated response and save to database
+      let finalUpdatedBranches: MessageBranch[] = [];
+      
       setChatHistory((prev) => {
-        const updated = [...prev];
-        const msgIndex = updated.findIndex((msg) => msg.id === messageId);
+        return prev.map((msg) => {
+          if (msg.id === rootUserMessage!.id) {
+            const updatedBranches = [...userBranches]; // Use the userBranches we created above
+            const assistantMsg = prev.find(m => m.id === newAssistantMessageId);
+            
+            if (assistantMsg && updatedBranches[newBranchIndex]) {
+              // Add the new response to the new branch
+              updatedBranches[newBranchIndex] = {
+                ...updatedBranches[newBranchIndex],
+                subsequentMessages: [{
+                  ...assistantMsg,
+                  content: streamedContent,
+                  sourceCount: sourceCount,
+                  isStreaming: false,
+                  isThinking: false,
+                }]
+              };
 
-        if (msgIndex !== -1) {
-          const currentMsg = updated[msgIndex];
+              // Store for saving after state update
+              finalUpdatedBranches = updatedBranches;
 
-          // Initialize branches array if it doesn't exist
-          if (!currentMsg.branches) {
-            // Check if branches exist in sessionStorage first (after page refresh)
-            const branchesKey = `branches_${currentSessionId}_${messageId}`;
-            const storedBranches = JSON.parse(sessionStorage.getItem(branchesKey) || '[]');
-
-            if (storedBranches.length > 0) {
-              // Restore from sessionStorage - branches already exist
-              currentMsg.branches = storedBranches.map((b: any) => b.id);
-              currentMsg.currentBranch = 0; // Default to original
-            } else {
-              // First time branching - store original content
-              const originalBranchKey = `original_${messageId}`;
-              sessionStorage.setItem(originalBranchKey, currentMsg.content);
-              currentMsg.branches = []; // Start with empty array
-              currentMsg.currentBranch = 0;
+              return {
+                ...msg,
+                branches: updatedBranches,
+                currentBranch: newBranchIndex, // Update to show the new branch
+              };
             }
           }
-
-          // Add new branch ID (each regeneration adds one branch)
-          currentMsg.branches?.push(newBranchMessageId);
-          currentMsg.currentBranch = currentMsg.branches?.length; // Switch to new branch
-
-          // Store the new branch message separately (we'll manage display through branches array)
-          // For now, we'll update the content to show the new branch
-          updated[msgIndex] = {
-            ...currentMsg,
-            content: newBranchMessage.content,
-            sourceCount: newBranchMessage.sourceCount,
-            isStreaming: false,
-            isThinking: false,
-          };
-        }
-
-        return updated;
+          
+          // Clear streaming state for the new assistant message
+          if (msg.id === newAssistantMessageId) {
+            return {
+              ...msg,
+              content: streamedContent,
+              sourceCount: sourceCount,
+              isStreaming: false,
+              isThinking: false,
+            };
+          }
+          
+          return msg;
+        });
       });
 
-      // Store branch in session storage for persistence
-      if (currentSessionId) {
-        const branchesKey = `branches_${currentSessionId}_${messageId}`;
-        const existingBranches = JSON.parse(sessionStorage.getItem(branchesKey) || '[]');
-        existingBranches.push(newBranchMessage);
-        sessionStorage.setItem(branchesKey, JSON.stringify(existingBranches));
+      // Save to database AFTER state update with the final branches
+      if (finalUpdatedBranches.length > 0) {
+        try {
+          const response = await fetch(`/backend/api/chat-messages/${rootUserMessage.id}`, {
+            method: "PATCH",
+            headers: {
+              ...getAuthHeaders(),
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              content: rootUserMessage.content,
+              branches: finalUpdatedBranches,
+              currentBranch: newBranchIndex,
+            }),
+          });
+
+          if (response.ok) {
+            console.log(`✅ Branches saved to database (${finalUpdatedBranches.length} branches, current: ${newBranchIndex})`);
+          } else {
+            const errorText = await response.text();
+            console.error('⚠️ Failed to save branches to database:', errorText);
+          }
+        } catch (err) {
+          console.error('❌ Error saving branches:', err);
+        }
       }
 
-      toast.success("Alternative response generated");
+      toast.success(`Response regenerated! Now on Branch ${newBranchIndex + 1}`);
     } catch (error) {
       const errorMessage = handleApiError(error);
       setError(errorMessage);
@@ -2346,61 +2589,83 @@ export default function ChatViewer({
   };
 
   // Handle branch navigation
-  const handleBranchChange = (messageId: string, newBranchIndex: number) => {
+  const handleBranchChange = async (messageId: string, newBranchIndex: number) => {
     console.log('🔀 Branch change requested:', { messageId, newBranchIndex });
 
     setChatHistory((prev) => {
-      const updated = [...prev];
-      const msgIndex = updated.findIndex((msg) => msg.id === messageId);
+      const msgIndex = prev.findIndex((msg) => msg.id === messageId);
 
-      if (msgIndex !== -1 && updated[msgIndex].branches) {
-        const currentMsg = updated[msgIndex];
-        const branchesKey = `branches_${currentSessionId}_${messageId}`;
-        const storedBranches = JSON.parse(sessionStorage.getItem(branchesKey) || '[]');
-
-        console.log('📦 Stored branches:', storedBranches);
-        console.log('🎯 Current branch index:', currentMsg.currentBranch);
-
-        // Get the content for the selected branch
-        if (newBranchIndex === 0) {
-          // Original message - get from stored original or keep current
-          const originalBranchKey = `original_${messageId}`;
-          const originalContent = sessionStorage.getItem(originalBranchKey);
-          console.log('📜 Original content:', originalContent?.substring(0, 50));
-
-          if (originalContent) {
-            updated[msgIndex] = {
-              ...currentMsg,
-              content: originalContent,
-              currentBranch: newBranchIndex,
-            };
-            console.log('✅ Switched to original branch');
-          } else {
-            console.warn('⚠️ No original content found in sessionStorage');
-          }
-        } else {
-          // Alternative branch - get from stored branches
-          const branchMessage = storedBranches[newBranchIndex - 1];
-          console.log('🌿 Branch message:', branchMessage);
-
-          if (branchMessage) {
-            updated[msgIndex] = {
-              ...currentMsg,
-              content: branchMessage.content,
-              sourceCount: branchMessage.sourceCount,
-              currentBranch: newBranchIndex,
-            };
-            console.log('✅ Switched to branch', newBranchIndex);
-          } else {
-            console.warn('⚠️ Branch message not found at index', newBranchIndex - 1);
-          }
-        }
-      } else {
-        console.warn('⚠️ Message not found or no branches');
+      if (msgIndex === -1) {
+        console.warn('⚠️ Message not found');
+        return prev;
       }
 
-      return updated;
+      const currentMsg = prev[msgIndex];
+
+      if (!currentMsg.branches || currentMsg.branches.length === 0) {
+        console.warn('⚠️ No branches available');
+        return prev;
+      }
+
+      if (newBranchIndex < 0 || newBranchIndex >= currentMsg.branches.length) {
+        console.warn('⚠️ Invalid branch index:', newBranchIndex);
+        return prev;
+      }
+
+      const selectedBranch = currentMsg.branches[newBranchIndex];
+      console.log(`🌿 Switching to branch ${newBranchIndex}:`, {
+        content: selectedBranch.content.substring(0, 50),
+        subsequentMessages: selectedBranch.subsequentMessages.length
+      });
+
+      // Get all messages before the edited one
+      const messagesBeforeEdit = prev.slice(0, msgIndex);
+
+      // Update the edited message with the selected branch content
+      const updatedMessage = {
+        ...currentMsg,
+        content: selectedBranch.content,
+        currentBranch: newBranchIndex,
+      };
+
+      // Combine: messages before + edited message + branch's subsequent messages
+      const newHistory = [
+        ...messagesBeforeEdit,
+        updatedMessage,
+        ...selectedBranch.subsequentMessages
+      ];
+
+      console.log(`✅ Switched to branch ${newBranchIndex}. Total messages: ${newHistory.length}`);
+      return newHistory;
     });
+
+    // Save the current branch selection to database
+    if (currentSessionId && user && documentExists) {
+      console.log('💾 Saving branch selection to database');
+      try {
+        const response = await fetch(`/backend/api/chat-messages/${messageId}`, {
+          method: "PATCH",
+          headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            content: chatHistory.find(m => m.id === messageId)?.content || '',
+            currentBranch: newBranchIndex,
+          }),
+        });
+
+        if (!response.ok) {
+          console.warn('⚠️ Failed to save branch selection to database');
+        } else {
+          console.log('✅ Branch selection saved to database');
+        }
+      } catch (err) {
+        console.error('❌ Error saving branch selection:', err);
+      }
+    }
+
+    toast.success(`Switched to conversation path ${newBranchIndex + 1}`);
   };
 
   const handleDeleteMessage = async (messageId: string) => {
@@ -2465,6 +2730,95 @@ export default function ChatViewer({
       setIsQuerying(false);
       isSubmittingRef.current = false;
       setTypingMessageId(null);
+    }
+  };
+
+  // Helper function to update branch subsequentMessages when new messages are added
+  const updateBranchesWithNewMessages = async (history: ChatMessage[], newAssistantMessageId: string) => {
+    // Find the most recent USER message with branches
+    let lastBranchedUserMessage: ChatMessage | null = null;
+    let lastBranchedUserMessageIndex = -1;
+    
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (history[i].type === "USER" && history[i].branches && history[i].branches!.length > 0) {
+        lastBranchedUserMessage = history[i];
+        lastBranchedUserMessageIndex = i;
+        break;
+      }
+    }
+    
+    if (!lastBranchedUserMessage || lastBranchedUserMessageIndex === -1) {
+      // No branched messages, nothing to update
+      return;
+    }
+    
+    // Get all messages after the branched user message
+    const messagesAfterBranch = history.slice(lastBranchedUserMessageIndex + 1);
+    
+    if (messagesAfterBranch.length === 0) {
+      return;
+    }
+    
+    // Update the current branch's subsequentMessages
+    const updatedBranches = [...lastBranchedUserMessage.branches!];
+    const currentBranchIndex = lastBranchedUserMessage.currentBranch ?? 0;
+    
+    if (updatedBranches[currentBranchIndex]) {
+      updatedBranches[currentBranchIndex] = {
+        ...updatedBranches[currentBranchIndex],
+        subsequentMessages: messagesAfterBranch
+      };
+      
+      console.log(`🌿 Updating branch ${currentBranchIndex} with ${messagesAfterBranch.length} subsequent messages`);
+      
+      // Save updated branches to database
+      try {
+        const response = await fetch(`/backend/api/chat-messages/${lastBranchedUserMessage.id}`, {
+          method: "PATCH",
+          headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            content: lastBranchedUserMessage.content,
+            branches: updatedBranches,
+            currentBranch: currentBranchIndex,
+          }),
+        });
+        
+        if (response.ok) {
+          console.log('✅ Branch subsequentMessages updated in database');
+          
+          // Delete the subsequent messages from the database since they're now stored in the branch
+          for (const msgToDelete of messagesAfterBranch) {
+            try {
+              const deleteResponse = await fetch(`/backend/api/chat-messages/${msgToDelete.id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+              });
+              
+              if (deleteResponse.ok) {
+                console.log(`🗑️ Deleted message ${msgToDelete.id} from database (now in branch)`);
+              } else {
+                console.warn(`⚠️ Failed to delete message ${msgToDelete.id} from database`);
+              }
+            } catch (deleteErr) {
+              console.error(`❌ Error deleting message ${msgToDelete.id}:`, deleteErr);
+            }
+          }
+          
+          // Update local state
+          setChatHistory(prev => prev.map(msg => 
+            msg.id === lastBranchedUserMessage!.id 
+              ? { ...msg, branches: updatedBranches }
+              : msg
+          ));
+        } else {
+          console.warn('⚠️ Failed to update branch in database');
+        }
+      } catch (err) {
+        console.error('❌ Error updating branch:', err);
+      }
     }
   };
 
@@ -2768,6 +3122,7 @@ export default function ChatViewer({
                   "Authorization": `Bearer ${authUtils.getToken()}`,
                 },
                 body: JSON.stringify({
+                  id: assistantMessageId, // IMPORTANT: Use the same ID as the frontend message
                   sessionId: sessionId,
                   role: "assistant",
                   content: streamedContent,
@@ -2777,6 +3132,13 @@ export default function ChatViewer({
 
               if (response.ok) {
                 console.log("💾 Streamed message saved to database");
+                
+                // Check if we need to update branch's subsequentMessages
+                // Get the latest chat history state
+                setChatHistory(currentHistory => {
+                  updateBranchesWithNewMessages(currentHistory, assistantMessageId);
+                  return currentHistory; // Don't modify here, updateBranchesWithNewMessages will handle it
+                });
               } else {
                 console.warn("Failed to save streamed message to database");
               }
@@ -3309,14 +3671,16 @@ export default function ChatViewer({
                     onKeyDown={handleKeyPress}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={
-                      tokenLimitInfo.isLimitReached
+                      isCreatingSession
+                        ? "Creating session, please wait..."
+                        : tokenLimitInfo.isLimitReached
                         ? "Message limit reached. Please wait for reset or upgrade your plan."
                         : "Ask a question..."
                     }
                     rows={2}
-                    disabled={tokenLimitInfo.isLimitReached}
+                    disabled={tokenLimitInfo.isLimitReached || isCreatingSession || !currentSessionId}
                     className={`w-full px-3 py-2 h-24 rounded-xl focus:outline-none resize-none ${
-                      tokenLimitInfo.isLimitReached
+                      tokenLimitInfo.isLimitReached || isCreatingSession || !currentSessionId
                         ? "text-gray-500 cursor-not-allowed"
                         : ""
                     }`}
@@ -3352,7 +3716,9 @@ export default function ChatViewer({
                           !documentExists ||
                           tokenLimitInfo.isLimitReached ||
                           isQuerying ||
-                          isSubmittingRef.current
+                          isSubmittingRef.current ||
+                          isCreatingSession ||
+                          !currentSessionId
                         }
                         className="flex items-center group top-1/2 -translate-y-1/2 cursor-pointer p-2 rounded-full bg-foreground text-primary hover:bg-muted-foreground disabled:bg-muted disabled:text-muted-foreground disabled:cursor-default h-fit transition-all duration-300 ease-in-out"
                       >

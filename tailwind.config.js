@@ -65,6 +65,16 @@ module.exports = {
           'truncate-20': 'ellipsis',
           'truncate-30': 'ellipsis',
         },
+        // Animations for transcript
+        animation: {
+          'fadeIn': 'fadeIn 0.5s ease-in forwards',
+        },
+        keyframes: {
+          fadeIn: {
+            'from': { opacity: '0', transform: 'translateY(5px)' },
+            'to': { opacity: '1', transform: 'translateY(0)' },
+          },
+        },
       },
     },
     plugins: [],

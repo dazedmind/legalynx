@@ -199,14 +199,18 @@ model ChatSession {
 }
 
 model ChatMessage {
-  id           String      @id @default(uuid())
-  session_id   String      @map("session_id")
-  session      ChatSession @relation("SessionMessages", fields: [session_id], references: [id], onDelete: Cascade)
-  role         MessageRole // USER or ASSISTANT
-  content      String      @db.Text
-  source_nodes Json?       @map("source_nodes") // Retrieved sources info
-  tokens_used  Int?        @map("tokens_used")
-  created_at   DateTime    @default(now()) @map("created_at")
+  id             String      @id @default(uuid())
+  session_id     String      @map("session_id")
+  session        ChatSession @relation("SessionMessages", fields: [session_id], references: [id], onDelete: Cascade)
+  role           MessageRole // USER or ASSISTANT
+  content        String      @db.Text
+  source_nodes   Json?       @map("source_nodes") // Retrieved sources info
+  tokens_used    Int?        @map("tokens_used")
+  created_at     DateTime    @default(now()) @map("created_at")
+  
+  // Branching support - stores alternative conversation paths
+  branches       Json?       @map("branches") // Array of MessageBranch objects (only for USER messages)
+  current_branch Int?        @map("current_branch") // Currently displayed branch index
   
   @@map("chat_messages")
 }

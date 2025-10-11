@@ -181,7 +181,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         content: msg.content,
         sourceNodes: msg.source_nodes,       // ✅ Correct field name
         tokensUsed: msg.tokens_used,         // ✅ Correct field name
-        createdAt: msg.created_at            // ✅ Correct field name
+        createdAt: msg.created_at,           // ✅ Correct field name
+        branches: msg.branches,              // ✅ Include branching data
+        current_branch: msg.current_branch   // ✅ Include current branch index
       }))
     });
 
