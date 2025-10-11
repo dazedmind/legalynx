@@ -392,75 +392,175 @@ def generate_intelligent_filename_optimized(
     counter: Optional[int] = None
 ) -> str:
     """
-    ⚡ OPTIMIZED: Generate intelligent filename using SINGLE RAG query.
-    Avoids rate limiting by making only 1 API call instead of 3.
+    ⚡ ULTRA-OPTIMIZED: LLM returns the formatted filename directly.
+    Single query with format instructions - no parsing/regex needed!
     """
     file_ext = os.path.splitext(original_filename)[1].lower()
     
     if naming_option == "keep_original":
         return original_filename
     
-    # For intelligent naming options, use RAG to analyze content
-    if naming_option in ["add_timestamp", "sequential_numbering"]:
+    # For intelligent naming options, use RAG with direct formatting
+    if naming_option in ["add_timestamp", "add_client_name", "sequential_numbering"]:
         try:
-            print("🔍 Analyzing document content with SINGLE optimized query...")
+            print(f"🚀 Generating {naming_option} filename with LLM direct formatting...")
             
             query_engine = rag_system.get("query_engine")
             if not query_engine:
                 print("❌ No query engine found, using fallback naming")
                 return generate_fallback_filename(original_filename, naming_option, user_title, user_client_name, counter)
             
-            # ⚡ SINGLE COMBINED QUERY - Extracts all info at once
-            print("🤖 Making single optimized query for all document information...")
+            # Get current date for formatting
+            current_date = datetime.now().strftime("%Y%m%d")
             
-            combined_query = """
-            Extract key information from this document and respond in this EXACT format:
+            # ⚡ SINGLE QUERY WITH DIRECT FORMAT INSTRUCTIONS
+            if naming_option == "add_timestamp":
+                format_query = f"""
+Analyze this document and generate a filename in this EXACT format:
+{current_date}_DOCUMENT-TYPE
 
-            DATE: [Any date found in YYYY-MM-DD format, or "NONE"]
-            PERSON: [Main person/client name mentioned, or "NONE"]
-            TYPE: [Document type like Contract/Agreement/Invoice/etc, or "NONE"]
+Rules:
+- Use today's date: {current_date}
+- DOCUMENT-TYPE should be the document type (Contract, Agreement, Invoice, etc.) in PascalCase
+- Remove all spaces, use uppercase for the document type
+- Only respond with the filename, nothing else
 
-            Only provide the requested information in the exact format above. No explanations.
-            """
+Example format: {current_date}_SERVICE_AGREEMENT
+Your response (filename only):"""
+
+            elif naming_option == "add_client_name":
+                format_query = f"""
+Analyze this document and generate a filename in this EXACT format:
+{current_date}_DOCUMENT-TYPE_SURNAME
+
+Rules:
+- Use today's date: {current_date}
+- DOCUMENT-TYPE should be the document type (Contract, Agreement, Invoice, etc.) all UpperCase
+- SURNAME is the LAST NAME ONLY of the main person/client mentioned (all UPPERCASE)
+- Remove all spaces between words in document type
+- Only respond with the filename, nothing else
+
+Example format: {current_date}_SERVICE-CONTRACT_SMITH
+Your response (filename only):"""
+
+            elif naming_option == "sequential_numbering":
+                seq_num = f"{counter:03d}" if counter else "001"
+                format_query = f"""
+Analyze this document and generate a filename in this EXACT format:
+PERSON_DOCUMENT-TYPE_{seq_num}
+
+Rules:
+- PERSON is the main person/client name (FirstLast, no spaces)
+- DOCUMENTTYPE should be the document type (Contract, Agreement, etc.) in Uppercase with spaces separated by -
+- Use the sequence number: {seq_num}
+- Remove all spaces
+- Only respond with the filename, nothing else
+
+Example format: SMITH_SERVICE-CONTRACT_{seq_num}
+Your response (filename only):"""
+            
+            else:
+                return generate_fallback_filename(original_filename, naming_option, user_title, user_client_name, counter)
             
             try:
-                # ⚡ SINGLE API CALL instead of 3 separate calls
-                response = query_engine.query(combined_query).response.strip()
-                extracted_info = parse_combined_response(response)
+                # ⚡ SINGLE API CALL - LLM returns formatted filename directly
+                print("🤖 Requesting formatted filename from LLM...")
+                response = query_engine.query(format_query).response.strip()
                 
-                print(f"📊 Single query results:")
-                print(f"   - Date: {extracted_info.get('date')}")
-                print(f"   - Person: {extracted_info.get('person')}")
-                print(f"   - Type: {extracted_info.get('type')}")
+                # Clean up response (remove any extra text, keep just the filename)
+                formatted_filename = clean_llm_filename_response(response)
+                
+                # Add file extension
+                final_filename = f"{formatted_filename}{file_ext}"
+                
+                print(f"✅ LLM generated filename: {final_filename}")
+                
+                # Validate filename
+                if is_valid_filename(formatted_filename):
+                    return final_filename
+                else:
+                    print(f"⚠️ Invalid filename from LLM, using fallback")
+                    return generate_fallback_filename(original_filename, naming_option, user_title, user_client_name, counter)
                 
             except Exception as e:
-                print(f"⚠️ Single query failed: {e}, using fallback")
-                extracted_info = {'date': None, 'person': None, 'type': None}
-            
-            # Generate filename from extracted information
-            intelligent_filename = create_filename_from_extracted_info(
-                extracted_info, 
-                original_filename, 
-                naming_option, 
-                counter,
-                user_title,
-                user_client_name
-            )
-            
-            print(f"✅ Generated intelligent filename: {intelligent_filename}")
-            return intelligent_filename
+                print(f"⚠️ LLM query failed: {e}, using fallback")
+                return generate_fallback_filename(original_filename, naming_option, user_title, user_client_name, counter)
             
         except Exception as e:
-            print(f"❌ Error in optimized intelligent naming: {e}")
+            print(f"❌ Error in intelligent naming: {e}")
             print("⚠️ Falling back to user settings or original name")
             
     # Fallback to user-provided info or original name
     return generate_fallback_filename(original_filename, naming_option, user_title, user_client_name, counter)
 
+def clean_llm_filename_response(response: str) -> str:
+    """
+    Clean LLM response to extract just the filename.
+    Removes explanations, extra text, and ensures filename safety.
+    """
+    if not response:
+        return ""
+    
+    # Split by newlines and take the first line (LLM might add explanations)
+    lines = response.strip().split('\n')
+    filename = lines[0].strip()
+    
+    # Remove common prefixes the LLM might add
+    prefixes_to_remove = [
+        "filename:", "response:", "answer:", "here is:", "the filename is:",
+        "filename would be:", "suggested filename:", "my response:"
+    ]
+    
+    filename_lower = filename.lower()
+    for prefix in prefixes_to_remove:
+        if filename_lower.startswith(prefix):
+            filename = filename[len(prefix):].strip()
+    
+    # Remove quotes if present
+    filename = filename.strip('"').strip("'")
+    
+    # Remove any file extensions (we add them back)
+    if '.' in filename:
+        filename = os.path.splitext(filename)[0]
+    
+    # Clean special characters (keep only alphanumeric, dash, underscore)
+    filename = re.sub(r'[^\w\-_]', '', filename)
+    
+    # Limit length to reasonable size
+    if len(filename) > 80:
+        filename = filename[:80]
+    
+    return filename
+
+def is_valid_filename(filename: str) -> bool:
+    """
+    Validate that a filename is safe and reasonable.
+    """
+    if not filename:
+        return False
+    
+    # Must have reasonable length
+    if len(filename) < 3 or len(filename) > 100:
+        return False
+    
+    # Must contain at least one underscore (for our formats)
+    if '_' not in filename:
+        return False
+    
+    # Must not contain invalid characters
+    if re.search(r'[<>:"/\\|?*\x00-\x1f]', filename):
+        return False
+    
+    # Must not be only numbers/dates
+    if filename.replace('_', '').isdigit():
+        return False
+    
+    return True
+
 def parse_combined_response(response: str) -> dict:
     """
-    ⚡ OPTIMIZED: Parse single combined RAG response into components.
-    Handles the structured response from the single query.
+    ⚡ DEPRECATED: This function is no longer needed with direct formatting.
+    Kept for backwards compatibility.
     """
     info = {'date': None, 'person': None, 'type': None}
     
@@ -496,7 +596,8 @@ def parse_combined_response(response: str) -> dict:
         return {'date': None, 'person': None, 'type': None}
 
 # ================================
-# ENHANCED PARSING FUNCTIONS
+# DEPRECATED PARSING FUNCTIONS
+# (Kept for backwards compatibility only)
 # ================================
 
 def parse_date_from_response(response: str) -> Optional[str]:
@@ -629,7 +730,11 @@ def create_filename_from_extracted_info(
     user_title: Optional[str] = None,
     user_client_name: Optional[str] = None
 ) -> str:
-    """Create filename from extracted information with smart fallbacks."""
+    """
+    ⚡ DEPRECATED: No longer used with direct LLM formatting.
+    Create filename from extracted information with smart fallbacks.
+    Kept for backwards compatibility only.
+    """
     file_ext = os.path.splitext(original_filename)[1].lower()
     
     # Apply fallbacks for missing information
