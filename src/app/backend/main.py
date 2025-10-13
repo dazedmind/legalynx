@@ -260,6 +260,7 @@ else:
 
 class QueryRequest(BaseModel):
     query: str
+    voice_mode: bool = False  # Whether response should be concise for voice interaction
     
 class QueryResponse(BaseModel):
     query: str
@@ -1110,8 +1111,12 @@ async def stream_query_document(request: Request, query_request: QueryRequest = 
         priming_chunk = {"type": "content_chunk", "chunk": " "}
         yield f"data: {json.dumps(priming_chunk)}\n\n"
 
-        # Delegate to the engine
-        async for event in streaming_engine.stream_query(query_request.query, user_id or "anonymous"):
+        # Delegate to the engine with voice mode flag
+        async for event in streaming_engine.stream_query(
+            query_request.query, 
+            user_id or "anonymous",
+            voice_mode=query_request.voice_mode
+        ):
             # Directly forward engine events (already formatted as SSE lines)
             yield event
 

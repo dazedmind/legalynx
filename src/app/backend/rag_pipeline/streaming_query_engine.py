@@ -66,13 +66,14 @@ class StreamingQueryEngine:
 
         return True  # Default to document-related to be safe
 
-    async def stream_query(self, query: str, user_id: str) -> AsyncGenerator[str, None]:
+    async def stream_query(self, query: str, user_id: str, voice_mode: bool = False) -> AsyncGenerator[str, None]:
         """
         Stream query response in real-time to prevent timeouts.
 
         Args:
             query: User's query
             user_id: User ID for tracking
+            voice_mode: If True, generate concise responses suitable for voice interaction
 
         Yields:
             JSON-formatted streaming response chunks
@@ -317,7 +318,7 @@ class StreamingQueryEngine:
                     )
 
                     # Build multi-question optimized prompt
-                    streaming_prompt = build_multi_question_prompt(questions, context_text, query)
+                    streaming_prompt = build_multi_question_prompt(questions, context_text, query, voice_mode=voice_mode)
 
                 else:
                     # Single question - simpler context building
@@ -337,7 +338,19 @@ class StreamingQueryEngine:
                     context_text = "\n\n---\n\n".join(context_parts)
 
                     # Simple prompt for single question
-                    streaming_prompt = f"""Based on this document context, answer directly and cite sources:
+                    if voice_mode:
+                        # Concise prompt for voice interaction - NO CITATIONS for TTS
+                        streaming_prompt = f"""Based on this document, provide a brief, direct answer (2-3 sentences max).
+
+IMPORTANT: Do NOT include any citations, page numbers, or source references. This will be read aloud via text-to-speech.
+
+{context_text}
+
+Q: {query}
+A (be concise, no citations):"""
+                    else:
+                        # Standard detailed prompt
+                        streaming_prompt = f"""Based on this document context, answer directly and cite sources:
 
 {context_text}
 
@@ -375,7 +388,8 @@ A:"""
 
                 # Get the raw streaming response from GPT-5
                 if hasattr(self.llm, 'stream_complete'):
-                    print(f"⏱️ CALLING GPT-5 STREAM: {time.time() - start_time:.3f}s elapsed")
+                    llm_call_start = time.time()  # Track when LLM actually starts
+                    print(f"⏱️ CALLING GPT-5 STREAM: {llm_call_start - start_time:.3f}s elapsed")
                     stream_response = self.llm.stream_complete(streaming_prompt)
                     print(f"⏱️ GPT-5 STREAM RESPONSE RECEIVED: {time.time() - start_time:.3f}s elapsed")
 
@@ -421,9 +435,11 @@ A:"""
 
                                 yield chunk_msg
 
-                                # Check timeout
-                                if time.time() - start_time > self.max_stream_time:
-                                    print(f"⏱️ TIMEOUT REACHED: {time.time() - start_time:.3f}s")
+                                # FIXED: Check timeout against LLM streaming start, not request start
+                                # This prevents timeout during retrieval/context building phase
+                                llm_streaming_duration = time.time() - llm_call_start
+                                if llm_streaming_duration > self.max_stream_time:
+                                    print(f"⏱️ TIMEOUT REACHED: {llm_streaming_duration:.3f}s of LLM streaming (max: {self.max_stream_time}s)")
                                     break
 
                         except Exception as chunk_error:

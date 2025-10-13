@@ -51,7 +51,8 @@ export class RAGApiClient {
       onError?: (error: Error) => void,
       onComplete?: () => void,
       documentId?: string,
-      abortSignal?: AbortSignal
+      abortSignal?: AbortSignal,
+      voiceMode?: boolean
     ): Promise<void> {
       const startTime = Date.now();
       console.log(`🚀 FRONTEND: Starting stream query at ${startTime}`);
@@ -75,7 +76,10 @@ export class RAGApiClient {
             'Authorization': token ? `Bearer ${token}` : '',
             'X-Session-Id': sessionId || ''
           },
-          body: JSON.stringify({ query }),
+          body: JSON.stringify({ 
+            query,
+            voice_mode: voiceMode || false 
+          }),
           signal: abortSignal
         });
 

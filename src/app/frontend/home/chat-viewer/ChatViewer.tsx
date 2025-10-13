@@ -2129,12 +2129,43 @@ export default function ChatViewer({
         currentBranch: currentBranch,
       };
 
+      // CRITICAL: Save branches to database BEFORE deleting subsequent messages
+      // This ensures data isn't lost if something goes wrong
+      try {
+        console.log('💾 Saving branches to database BEFORE deleting subsequent messages');
+        const response = await fetch(`/backend/api/chat-messages/${messageId}`, {
+          method: "PATCH",
+          headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            content: newContent,
+            branches: branches,
+            currentBranch: currentBranch,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('⚠️ Failed to save branches to database:', errorText);
+          throw new Error('Failed to save branches before deletion');
+        }
+
+        console.log(`✅ Branches saved to database (${branches.length} branches, current: ${currentBranch})`);
+      } catch (err) {
+        console.error('❌ Error saving branches:', err);
+        toast.error('Failed to save branches - aborting edit');
+        throw err; // Abort the edit if we can't save branches
+      }
+
       // Update chat history - keep only messages up to the edited one
       // Remove subsequent messages (they're now stored in branches)
       const messagesBeforeEdit = chatHistory.slice(0, messageIndex);
       const subsequentMessagesToDelete = chatHistory.slice(messageIndex + 1);
-      
-      // Delete subsequent messages from database
+
+      // NOW it's safe to delete subsequent messages from database
+      // (they're already preserved in the branch's subsequentMessages and saved to DB)
       if (subsequentMessagesToDelete.length > 0) {
         console.log(`🗑️ Deleting ${subsequentMessagesToDelete.length} subsequent messages from database`);
         for (const msgToDelete of subsequentMessagesToDelete) {
@@ -2143,7 +2174,7 @@ export default function ChatViewer({
               method: 'DELETE',
               headers: getAuthHeaders()
             });
-            
+
             if (deleteResponse.ok) {
               console.log(`✅ Deleted message ${msgToDelete.id} from database`);
             } else {
@@ -2151,10 +2182,11 @@ export default function ChatViewer({
             }
           } catch (deleteErr) {
             console.error(`❌ Error deleting message ${msgToDelete.id}:`, deleteErr);
+            // Don't abort - the branch is already saved
           }
         }
       }
-      
+
       setChatHistory([...messagesBeforeEdit, updatedMessage]);
 
       // Generate new response based on the edited message using streaming
@@ -2235,56 +2267,95 @@ export default function ChatViewer({
       );
 
       // Store the new assistant response in the current branch and update state
+      // IMPORTANT: We need to save branches after capturing them
       let branchesToSave: MessageBranch[] | undefined = undefined;
       let currentBranchToSave: number | undefined = undefined;
-      
-      setChatHistory((prev) => {
-        return prev.map((msg) => {
-          if (msg.id === messageId && msg.branches && msg.currentBranch !== undefined) {
-            // Find the assistant message in chat history
-            const assistantMsg = prev.find(m => m.id === newMessageId);
-            
-            if (assistantMsg) {
-              // Update the branch to include the new response
-              const updatedBranches = [...msg.branches];
-              if (updatedBranches[msg.currentBranch]) {
-                updatedBranches[msg.currentBranch] = {
-                  ...updatedBranches[msg.currentBranch],
-                  subsequentMessages: [{
-                    ...assistantMsg,
-                    isStreaming: false,
-                    isThinking: false,
-                  }]
+
+      // Build the updated messages and capture branches
+      await new Promise<void>((resolve) => {
+        setChatHistory((prev) => {
+          console.log(`🔍 Looking for message ${messageId} to update with assistant response`);
+          console.log(`   Chat history has ${prev.length} messages`);
+
+          const updatedMessages = prev.map((msg) => {
+            if (msg.id === messageId) {
+              console.log(`✓ Found user message ${messageId}`);
+              console.log(`   Has branches: ${!!msg.branches}`);
+              console.log(`   Branches length: ${msg.branches?.length || 0}`);
+              console.log(`   Current branch: ${msg.currentBranch}`);
+            }
+
+            if (msg.id === messageId && msg.branches && msg.currentBranch !== undefined) {
+              // Find the assistant message in chat history
+              const assistantMsg = prev.find(m => m.id === newMessageId);
+              console.log(`🔍 Looking for assistant message ${newMessageId}`);
+              console.log(`   Found: ${!!assistantMsg}`);
+
+              if (assistantMsg) {
+                console.log(`   Assistant content length: ${assistantMsg.content?.length || 0} chars`);
+                // Update the branch to include the new response
+                const updatedBranches = [...msg.branches];
+                if (updatedBranches[msg.currentBranch]) {
+                  updatedBranches[msg.currentBranch] = {
+                    ...updatedBranches[msg.currentBranch],
+                    subsequentMessages: [{
+                      ...assistantMsg,
+                      isStreaming: false,
+                      isThinking: false,
+                    }]
+                  };
+                }
+
+                // Store for database save
+                branchesToSave = updatedBranches;
+                currentBranchToSave = msg.currentBranch;
+                console.log(`✅ Captured branches for save: ${branchesToSave.length} branches`);
+
+                return {
+                  ...msg,
+                  branches: updatedBranches
                 };
+              } else {
+                console.error(`❌ Assistant message ${newMessageId} NOT FOUND in chat history!`);
+                console.log(`   Available message IDs:`, prev.map(m => `${m.id} (${m.type})`));
               }
+            }
 
-              // Store for database save
-              branchesToSave = updatedBranches;
-              currentBranchToSave = msg.currentBranch;
-
+            // Clear streaming state for the assistant message
+            if (msg.id === newMessageId) {
               return {
                 ...msg,
-                branches: updatedBranches
+                isStreaming: false,
+                isThinking: false,
               };
             }
-          }
+
+            return msg;
+          });
+
+          // Reconstruct chat history to properly display branches
+          console.log('🔄 Reconstructing chat history after edit');
+          const result = reconstructChatHistoryWithBranches(updatedMessages);
           
-          // Clear streaming state for the assistant message
-          if (msg.id === newMessageId) {
-            return {
-              ...msg,
-              isStreaming: false,
-              isThinking: false,
-            };
-          }
+          // Resolve promise after state update is complete
+          setTimeout(() => resolve(), 0);
           
-          return msg;
+          return result;
         });
       });
 
-      // Save branches to database
+      // Update database with the NEW assistant response added to the branch
+      console.log('💾 Checking if we can save branches after edit...');
+      console.log(`   currentSessionId: ${currentSessionId}`);
+      console.log(`   user: ${!!user}`);
+      console.log(`   documentExists: ${documentExists}`);
+      console.log(`   branchesToSave: ${!!branchesToSave}`);
+      if (branchesToSave && Array.isArray(branchesToSave)) {
+        console.log(`   currentBranchToSave: ${currentBranchToSave}`);
+      }
+
       if (currentSessionId && user && documentExists && branchesToSave) {
-        console.log('💾 Saving branches to database');
+        console.log('💾 Updating branches with new assistant response after edit');
         try {
           const response = await fetch(`/backend/api/chat-messages/${messageId}`, {
             method: "PATCH",
@@ -2300,13 +2371,15 @@ export default function ChatViewer({
           });
 
           if (!response.ok) {
-            console.warn('⚠️ Failed to save branches to database, but continuing');
+            console.warn('⚠️ Failed to update branches with new response, but continuing');
           } else {
-            console.log('✅ Branches saved to database');
+            console.log('✅ Branches updated with new assistant response');
           }
         } catch (err) {
-          console.error('❌ Error saving branches to database:', err);
+          console.error('❌ Error updating branches with new response:', err);
         }
+      } else {
+        console.warn('⚠️ Cannot save branches - missing required data');
       }
 
       console.log('✅ Branch updated with new response');
@@ -2418,8 +2491,47 @@ export default function ChatViewer({
         currentBranch: newBranchIndex, // Switch to the new branch
       };
 
-      // Delete the old assistant message and subsequent messages from database
-      // (they're now preserved in the branch's subsequentMessages)
+      // CRITICAL: Save branches with OLD response to database BEFORE deleting assistant messages
+      // This ensures the original response is preserved
+      // NOTE: The NEW regenerated response will be saved after streaming completes
+      try {
+        console.log('💾 Step 1: Saving branches with ORIGINAL response BEFORE deleting messages');
+        console.log(`   Saving ${userBranches.length} branches (branch ${currentBranchIndex} has original response)`);
+
+        // Verify the original response is in the current branch
+        if (userBranches[currentBranchIndex]?.subsequentMessages) {
+          console.log(`   Branch ${currentBranchIndex} has ${userBranches[currentBranchIndex].subsequentMessages.length} subsequent messages`);
+        }
+
+        const response = await fetch(`/backend/api/chat-messages/${rootUserMessage.id}`, {
+          method: "PATCH",
+          headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            content: rootUserMessage.content,
+            branches: userBranches,
+            currentBranch: newBranchIndex, // Point to the NEW branch (which is empty for now)
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('⚠️ Failed to save branches to database:', errorText);
+          throw new Error('Failed to save branches before deletion');
+        }
+
+        console.log(`✅ Step 1 Complete: Original response saved in branch ${currentBranchIndex}`);
+        console.log(`   Branch ${newBranchIndex} is empty and will be filled after streaming`);
+      } catch (err) {
+        console.error('❌ Error saving branches:', err);
+        toast.error('Failed to save branches - aborting regeneration');
+        throw err; // Abort the regeneration if we can't save branches
+      }
+
+      // NOW it's safe to delete the old assistant message from database
+      // (it's already preserved in the branch's subsequentMessages and saved to DB)
       try {
         await fetch(`/backend/api/chat-messages/${messageId}`, {
           method: 'DELETE',
@@ -2428,6 +2540,7 @@ export default function ChatViewer({
         console.log(`🗑️ Deleted old assistant message ${messageId} from database`);
       } catch (deleteErr) {
         console.error(`❌ Error deleting assistant message:`, deleteErr);
+        // Don't abort - the branch is already saved, so this is recoverable
       }
 
       if (subsequentMessages.length > 0) {
@@ -2440,13 +2553,16 @@ export default function ChatViewer({
             });
           } catch (deleteErr) {
             console.error(`❌ Error deleting subsequent message:`, deleteErr);
+            // Don't abort - the branch is already saved
           }
         }
       }
 
       // Update chat history - keep only messages up to and including the updated user message
+      // Reconstruct to ensure branches are displayed properly
       const messagesBeforeAssistant = chatHistory.slice(0, rootUserMessageIndex);
-      setChatHistory([...messagesBeforeAssistant, updatedUserMessage]);
+      const initialUpdateMessages = [...messagesBeforeAssistant, updatedUserMessage];
+      setChatHistory(reconstructChatHistoryWithBranches(initialUpdateMessages));
 
       // Generate new response
       const newAssistantMessageId = crypto.randomUUID();
@@ -2505,13 +2621,27 @@ export default function ChatViewer({
 
       // Update the new branch with the regenerated response and save to database
       let finalUpdatedBranches: MessageBranch[] = [];
-      
+      let updatedUserMessageWithBranches: ChatMessage | null = null;
+
       setChatHistory((prev) => {
-        return prev.map((msg) => {
+        // First, update messages with branch data
+        console.log(`🔍 Searching for assistant message with ID: ${newAssistantMessageId}`);
+        console.log(`   Current chat history has ${prev.length} messages`);
+
+        const updatedMessages = prev.map((msg) => {
           if (msg.id === rootUserMessage!.id) {
             const updatedBranches = [...userBranches]; // Use the userBranches we created above
             const assistantMsg = prev.find(m => m.id === newAssistantMessageId);
-            
+
+            console.log(`🔍 Found assistant message: ${!!assistantMsg}`);
+            if (assistantMsg) {
+              console.log(`   Assistant content length: ${assistantMsg.content?.length || 0}`);
+              console.log(`   Assistant content preview: "${assistantMsg.content?.substring(0, 100)}..."`);
+            } else {
+              console.error(`❌ Could not find assistant message with ID ${newAssistantMessageId}`);
+              console.log('   Available message IDs:', prev.map(m => m.id));
+            }
+
             if (assistantMsg && updatedBranches[newBranchIndex]) {
               // Add the new response to the new branch
               updatedBranches[newBranchIndex] = {
@@ -2525,17 +2655,29 @@ export default function ChatViewer({
                 }]
               };
 
+              console.log(`✅ Added assistant response to branch ${newBranchIndex}`);
+              console.log(`   Subsequent messages in branch: ${updatedBranches[newBranchIndex].subsequentMessages.length}`);
+
               // Store for saving after state update
               finalUpdatedBranches = updatedBranches;
 
-              return {
+              const updatedMsg = {
                 ...msg,
                 branches: updatedBranches,
                 currentBranch: newBranchIndex, // Update to show the new branch
               };
+
+              // Store the updated user message for database save
+              updatedUserMessageWithBranches = updatedMsg;
+
+              return updatedMsg;
+            } else if (!assistantMsg) {
+              console.error(`❌ Cannot add to branch - assistant message not found`);
+            } else if (!updatedBranches[newBranchIndex]) {
+              console.error(`❌ Cannot add to branch - branch ${newBranchIndex} does not exist`);
             }
           }
-          
+
           // Clear streaming state for the new assistant message
           if (msg.id === newAssistantMessageId) {
             return {
@@ -2546,14 +2688,46 @@ export default function ChatViewer({
               isThinking: false,
             };
           }
-          
+
           return msg;
         });
+
+        // IMPORTANT: Don't filter out the assistant message yet - let reconstructChatHistoryWithBranches handle it
+        // The reconstruction will show the message from the branch's subsequentMessages
+        console.log('🔄 Reconstructing chat history after regeneration');
+        console.log(`📊 Final branches before reconstruction: ${finalUpdatedBranches.length} branches`);
+        if (finalUpdatedBranches.length > 0) {
+          console.log(`   Branch ${newBranchIndex} has ${finalUpdatedBranches[newBranchIndex]?.subsequentMessages?.length || 0} subsequent messages`);
+        }
+
+        // Filter out the new assistant message since it's now in branches
+        const messagesWithoutDuplicate = updatedMessages.filter(m => m.id !== newAssistantMessageId);
+        console.log(`   Filtered out duplicate assistant message. Messages count: ${updatedMessages.length} -> ${messagesWithoutDuplicate.length}`);
+
+        return reconstructChatHistoryWithBranches(messagesWithoutDuplicate);
       });
 
-      // Save to database AFTER state update with the final branches
-      if (finalUpdatedBranches.length > 0) {
+      // Step 2: Update the database with the NEW regenerated response
+      console.log('\n💾 Step 2: Preparing to save REGENERATED response to database');
+      console.log(`   finalUpdatedBranches.length: ${finalUpdatedBranches.length}`);
+      console.log(`   newBranchIndex: ${newBranchIndex}`);
+      console.log(`   rootUserMessage.id: ${rootUserMessage.id}`);
+
+      if (finalUpdatedBranches.length > 0 && finalUpdatedBranches[newBranchIndex]) {
+        const branchToSave = finalUpdatedBranches[newBranchIndex];
+        console.log(`   Branch ${newBranchIndex} subsequentMessages: ${branchToSave.subsequentMessages?.length || 0}`);
+
+        if (branchToSave.subsequentMessages && branchToSave.subsequentMessages.length > 0) {
+          const msg = branchToSave.subsequentMessages[0];
+          console.log(`   Assistant message ID: ${msg.id}`);
+          console.log(`   Assistant message content length: ${msg.content?.length || 0} chars`);
+          console.log(`   Assistant message preview: "${msg.content?.substring(0, 100)}..."`);
+        } else {
+          console.error(`   ❌ ERROR: Branch ${newBranchIndex} has NO subsequent messages!`);
+        }
+
         try {
+          console.log('💾 Step 2: Sending PATCH request to update branches with REGENERATED response');
           const response = await fetch(`/backend/api/chat-messages/${rootUserMessage.id}`, {
             method: "PATCH",
             headers: {
@@ -2568,14 +2742,50 @@ export default function ChatViewer({
           });
 
           if (response.ok) {
-            console.log(`✅ Branches saved to database (${finalUpdatedBranches.length} branches, current: ${newBranchIndex})`);
+            console.log(`✅ Step 2 Complete: Regenerated response saved!`);
+            console.log(`   Total branches: ${finalUpdatedBranches.length}`);
+            console.log(`   Current branch: ${newBranchIndex}`);
+
+            // Verify by reading back from database
+            try {
+              console.log('\n🔍 Verifying saved data in database...');
+              const verifyResponse = await fetch(`/backend/api/chat-messages/${rootUserMessage.id}`, {
+                headers: getAuthHeaders()
+              });
+              if (verifyResponse.ok) {
+                const savedMessage = await verifyResponse.json();
+                console.log(`✅ Verification Success: Message has ${savedMessage.branches?.length || 0} branches in database`);
+
+                // Check each branch
+                if (savedMessage.branches) {
+                  savedMessage.branches.forEach((branch: any, idx: number) => {
+                    const msgCount = branch.subsequentMessages?.length || 0;
+                    const hasContent = msgCount > 0;
+                    console.log(`   Branch ${idx}: ${msgCount} messages, ${hasContent ? '✅ HAS CONTENT' : '❌ EMPTY'}`);
+                    if (hasContent && branch.subsequentMessages[0]) {
+                      const contentPreview = branch.subsequentMessages[0].content?.substring(0, 50) || '';
+                      console.log(`      Preview: "${contentPreview}..."`);
+                    }
+                  });
+                }
+              }
+            } catch (verifyErr) {
+              console.warn('Could not verify saved branches:', verifyErr);
+            }
           } else {
             const errorText = await response.text();
-            console.error('⚠️ Failed to save branches to database:', errorText);
+            console.error('⚠️ Failed to update branches with new response:', errorText);
+            toast.error('Failed to save regenerated response to database');
           }
         } catch (err) {
-          console.error('❌ Error saving branches:', err);
+          console.error('❌ Error updating branches with new response:', err);
+          toast.error('Error saving regenerated response');
         }
+      } else {
+        console.error('❌ CRITICAL: No finalUpdatedBranches to save or branch is empty!');
+        console.error(`   This means the assistant response was not captured properly`);
+        console.error(`   streamedContent length: ${streamedContent.length}`);
+        toast.error('Failed to save regenerated response - data not captured');
       }
 
       toast.success(`Response regenerated! Now on Branch ${newBranchIndex + 1}`);
@@ -3006,15 +3216,11 @@ export default function ChatViewer({
         await ragClient.streamQueryDocument(
         currentQuery,
         (chunk) => {
-          console.log('🔄 FRONTEND: Received chunk:', chunk.type, chunk);
-
           // Handle different chunk types
           if (chunk.type === 'content_chunk') {
             // Update streamedContent even if partial_response is empty (for first chunk)
             if (chunk.partial_response !== undefined) {
               streamedContent = chunk.partial_response;
-              console.log(`📝 FRONTEND: Content chunk - ${streamedContent.length} chars total`);
-
               // Update the streaming message with the partial response
               // Only remove thinking state when we have actual content
               setChatHistory(prev =>
@@ -3033,7 +3239,6 @@ export default function ChatViewer({
           } else if (chunk.type === 'end' || chunk.type === 'complete') {
             // Mark streaming as complete and update final content
             const finalContent = chunk.response || streamedContent || "No response generated";
-            console.log(`✅ FRONTEND: Streaming ended (${chunk.type}) - final content: ${finalContent.length} chars`);
 
             setChatHistory(prev =>
               prev.map(msg =>
@@ -3096,7 +3301,8 @@ export default function ChatViewer({
           );
         },
         undefined, // documentId
-        abortController.signal // Pass abort signal to enable stopping
+        abortController.signal, // Pass abort signal to enable stopping
+        isVoiceChat // Pass voice mode flag to adjust response style
       );
 
       } finally {

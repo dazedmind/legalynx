@@ -86,12 +86,16 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const streamAbortControllerRef = useRef<AbortController | null>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null); // Track current audio playback
+  const isSpeakingInProgress = useRef<boolean>(false); // Prevent duplicate calls
 
   // Transcript feature states
   const [showTranscript, setShowTranscript] = useState(false);
   const [currentTranscriptWords, setCurrentTranscriptWords] = useState<string[]>([]);
   const [displayedWordCount, setDisplayedWordCount] = useState(0);
+  const [currentWordIndex, setCurrentWordIndex] = useState(0); // Currently highlighted word
   const wordAnimationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const wordTimingsRef = useRef<number[]>([]); // Store word timing data
 
   // Helper function to reconstruct chat history with branches properly displayed
   const reconstructChatHistoryWithBranches = (messages: ChatMessage[]): ChatMessage[] => {
@@ -298,6 +302,28 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
       setSupportsSpeech(true);
       synthRef.current = speechSynthesis;
       
+      // Load voices (they may not be available immediately)
+      const loadVoices = () => {
+        const voices = speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          console.log('🎤 Loaded', voices.length, 'voices');
+          const femaleVoices = voices.filter(v => 
+            v.name.toLowerCase().includes('female') || 
+            v.name.toLowerCase().includes('samantha') ||
+            v.name.toLowerCase().includes('zira')
+          );
+          console.log('🎤 Available female voices:', femaleVoices.map(v => v.name));
+        }
+      };
+      
+      // Try to load voices immediately
+      loadVoices();
+      
+      // Also listen for the voiceschanged event (for Chrome/Edge)
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = loadVoices;
+      }
+      
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = true;
@@ -387,50 +413,15 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
     };
   }, []);
 
-  // Animate words when streaming content changes
+  // Clean up animation interval on unmount
   useEffect(() => {
-    if (!showTranscript) return;
-
-    const lastMessage = messages[messages.length - 1];
-    if (!lastMessage || lastMessage.type !== 'ASSISTANT' || !lastMessage.content) {
-      setCurrentTranscriptWords([]);
-      setDisplayedWordCount(0);
-      return;
-    }
-
-    const words = lastMessage.content.split(' ').filter(w => w.trim());
-
-    // Only reset if content has changed
-    if (words.join(' ') !== currentTranscriptWords.join(' ')) {
-      setCurrentTranscriptWords(words);
-      setDisplayedWordCount(0);
-
-      // Clear previous interval
+    return () => {
       if (wordAnimationIntervalRef.current) {
         clearInterval(wordAnimationIntervalRef.current);
+        wordAnimationIntervalRef.current = null;
       }
-
-      // Only animate during speaking
-      if (isSpeaking) {
-        let currentIndex = 0;
-        wordAnimationIntervalRef.current = setInterval(() => {
-          if (currentIndex < words.length) {
-            setDisplayedWordCount(currentIndex + 1);
-            currentIndex++;
-          } else {
-            if (wordAnimationIntervalRef.current) {
-              clearInterval(wordAnimationIntervalRef.current);
-              wordAnimationIntervalRef.current = null;
-            }
-          }
-        }, 120); // 120ms per word for smooth animation
-      } else {
-        // If not speaking, show all words immediately
-        setDisplayedWordCount(words.length);
-      }
-    }
-
-  }, [messages, isSpeaking, showTranscript]);
+    };
+  }, []);
 
   useEffect(() => {
     if (finalTranscript.trim() && !isProcessing) {
@@ -700,7 +691,10 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           'X-Session-Id': sessionIdForRag || 'default'
         },
-        body: JSON.stringify({ query: text }),
+        body: JSON.stringify({ 
+          query: text,
+          voice_mode: true // Voice mode should give concise responses
+        }),
         signal: abortController.signal
       });
 
@@ -828,32 +822,40 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
     }
   };
 
-  const speakText = useCallback((text: string) => {
-    if (!synthRef.current || !voiceEnabled) return;
-
-    synthRef.current.cancel();
+  // Fallback browser TTS function
+  const useBrowserTTS = useCallback((text: string) => {
+    if (!synthRef.current) return;
 
     const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Set female voice
+    const voices = synthRef.current.getVoices();
+    const femaleVoice = voices.find(voice => 
+      (voice.name.toLowerCase().includes('female') || 
+       voice.name.toLowerCase().includes('samantha') ||
+       voice.name.toLowerCase().includes('zira')) &&
+      voice.lang.startsWith('en')
+    ) || voices.find(voice => 
+      voice.name.toLowerCase().includes('female') || 
+      voice.name.toLowerCase().includes('samantha')
+    );
+    
+    if (femaleVoice) {
+      utterance.voice = femaleVoice;
+    }
+    
     utterance.rate = 1.2;
     utterance.pitch = 1;
     utterance.volume = 0.8;
 
     utterance.onstart = () => {
       setIsSpeaking(true);
-      console.log('🔊 Started speaking');
-      
-      if (visualizerRef.current) {
-        visualizerRef.current.setColors(1.0, 0.8, 0.2);
-      }
+      console.log('🔊 Started speaking (browser TTS)');
     };
 
     utterance.onend = () => {
       setIsSpeaking(false);
-      console.log('🔇 Finished speaking');
-      
-      if (visualizerRef.current) {
-        visualizerRef.current.setColors(1.0, 0.8, 0.2);
-      }
+      console.log('🔇 Finished speaking (browser TTS)');
     };
 
     utterance.onerror = (event) => {
@@ -862,6 +864,144 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
     };
 
     synthRef.current.speak(utterance);
+  }, []);
+
+  const speakText = useCallback(async (text: string) => {
+    if (!voiceEnabled) return;
+
+    // Prevent duplicate/overlapping calls
+    if (isSpeakingInProgress.current) {
+      console.log('⏭️ Skipping speakText - already in progress');
+      return;
+    }
+
+    isSpeakingInProgress.current = true;
+    console.log('🔊 speakText called with text:', text.substring(0, 50) + '...');
+
+    // IMPORTANT: Stop and cleanup ANY ongoing audio
+    if (currentAudioRef.current) {
+      console.log('🛑 Stopping previous OpenAI TTS audio');
+      currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
+      currentAudioRef.current = null;
+    }
+
+    if (synthRef.current) {
+      synthRef.current.cancel();
+      console.log('🛑 Cancelled browser TTS');
+    }
+
+    try {
+      setIsSpeaking(true);
+      console.log('🔊 Converting text to speech with OpenAI TTS...');
+      
+      if (visualizerRef.current) {
+        visualizerRef.current.setColors(1.0, 0.8, 0.2);
+      }
+
+      // Call OpenAI TTS API through our backend
+      const response = await fetch('/backend/api/tts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ TTS API failed:', errorText);
+        throw new Error(`TTS API request failed: ${response.status}`);
+      }
+
+      // Get the audio blob
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      // Create and play audio
+      const audio = new Audio(audioUrl);
+      currentAudioRef.current = audio; // Store reference
+      
+      // Split text into words for synchronized display
+      const words = text.split(' ').filter(w => w.trim());
+      setCurrentTranscriptWords(words);
+      setDisplayedWordCount(0);
+      setCurrentWordIndex(0);
+      
+      // Calculate word timings based on audio duration
+      audio.addEventListener('loadedmetadata', () => {
+        const totalDuration = audio.duration;
+        const avgTimePerWord = totalDuration / words.length;
+        
+        // Create timing array for each word
+        const timings = words.map((_, index) => index * avgTimePerWord);
+        wordTimingsRef.current = timings;
+        
+        console.log(`📊 Audio duration: ${totalDuration.toFixed(2)}s, ${words.length} words, ~${(avgTimePerWord * 1000).toFixed(0)}ms per word`);
+      });
+      
+      // Sync words with audio playback
+      audio.addEventListener('timeupdate', () => {
+        const currentTime = audio.currentTime;
+        const timings = wordTimingsRef.current;
+        
+        if (timings.length === 0) return;
+        
+        // Find the current word based on playback time
+        let newWordIndex = 0;
+        for (let i = 0; i < timings.length; i++) {
+          if (currentTime >= timings[i]) {
+            newWordIndex = i;
+          } else {
+            break;
+          }
+        }
+        
+        if (newWordIndex !== currentWordIndex) {
+          setCurrentWordIndex(newWordIndex);
+          setDisplayedWordCount(newWordIndex + 1);
+        }
+      });
+      
+      audio.onended = () => {
+        setIsSpeaking(false);
+        console.log('🔇 Finished speaking (OpenAI TTS)');
+        URL.revokeObjectURL(audioUrl); // Clean up
+        currentAudioRef.current = null;
+        isSpeakingInProgress.current = false;
+        
+        // Show all words when done
+        setDisplayedWordCount(words.length);
+        setCurrentWordIndex(words.length - 1);
+        
+        if (visualizerRef.current) {
+          visualizerRef.current.setColors(1.0, 0.8, 0.2);
+        }
+      };
+
+      audio.onerror = (event) => {
+        console.error('❌ Audio playback error:', event);
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        currentAudioRef.current = null;
+        isSpeakingInProgress.current = false;
+        
+        // DON'T fallback - just log the error
+        console.error('⚠️ OpenAI TTS audio playback failed (no fallback)');
+      };
+
+      await audio.play();
+      console.log('🎵 Playing OpenAI TTS audio');
+      
+    } catch (error) {
+      console.error('❌ TTS error:', error);
+      setIsSpeaking(false);
+      currentAudioRef.current = null;
+      isSpeakingInProgress.current = false;
+      
+      // DON'T fallback to browser TTS - user wants OpenAI only
+      console.error('⚠️ OpenAI TTS failed (no fallback to browser TTS)');
+    }
   }, [voiceEnabled]);
 
   return (
@@ -978,30 +1118,30 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
               </button>
             </div>
 
-            {/* Transcript Display */}
+            {/* Transcript Display - Synced with Audio */}
             {showTranscript && currentTranscriptWords.length > 0 && (
-              <div className="absolute bottom-4 left-4 right-4 backdrop-blur-sm rounded-lg p-4 max-h-30 overflow-y-auto scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-transparent">
-                <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/20">
-                  <span className="text-foreground text-xs font-medium uppercase tracking-wide">Transcript</span>
+              <div className="absolute bottom-4 left-4 right-4 backdrop-blur-sm rounded-xl p-5 border border-white/10 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-transparent">
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/20">
                   {isSpeaking && (
-                    <span className="text-yellow-400 text-xs flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse"></span>
-                      Speaking...
+                    <span className="text-yellow-400 text-xs flex items-center gap-1.5 font-medium">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-400"></span>
+                      </span>
+                      Speaking
                     </span>
                   )}
                 </div>
-                <div className="text-foreground text-sm leading-relaxed">
+                <div className="text-white text-base leading-relaxed font-medium">
                   {currentTranscriptWords.slice(0, displayedWordCount).map((word, index) => {
-                    // Add line breaks approximately every 12-15 words to prevent clutter
-                    const shouldBreak = index > 0 && index % 12 === 0;
+                    const isNewWord = index === displayedWordCount - 1;
+                    
                     return (
                       <React.Fragment key={index}>
-                        {shouldBreak && <br />}
                         <span
-                          className="inline animate-fadeIn"
+                          className="inline-block text-foreground"
                           style={{
-                            animationDelay: isSpeaking ? `${index * 0.03}s` : '0s',
-                            animationFillMode: 'both'
+                            animation: isNewWord ? 'fadeIn 0.3s ease-out' : 'none'
                           }}
                         >
                           {word}

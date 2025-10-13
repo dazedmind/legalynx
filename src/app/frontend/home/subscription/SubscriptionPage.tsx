@@ -515,9 +515,8 @@ function SubscriptionPage() {
                       );
                     }
                   }}
-                  className="flex items-center justify-center gap-2 w-full mt-3 px-3 py-2 bg-blue-600 text-white rounded-sm text-sm hover:bg-blue-700 transition-colors cursor-pointer"
+                  className="flex items-center justify-center gap-2 w-full mt-3 px-3 py-2 bg-gray-800 text-white rounded-sm text-sm hover:bg-gray-900 transition-colors cursor-pointer"
                 >
-                  <FaPaypal />
                   {subscription === "BASIC" ? "Upgrade to Standard" : "Downgrade to Basic"}
                 </button>
               )}    

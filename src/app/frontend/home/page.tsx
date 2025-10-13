@@ -553,7 +553,7 @@ export default function Home() {
               {/* TAB BUTTONS */}
               <button
                 onClick={() => handleTabClick("upload")}
-                className={`w-full relative text-white bg-blue cursor-pointer flex items-center ${isDesktopSidebarCollapsed ? 'justify-center' : 'gap-3'} text-left p-3 mb-2 rounded-lg transition-colors`}
+                className={`w-full relative text-white bg-blue cursor-pointer flex items-center ${isDesktopSidebarCollapsed ? 'justify-center' : 'gap-3'} text-left p-3 mb-2 rounded-md transition-colors`}
                 title={isDesktopSidebarCollapsed ? "New Chat" : ""}
               >
                 <DiamondPlus
@@ -569,9 +569,9 @@ export default function Home() {
                   <button
                     key={item.id}
                     onClick={() => handleTabClick(item.id as ActiveTab)}
-                    className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                    className={`w-full relative cursor-pointer flex items-center gap-3 text-left p-3 rounded-md transition-colors ${
                       activeTab === item.id
-                        ? 'bg-blue/10 text-blue-700 font-semibold rounded-r-lg'
+                        ? 'bg-blue/10 text-blue-700 font-semibold rounded'
                         : 'text-foreground hover:bg-accent'
                     }`}
                   >
@@ -667,7 +667,7 @@ export default function Home() {
                 <a href="/frontend/privacy-policy" target="_blank" rel="noopener noreferrer">
                   Privacy Policy •
                 </a>
-                <p className="text-xs text-muted-foreground">v 0.3.8</p>
+                <p className="text-xs text-muted-foreground">v 0.3.9</p>
               </div>
             )}
           </aside>

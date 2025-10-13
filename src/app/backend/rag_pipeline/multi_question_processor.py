@@ -370,7 +370,7 @@ def build_multi_question_context(nodes: List[NodeWithScore], questions: List[str
     return context
 
 
-def build_multi_question_prompt(questions: List[str], context: str, original_query: str) -> str:
+def build_multi_question_prompt(questions: List[str], context: str, original_query: str, voice_mode: bool = False) -> str:
     """
     Build an optimized prompt for answering multiple questions.
 
@@ -378,11 +378,37 @@ def build_multi_question_prompt(questions: List[str], context: str, original_que
         questions: List of individual questions
         context: The document context
         original_query: The original query string
+        voice_mode: If True, generate concise responses suitable for voice interaction
 
     Returns:
         Formatted prompt for the LLM
     """
-    prompt = f"""You are analyzing a legal document to answer multiple questions. You have been provided with the most relevant excerpts from the document.
+    if voice_mode:
+        # Concise prompt for voice mode - NO CITATIONS for TTS
+        prompt = f"""You are analyzing a document to answer questions. Provide brief, direct answers (1-2 sentences each).
+
+IMPORTANT: Do NOT include any citations, page numbers, hashtags, brackets, or source references. This will be read aloud via text-to-speech.
+
+DOCUMENT CONTEXT:
+{context}
+
+QUESTIONS TO ANSWER:
+"""
+        for i, q in enumerate(questions, 1):
+            prompt += f"{i}. {q}\n"
+
+        prompt += """
+INSTRUCTIONS:
+- Keep answers BRIEF and DIRECT (1-2 sentences each)
+- Do NOT cite page numbers or sources (no parentheses, no brackets, no hashtags)
+- If info not found, say "I don't have that information in the document"
+- Combine related answers naturally in conversational language
+
+Your concise response (no citations):
+"""
+    else:
+        # Standard detailed prompt
+        prompt = f"""You are analyzing a legal document to answer multiple questions. You have been provided with the most relevant excerpts from the document.
 
 DOCUMENT CONTEXT:
 {context}
@@ -390,10 +416,10 @@ DOCUMENT CONTEXT:
 QUESTIONS TO ANSWER (all from the same query):
 """
 
-    for i, q in enumerate(questions, 1):
-        prompt += f"{i}. {q}\n"
+        for i, q in enumerate(questions, 1):
+            prompt += f"{i}. {q}\n"
 
-    prompt += """
+        prompt += """
 INSTRUCTIONS:
 - Answer ALL questions comprehensively
 - For each answer, cite the specific page number

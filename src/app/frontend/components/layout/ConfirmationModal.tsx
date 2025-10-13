@@ -50,23 +50,23 @@ const getColor = (type: string) => {
 const getIcon = (type: string) => { 
   switch (type) {
     case ModalType.DANGER:
-      return <GoAlert className="w-8 h-8" />;
+      return <GoAlert className="w-6 h-6" />;
     case ModalType.WARNING:
-      return <GoAlert className="w-8 h-8" />;
+      return <GoAlert className="w-6 h-6" />;
     case ModalType.INFO:
-      return <GoInfo className="w-8 h-8" />;
+      return <GoInfo className="w-6 h-6" />;
     case ModalType.SUCCESS:
-      return <GoCheck className="w-8 h-8" />;
+      return <GoCheck className="w-6 h-6" />;
     case ModalType.ERROR:
-      return <GoAlert className="w-8 h-8" />;
+      return <GoAlert className="w-6 h-6" />;
     case ModalType.SAVE:
-      return <DownloadCloud className="w-8 h-8" />;
+      return <DownloadCloud className="w-6 h-6" />;
     case ModalType.PAYWALL:
-      return <GoStarFill className="w-8 h-8" />;
+      return <GoStarFill className="w-6 h-6" />;
     case ModalType.DELETE:
-      return <GoTrash className="w-8 h-8" />; 
+      return <GoTrash className="w-6 h-6" />; 
     default:
-      return <GoInfo className="w-8 h-8" />;
+      return <GoInfo className="w-6 h-6" />;
   }
 }
 
@@ -403,7 +403,7 @@ function ConfirmationModal({
             <button
               onClick={() => onSave(true)}
               disabled={isSaving}
-              className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${getColor(modal.type)}`}
+              className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${getColor(modal.type)}`}
             >
               {isSaving ? (
                 <>
@@ -420,7 +420,7 @@ function ConfirmationModal({
             <button
               onClick={onClose}
               disabled={isSaving}
-              className="w-full px-4 py-3 text-foreground bg-tertiary hover:bg-accent rounded-md transition-all duration-200 disabled:opacity-50 cursor-pointer"
+              className="w-full px-4 py-2 text-foreground bg-tertiary hover:bg-accent rounded-md transition-all duration-200 disabled:opacity-50 cursor-pointer"
             >
               {isSaving ? 'Please wait...' : modal.falseButton}
             </button>

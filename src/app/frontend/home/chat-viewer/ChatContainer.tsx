@@ -9,6 +9,7 @@ import { BranchSelector } from '../../components/ui/BranchSelector';
 import { Loader } from '../../components/ui/Loader';
 import { TbCopy, TbEdit, TbRotateClockwise, TbTrash } from 'react-icons/tb';
 import { HiChatBubbleBottomCenterText } from 'react-icons/hi2';
+import { CitationRenderer } from './CitationRenderer';
 
 interface MessageBranch {
   content: string; // The edited version of the user message
@@ -266,18 +267,12 @@ export function ChatContainer({
                     message.isThinking ? (
                       <div className="flex items-center gap-2">
                         <Loader size={16} className="text-blue-500" />
-                        <span className="text-muted-foreground italic">
+                        <span className="text-muted-foreground italic animate-pulse">
                           {message.content}
                         </span>
                       </div>
                     ) : (
-                      <div dangerouslySetInnerHTML={{
-                        __html: message.content
-                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                          .replace(/\_(.*?)_/g, '<u>$1</u>')
-                          .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>')
-                      }} />
+                      <CitationRenderer content={message.content} />
                     )
                   )}
                 </div>
