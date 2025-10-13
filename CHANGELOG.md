@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.9] - 2025-10-11 - Post-Consultation QA
+
+## 🚀 What's New
+- **Voice Mode Upgrade:** Switched to OpenAI Nova model for improved voice interaction quality and overall user experience.
+- **Source Attribution Redesign:** Fully reworked source attribution parsing logic for clearer and more structured reference display.
+
+## 🛠️ Fixes
+- **Branching & Regeneration:** Resolved issue where conversation branching and response regeneration were producing incorrect or duplicate threads.
+- **Billing Invoice Email:** Fixed bug preventing invoices from being sent to registered email addresses.
+- **RAG Pipeline Renaming:** Updated naming process from regex-assisted sanitization to direct LLM-driven renaming for improved accuracy.
+- **Voice Mode Response Length:** Adjusted to produce shorter, more concise responses for audio output.
+
 ## [0.3.8] - 2025-10-07 - Pre-Defense QA
 
 ### 🚀 What's New
