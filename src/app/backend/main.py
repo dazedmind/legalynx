@@ -1458,7 +1458,7 @@ async def activate_document_for_session(request: Request, document_id: str):
         async with aiohttp.ClientSession() as session:
             # Get document metadata
             # Use localhost in dev, NEXT_PUBLIC_APP_URL in production
-            base_url = "http://localhost:3000" if os.environ.get("NODE_ENV") != "production" else os.environ.get("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
+            base_url = f"{os.environ.get('NEXT_PUBLIC_APP_URL', 'http://localhost:3000')}"
             doc_response = await session.get(
                 f"{base_url}/backend/api/documents/{document_id}",
                 headers={"Authorization": f"Bearer {auth_token}"}
@@ -1655,7 +1655,7 @@ async def reactivate_document_fast(request: Request, document_id: str):
         import aiohttp
         async with aiohttp.ClientSession() as session:
             # Get document metadata
-            base_url = "http://localhost:3000" if os.environ.get("NODE_ENV") != "production" else os.environ.get("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
+            base_url = f"{os.environ.get('NEXT_PUBLIC_APP_URL', 'http://localhost:3000')}"
             
             print(f"🌐 Fetching from: {base_url}/backend/api/documents/{document_id}")
             
