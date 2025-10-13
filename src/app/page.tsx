@@ -18,6 +18,7 @@ import { BsFillLightningFill, BsFillShieldLockFill, BsFolderFill } from "react-i
 import AnimatedContent from "./frontend/components/reactbits/AnimatedContent";
 import CountUp from "./frontend/components/reactbits/CountUp";
 import TypingAnimation from "./frontend/components/layout/TypingAnimation";
+import { RiCodeSFill, RiCodeSSlashFill } from "react-icons/ri";
 
 export default function Home() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
@@ -27,6 +28,7 @@ export default function Home() {
   const [showAnswer, setShowAnswer] = useState(false);
   const [showChatBubble, setShowChatBubble] = useState(false);
   const [startTyping, setStartTyping] = useState(false);
+  const [showDevelopersModal, setShowDevelopersModal] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -411,13 +413,71 @@ export default function Home() {
             </div>
             <div className="text-sm text-muted-foreground mt-4 md:mt-0">
               System Developers:{" "}
-              <span className="text-blue-600 hover:text-blue-700 transition-colors">
+              <button 
+                onClick={() => setShowDevelopersModal(true)}
+                className="text-blue-600 hover:text-blue-700 transition-colors cursor-pointer underline-offset-2 hover:underline"
+              >
                 Git Merge
-              </span>
+              </button>
             </div>
           </div>
         </div>
       </footer>
+
+      {/* Developers Modal */}
+      {showDevelopersModal && (
+        <div 
+          className={`fixed inset-0 bg-black/20  z-100 flex items-center justify-center transition-all duration-200 ease-out`}
+          onClick={() => setShowDevelopersModal(false)}
+        >
+          <div 
+            className={`bg-primary border border-tertiary rounded-md max-w-xl w-full p-6 shadow-2xl mx-4 transition-all duration-200 ease-out ${
+            showDevelopersModal 
+              ? 'opacity-100 scale-100' 
+              : 'opacity-0 scale-95'
+          }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <span className="flex items-center gap-2">
+                <RiCodeSFill className="w-8 h-8 text-blue-600" />
+                <h3 className="text-2xl font-bold text-foreground">The Developers</h3>
+              </span>
+
+              <button 
+                onClick={() => setShowDevelopersModal(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Developer 1 */}
+              <div className="border border-tertiary rounded-md p-4 hover:border-blue/50 transition-colors">
+                <h4 className="text-xl font-semibold text-foreground">Kristhia Cayle F. Lastra</h4>
+                <p className="text-sm text-blue-600 mb-2">Backend Engineer & Documentation Lead</p>
+                <p className="text-muted-foreground text-sm">
+                  Specializes in the backend architecture, and system optimization. 
+                  Led the development of the RAG pipeline and system documentation.
+                </p>
+              </div>
+
+              {/* Developer 2 */}
+              <div className="border border-tertiary rounded-md p-4 hover:border-blue/50 transition-colors">
+                <h4 className="text-xl font-semibold text-foreground">John Allen Troy E. Valeña</h4>
+                <p className="text-sm text-blue-600 mb-2">Full-stack Developer & UI/UX Engineer</p>
+                <p className="text-muted-foreground text-sm">
+                  Focuses on integration of backend to frontend, user experience, interface design. 
+                  Created the modern UI components and interactive features.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

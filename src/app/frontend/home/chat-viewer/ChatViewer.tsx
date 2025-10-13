@@ -851,20 +851,20 @@ export default function ChatViewer({
               setCurrentDocument(documentInfo);
               setDocumentExists(true);
 
-              // ✅ FIXED: Load document into RAG system
+              // 🚀 FAST REACTIVATION: Use faster method for existing documents
               try {
                 console.log(
-                  "📤 Loading document into RAG system:",
-                  documentInfo.originalFileName
+                  "⚡ Fast reactivation for document:",
+                  documentInfo.fileName
                 );
-                await loadPdfIntoRagSystemCached(
+                await ragCache.reactivateDocument(
                   documentInfo.id,
-                  documentInfo.originalFileName
+                  documentInfo.fileName // Use fileName (already renamed) not originalFileName
                 );
-                console.log("✅ Document loaded into RAG system successfully");
+                console.log("✅ Document reactivated successfully");
               } catch (ragError) {
                 console.error(
-                  "❌ Failed to load document into RAG system:",
+                  "❌ Failed to reactivate document:",
                   ragError
                 );
                 // Don't fail the whole operation, just log the error
@@ -941,20 +941,20 @@ export default function ChatViewer({
           setCurrentDocument(documentInfo);
           setDocumentExists(true);
 
-          // ✅ FIXED: Load document into RAG system
+          // 🚀 FAST REACTIVATION: Use faster method for existing documents
           try {
             console.log(
-              "📤 Loading document into RAG system:",
-              documentInfo.originalFileName
+              "⚡ Fast reactivation for document:",
+              documentInfo.fileName
             );
-            await loadPdfIntoRagSystemCached(
+            await ragCache.reactivateDocument(
               documentInfo.id,
-              documentInfo.originalFileName
+              documentInfo.fileName // Use fileName (already renamed) not originalFileName
             );
-            console.log("✅ Document loaded into RAG system successfully");
+            console.log("✅ Document reactivated successfully");
           } catch (ragError) {
             console.error(
-              "❌ Failed to load document into RAG system:",
+              "❌ Failed to reactivate document:",
               ragError
             );
             // 🔥 GRACEFUL FALLBACK: If RAG loading fails, continue but warn user
@@ -1040,20 +1040,20 @@ export default function ChatViewer({
           setCurrentDocument(documentInfo);
           setDocumentExists(true);
 
-          // ✅ FIXED: Load document into RAG system when switching documents
+          // 🚀 FAST REACTIVATION: Use faster method for existing documents
           try {
             console.log(
-              "📤 Loading document into RAG system:",
-              documentInfo.originalFileName
+              "⚡ Fast reactivation for document:",
+              documentInfo.fileName
             );
-            await loadPdfIntoRagSystemCached(
+            await ragCache.reactivateDocument(
               documentInfo.id,
-              documentInfo.originalFileName
+              documentInfo.fileName // Use fileName (already renamed) not originalFileName
             );
-            console.log("✅ Document loaded into RAG system successfully");
+            console.log("✅ Document reactivated successfully");
           } catch (ragError) {
             console.error(
-              "❌ Failed to load document into RAG system:",
+              "❌ Failed to reactivate document:",
               ragError
             );
             // Don't fail the whole operation, just log the error
@@ -1088,20 +1088,20 @@ export default function ChatViewer({
           setCurrentDocument(documentInfo);
           setDocumentExists(true);
 
-          // ✅ FIXED: Load document into RAG system when switching documents
+          // 🚀 FAST REACTIVATION: Use faster method for existing documents
           try {
             console.log(
-              "📤 Loading document into RAG system:",
-              documentInfo.originalFileName
+              "⚡ Fast reactivation for document:",
+              documentInfo.fileName
             );
-            await loadPdfIntoRagSystemCached(
+            await ragCache.reactivateDocument(
               documentInfo.id,
-              documentInfo.originalFileName
+              documentInfo.fileName // Use fileName (already renamed) not originalFileName
             );
-            console.log("✅ Document loaded into RAG system successfully");
+            console.log("✅ Document reactivated successfully");
           } catch (ragError) {
             console.error(
-              "❌ Failed to load document into RAG system:",
+              "❌ Failed to reactivate document:",
               ragError
             );
             // Don't fail the whole operation, just log the error
@@ -1203,7 +1203,7 @@ export default function ChatViewer({
 
         setLoadingStage("loading_rag");
         try {
-          console.log("📤 Loading PDF into RAG system...");
+          console.log("📤 Loading document into RAG system (fast reactivation)...");
 
           // Prevent duplicate loads for same document during fast refresh/double effects
           if (ragLoadingDocIdRef.current === sessionData.document.id) {
@@ -1214,10 +1214,11 @@ export default function ChatViewer({
           } else {
             ragLoadingDocIdRef.current = sessionData.document.id;
 
-            await loadPdfIntoRagSystemCached(
+            // 🚀 FAST REACTIVATION: Use the faster reactivation method for session loading
+            // This skips file renaming and uses the already-renamed fileName
+            await ragCache.reactivateDocument(
               sessionData.document.id,
-              documentInfo.originalFileName,
-              isDocumentSwitch // only force when switching
+              documentInfo.fileName // Use fileName (already renamed) not originalFileName
             );
 
             ragLoadingDocIdRef.current = null;

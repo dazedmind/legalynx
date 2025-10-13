@@ -174,16 +174,7 @@ function LoginContent() {
 
       <main className="flex flex-col md:flex-row-reverse w-full h-full">
         <div className="flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 md:py-10 md:px-6 justify-center gap-2 overflow-y-auto">
-          {/* <div className="md:hidden mt-20 flex bg-gradient-to-bl from-blue/0 to-blue/20 items-center mb-10 pr-10 justify-center w-full md:w-1/2 gap-2 relative">
-            <Image
-                src={logo}
-                alt="Login"
-                width={100}
-                height={100}
-                className="fade-gradient"
-              />
-            <p className="text-muted-foreground">Linking you to legal clarity</p>
-          </div> */}
+
           <div className="w-full mt-30 md:w-md flex flex-col md:border border-tertiary rounded-lg md:shadow-sm items-start gap-2 mx-0 md:mx-auto pt-0 md:pt-10 p-10 md:mt-10">
             <span>
               <h1 className="text-4xl font-bold font-serif">Sign In</h1>

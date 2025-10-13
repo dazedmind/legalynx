@@ -93,6 +93,36 @@ class RAGCacheService {
   }
 
   /**
+   * Fast reactivation for session loading - skips file renaming
+   */
+  async reactivateDocument(documentId: string, filename: string): Promise<void> {
+    // Check if already loaded
+    if (this.isDocumentLoaded(documentId)) {
+      console.log(`✅ Document ${filename} already loaded in RAG system (cached)`);
+      return;
+    }
+
+    // Check if currently loading
+    if (this.isDocumentLoading(documentId)) {
+      console.log(`⏳ Document ${filename} is already being loaded, waiting...`);
+      const existingPromise = this.loadingPromises.get(documentId);
+      if (existingPromise) {
+        return existingPromise;
+      }
+    }
+
+    // Start fast reactivation process
+    const reactivatePromise = this.performFastReactivation(documentId, filename);
+    this.loadingPromises.set(documentId, reactivatePromise);
+    
+    try {
+      await reactivatePromise;
+    } finally {
+      this.loadingPromises.delete(documentId);
+    }
+  }
+
+  /**
    * Load document into RAG system with caching
    */
   async loadDocument(
@@ -123,6 +153,89 @@ class RAGCacheService {
       await loadingPromise;
     } finally {
       this.loadingPromises.delete(documentId);
+    }
+  }
+
+  /**
+   * Fast reactivation implementation - calls backend's reactivate endpoint
+   */
+  private async performFastReactivation(
+    documentId: string,
+    filename: string
+  ): Promise<void> {
+    console.log(`⚡ Fast reactivation: ${filename}...`);
+    
+    // Mark as loading
+    this.cache.set(documentId, {
+      documentId,
+      filename,
+      lastLoaded: new Date(),
+      status: 'loading'
+    });
+    this.saveCacheToStorage();
+
+    try {
+      // Check if RAG system is available
+      const isAvailable = await this.checkRAGSystemAvailability();
+      if (!isAvailable) {
+        throw new Error('RAG system is not available. Please ensure the FastAPI backend is running.');
+      }
+
+      console.log(`🔄 Calling reactivate-document endpoint for ${documentId}...`);
+      const reactivateResponse = await fetch(`${this.RAG_BASE_URL}/reactivate-document/${documentId}`, {
+        method: 'POST',
+        headers: this.getRagHeaders(true)
+      });
+
+      if (!reactivateResponse.ok) {
+        let errorMessage = 'Unknown error';
+        try {
+          const errorData = await reactivateResponse.json();
+          errorMessage = errorData.detail || errorData.error || `HTTP ${reactivateResponse.status}`;
+        } catch {
+          errorMessage = `HTTP ${reactivateResponse.status}: ${reactivateResponse.statusText}`;
+        }
+        
+        console.error(`❌ Fast reactivation failed:`, errorMessage);
+        throw new Error(`Fast reactivation error: ${errorMessage}`);
+      }
+
+      const result = await reactivateResponse.json();
+      console.log(`✅ Fast reactivation result:`, result);
+      console.log(`⚡ Processing time: ${result.processing_time}s`);
+      console.log(`📊 Status: ${result.status}`);
+
+      // Mark as successfully loaded
+      this.markAsLoaded(documentId, filename, documentId);
+
+    } catch (error) {
+      console.error(`❌ Failed to reactivate document ${filename}:`, error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'RAG system is not available. Please ensure the backend service is running.';
+        } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+          errorMessage = 'Authentication failed. Please sign in again.';
+        } else if (error.message.includes('404') || error.message.includes('not found')) {
+          errorMessage = 'Document not found in database. Please re-upload the document.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      // Mark as error
+      this.cache.set(documentId, {
+        documentId,
+        filename,
+        lastLoaded: new Date(),
+        status: 'error',
+        error: errorMessage
+      });
+      this.saveCacheToStorage();
+      
+      throw error;
     }
   }
 
@@ -544,6 +657,8 @@ export const useRAGCache = () => {
     getCached: (documentId: string) => ragCacheService.getCachedDocument(documentId),
     loadDocument: (documentId: string, filename: string, getFileBlob: () => Promise<Blob>) => 
       ragCacheService.loadDocument(documentId, filename, getFileBlob),
+    reactivateDocument: (documentId: string, filename: string) =>
+      ragCacheService.reactivateDocument(documentId, filename),
     markAsLoaded: (documentId: string, filename: string, ragSystemId?: string) =>
       ragCacheService.markAsLoaded(documentId, filename, ragSystemId),
     markAsLoading: (documentId: string, filename: string) =>

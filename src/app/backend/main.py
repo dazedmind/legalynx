@@ -1553,6 +1553,204 @@ async def activate_document_for_session(request: Request, document_id: str):
             detail=f"Failed to re-upload document to RAG system: {str(e)}"
         )
 
+
+@app.post("/reactivate-document/{document_id}")
+async def reactivate_document_fast(request: Request, document_id: str):
+    """Fast document reactivation without file renaming - for session loading"""
+    import time
+    start_time = time.time()
+    
+    user_id, auth_token = extract_user_id_from_token(request)
+    session_id = extract_session_id_from_request(request)
+
+    print(f"⚡ FAST REACTIVATION: {document_id}")
+    print(f"👤 User: {user_id or 'anonymous'}, Session: {session_id}")
+
+    # Step 1: Check if already in RAG memory
+    if document_id in rag_manager.systems:
+        print(f"✅ Document already in memory, activating...")
+        
+        if user_id:
+            rag_manager.user_sessions[user_id] = document_id
+        elif session_id:
+            rag_manager.session_systems[session_id] = document_id
+
+        elapsed = time.time() - start_time
+        return {
+            "message": "Document activated from memory",
+            "document_id": document_id,
+            "status": "activated_from_memory",
+            "processing_time": round(elapsed, 3)
+        }
+
+    # Step 2: Check if file exists locally (Railway may not have this)
+    print(f"📂 Checking local files...")
+    import glob
+    sample_docs_pattern = os.path.join("sample_docs", "*.pdf")
+    local_files = glob.glob(sample_docs_pattern)
+    
+    local_file_path = None
+    for file_path in local_files:
+        # Try to match by checking if this was the file for this document
+        # This is a heuristic - in production you'd have a mapping
+        if document_id in file_path or os.path.basename(file_path).startswith(document_id[:8]):
+            local_file_path = file_path
+            break
+    
+    if local_file_path and os.path.exists(local_file_path):
+        print(f"✅ Found local file: {local_file_path}")
+        print(f"🚀 Fast reactivation: Building RAG from local file (skip download & rename)")
+
+        try:
+            if not OPTIMIZED_SYSTEM_AVAILABLE:
+                raise HTTPException(status_code=503, detail="RAG system not available")
+
+            # Extract text and build RAG directly
+            from utils.file_handler import extract_text_from_pdf
+            documents = extract_text_from_pdf(local_file_path)
+
+            if not documents:
+                raise Exception("No text extracted from local file")
+
+            print(f"📄 Extracted {len(documents)} pages")
+
+            # Build RAG system directly
+            from optimized_rag_system import VectorizedRAGBuilder
+            rag_system = await VectorizedRAGBuilder.build_rag_system_fast(documents, local_file_path)
+
+            if not rag_system or "query_engine" not in rag_system:
+                raise Exception("RAG system incomplete")
+
+            # Register with RAG manager
+            rag_manager.set_system(
+                document_id=document_id,
+                rag_system=rag_system,
+                file_path=local_file_path,
+                user_id=user_id,
+                session_id=session_id
+            )
+
+            elapsed = time.time() - start_time
+            print(f"✅ Document reactivated from local file in {elapsed:.2f}s")
+
+            return {
+                "message": "Document reactivated from local file",
+                "document_id": document_id,
+                "status": "reactivated_from_local",
+                "filename": os.path.basename(local_file_path),
+                "processing_time": round(elapsed, 3)
+            }
+
+        except Exception as e:
+            print(f"❌ Local reactivation failed: {e}")
+            # Continue to database fetch below
+
+    # Step 3: Fetch from database with already-renamed fileName (skip renaming!)
+    print(f"📥 Fetching from database (Railway path)...")
+
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    try:
+        import aiohttp
+        async with aiohttp.ClientSession() as session:
+            # Get document metadata
+            base_url = "http://localhost:3000" if os.environ.get("NODE_ENV") != "production" else os.environ.get("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
+            
+            print(f"🌐 Fetching from: {base_url}/backend/api/documents/{document_id}")
+            
+            doc_response = await session.get(
+                f"{base_url}/backend/api/documents/{document_id}",
+                headers={"Authorization": f"Bearer {auth_token}"}
+            )
+
+            if doc_response.status != 200:
+                raise HTTPException(
+                    status_code=doc_response.status,
+                    detail=f"Document not found in database"
+                )
+
+            doc_data = await doc_response.json()
+            # Use fileName (already renamed) instead of originalFileName
+            renamed_filename = doc_data.get('fileName', doc_data.get('originalFileName', 'document.pdf'))
+            print(f"📄 Document: {renamed_filename} (already renamed)")
+
+            # Get document file
+            file_response = await session.get(
+                f"{base_url}/backend/api/documents/{document_id}/file",
+                headers={"Authorization": f"Bearer {auth_token}"}
+            )
+
+            if file_response.status != 200:
+                raise HTTPException(
+                    status_code=file_response.status,
+                    detail=f"Document file not accessible"
+                )
+
+            file_content = await file_response.read()
+            print(f"📁 Retrieved file: {len(file_content)} bytes")
+
+            # Save to sample_docs with the already-renamed filename
+            os.makedirs("sample_docs", exist_ok=True)
+            saved_file_path = os.path.join("sample_docs", renamed_filename)
+            
+            with open(saved_file_path, 'wb') as f:
+                f.write(file_content)
+            
+            print(f"💾 Saved to: {saved_file_path}")
+
+            # Build RAG system directly (NO RENAMING!)
+            if not OPTIMIZED_SYSTEM_AVAILABLE:
+                raise HTTPException(status_code=503, detail="RAG system not available")
+
+            from utils.file_handler import extract_text_from_pdf
+            documents = extract_text_from_pdf(saved_file_path)
+
+            if not documents:
+                raise Exception("No text extracted from file")
+
+            print(f"📄 Extracted {len(documents)} pages")
+
+            # Build RAG system
+            from optimized_rag_system import VectorizedRAGBuilder
+            rag_system = await VectorizedRAGBuilder.build_rag_system_fast(documents, saved_file_path)
+
+            if not rag_system or "query_engine" not in rag_system:
+                raise Exception("RAG system incomplete")
+
+            # Register with RAG manager
+            rag_manager.set_system(
+                document_id=document_id,
+                rag_system=rag_system,
+                file_path=saved_file_path,
+                user_id=user_id,
+                session_id=session_id
+            )
+
+            elapsed = time.time() - start_time
+            print(f"✅ Document reactivated from database in {elapsed:.2f}s (skipped renaming)")
+
+            return {
+                "message": "Document reactivated from database",
+                "document_id": document_id,
+                "status": "reactivated_from_database",
+                "filename": renamed_filename,
+                "processing_time": round(elapsed, 3),
+                "note": "Used already-renamed file, skipped renaming process"
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Fast reactivation failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to reactivate document: {str(e)}"
+        )
+
+
 # ================================
 # MAIN FUNCTION - FIXED FOR RAILWAY
 # ================================
