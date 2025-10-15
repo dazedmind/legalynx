@@ -140,412 +140,162 @@ class PrismaInvoiceService {
     });
 
     return `
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice ${invoiceNumber}</title>
+    <title>Invoice ${invoiceNumber} - LegalynX</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #1a1a1a; background-color: #f5f5f5; margin: 0; padding: 40px 20px; }
+        @media (prefers-color-scheme: dark) { body { background-color: #1a1a1a; } }
+        .email-wrapper { max-width: 680px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); }
+        @media (prefers-color-scheme: dark) { .email-wrapper { background-color: #2d2d2d; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); } }
+        .invoice-header { background: linear-gradient(135deg, #0047AB 0%, #003380 100%); color: #ffffff !important; padding: 40px 40px 32px; position: relative; width: 100%; }
+        .header-top { width: 100%; margin-bottom: 24px; }
+        .header-top table { width: 100%; border-collapse: collapse; }
+        .brand-cell { text-align: left; vertical-align: middle; }
+        .status-cell { text-align: right; vertical-align: middle; }
+        .brand-section { display: inline-block; }
+        .brand-logo { padding: 3px; width: 48px; height: 48px; background-color: #FFFFFF !important; border: 2px solid #FFFFFF; display: inline-block; vertical-align: middle; text-align: center; line-height: 48px; font-size: 24px; font-weight: bold; color: #FFFFFF; border-radius: 100%; margin-right: 12px; }
+        .brand-name { font-size: 28px; font-weight: bold; color: #ffffff !important; letter-spacing: -0.5px; display: inline-block; vertical-align: middle; }
+        .status-badge { background-color: #10b981; color: #ffffff !important; padding: 6px 14px; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 7px; display: inline-block; }
+        .invoice-meta { color: #ffffff !important; border-top: 1px solid rgba(255, 255, 255, 0.2); padding-top: 20px; }
+        .invoice-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-bottom: 4px; color: #ffffff !important; }
+        .invoice-number { font-size: 24px; font-weight: bold; color: #FFFFFF !important; }
+        .invoice-body { padding: 40px; background-color: #ffffff; }
+        @media (prefers-color-scheme: dark) { .invoice-body { background-color: #2d2d2d; color: #e5e5e5; } }
+        .info-grid { display: table; width: 100%; margin-bottom: 32px; border-collapse: separate; border-spacing: 16px 0; }
+        .info-column { display: table-cell; width: 50%; vertical-align: top; padding: 24px; background-color: #f9f9f9; border: 1px solid #e5e5e5; border-radius: 7px; }
+        @media (prefers-color-scheme: dark) { .info-column { background-color: #1f1f1f; border-color: #404040; } }
+        .info-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #666666; margin-bottom: 12px; font-weight: bold; }
+        @media (prefers-color-scheme: dark) { .info-label { color: #999999; } }
+        .info-value { font-size: 15px; color: #1a1a1a; margin-bottom: 8px; line-height: 1.6; }
+        @media (prefers-color-scheme: dark) { .info-value { color: #e5e5e5; } }
+        .info-value strong { font-weight: bold; display: block; margin-bottom: 4px; }
+        .plan-badge { display: inline-block; padding: 6px 12px; background-color: #0047AB; color: #FFFFFF !important; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 8px; border-radius: 7px; }
+        .items-section { margin: 32px 0; }
+        .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #666666; margin-bottom: 16px; font-weight: bold; padding-bottom: 8px; }
+        @media (prefers-color-scheme: dark) { .section-title { color: #999999; border-bottom-color: #FFD600; } }
+        .items-table { width: 100%; border-collapse: collapse; border: 1px solid #e5e5e5; border-radius: 7px; }
+        @media (prefers-color-scheme: dark) { .items-table { border-color: #404040; } }
+        .items-table th { padding: 14px 16px; text-align: left; font-weight: bold; color: #1a1a1a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; background-color: #f9f9f9; border-bottom: 2px solid #e5e5e5; }
+        @media (prefers-color-scheme: dark) { .items-table th { background-color: #1f1f1f; color: #e5e5e5; border-bottom-color: #404040; } }
+        .items-table td { padding: 16px; border-bottom: 1px solid #f0f0f0; background-color: #ffffff; color: #1a1a1a; }
+        @media (prefers-color-scheme: dark) { .items-table td { background-color: #2d2d2d; color: #e5e5e5; border-bottom-color: #404040; } }
+        .items-table tbody tr:last-child td { border-bottom: none; }
+        .item-description { font-weight: bold; }
+        .total-section { background: linear-gradient(135deg, #0047AB 0%, #003380 100%); padding: 28px 32px; margin-top: 32px; color: #ffffff !important; border-radius: 7px; }
+        .total-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 15px; color: rgba(255, 255, 255, 0.9) !important; }
+        .total-divider { border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 16px 0; }
+        .total-amount { display: flex; justify-content: space-between; align-items: center; font-size: 36px; font-weight: bold; color: #FFFFFF !important; margin-top: 16px; }
+        .amount-label { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #FFFFFF !important; }
+        .invoice-footer { background-color: #f9f9f9; padding: 32px 40px; text-align: center; border-top: 1px solid #e5e5e5; color: #666666; }
+        @media (prefers-color-scheme: dark) { .invoice-footer { background-color: #1f1f1f; border-top-color: #404040; color: #999999; } }
+        .footer-message { font-size: 15px; line-height: 1.8; margin-bottom: 8px; color: #333333; }
+        @media (prefers-color-scheme: dark) { .footer-message { color: #cccccc; } }
+        .footer-message strong { color: #333333; font-weight: bold; }
+        @media (prefers-color-scheme: dark) { .footer-message strong { color: #FFFFFF; } }
+        .footer-contact { font-size: 14px; margin-top: 16px; color: #666666; }
+        @media (prefers-color-scheme: dark) { .footer-contact { color: #999999; } }
+        .footer-contact strong { color: #0047AB; font-weight: bold; }
+        @media (prefers-color-scheme: dark) { .footer-contact strong { color: #FFD600; } }
+        .copyright { font-size: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e5e5; color: #999999; }
+        @media (prefers-color-scheme: dark) { .copyright { border-top-color: #404040; color: #666666; } }
+        @media (max-width: 600px) {
+            body { padding: 20px 12px; }
+            .invoice-header { padding: 24px 20px; }
+            .invoice-body { padding: 24px 20px; }
+            .info-grid { display: block; }
+            .info-column { display: block; width: 100%; margin-bottom: 16px; }
+            .brand-name { font-size: 22px; }
+            .invoice-number { font-size: 20px; }
+            .items-table th, .items-table td { padding: 10px; font-size: 13px; }
+            .items-table th:nth-child(2), .items-table td:nth-child(2) { display: none; }
+            .total-amount { font-size: 32px; }
+            .invoice-footer { padding: 24px 20px; }
+            .total-section { padding: 20px; }
         }
-        
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
-            line-height: 1.6; 
-            color: #1f2937; 
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            margin: 0; 
-            padding: 20px; 
-            min-height: 100vh;
-        }
-        
-        .invoice-wrapper {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .invoice-wrapper::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
-        }
-        
-        .invoice-header { 
-            background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
-            color: white; 
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .invoice-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -10%;
-            width: 200px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-        }
-        
-        .invoice-header-content {
-            position: relative;
-            z-index: 1;
-        }
-        
-        .invoice-title { 
-            font-size: 32px; 
-            font-weight: 800; 
-            margin: 0; 
-            letter-spacing: -0.025em;
-        }
-        
-        .invoice-number { 
-            font-size: 18px; 
-            opacity: 0.9; 
-            font-weight: 500;
-        }
-        
-        .invoice-body { 
-            padding: 40px; 
-        }
-        
-        .company-section {
-            margin-bottom: 40px;
-            padding: 24px;
-            border-radius: 12px;
-            border-left: 4px solid #3b82f6;
-        }
-        
-        .company-name { 
-            font-size: 24px; 
-            font-weight: 700; 
-            color: #1e40af; 
-            margin-bottom: 8px; 
-        }
-        
-        .company-details {
-            color: #64748b;
-            line-height: 1.8;
-        }
-        
-        .billing-section { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 40px; 
-            margin-bottom: 40px; 
-        }
-        
-        .info-card {
-            padding: 24px;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            background: #ffffff;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-        
-        .info-card h3 { 
-            margin: 0 0 16px 0; 
-            color: #374151; 
-            font-size: 16px; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px; 
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .info-card h3::before {
-            content: '';
-            width: 4px;
-            height: 16px;
-            background: #3b82f6;
-            border-radius: 2px;
-        }
-        
-        .info-card p { 
-            margin: 8px 0; 
-            color: #64748b;
-        }
-        
-        .info-card strong {
-            color: #1f2937;
-        }
-        
-        .items-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin: 40px 0; 
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .items-table th { 
-            padding: 20px; 
-            text-align: left; 
-            border-bottom: 1px solid #e2e8f0; 
-            font-weight: 600; 
-            color: #374151;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .items-table td { 
-            padding: 20px; 
-            border-bottom: 1px solid #f1f5f9; 
-            transition: background-color 0.2s;
-        }
-        
-        .items-table tr:hover td {
-            background: #f8fafc;
-        }
-        
-        .items-table tr:last-child td {
-            border-bottom: none;
-        }
-        
-        .total-section { 
-            padding: 32px; 
-            border-radius: 16px; 
-            margin-top: 32px; 
-            border: 1px solid #e2e8f0;
-            position: relative;
-        }
-        
-        .total-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-            border-radius: 16px 16px 0 0;
-        }
-        
-        .total-row { 
-            display: flex; 
-            justify-content: space-between; 
-            margin: 8px 0; 
-            font-weight: 600;
-            color: #374151;
-        }
-        
-        .total-amount { 
-            font-size: 28px; 
-            font-weight: bold; 
-            color: #1e40af; 
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 2px solid #e2e8f0;
-        }
-        
-        .plan-badge { 
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 12px; 
-            background: linear-gradient(135deg, #3b82f6, #1e40af); 
-            color: white; 
-            border-radius: 24px; 
-            font-size: 14px; 
-            font-weight: 600; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
-        }
-      
-        
-        .footer { 
-            padding: 32px; 
-            text-align: center; 
-            color: #64748b; 
-            font-size: 14px; 
-            border-top: 1px solid #e2e8f0;
-        }
-        
-        .footer p {
-            margin: 8px 0;
-        }
-        
-        .footer strong {
-            color: #1e40af;
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            body {
-                padding: 12px;
-            }
-            
-            .invoice-body {
-                padding: 24px;
-            }
-            
-            .billing-section {
-                grid-template-columns: 1fr;
-                gap: 24px;
-            }
-            
-            .invoice-header {
-                padding: 24px;
-            }
-            
-            .invoice-title {
-                font-size: 24px;
-            }
-            
-            .items-table th,
-            .items-table td {
-                padding: 12px;
-                font-size: 14px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .items-table {
-                font-size: 12px;
-            }
-            
-            .items-table th:nth-child(2),
-            .items-table td:nth-child(2) {
-                display: none;
-            }
-        }
-        
-        /* Print Styles */
-        @media print {
-            body {
-                background: white;
-                padding: 0;
-            }
-            
-            .invoice-wrapper {
-                box-shadow: none;
-                border-radius: 0;
-            }
-            
-            .invoice-wrapper::before {
-                display: none;
-            }
-        }
+        @media print { body { background-color: white; padding: 0; } .email-wrapper { box-shadow: none; } }
     </style>
 </head>
 <body>
-    <div class="invoice-wrapper">
+    <div class="email-wrapper">
         <div class="invoice-header">
-            <div class="invoice-header-content">
-                <div class="invoice-title">Invoice ${invoiceNumber}</div>
+            <div class="header-top">
+                <table role="presentation">
+                    <tr>
+                        <td class="brand-cell">
+                            <div class="brand-section">
+                                <div class="brand-logo"><img src="https://i.imgur.com/vrDo3wE.png" width="40" alt="L" style="display:block;"></div>
+                                <span class="brand-name">LegalynX</span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="invoice-meta">
+                <div class="invoice-label">Invoice Number</div>
+                <div class="invoice-number">${invoiceNumber}</div>
             </div>
         </div>
         
         <div class="invoice-body">
-            <div class="company-section">
-                <div class="company-name">${this.companyDetails.name}</div>
-                <div class="company-details">
-                    <p>${this.companyDetails.address}</p>
-                    <p>Email: ${this.companyDetails.email}</p>
-                    ${
-                      this.companyDetails.phone
-                        ? `<p>Phone: ${this.companyDetails.phone}</p>`
-                        : ""
-                    }
-                    ${
-                      this.companyDetails.website
-                        ? `<p>Website: ${this.companyDetails.website}</p>`
-                        : ""
-                    }
+            <div class="info-grid">
+                <div class="info-column">
+                    <div class="info-label">Bill To</div>
+                    <div class="info-value"><strong>${userName}</strong>${userEmail}</div>
+                </div>
+                <div class="info-column">
+                    <div class="info-label">Invoice Details</div>
+                    <div class="info-value"><strong>Date:</strong> ${formattedBillingDate}</div>
+                    <div class="info-value"><strong>Due Date:</strong> ${formattedDueDate}</div>
+                    <div class="info-value"><strong>Payment Method:</strong> PayPal</div>
+                    <div class="plan-badge">${planType}</div>
                 </div>
             </div>
             
-            <div class="billing-section">
-                <div class="info-card">
-                    <h3>Bill To</h3>
-                    <p><strong>${userName}</strong></p>
-                    <p>${userEmail}</p>
-                </div>
-                
-                <div class="info-card">
-                    <h3>Invoice Details</h3>
-                    <p><strong>Invoice Number:</strong> ${invoiceNumber}</p>
-                    <p><strong>Invoice Date:</strong> ${formattedBillingDate}</p>
-                    <p><strong>Due Date:</strong> ${formattedDueDate}</p>
-                    <p><strong>Payment Method:</strong> PayPal</p>
-                    <p><strong>Plan:</strong> <span class="plan-badge">${planType} ${billingCycle}</span></p>
-                </div>
+            <div class="items-section">
+                <div class="section-title">Invoice Items</div>
+                <table class="items-table" role="presentation">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th style="text-align: center; width: 80px;">Qty</th>
+                            <th style="text-align: right; width: 120px;">Unit Price</th>
+                            <th style="text-align: right; width: 120px;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${items.map(item => `
+                        <tr>
+                            <td class="item-description">${item.description}</td>
+                            <td style="text-align: center;">${item.quantity}</td>
+                            <td style="text-align: right;">₱${item.unitPrice.toFixed(2)}</td>
+                            <td style="text-align: right;"><strong>₱${item.total.toFixed(2)}</strong></td>
+                        </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
             </div>
-            
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th>Description</th>
-                        <th style="text-align: center;">Quantity</th>
-                        <th style="text-align: right;">Unit Price</th>
-                        <th style="text-align: right;">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${items
-                      .map(
-                        (item) => `
-                    <tr>
-                        <td><strong>${item.description}</strong></td>
-                        <td style="text-align: center;">${item.quantity}</td>
-                        <td style="text-align: right;">₱${item.unitPrice.toFixed(
-                          2
-                        )} ${currency}</td>
-                        <td style="text-align: right;"><strong>₱${item.total.toFixed(
-                          2
-                        )} ${currency}</strong></td>
-                    </tr>
-                    `
-                      )
-                      .join("")}
-                </tbody>
-            </table>
             
             <div class="total-section">
-                <div class="total-row">
-                    <span>Subtotal:</span>
-                    <span>₱${amount.toFixed(2)}</span>
-                </div>
-                <div class="total-row">
-                    <span>Tax:</span>
-                    <span>₱0.00</span>
-                </div>
-                <div class="total-row total-amount">
-                    <span>Paid:</span>                
-                    <span>₱${amount.toFixed(2)}</span>
+                <div class="total-row"><span>Subtotal: </span><span>₱${amount.toFixed(2)}</span></div>
+                <div class="total-divider"></div>
+                <div class="total-amount">
+                    <div>
+                        <div class="amount-label">Total Paid</div>
+                        <div>₱${amount.toFixed(2)}</div>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <div class="footer">
-            <p><strong>Thank you for choosing ${
-              this.companyDetails.name
-            }!</strong></p>
-            <p>This invoice was generated automatically upon your subscription activation.</p>
-            <p>If you have any questions about this invoice, please contact us at <strong>${
-              this.companyDetails.email
-            }</strong></p>
+        <div class="invoice-footer">
+            <p class="footer-message"><strong>Thank you for choosing LegalynX!</strong><br>Your subscription is now active. This invoice was generated automatically upon payment confirmation.</p>
+            <p class="footer-contact">Questions about this invoice? Contact us at <strong>${this.companyDetails.email}</strong></p>
+            <p class="copyright">&copy; 2025 LegalynX. All rights reserved.<br>Empowering legal professionals with AI-driven document analysis.</p>
         </div>
     </div>
 </body>
@@ -796,16 +546,16 @@ Please find your invoice attached as a PDF.
       });
 
       // Check if invoice already exists for this subscription activation
-      // Prevent duplicate invoices by checking recent invoices (within last 10 minutes)
+      // Prevent duplicate invoices by checking for ANY existing invoice with this subscription_id
+      // This is more robust than time-based checks and prevents duplicates completely
       if (data.subscriptionId) {
-        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
         const existingInvoice = await prisma.invoice.findFirst({
           where: {
             user_id: data.userId,
             subscription_id: data.subscriptionId,
-            created_at: {
-              gte: tenMinutesAgo
-            }
+            // Only check for invoices with the same plan and billing cycle
+            plan_type: data.planType as any,
+            billing_cycle: data.billingCycle === 'monthly' ? 'MONTHLY' : 'YEARLY'
           },
           orderBy: {
             created_at: 'desc'
@@ -818,7 +568,9 @@ Please find your invoice attached as a PDF.
             existingInvoiceNumber: existingInvoice.invoice_number,
             subscriptionId: data.subscriptionId,
             alreadySentTo: existingInvoice.email_sent_to,
-            createdAt: existingInvoice.created_at
+            createdAt: existingInvoice.created_at,
+            planType: existingInvoice.plan_type,
+            billingCycle: existingInvoice.billing_cycle
           });
 
           return {
@@ -848,18 +600,16 @@ Please find your invoice attached as a PDF.
           : ("YEARLY" as BillingCycle);
 
       // Create invoice with items in a transaction
-      // Use serializable isolation to prevent race conditions
+      // Use transaction to prevent race conditions
       const result = await prisma.$transaction(async (tx) => {
         // Double-check for existing invoice within the transaction to prevent race conditions
         if (data.subscriptionId) {
-          const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
           const existingInvoice = await tx.invoice.findFirst({
             where: {
               user_id: data.userId,
               subscription_id: data.subscriptionId,
-              created_at: {
-                gte: tenMinutesAgo
-              }
+              plan_type: data.planType as any,
+              billing_cycle: data.billingCycle === 'monthly' ? 'MONTHLY' : 'YEARLY'
             }
           });
 
@@ -867,6 +617,9 @@ Please find your invoice attached as a PDF.
             console.log('⚠️ Race condition detected: Invoice created by concurrent request:', {
               existingInvoiceId: existingInvoice.id,
               existingInvoiceNumber: existingInvoice.invoice_number,
+              subscriptionId: data.subscriptionId,
+              planType: existingInvoice.plan_type,
+              billingCycle: existingInvoice.billing_cycle
             });
             // Return the existing invoice instead of creating a duplicate
             return existingInvoice;

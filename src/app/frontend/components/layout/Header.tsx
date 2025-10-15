@@ -113,7 +113,7 @@ function Header() {
             <Link href="/frontend/login" onClick={closeMobileMenu}>
                 <Button
                   variant="outline"
-                  className="cursor-pointer hover:brightness-110 transition-all duration-300 text-foreground font-bold px-4 py-6 rounded-full w-full text-lg"
+                  className="cursor-pointer border-none hover:brightness-110 transition-all duration-300 text-foreground font-bold px-4 py-6 rounded-full w-full text-lg"
                 >
                   Sign In
                 </Button>

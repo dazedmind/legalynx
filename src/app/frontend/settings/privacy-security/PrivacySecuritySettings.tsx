@@ -18,6 +18,7 @@ import { Separator } from '@/app/frontend/components/ui/separator';
 import SecurityLogSettings from './SecurityLogSettings';
 import { FloatingSaveBar } from '../../components/layout/FloatingSaveBar';
 import { Button } from '@/app/frontend/components/ui/button';
+import { Input } from '../../components/ui/input';
 
 interface SecuritySettings {
   two_factor_enabled: boolean;
@@ -417,11 +418,11 @@ export default function PrivacySecuritySettings() {
                         type="text"
                         value={manualEntryKey}
                         readOnly
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm font-mono"
+                        className="flex-1 px-3 py-2 border border-tertiary rounded-md bg-accent text-sm font-mono"
                       />
                       <button
                         onClick={() => copyToClipboard(manualEntryKey)}
-                        className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                        className="px-3 py-2 border border-tertiary rounded-md hover:bg-accent cursor-pointer"
                         title="Copy to clipboard"
                       >
                         <Copy className="w-4 h-4" />
@@ -433,12 +434,12 @@ export default function PrivacySecuritySettings() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Verification Code
                     </label>
-                    <input
+                    <Input
                       type="text"
                       value={verificationCode}
                       onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       placeholder="Enter 6-digit code"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-tertiary rounded-md "
                       maxLength={6}
                     />
                   </div>
@@ -464,7 +465,7 @@ export default function PrivacySecuritySettings() {
                     
                     <button
                       onClick={() => setIs2FASetup(false)}
-                      className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="px-4 py-2 border border-tertiary rounded-md hover:bg-accent transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>

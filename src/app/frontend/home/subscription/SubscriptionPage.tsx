@@ -290,16 +290,6 @@ function SubscriptionPage() {
               </div>
             )}
           </div>
-          {/* <p className="text-sm text-muted-foreground">
-            You are currently on the{" "}
-            <span className="font-medium">{subscription}</span> plan.
-            {subscription === "BASIC" && (
-              <span className="text-blue-600">
-                {" "}
-                Upgrade to unlock more features!
-              </span>
-            )}
-          </p> */}
         </div>
 
         {/* Token Usage Card */}
@@ -307,44 +297,31 @@ function SubscriptionPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-yellow-500" />
-              <h1 className="text-lg font-bold">Tokens Used</h1>
+              <h1 className="text-lg font-bold">Token Usage</h1>
             </div>
-            <button
-              className={`flex items-center gap-1 text-sm text-muted-foreground ${
-                subscription === "BASIC" || subscription === "STANDARD"
-                  ? "hidden"
-                  : ""
-              } hover:text-gray-800 transition-colors cursor-pointer`}
-            >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
-            </button>
           </div>
 
           <div className="flex items-center justify-between">
             <span className="flex items-baseline gap-2">
               <h1 className="text-3xl font-bold text-foreground">
-                {typeof tokensUsed === "number"
+                {typeof tokensUsed === "number" && subscription !== "PREMIUM"
                   ? tokensUsed.toLocaleString()
-                  : "--"}
+                  : "♾️"}
               </h1>
-              <span className="text-lg text-muted-foreground">
-                /{" "}
-                {typeof tokenLimit === "number"
+              <span className="text-xl text-muted-foreground">
+                /{" "} {subscription === "PREMIUM" ? "Unlimited" : tokenLimit.toLocaleString()}
+                {/* {typeof tokenLimit === "number"
                   ? tokenLimit.toLocaleString()
-                  : "--"}
+                  : "--"} */}
               </span>
             </span>
             <div className="text-right">
-              <div className="text-sm font-medium text-muted-foreground">
-                {tokenPercentage.toFixed(1)}% used
-              </div>
               <div className="text-xs text-muted-foreground">
                 {/* {(tokenLimit - tokensUsed).toLocaleString()} remaining */}
               </div>
             </div>
           </div>
-
+          {subscription !== "PREMIUM" && (
           <div className="space-y-2">
             <Progress value={tokenPercentage} className="h-2" />
             {isNearLimit && (
@@ -358,6 +335,8 @@ function SubscriptionPage() {
               </div>
             )}
           </div>
+          )}
+
         </div>
 
         {/* Billing Information */}
@@ -419,6 +398,7 @@ function SubscriptionPage() {
                 <ExternalLink className="w-4 h-4" />
                 View Billing History
               </button>
+              {paymentMethod !== "" && (
               <button
                 onClick={() => setConfirmationModal(true)}
                 disabled={isCancelling}
@@ -435,6 +415,7 @@ function SubscriptionPage() {
                 )}
                 {isCancelling ? "Cancelling..." : "Cancel Subscription"}
               </button>
+              )}
             </div>
           </div>
         )}

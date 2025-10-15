@@ -318,7 +318,7 @@ async function main() {
     
   // Configuration for debug run
   const config: DebugConfig = {
-    testUserEmail: 'krugmihawk@gmail.com',  // Uncomment and set for specific user
+    testUserEmail: 'keywarriors2025@gmail.com',  // Uncomment and set for specific user
     testPlan: 'STANDARD',
     testBilling: 'monthly',
     skipEmailSending: false  // Set to true to skip actual email sending

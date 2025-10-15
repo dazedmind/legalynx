@@ -17,47 +17,14 @@ export default function SessionLoader({
   stage = 'loading_session'
 }: SessionLoaderProps) {
 
-  const getStageInfo = () => {
-    switch (stage) {
-      case 'loading_session':
-        return {
-          icon: MessageSquare,
-          title: "Loading Chat Session",
-          description: "Retrieving conversation history",
-          gradient: "from-blue-500 to-cyan-500"
-        };
-      case 'loading_document':
-        return {
-          icon: FileText,
-          title: "Loading Document",
-          description: "Fetching document from storage",
-          gradient: "from-purple-500 to-pink-500"
-        };
-      case 'loading_rag':
-        return {
-          icon: Zap,
-          title: "Initializing AI",
-          description: "Processing document for intelligent search",
-          gradient: "from-green-500 to-emerald-500"
-        };
-      case 'preparing_chat':
-        return {
-          icon: Sparkles,
-          title: "Preparing Chat",
-          description: "Setting up conversation interface",
-          gradient: "from-orange-500 to-amber-500"
-        };
-      default:
-        return {
-          icon: MessageSquare,
-          title: "Loading",
-          description: "Please wait",
-          gradient: "from-gray-500 to-slate-500"
-        };
-    }
+  // Simplified: Always show "Loading Chat Session"
+  const stageInfo = {
+    icon: MessageSquare,
+    title: "Loading Chat Session",
+    description: "Please wait...",
+    gradient: "from-blue-500 to-cyan-500"
   };
 
-  const stageInfo = getStageInfo();
   const IconComponent = stageInfo.icon;
 
   return (

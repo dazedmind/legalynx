@@ -7,7 +7,7 @@ import InputField from "../components/ui/InputField";
 import { Button } from "@/app/frontend/components/ui/button";
 import { GoEye, GoEyeClosed } from "react-icons/go";
 import { Toaster, toast } from "sonner";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Check, CheckCircle, Unlink } from "lucide-react";
 import { Input } from "../components/ui/input";
 
 // Separate component for the form content that uses useSearchParams
@@ -217,19 +217,17 @@ const ResetPasswordForm = () => {
   // Invalid token state
   if (tokenValid === false) {
     return (
-      <div className="w-80 md:w-96 p-8 rounded-xl bg-primary text-center">
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
+      <div className="w-80 md:w-96 p-8 rounded-xl mt-16 border border-tertiary bg-primary text-center space-y-3">
+        <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+          <Unlink size={24} className="text-destructive" />
         </div>
-        <h2 className="text-2xl font-bold text-red-600 mb-4">Invalid Reset Link</h2>
-        <p className="text-primary-foreground mb-6 text-sm">
-          {error || "This password reset link is invalid or has expired. Please request a new one."}
+        <h2 className="text-2xl font-bold text-destructive">Invalid Reset Link</h2>
+        <p className="text-muted-foreground text-sm">
+          {"This password reset link is invalid or has expired. Please request a new one."}
         </p>
         <button
           onClick={() => router.push("/frontend/login")}
-          className="px-6 py-2 bg-blue hover:brightness-105 text-white rounded-lg font-semibold"
+          className="px-6 py-2 bg-blue hover:brightness-105 text-white rounded-lg font-semibold cursor-pointer"
         >
           Back to Login
         </button>
@@ -240,22 +238,20 @@ const ResetPasswordForm = () => {
   // Success state
   if (success) {
     return (
-      <div className="w-80 md:w-96 p-8 rounded-xl bg-primary text-center">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-          </svg>
+      <div className="w-80 md:w-96 p-8 rounded-xl mt-16 border border-tertiary bg-primary text-center space-y-3">
+        <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto">
+          <Check size={32} className="text-green-500" />
         </div>
-        <h2 className="text-2xl font-bold text-green-600 mb-4">Password Reset Successful!</h2>
-        <p className="text-primary-foreground mb-6 text-sm">
+        <h2 className="text-2xl font-bold text-green-600">Password Reset Successful!</h2>
+        <p className="text-muted-foreground text-sm">
           Your password has been successfully updated. You can now log in with your new password.
         </p>
-        <p className="text-blue font-semibold text-sm mb-6">
+        <p className="text-blue font-semibold text-sm">
           Redirecting to login page in 3 seconds...
         </p>
         <button
-          onClick={() => router.push("/login")}
-          className="px-6 py-2 bg-blue hover:brightness-105 text-white rounded-lg font-semibold"
+          onClick={() => router.push("/frontend/login")}
+          className="px-6 py-2 bg-blue hover:brightness-105 text-white rounded-lg font-semibold cursor-pointer"
         >
           Go to Login
         </button>
@@ -391,7 +387,7 @@ const ResetPasswordForm = () => {
           <Button
             type="submit"
             disabled={isLoading || !isPasswordValid(formData.newPassword) || !passwordsMatch}
-            className={`w-full h-10 rounded-lg bg-gradient-to-r from-[#1a3aa7] to-[#468aff] hover:brightness-120 transition-all duration-300 font-bold text-md text-white ${
+            className={`w-full h-10 mt-2 rounded-lg bg-gradient-to-r from-[#1a3aa7] to-[#468aff] hover:brightness-120 transition-all duration-300 font-bold text-md text-white ${
               (isLoading || !isPasswordValid(formData.newPassword) || !passwordsMatch) 
                 ? 'opacity-70 cursor-not-allowed' 
                 : ''

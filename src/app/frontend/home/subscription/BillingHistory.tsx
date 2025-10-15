@@ -123,15 +123,15 @@ function BillingHistory({ onBack }: BillingHistoryProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "SENT":
-        return "bg-blue/20 text-blue-700 border-blue-300";
+        return "bg-blue/10 text-blue-700 border-blue-700";
       case "DELIVERED":
-        return "bg-green/20 text-green-700 border-green-300";
+        return "bg-green/20 text-green-700 border-green-700";
       case "VIEWED":
-        return "bg-purple/20 text-purple-700 border-purple-300";
+        return "bg-purple/20 text-purple-700 border-purple-700";
       case "FAILED":
-        return "bg-red/20 text-red-700 border-red-300";
+        return "bg-red/20 text-red-700 border-red-700";
       default:
-        return "bg-gray/20 text-gray-700 border-gray-300";
+        return "bg-gray/20 text-gray-700 border-gray-700";
     }
   };
 

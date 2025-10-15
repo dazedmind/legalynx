@@ -362,9 +362,9 @@ export default function FileSettings() {
           </div>
           
           {settings.file_retention_days && (
-            <div className="flex items-center gap-2 mt-2 p-2 bg-blue-50 rounded text-blue-800 text-sm">
+            <div className="flex items-center gap-2 mt-2 p-3 bg-blue/10 rounded-md text-blue-600 text-sm">
               <AlertCircle className="w-4 h-4" />
-              Files will be automatically deleted after{" "}
+              Saved Files will be automatically deleted after{" "}
               {retentionOptions
                 .find((opt) => opt.value === settings.file_retention_days)
                 ?.label.toLowerCase()}
