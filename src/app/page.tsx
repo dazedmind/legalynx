@@ -5,30 +5,24 @@ import { Shield, Clock, Users, ArrowUp } from "lucide-react";
 import Header from "./frontend/components/layout/Header";
 import BlurText from "./frontend/components/reactbits/BlurText";
 import Image from "next/image";
-import heroImg from "./frontend/img/hero-img.png";
-import heroImgDark from "./frontend/img/hero-img-dark.png";
 import voiceMode from "./frontend/img/voice-mode.png";
 import voiceModeDark from "./frontend/img/voice-mode-dark.png";
-import chatBubble from "./frontend/img/chat-bubble.png";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import LightRays from "./frontend/components/reactbits/LightRays";
 import SpotlightCard from "./frontend/components/reactbits/SpotlightCard";
 import { BsFillLightningFill, BsFillShieldLockFill, BsFolderFill } from "react-icons/bs";
 import AnimatedContent from "./frontend/components/reactbits/AnimatedContent";
-import CountUp from "./frontend/components/reactbits/CountUp";
 import TypingAnimation from "./frontend/components/layout/TypingAnimation";
-import { RiCodeSFill, RiCodeSSlashFill } from "react-icons/ri";
+import { RiCodeSFill } from "react-icons/ri";
 
 export default function Home() {
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const { theme } = useTheme();
   const [windowWidth, setWindowWidth] = useState(0); 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
-  const [showChatBubble, setShowChatBubble] = useState(false);
-  const [startTyping, setStartTyping] = useState(false);
   const [showDevelopersModal, setShowDevelopersModal] = useState(false);
+  const [showButtonToTop, setShowButtonToTop] = useState(true);
 
   useEffect(() => {
     const handleResize = () => {
@@ -40,6 +34,16 @@ export default function Home() {
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 1000) {
+        setShowButtonToTop(true);
+      } else {
+        setShowButtonToTop(false);
+      }
+    });
   }, []);
 
   const toggleMobileSidebar = () => {
@@ -476,6 +480,13 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+      {showButtonToTop && (
+        <div className="fixed bottom-4 right-4">
+          <button className="px-4 py-2 bg-blue-600 text-white rounded-full cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <ArrowUp className="w-6 h-6" />
+          </button>
         </div>
       )}
     </div>

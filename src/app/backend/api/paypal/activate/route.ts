@@ -81,9 +81,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Subscription is not active' }, { status: 400 });
     }
 
-    // Get plan limits
-    const { tokenLimit, storageLimit } = getPlanLimits(plan as any);
-
     try {
       // Use unified subscription service (handles both subscription and invoice)
       console.log('⚠️ [ACTIVATE] DEPRECATED endpoint called, using unified service...');
@@ -105,7 +102,8 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      const { tokenLimit, storageLimit } = subscriptionService.getPlanConfig(plan, billing);
+      // Get plan limits from unified service
+      const { tokens: tokenLimit, storage: storageLimit } = subscriptionService.getPlanConfig(plan, billing);
 
       return NextResponse.json({
         success: true,
