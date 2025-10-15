@@ -81,7 +81,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Office</h3>
-                    <p className="text-sm text-muted-foreground">123 Legal Street, Suite 100<br />San Francisco, CA 94102</p>
+                    <p className="text-sm text-muted-foreground">Manila, Philippines</p>
                   </div>
                 </div>
               </div>

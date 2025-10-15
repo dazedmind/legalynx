@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Shield, Clock, Users, ArrowUp } from "lucide-react";
+import { Shield, Clock, Users, ArrowUp, Upload, Search, FileText, Sparkles, CheckCircle, Scale, Briefcase, GraduationCap, ChevronDown } from "lucide-react";
 import Header from "./frontend/components/layout/Header";
 import BlurText from "./frontend/components/reactbits/BlurText";
 import Image from "next/image";
@@ -23,6 +23,7 @@ export default function Home() {
   const [showAnswer, setShowAnswer] = useState(false);
   const [showDevelopersModal, setShowDevelopersModal] = useState(false);
   const [showButtonToTop, setShowButtonToTop] = useState(true);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -38,7 +39,7 @@ export default function Home() {
 
   useEffect(() => {
     window.addEventListener('scroll', () => {
-      if (window.scrollY > 1000) {
+      if (window.scrollY > 3000) {
         setShowButtonToTop(true);
       } else {
         setShowButtonToTop(false);
@@ -338,6 +339,400 @@ export default function Home() {
         </div>
       </section>
 
+      {/* How It Works Section */}
+      <section className="py-24 bg-secondary">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <AnimatedContent
+            distance={100}
+            direction="vertical"
+            reverse={false}
+            duration={1}
+            initialOpacity={0}
+            animateOpacity
+            scale={1}
+            threshold={0.2}
+            onComplete={() => {
+              console.log("Animation completed");
+            }}
+          >
+            <div className="text-center mb-16">
+              <h3 className="text-3xl lg:text-5xl font-bold font-serif text-foreground mb-6">
+                How It Works
+              </h3>
+              <p className="text-md text-muted-foreground max-w-2xl mx-auto">
+                Get started with LegalynX in three simple steps
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mx-4 md:mx-0">
+              <div className="text-center">
+                <div className="bg-blue/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Upload className="w-10 h-10 text-blue" />
+                </div>
+                <h4 className="text-xl font-bold text-foreground mb-3">1. Upload Documents</h4>
+                <p className="text-muted-foreground">
+                  Simply drag and drop your legal documents or upload them directly to our secure platform.
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="bg-blue/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Search className="w-10 h-10 text-blue" />
+                </div>
+                <h4 className="text-xl font-bold text-foreground mb-3">2. Ask Questions</h4>
+                <p className="text-muted-foreground">
+                  Use natural language to query your documents. Our AI understands complex legal terminology.
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="bg-blue/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Sparkles className="w-10 h-10 text-blue" />
+                </div>
+                <h4 className="text-xl font-bold text-foreground mb-3">3. Get Instant Insights</h4>
+                <p className="text-muted-foreground">
+                  Receive accurate, context-aware answers with citations and references in seconds.
+                </p>
+              </div>
+            </div>
+          </AnimatedContent>
+        </div>
+      </section>
+
+      {/* Use Cases Section */}
+      <section className="py-24 bg-primary">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <AnimatedContent
+            distance={100}
+            direction="vertical"
+            reverse={false}
+            duration={1}
+            initialOpacity={0}
+            animateOpacity
+            scale={1}
+            threshold={0.2}
+            onComplete={() => {
+              console.log("Animation completed");
+            }}
+          >
+            <div className="text-center mb-16">
+              <h3 className="text-3xl lg:text-5xl font-bold font-serif text-foreground mb-6">
+                Perfect For Every Legal Professional
+              </h3>
+              <p className="text-md text-muted-foreground max-w-2xl mx-auto">
+                Whether you're a lawyer, paralegal, or legal student, LegalynX adapts to your needs
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mx-4 md:mx-0">
+              <SpotlightCard
+                className="bg-tertiary border border-tertiary rounded-2xl p-8 hover:border-blue/50 transition-all duration-300"
+                spotlightColor="rgba(46, 46, 255, 0.15)"
+              >
+                <Scale className="w-12 h-12 text-blue mb-4" />
+                <h4 className="text-xl font-bold text-foreground mb-3">Law Firms</h4>
+                <ul className="space-y-2 text-muted-foreground text-sm">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <span>Contract review and analysis</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <span>Case law research</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <span>Due diligence automation</span>
+                  </li>
+                </ul>
+              </SpotlightCard>
+
+              <SpotlightCard
+                className="bg-tertiary border border-tertiary rounded-2xl p-8 hover:border-blue/50 transition-all duration-300"
+                spotlightColor="rgba(46, 46, 255, 0.15)"
+              >
+                <Briefcase className="w-12 h-12 text-blue mb-4" />
+                <h4 className="text-xl font-bold text-foreground mb-3">Corporate Legal Teams</h4>
+                <ul className="space-y-2 text-muted-foreground text-sm">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <span>Policy document analysis</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <span>Compliance monitoring</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <span>Risk assessment</span>
+                  </li>
+                </ul>
+              </SpotlightCard>
+
+              <SpotlightCard
+                className="bg-tertiary border border-tertiary rounded-2xl p-8 hover:border-blue/50 transition-all duration-300"
+                spotlightColor="rgba(46, 46, 255, 0.15)"
+              >
+                <GraduationCap className="w-12 h-12 text-blue mb-4" />
+                <h4 className="text-xl font-bold text-foreground mb-3">Legal Students</h4>
+                <ul className="space-y-2 text-muted-foreground text-sm">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <span>Case study analysis</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <span>Legal research assistance</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <span>Exam preparation</span>
+                  </li>
+                </ul>
+              </SpotlightCard>
+            </div>
+          </AnimatedContent>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      {/* <section className="py-24 bg-secondary">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <AnimatedContent
+            distance={100}
+            direction="vertical"
+            reverse={false}
+            duration={1}
+            initialOpacity={0}
+            animateOpacity
+            scale={1}
+            threshold={0.2}
+            onComplete={() => {
+              console.log("Animation completed");
+            }}
+          >
+            <div className="text-center mb-16">
+              <h3 className="text-3xl lg:text-5xl font-bold font-serif text-foreground mb-6">
+                Trusted by Legal Professionals
+              </h3>
+              <p className="text-md text-muted-foreground max-w-2xl mx-auto">
+                Our platform delivers measurable results
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mx-4 md:mx-0">
+              <div className="text-center">
+                <div className="text-4xl lg:text-5xl font-bold text-blue mb-2">99%</div>
+                <p className="text-muted-foreground">Accuracy Rate</p>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl lg:text-5xl font-bold text-blue mb-2">80%</div>
+                <p className="text-muted-foreground">Time Saved</p>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl lg:text-5xl font-bold text-blue mb-2">24/7</div>
+                <p className="text-muted-foreground">Availability</p>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl lg:text-5xl font-bold text-blue mb-2">500+</div>
+                <p className="text-muted-foreground">Users</p>
+              </div>
+            </div>
+          </AnimatedContent>
+        </div>
+      </section> */}
+
+      {/* Testimonials Section */}
+      {/* <section className="py-24 bg-primary">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <AnimatedContent
+            distance={100}
+            direction="vertical"
+            reverse={false}
+            duration={1}
+            initialOpacity={0}
+            animateOpacity
+            scale={1}
+            threshold={0.2}
+            onComplete={() => {
+              console.log("Animation completed");
+            }}
+          >
+            <div className="text-center mb-16">
+              <h3 className="text-3xl lg:text-5xl font-bold font-serif text-foreground mb-6">
+                What Our Users Say
+              </h3>
+              <p className="text-md text-muted-foreground max-w-2xl mx-auto">
+                Hear from legal professionals who transformed their workflow
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mx-4 md:mx-0">
+              <div className="bg-tertiary border border-tertiary rounded-2xl p-8 hover:border-blue/30 transition-all duration-300">
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-5 h-5 text-yellow fill-current" viewBox="0 0 20 20">
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-muted-foreground mb-4 italic">
+                  "LegalynX has revolutionized how we handle document review. What used to take days now takes hours. The accuracy is impressive."
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue/20 flex items-center justify-center">
+                    <span className="text-blue font-semibold">MR</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Maria Rodriguez</p>
+                    <p className="text-sm text-muted-foreground">Senior Attorney</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-tertiary border border-tertiary rounded-2xl p-8 hover:border-blue/30 transition-all duration-300">
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-5 h-5 text-yellow fill-current" viewBox="0 0 20 20">
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-muted-foreground mb-4 italic">
+                  "As a legal student, this tool has been invaluable for my research. It helps me understand complex cases quickly and efficiently."
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue/20 flex items-center justify-center">
+                    <span className="text-blue font-semibold">JC</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">James Chen</p>
+                    <p className="text-sm text-muted-foreground">Law Student</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-tertiary border border-tertiary rounded-2xl p-8 hover:border-blue/30 transition-all duration-300">
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-5 h-5 text-yellow fill-current" viewBox="0 0 20 20">
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-muted-foreground mb-4 italic">
+                  "The AI-powered insights have improved our compliance monitoring significantly. It's like having an extra team member working 24/7."
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue/20 flex items-center justify-center">
+                    <span className="text-blue font-semibold">SP</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Sarah Parker</p>
+                    <p className="text-sm text-muted-foreground">Corporate Counsel</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </AnimatedContent>
+        </div>
+      </section> */}
+
+      {/* FAQ Section */}
+      <section className="py-24 bg-secondary">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+ 
+        <div className="text-center mb-16">
+              <h3 className="text-3xl lg:text-5xl font-bold font-serif text-foreground mb-6">
+                Frequently Asked Questions
+              </h3>
+              <p className="text-md text-muted-foreground">
+                Everything you need to know about LegalynX
+              </p>
+            </div>
+
+          <div className="space-y-4 mx-4 md:mx-0">
+              {/* FAQ 1 */}
+              <div className="bg-primary border border-tertiary rounded-2xl overflow-hidden hover:border-blue/30 transition-all duration-300">
+                <button
+                  onClick={() => setOpenFaqIndex(openFaqIndex === 0 ? null : 0)}
+                  className="w-full px-6 py-5 flex items-center justify-between text-left cursor-pointer"
+                >
+                  <h4 className="text-xl font-semibold text-foreground pr-4">
+                    Is my data secure and private?
+                  </h4>
+                  <ChevronDown
+                    className={`w-6 h-6 text-foreground flex-shrink-0 transition-transform duration-300 ${
+                      openFaqIndex === 0 ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+                <div
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                    openFaqIndex === 0 ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                  }`}
+                >
+                  <p className="text-muted-foreground px-6 pb-5">
+                    Absolutely. All documents are encrypted and stored securely. We never share your data with third parties or use it for training purposes. Your privacy is our top priority.
+                  </p>
+                </div>
+              </div>
+
+              {/* FAQ 2 */}
+              <div className="bg-primary border border-tertiary rounded-2xl overflow-hidden hover:border-blue/30 transition-all duration-300">
+                <button
+                  onClick={() => setOpenFaqIndex(openFaqIndex === 1 ? null : 1)}
+                  className="w-full px-6 py-5 flex items-center justify-between text-left cursor-pointer"
+                >
+                  <h4 className="text-xl font-semibold text-foreground pr-4">
+                    What file formats are supported?
+                  </h4>
+                  <ChevronDown
+                    className={`w-6 h-6 text-foreground flex-shrink-0 ${
+                      openFaqIndex === 1 ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+                <div
+                  className={`overflow-hidden ${
+                    openFaqIndex === 1 ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                  }`}
+                >
+                  <p className="text-muted-foreground px-6 pb-5">
+                    LegalynX supports a wide range of formats including PDF and DOCX. Our AI can process digital documents with high accuracy.
+                  </p>
+                </div>
+              </div>
+
+              {/* FAQ 3 */}
+              <div className="bg-primary border border-tertiary rounded-2xl overflow-hidden hover:border-blue/30 transition-all duration-300">
+                <button
+                  onClick={() => setOpenFaqIndex(openFaqIndex === 2 ? null : 2)}
+                  className="w-full px-6 py-5 flex items-center justify-between text-left cursor-pointer"
+                >
+                  <h4 className="text-xl font-semibold text-foreground pr-4">
+                    Can I cancel my subscription anytime?
+                  </h4>
+                  <ChevronDown
+                    className={`w-6 h-6 text-foreground flex-shrink-0 transition-transform duration-300 ${
+                      openFaqIndex === 2 ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+                <div
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                    openFaqIndex === 2 ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                  }`}
+                >
+                  <p className="text-muted-foreground px-6 pb-5">
+                    Yes, you can cancel your subscription at any time with no hidden fees or penalties. Your data will remain accessible during your billing period.
+                  </p>
+                </div>
+              </div>
+            </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-24 bg-gray-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -444,7 +839,6 @@ export default function Home() {
           >
             <div className="flex justify-between items-center mb-4">
               <span className="flex items-center gap-2">
-                <RiCodeSFill className="w-8 h-8 text-blue-600" />
                 <h3 className="text-2xl font-bold text-foreground">The Developers</h3>
               </span>
 
