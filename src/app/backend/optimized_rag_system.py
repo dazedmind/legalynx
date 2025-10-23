@@ -470,15 +470,90 @@ class RuleBasedFileNamer:
         naming_option: str,
         user_title: Optional[str] = None,
         user_client_name: Optional[str] = None,
-        counter: Optional[int] = None
-    ) -> str:
+        counter: Optional[int] = None,
+        validate_legal: bool = True
+    ) -> tuple:
         """
-        ⚡ ULTRA-OPTIMIZED: LLM returns formatted filename directly.
-        Single LLM call with format instructions - no parsing needed!
+        ⚡ ULTRA-OPTIMIZED: LLM returns formatted filename directly + full document extraction + legal validation.
+        NOW RETURNS: (filename, documents, validation_result)
+        Single text extraction - used for both naming and RAG pipeline!
         Format: YYYYMMDD_DOCUMENT-TYPE_SURNAME (all uppercase with hyphens)
         """
+        from llama_index.core import Document
+        
+        # Always extract full documents (not just first 3 pages)
+        # This will be used for both naming and RAG pipeline
+        documents = []
+        try:
+            import fitz
+            doc = fitz.open(stream=file_content, filetype="pdf")
+            
+            # Extract ALL pages
+            for page_num in range(len(doc)):
+                page_text = doc[page_num].get_text()
+                # Preserve critical newlines for logical chunking
+                page_text = "\n".join([line.strip() for line in page_text.splitlines() if line.strip()])
+                
+                # Create Document object with metadata
+                documents.append(Document(
+                    text=page_text,
+                    metadata={
+                        "file_name": os.path.basename(original_filename),
+                        "page_number": page_num + 1,
+                        "total_pages": len(doc)
+                    }
+                ))
+            
+            doc.close()
+            
+            if not documents:
+                raise Exception("No text extracted from PDF")
+            
+            print(f"📄 Extracted {len(documents)} pages from document")
+            
+        except Exception as e:
+            print(f"❌ Text extraction failed: {e}")
+            raise Exception(f"Failed to extract text from PDF: {str(e)}")
+        
+        # ========================================
+        # LEGAL DOCUMENT VALIDATION
+        # ========================================
+        validation_result = {"is_legal": True, "confidence": 1.0}  # Default
+        
+        if validate_legal:
+            try:
+                print("⚖️ Validating legal document content...")
+                from utils.legal_document_validator import validate_legal_document
+                
+                validation_result = validate_legal_document(
+                    documents=documents,
+                    threshold=0.3,
+                    verbose=True
+                )
+                
+                if not validation_result.get("is_legal", False):
+                    rejection_reason = validation_result.get(
+                        "rejection_reason",
+                        "This document does not appear to be legal-related."
+                    )
+                    print(f"❌ Legal validation failed: {rejection_reason}")
+                    raise Exception(f"Legal validation failed: {rejection_reason}")
+                
+                print(f"✅ Legal document validated - Confidence: {validation_result.get('confidence', 0):.1%}")
+                
+            except ImportError:
+                print("⚠️ Legal document validator not found - skipping validation")
+            except Exception as e:
+                # Re-raise validation errors
+                if "Legal validation failed" in str(e):
+                    raise
+                print(f"⚠️ Legal validation error (continuing): {e}")
+        
+        # ========================================
+        # FILENAME GENERATION (using first 3 pages for speed)
+        # ========================================
         if naming_option == "keep_original":
-            return original_filename
+            return (original_filename, documents, validation_result)
         
         start_time = time.time()
         file_ext = os.path.splitext(original_filename)[1].lower()
@@ -494,20 +569,10 @@ class RuleBasedFileNamer:
                 llm = embedding_manager.get_llm()
             except Exception as e:
                 print(f"⚠️ Failed to initialize LLM: {e}")
-                return original_filename
+                return (original_filename, documents, validation_result)
             
-            # Extract text from document (first 3 pages for speed)
-            try:
-                import fitz
-                doc = fitz.open(stream=file_content, filetype="pdf")
-                text_parts = []
-                for page_num in range(min(3, len(doc))):
-                    text_parts.append(doc[page_num].get_text())
-                doc.close()
-                text_content = "\n".join(text_parts)[:5000]  # Limit to 5000 chars for speed
-            except Exception as e:
-                print(f"⚠️ Text extraction failed: {e}")
-                return original_filename
+            # Use first 3 pages for filename generation (for speed)
+            text_content = "\n".join([doc.text for doc in documents[:3]])[:5000]
             
             # Create format-specific prompt for LLM
             if naming_option == "add_timestamp":
@@ -574,7 +639,7 @@ Your response (filename only):"""
 
             else:
                 print(f"⚠️ Unknown naming option: {naming_option}")
-                return original_filename
+                return (original_filename, documents, validation_result)
             
             # ⚡ Single LLM call for formatted filename
             print("🤖 Requesting formatted filename from LLM...")
@@ -592,19 +657,20 @@ Your response (filename only):"""
                 final_filename = f"{formatted_filename}{file_ext}"
                 processing_time = time.time() - start_time
                 print(f"✅ LLM formatting complete in {processing_time:.2f}s: {final_filename}")
-                return final_filename
+                return (final_filename, documents, validation_result)
             else:
                 print(f"⚠️ Invalid LLM response, using fallback")
-                return cls._generate_fallback_filename(
+                fallback_filename = cls._generate_fallback_filename(
                     original_filename, naming_option, current_date, 
                     user_title, user_client_name, counter, file_ext
                 )
+                return (fallback_filename, documents, validation_result)
         
         except Exception as e:
             print(f"❌ LLM formatting error: {e}")
             processing_time = time.time() - start_time
             print(f"⚠️ Fallback to original after {processing_time:.2f}s")
-            return original_filename
+            return (original_filename, documents, validation_result)
     
     @classmethod
     def _clean_llm_response(cls, response: str) -> str:
@@ -830,27 +896,32 @@ async def optimized_upload_workflow(
 
     try:
         # ========================================
-        # STEP 1: LLM-ENHANCED NAMING (BLOCKING - MUST COMPLETE)
+        # STEP 1: EXTRACT TEXT + LEGAL VALIDATION + LLM NAMING (ALL IN ONE)
         # ========================================
-        print("🧠 [1/5] LLM-enhanced intelligent naming...")
+        print("🧠 [1/4] Extracting text, validating legal content, and generating filename...")
         naming_start = time.time()
 
-        intelligent_filename = await RuleBasedFileNamer.generate_filename_ultra_fast(
+        # This now returns: (filename, documents, validation_result)
+        # Extracts text ONCE and validates it's legal-related
+        intelligent_filename, documents, validation_result = await RuleBasedFileNamer.generate_filename_ultra_fast(
             file_content=file_content,
             original_filename=original_filename,
             naming_option=naming_option,
             user_title=user_title,
             user_client_name=user_client_name,
-            counter=counter
+            counter=counter,
+            validate_legal=True  # Enable legal validation
         )
 
         naming_time = time.time() - naming_start
-        print(f"✅ [1/5] Naming complete: {intelligent_filename} ({naming_time:.2f}s)")
+        confidence = validation_result.get("confidence", 0.0)
+        doc_type = validation_result.get("document_type", "Unknown")
+        print(f"✅ [1/4] Complete: {intelligent_filename} | {len(documents)} pages | Legal: {doc_type} ({confidence:.1%}) | ({naming_time:.2f}s)")
 
         # ========================================
         # STEP 2: SAVE FILE WITH FINAL NAME
         # ========================================
-        print("💾 [2/5] Saving file with final name...")
+        print("💾 [2/4] Saving file with final name...")
         save_start = time.time()
 
         os.makedirs("sample_docs", exist_ok=True)
@@ -871,58 +942,28 @@ async def optimized_upload_workflow(
             f.write(file_content)
 
         save_time = time.time() - save_start
-        print(f"✅ [2/5] File saved ({save_time:.2f}s)")
+        print(f"✅ [2/4] File saved ({save_time:.2f}s)")
 
         # ========================================
-        # STEP 3: EXTRACT TEXT & VALIDATE
+        # STEP 3: BUILD RAG SYSTEM (VECTORIZED + MULTI-GRANULARITY)
         # ========================================
-        print("📄 [3/5] Extracting text from PDF...")
-        extract_start = time.time()
-
-        try:
-            from utils.file_handler import extract_text_from_pdf, validate_pdf_content
-        except ImportError:
-            import importlib.util
-            file_handler_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'utils', 'file_handler.py')
-            if os.path.exists(file_handler_path):
-                spec = importlib.util.spec_from_file_location("file_handler", file_handler_path)
-                file_handler = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(file_handler)
-                extract_text_from_pdf = file_handler.extract_text_from_pdf
-                validate_pdf_content = file_handler.validate_pdf_content
-            else:
-                raise ImportError("Cannot find utils.file_handler module")
-
-        validation = validate_pdf_content(file_path)
-        if not validation.get("is_valid", False):
-            raise Exception("Invalid PDF content")
-
-        documents = extract_text_from_pdf(file_path)
-        if not documents:
-            raise Exception("No text extracted from PDF")
-
-        extract_time = time.time() - extract_start
-        print(f"✅ [3/5] Extracted {len(documents)} pages ({extract_time:.2f}s)")
-
-        # ========================================
-        # STEP 4: BUILD RAG SYSTEM (VECTORIZED + MULTI-GRANULARITY)
-        # ========================================
-        print("🔧 [4/5] Building RAG system...")
+        print("🔧 [3/4] Building RAG system...")
         rag_start = time.time()
 
         # Build RAG system directly (no nested function calls)
+        # Using pre-extracted documents - no re-extraction needed!
         rag_system = await VectorizedRAGBuilder.build_rag_system_fast(documents, file_path)
 
         if not rag_system or "query_engine" not in rag_system:
             raise Exception("RAG system incomplete")
 
         rag_time = time.time() - rag_start
-        print(f"✅ [4/5] RAG system ready ({rag_time:.2f}s)")
+        print(f"✅ [3/4] RAG system ready ({rag_time:.2f}s)")
 
         # ========================================
-        # STEP 5: REGISTER WITH RAG MANAGER
+        # STEP 4: REGISTER WITH RAG MANAGER
         # ========================================
-        print("📝 [5/5] Registering with RAG manager...")
+        print("📝 [4/4] Registering with RAG manager...")
         register_start = time.time()
 
         rag_manager.set_system(
@@ -934,7 +975,7 @@ async def optimized_upload_workflow(
         )
 
         register_time = time.time() - register_start
-        print(f"✅ [5/5] Registered ({register_time:.2f}s)")
+        print(f"✅ [4/4] Registered ({register_time:.2f}s)")
 
         # ========================================
         # COMPLETION
@@ -945,13 +986,13 @@ async def optimized_upload_workflow(
         print(f"🎉 UPLOAD COMPLETE - READY FOR CHAT ({total_time:.2f}s)")
         print("=" * 80)
         print(f"   📊 Timing Breakdown:")
-        print(f"      1. Naming:     {naming_time:.2f}s")
-        print(f"      2. Save:       {save_time:.2f}s")
-        print(f"      3. Extract:    {extract_time:.2f}s")
-        print(f"      4. RAG Build:  {rag_time:.2f}s")
-        print(f"      5. Register:   {register_time:.2f}s")
+        print(f"      1. Extract+Validate+Name:  {naming_time:.2f}s")
+        print(f"      2. Save:                    {save_time:.2f}s")
+        print(f"      3. RAG Build:               {rag_time:.2f}s")
+        print(f"      4. Register:                {register_time:.2f}s")
         print(f"   📄 File: {intelligent_filename}")
         print(f"   📚 Pages: {len(documents)}")
+        print(f"   ⚖️  Legal: {doc_type} ({confidence:.1%} confidence)")
         print(f"   🚀 Status: Ready for chat!")
         print("=" * 80)
 
@@ -962,10 +1003,10 @@ async def optimized_upload_workflow(
             "documents": documents,
             "page_count": len(documents),
             "document_id": document_id,
+            "legal_validation": validation_result,
             "timing": {
-                "naming": naming_time,
+                "extract_validate_name": naming_time,
                 "save": save_time,
-                "extract": extract_time,
                 "rag": rag_time,
                 "register": register_time,
                 "total": total_time

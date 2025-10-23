@@ -511,45 +511,51 @@ async def upload_document_ultra_fast(
         
         # ===== STEP 3: HANDLE DOCX CONVERSION =====
         final_file_content = file_content
+        original_filename = file.filename
         file_type = "pdf"
         conversion_performed = False
         
         if file_ext in ['.docx', '.doc'] and UTILS_AVAILABLE:
             file_type = "docx"
             try:
-                temp_docx_path = f"temp_{file.filename}"
-                with open(temp_docx_path, 'wb') as f:
-                    f.write(file_content)
-                
-                from utils.file_handler import validate_docx
-                docx_validation = validate_docx(temp_docx_path)
-                
-                if not docx_validation.is_valid:
-                    raise HTTPException(status_code=400, detail=f"Invalid DOCX: {docx_validation.error}")
+                print(f"📄 DOCX file detected: {file.filename}")
                 
                 from utils.file_handler import convert_docx_to_pdf
+                
+                # Convert DOCX to PDF (bytes in, bytes out)
                 pdf_content = convert_docx_to_pdf(file_content, file.filename)
+                
+                # Replace content with PDF
                 final_file_content = pdf_content
                 file_type = "pdf"
                 conversion_performed = True
-                print(f"✅ DOCX converted to PDF ({len(pdf_content):,} bytes)")
                 
-                # Clean up temp file
-                if os.path.exists(temp_docx_path):
-                    os.remove(temp_docx_path)
+                # ✅ IMPORTANT: Change filename extension to .pdf for uniformity
+                # This ensures DOCX files are always saved as PDF in the system
+                base_name = os.path.splitext(file.filename)[0]
+                original_filename = f"{base_name}.pdf"
+                
+                print(f"✅ DOCX converted to PDF ({len(pdf_content):,} bytes)")
+                print(f"📝 Filename changed: {file.filename} → {original_filename}")
                     
+            except HTTPException:
+                raise
             except Exception as e:
-                if os.path.exists(f"temp_{file.filename}"):
-                    os.remove(f"temp_{file.filename}")
-                raise HTTPException(status_code=500, detail=f"DOCX conversion failed: {str(e)}")
+                error_msg = str(e)
+                print(f"❌ DOCX conversion failed: {error_msg}")
+                raise HTTPException(
+                    status_code=500, 
+                    detail=f"DOCX conversion failed. Please try converting the file to PDF manually."
+                )
 
         # ===== STEP 4: STREAMLINED UPLOAD (SINGLE STRAIGHT PROCESS) =====
         build_start = time.time()
 
         # Use streamlined workflow - completes LLM naming before chat ready
+        # Note: original_filename is now .pdf for converted DOCX files
         result = await optimized_upload_workflow(
             file_content=final_file_content,
-            original_filename=file.filename,
+            original_filename=original_filename,  # ✅ Uses .pdf extension for converted DOCX
             naming_option=naming_option,
             document_id=document_id,
             rag_manager=rag_manager,
@@ -593,7 +599,8 @@ async def upload_document_ultra_fast(
         if document_id:
             rag_manager.clear_current_system(user_id=user_id, session_id=session_id)
             
-        print(f"❌ Error in ultra-fast upload: {str(e)}")
+        error_msg = str(e)
+        print(f"❌ Error in ultra-fast upload: {error_msg}")
         
         # Clean up temp files
         temp_files = [
@@ -607,7 +614,18 @@ async def upload_document_ultra_fast(
                 except:
                     pass
         rag_manager.clear_current_system(user_id=user_id, session_id=session_id)
-        raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
+        
+        # Check if this is a legal validation error
+        if "Legal validation failed" in error_msg:
+            # Extract the detailed rejection reason from the error message
+            rejection_reason = error_msg.replace("Legal validation failed: ", "")
+            raise HTTPException(
+                status_code=400, 
+                detail=rejection_reason
+            )
+        else:
+            # Generic error
+            raise HTTPException(status_code=500, detail=f"Error processing document: {error_msg}")
         
 
 @app.post("/query", response_model=QueryResponse)

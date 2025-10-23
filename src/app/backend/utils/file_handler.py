@@ -1027,6 +1027,181 @@ def extract_text_from_pdf(pdf_path: str) -> List[Document]:
     return documents
 
 # ================================
+# DOCX CONVERSION AND VALIDATION
+# ================================
+
+class DocxValidationResult:
+    """Result of DOCX validation."""
+    def __init__(self, is_valid: bool, error: Optional[str] = None):
+        self.is_valid = is_valid
+        self.error = error
+
+def validate_docx(docx_path: str) -> DocxValidationResult:
+    """
+    Validate DOCX file before conversion.
+    
+    Args:
+        docx_path: Path to DOCX file
+        
+    Returns:
+        DocxValidationResult with validation status
+    """
+    try:
+        if not os.path.exists(docx_path):
+            return DocxValidationResult(False, "File does not exist")
+        
+        if os.path.getsize(docx_path) == 0:
+            return DocxValidationResult(False, "File is empty")
+        
+        # Try to open with python-docx to validate format
+        if DOCX_TEXT_EXTRACTION:
+            try:
+                doc = DocxDocument(docx_path)
+                # Basic validation - check if we can access paragraphs
+                _ = len(doc.paragraphs)
+                return DocxValidationResult(True)
+            except Exception as e:
+                return DocxValidationResult(False, f"Invalid DOCX format: {str(e)}")
+        else:
+            # If python-docx not available, just check file extension
+            if not docx_path.lower().endswith(('.docx', '.doc')):
+                return DocxValidationResult(False, "Not a DOCX file")
+            return DocxValidationResult(True)
+            
+    except Exception as e:
+        return DocxValidationResult(False, f"Validation error: {str(e)}")
+
+def convert_docx_to_pdf(file_content: bytes, original_filename: str) -> bytes:
+    """
+    Convert DOCX file content to PDF bytes.
+    
+    Args:
+        file_content: DOCX file content as bytes
+        original_filename: Original filename (for reference)
+        
+    Returns:
+        PDF file content as bytes
+        
+    Raises:
+        Exception: If conversion fails
+    """
+    import tempfile
+    
+    print(f"🔄 Converting DOCX to PDF: {original_filename}")
+    
+    # Create temporary files
+    temp_docx_fd, temp_docx_path = tempfile.mkstemp(suffix='.docx')
+    temp_pdf_fd, temp_pdf_path = tempfile.mkstemp(suffix='.pdf')
+    
+    try:
+        # Write DOCX content to temp file
+        with os.fdopen(temp_docx_fd, 'wb') as f:
+            f.write(file_content)
+        os.close(temp_pdf_fd)  # Close the PDF file descriptor
+        
+        # Try to use docx_converter if available
+        try:
+            from utils.docx_converter import convert_docx_to_pdf as docx_converter_func
+            
+            success = docx_converter_func(temp_docx_path, temp_pdf_path, use_simple=False)
+            
+            if not success or not os.path.exists(temp_pdf_path) or os.path.getsize(temp_pdf_path) == 0:
+                raise Exception("Conversion produced empty or invalid PDF")
+            
+            # Read the converted PDF
+            with open(temp_pdf_path, 'rb') as f:
+                pdf_content = f.read()
+            
+            print(f"✅ DOCX converted to PDF ({len(pdf_content):,} bytes)")
+            return pdf_content
+            
+        except ImportError:
+            print("⚠️ docx_converter module not available, using fallback method")
+            # Fallback: Extract text and create simple PDF
+            return _convert_docx_to_pdf_fallback(temp_docx_path, original_filename)
+            
+    except Exception as e:
+        print(f"❌ DOCX to PDF conversion failed: {e}")
+        raise Exception(f"DOCX conversion failed: {str(e)}")
+        
+    finally:
+        # Clean up temporary files
+        try:
+            if os.path.exists(temp_docx_path):
+                os.remove(temp_docx_path)
+            if os.path.exists(temp_pdf_path):
+                os.remove(temp_pdf_path)
+        except:
+            pass
+
+def _convert_docx_to_pdf_fallback(docx_path: str, original_filename: str) -> bytes:
+    """
+    Fallback method: Extract text from DOCX and create a simple PDF.
+    
+    Args:
+        docx_path: Path to DOCX file
+        original_filename: Original filename
+        
+    Returns:
+        PDF content as bytes
+    """
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+        import tempfile
+        
+        print("📄 Using fallback method: extracting text and creating simple PDF")
+        
+        # Extract text from DOCX
+        documents = extract_text_from_docx(docx_path)
+        if not documents:
+            raise Exception("No text extracted from DOCX")
+        
+        text_content = documents[0].text
+        
+        # Create PDF in memory
+        temp_pdf_fd, temp_pdf_path = tempfile.mkstemp(suffix='.pdf')
+        os.close(temp_pdf_fd)
+        
+        try:
+            # Create PDF
+            pdf_doc = SimpleDocTemplate(temp_pdf_path, pagesize=A4)
+            styles = getSampleStyleSheet()
+            story = []
+            
+            # Add title
+            story.append(Paragraph(f"Converted from: {original_filename}", styles['Heading1']))
+            story.append(Spacer(1, 12))
+            
+            # Add content (split into paragraphs)
+            for paragraph in text_content.split('\n'):
+                if paragraph.strip():
+                    try:
+                        story.append(Paragraph(paragraph, styles['Normal']))
+                        story.append(Spacer(1, 6))
+                    except:
+                        # Skip problematic paragraphs
+                        continue
+            
+            # Build PDF
+            pdf_doc.build(story)
+            
+            # Read PDF content
+            with open(temp_pdf_path, 'rb') as f:
+                pdf_content = f.read()
+            
+            print(f"✅ Fallback conversion successful ({len(pdf_content):,} bytes)")
+            return pdf_content
+            
+        finally:
+            if os.path.exists(temp_pdf_path):
+                os.remove(temp_pdf_path)
+                
+    except Exception as e:
+        raise Exception(f"Fallback DOCX conversion failed: {str(e)}")
+
+# ================================
 # RATE LIMITING PROTECTION
 # ================================
 
