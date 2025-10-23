@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-10-23
+
+## 🚀 What's New
+- **File Type Validation:** Implemented intelligent file upload validation to distinguish between legal and non-legal documents, ensuring only relevant files are processed.
+- **Enhanced Landing Page:** Introduced a new landing page with richer information, visuals, and detailed descriptions about Legalynx’s features and plans.
+
+## 🛠️ Fixes
+- **DOCX Conversion:** Fixed DOCX conversion not working when uploading .docx file.
+
+### ⚙️ Technical Changes
+- **Unified Text Extraction:** Optimized backend performance by running text extraction once per document upload, reducing redundant processing in the RAG pipeline.
+
+
 ## [0.3.9] - 2025-10-11 - Post-Consultation QA
 
 ## 🚀 What's New
