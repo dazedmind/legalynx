@@ -32,8 +32,6 @@ type ActiveTab =
   | "chat_history"
   | "upload"
   | "voice_chat"
-  | "appearance"
-  | "subscription";
 
 interface StorageInfo {
   used: number;
@@ -72,6 +70,14 @@ export default function Home() {
   const [subscriptionStatus, setSubscriptionStatus] = useState("");
   
   const [lastUploadedDocumentId, setLastUploadedDocumentId] = useState<string | null>(null);
+  
+  // NEW: Recent chat sessions state
+  const [recentSessions, setRecentSessions] = useState<Array<{
+    id: string;
+    title: string;
+    documentName: string;
+    createdAt: string;
+  }>>([]);
 
   const chatViewerRef = useRef<any>(null);
 
@@ -159,6 +165,77 @@ export default function Home() {
     }
   };
 
+  // NEW: Load recent chat sessions
+  const loadRecentSessions = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch('/backend/api/chat-sessions/recent?limit=3', {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        const sessions = await response.json();
+        setRecentSessions(sessions.slice(0, 3)); // Ensure we only get top 3
+      } else {
+        console.warn('Failed to fetch recent sessions:', response.status);
+        // Fallback to localStorage if API fails
+        loadRecentSessionsFromLocalStorage();
+      }
+    } catch (error) {
+      console.error('Failed to load recent sessions:', error);
+      // Fallback to localStorage if API fails
+      loadRecentSessionsFromLocalStorage();
+    }
+  };
+
+  // Fallback: Load recent sessions from localStorage
+  const loadRecentSessionsFromLocalStorage = () => {
+    try {
+      const storageKey = user?.id ? `chat_history_${user.id}` : 'chat_history';
+      const storedSessions = localStorage.getItem(storageKey);
+      
+      if (storedSessions) {
+        const sessions = JSON.parse(storedSessions);
+        // Sort by updatedAt and take top 3
+        const recentSessions = sessions
+          .sort((a: any, b: any) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())
+          .slice(0, 3)
+          .map((session: any) => ({
+            id: session.id,
+            title: session.title || 'Untitled Chat',
+            documentName: session.documentName || session.fileName || 'Unknown',
+            createdAt: session.createdAt || new Date().toISOString()
+          }));
+        
+        setRecentSessions(recentSessions);
+        console.log('✅ Loaded recent sessions from localStorage:', recentSessions.length);
+      }
+    } catch (error) {
+      console.error('Failed to load sessions from localStorage:', error);
+    }
+  };
+
+  // Helper function to truncate session title
+  const truncateTitle = (title: string, maxLength: number = 30): string => {
+    if (title.length <= maxLength) return title;
+    return title.substring(0, maxLength) + '...';
+  };
+
+  // Helper function to format date for recent sessions
+  const formatSessionDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInHours < 48) return 'Yesterday';
+    if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
   // Helper function to format bytes
   const formatBytes = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -212,10 +289,11 @@ export default function Home() {
     getSubscriptionStatus();
   }, []);
 
-  // NEW: Load storage info when component mounts and user changes
+  // NEW: Load storage info and recent sessions when component mounts and user changes
   useEffect(() => {
     if (user) {
       loadStorageInfo();
+      loadRecentSessions();
     }
   }, [user]);
 
@@ -348,6 +426,9 @@ export default function Home() {
     setActiveTab('chat');
     setIsMobileSidebarOpen(false);
     
+    // Refresh recent sessions after new upload
+    loadRecentSessions();
+    
     console.log('🔄 Switched to chat tab with document ID:', response.documentId);
   };
   
@@ -445,6 +526,12 @@ export default function Home() {
     setTimeout(() => clearDocumentTracking(), 0);
   };
 
+  // NEW: Handle recent session click from sidebar
+  const handleRecentSessionClick = (sessionId: string) => {
+    console.log('📋 Recent session clicked:', sessionId);
+    handleSessionSelect(sessionId);
+  };
+
   const handleSignOut = () => {
     openConfirmationModal(
       {
@@ -473,8 +560,6 @@ export default function Home() {
   const menuItems = [
     { id: 'chat_history', label: 'Chat History', icon: MessageCircle },
     { id: 'documents', label: 'File Manager', icon: Folder },
-    { id: 'appearance', label: 'Appearance', icon: Palette },
-    { id: 'subscription', label: 'Subscription', icon: Star }
   ]
 
   const isSystemReady = systemStatus?.pdfLoaded && systemStatus?.indexReady;
@@ -535,7 +620,7 @@ export default function Home() {
             </button>
 
             {/* Navigation Buttons */}
-            <div className={`space-y-1 mb-8 flex flex-col ${!isDesktopSidebarCollapsed ? 'items-end' : 'items-center'}`}>
+            <div className={`space-y-1 mb-2 flex flex-col ${!isDesktopSidebarCollapsed ? 'items-end' : 'items-center'}`}>
               <div className="hidden mb-4 md:flex">
                 <button
                   onClick={toggleDesktopSidebar}
@@ -589,6 +674,41 @@ export default function Home() {
               })}
 
             </div>
+
+            {/* NEW: Recent Chat Sessions - Only show when sidebar is expanded */}
+            {!isDesktopSidebarCollapsed && user && recentSessions.length > 0 && (
+              <div className="flex-1 overflow-y-hidden mb-4">
+                <div className="px-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recent</span>
+                  </div>
+                  <div className="space-y-1">
+                    {recentSessions.map((session) => (
+                      <button
+                        key={session.id}
+                        onClick={() => handleRecentSessionClick(session.id)}
+                        className={`w-full text-left p-2 rounded-md transition-colors group hover:bg-accent ${
+                          currentSessionId === session.id ? 'bg-accent' : ''
+                        }`}
+                        title={session.title}
+                      >
+                        <div className="flex items-start gap-2">
+                          <MessageCircle className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" strokeWidth={2} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-foreground truncate">
+                              {truncateTitle(session.title)}
+                            </p>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                              <span className="truncate">{session.documentName}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="mt-auto space-y-3">
               {/* NEW: Storage Usage Bar */}
@@ -717,14 +837,6 @@ export default function Home() {
                   currentDocumentId={currentDocumentId || ""}
                   handleNewChat={handleNewChat}
                 />
-              )}
-
-              {activeTab === "appearance" && (
-                <Appearance />
-              )}
-
-              {activeTab === "subscription" && (
-                <SubscriptionPage />
               )}
 
             </div>
