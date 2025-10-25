@@ -85,6 +85,8 @@ interface CombinedComponentProps {
   handleVoiceChat?: () => void;
   currentDocumentId?: string | null;
   lastUploadedDocumentId?: string;
+  onSessionCreated?: () => void; // ✅ FIXED: Callback to refresh recent sessions
+  onClearStateCallback?: (clearFn: () => void) => void;
 }
 
 type LoadingStage =
@@ -160,6 +162,7 @@ export default function ChatViewer({
   currentDocumentId,
   onClearStateCallback,
   lastUploadedDocumentId,
+  onSessionCreated, // ✅ FIXED: Add callback prop
 }: CombinedComponentProps & {
   onClearStateCallback?: (clearFn: () => void) => void;
 }) {
@@ -1922,6 +1925,12 @@ export default function ChatViewer({
         setCurrentSessionId(newSessionId);
         setChatHistory([]);
         console.log("✅ New chat session created:", newSessionId);
+        
+        // ✅ FIXED: Trigger callback to refresh recent sessions in sidebar
+        if (onSessionCreated) {
+          onSessionCreated();
+        }
+        
         return newSessionId;
       } else if (response.status === 404) {
         setDocumentExists(false);

@@ -5,8 +5,6 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import ChatViewer from "./chat-viewer/ChatViewer";
 import FileManager from "./file-manager/FileManager";
 import ChatHistory from "./chat-viewer/ChatHistory";
-import Appearance from "./appearance/Appearance";
-import SubscriptionPage from "./subscription/SubscriptionPage";
 import {
   apiService,  profileService,
   SystemStatus,
@@ -14,8 +12,6 @@ import {
 } from "../../../lib/api";
 import { authUtils } from '@/lib/auth';
 import {
-  GoFileDirectory,
-  GoComment,
   GoStarFill
 } from "react-icons/go";
 import ProtectedRoute from "../components/layout/ProtectedRoute";
@@ -167,17 +163,39 @@ export default function Home() {
 
   // NEW: Load recent chat sessions
   const loadRecentSessions = async () => {
-    if (!user) return;
+    if (!user) {
+      console.warn('No user available for loading recent sessions');
+      setRecentSessions([]);
+      return;
+    }
     
     try {
-      const response = await fetch('/backend/api/chat-sessions/recent?limit=3', {
+      console.log(`📚 Loading recent sessions for user: ${user.id}`);
+      const response = await fetch('/backend/api/chat-sessions/recent?limit=4', {
         method: 'GET',
         headers: getAuthHeaders(),
       });
 
       if (response.ok) {
         const sessions = await response.json();
-        setRecentSessions(sessions.slice(0, 3)); // Ensure we only get top 3
+        console.log(`✅ Loaded ${sessions.length} recent sessions from API for user ${user.id}`);
+        
+        // ✅ FIXED: Additional client-side filtering to ensure only current user's sessions
+        const userSessions = sessions.filter((session: any) => {
+          // If userId is present in the response, verify it matches current user
+          if (session.userId) {
+            const matches = session.userId === user.id;
+            if (!matches) {
+              console.warn(`⚠️ Filtering out session ${session.id} - belongs to user ${session.userId}, current user is ${user.id}`);
+            }
+            return matches;
+          }
+          // If no userId in response, assume it's correct (backend should have filtered)
+          return true;
+        });
+        
+        console.log(`✅ After client-side filtering: ${userSessions.length} sessions for user ${user.id}`);
+        setRecentSessions(userSessions.slice(0, 4)); // Ensure we only get top 4
       } else {
         console.warn('Failed to fetch recent sessions:', response.status);
         // Fallback to localStorage if API fails
@@ -193,27 +211,45 @@ export default function Home() {
   // Fallback: Load recent sessions from localStorage
   const loadRecentSessionsFromLocalStorage = () => {
     try {
-      const storageKey = user?.id ? `chat_history_${user.id}` : 'chat_history';
+      // ✅ FIXED: Ensure proper user isolation with more specific key
+      if (!user?.id) {
+        console.warn('No user ID available for localStorage key');
+        setRecentSessions([]);
+        return;
+      }
+      
+      const storageKey = `chat_history_${user.id}`;
       const storedSessions = localStorage.getItem(storageKey);
       
       if (storedSessions) {
         const sessions = JSON.parse(storedSessions);
-        // Sort by updatedAt and take top 3
-        const recentSessions = sessions
+        
+        // ✅ FIXED: Additional user validation to prevent cross-contamination
+        const userSessions = sessions.filter((session: any) => {
+          // Only include sessions that belong to the current user
+          return session.userId === user.id || session.user_id === user.id || !session.userId;
+        });
+        
+        // Sort by updatedAt and take top 4
+        const recentSessions = userSessions
           .sort((a: any, b: any) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())
-          .slice(0, 3)
+          .slice(0, 4)
           .map((session: any) => ({
             id: session.id,
             title: session.title || 'Untitled Chat',
-            documentName: session.documentName || session.fileName || 'Unknown',
+            documentName: session.fileName || session.filename || 'Unknown', // Use LLM-renamed fileName first
             createdAt: session.createdAt || new Date().toISOString()
           }));
         
         setRecentSessions(recentSessions);
-        console.log('✅ Loaded recent sessions from localStorage:', recentSessions.length);
+        console.log(`✅ Loaded ${recentSessions.length} recent sessions from localStorage for user ${user.id}`);
+      } else {
+        console.log(`No stored sessions found for user ${user.id}`);
+        setRecentSessions([]);
       }
     } catch (error) {
       console.error('Failed to load sessions from localStorage:', error);
+      setRecentSessions([]);
     }
   };
 
@@ -292,10 +328,49 @@ export default function Home() {
   // NEW: Load storage info and recent sessions when component mounts and user changes
   useEffect(() => {
     if (user) {
+      // ✅ FIXED: Clear recent sessions first to prevent showing old data
+      setRecentSessions([]);
+      
+      // ✅ FIXED: Clear any potential cross-contamination from localStorage
+      clearCrossUserData();
       loadStorageInfo();
       loadRecentSessions();
+    } else {
+      // Clear sessions when user logs out
+      setRecentSessions([]);
     }
-  }, [user]);
+  }, [user?.id]); // ✅ FIXED: Depend on user.id specifically to trigger on user change
+
+  // ✅ FIXED: Clear localStorage data that might belong to other users
+  const clearCrossUserData = () => {
+    if (!user?.id) return;
+    
+    try {
+      // Clear any localStorage keys that don't match the current user
+      const keysToCheck = [
+        'chat_history',
+        'uploaded_documents',
+        'chat_sessions'
+      ];
+      
+      keysToCheck.forEach(baseKey => {
+        const userKey = `${baseKey}_${user.id}`;
+        const globalKey = baseKey;
+        
+        // Keep only the current user's data
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith(baseKey) && key !== userKey && key !== globalKey) {
+            console.log(`🧹 Clearing cross-user data: ${key}`);
+            localStorage.removeItem(key);
+          }
+        });
+      });
+      
+      console.log(`✅ Cleared cross-user data for user ${user.id}`);
+    } catch (error) {
+      console.error('Failed to clear cross-user data:', error);
+    }
+  };
 
   // Clear uploaded files and reset system on page load
   useEffect(() => {
@@ -426,8 +501,10 @@ export default function Home() {
     setActiveTab('chat');
     setIsMobileSidebarOpen(false);
     
-    // Refresh recent sessions after new upload
-    loadRecentSessions();
+    // ✅ FIXED: Refresh recent sessions after new upload (delayed to allow session creation)
+    setTimeout(() => {
+      loadRecentSessions();
+    }, 1000); // Give time for session to be created
     
     console.log('🔄 Switched to chat tab with document ID:', response.documentId);
   };
@@ -542,15 +619,13 @@ export default function Home() {
         type: ModalType.DANGER,
       },
       () => {
+        // ✅ FIXED: Clear recent sessions and user data before logout
+        setRecentSessions([]);
+        clearDocumentTracking();
+        clearLastUploadedDocument();
         logout();
       }
     );
-
-    // 🔥 FIXED: Defer clearing to avoid setState during render
-    setTimeout(() => {
-      clearDocumentTracking();
-      clearLastUploadedDocument();
-    }, 0);
   };
 
   const toggleMobileSidebar = () => {
@@ -787,7 +862,7 @@ export default function Home() {
                 <a href="/frontend/privacy-policy" target="_blank" rel="noopener noreferrer">
                   Privacy Policy •
                 </a>
-                <p className="text-xs text-muted-foreground">v 0.4.0</p>
+                <p className="text-xs text-muted-foreground">v 0.4.1</p>
               </div>
             )}
           </aside>
@@ -816,9 +891,12 @@ export default function Home() {
                     if (sessionId === currentSessionId) {
                       setCurrentSessionId(null);
                     }
+                    // ✅ FIXED: Refresh recent sessions when a session is deleted
+                    loadRecentSessions();
                   }}
                   onClearStateCallback={setClearChatViewerFn}
                   lastUploadedDocumentId={lastUploadedDocumentId || ''}
+                  onSessionCreated={loadRecentSessions} // ✅ FIXED: Refresh recent sessions when new session is created
                 />
               )}
 
@@ -836,6 +914,7 @@ export default function Home() {
                   onSessionSelect={handleSessionSelect}
                   currentDocumentId={currentDocumentId || ""}
                   handleNewChat={handleNewChat}
+                  onSessionsChanged={loadRecentSessions} // ✅ FIXED: Refresh recent sessions when sessions change
                 />
               )}
 

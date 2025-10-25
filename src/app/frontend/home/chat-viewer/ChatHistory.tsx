@@ -45,7 +45,7 @@ interface SavedChatHistoryProps {
   onDocumentSelect: (documentId: string) => void;
   currentDocumentId: string;
   handleNewChat?: () => void;
-
+  onSessionsChanged?: () => void; // ✅ FIXED: Callback to refresh recent sessions
 }
 
 export default function SavedChatHistory({ 
@@ -54,7 +54,8 @@ export default function SavedChatHistory({
   currentSessionId,
   onDocumentSelect,
   currentDocumentId,
-  handleNewChat
+  handleNewChat,
+  onSessionsChanged // ✅ FIXED: Add callback prop
 }: SavedChatHistoryProps) {
   const { isAuthenticated, user } = useAuth();
   const [savedSessions, setSavedSessions] = useState<SavedChatSession[]>([]);
@@ -275,6 +276,11 @@ export default function SavedChatHistory({
 
         // Remove from local state
         setSavedSessions(prev => prev.filter(s => s.id !== confirmationModal.itemId));
+        
+        // ✅ FIXED: Trigger callback to refresh recent sessions
+        if (onSessionsChanged) {
+          onSessionsChanged();
+        }
 
       } else {
         const errorData = await response.json();
