@@ -24,6 +24,7 @@ export default function Home() {
   const [showDevelopersModal, setShowDevelopersModal] = useState(false);
   const [showButtonToTop, setShowButtonToTop] = useState(true);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [onTop, setOnTop] = useState(true);
 
   useEffect(() => {
     const handleResize = () => {
@@ -39,10 +40,10 @@ export default function Home() {
 
   useEffect(() => {
     window.addEventListener('scroll', () => {
-      if (window.scrollY > 3000) {
-        setShowButtonToTop(true);
+      if (window.scrollY > 100) {
+        setOnTop(false);
       } else {
-        setShowButtonToTop(false);
+        setOnTop(true);
       }
     });
   }, []);
@@ -54,7 +55,7 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-primary/10 backdrop-blur-md shadow-md fixed top-0 left-0 right-0 w-full z-60" style={{ transform: 'translateZ(0)', willChange: 'transform' }}>
+      <header className={` fixed top-0 left-0 right-0 w-auto z-60 transition-all duration-300 ${onTop ? 'bg-none backdrop-blur-none shadow-none' : 'm-4 mx-4 md:mx-24 rounded-lg bg-primary/10 backdrop-blur-md shadow-md'}`} style={{ transform: 'translateZ(0)', willChange: 'transform' }}>
         <Header />
       </header>
       
@@ -260,7 +261,7 @@ export default function Home() {
               <h3 className="text-3xl font-bold font-serif text-foreground mb-8">
                 Why Professionals Choose LegalynX?
               </h3>
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div className="flex items-start gap-4">
                   <div className=" p-2 rounded-lg">
                     <Clock className="w-6 h-6 text-yellow" />
@@ -306,41 +307,13 @@ export default function Home() {
                 </div>
               </div>
             </div>
-
-            {/* <div className="bg-tertiary rounded-3xl p-8 border border-tertiary">
-              <h4 className="text-2xl font-bold text-foreground mb-8">
-                Performance Metrics
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-500 mb-2">
-                  <CountUp from={0} to={99} duration={1} separator="," direction="up" className="count-up text" />
-                  %
-                  </div>
-                  <div className="text-muted-foreground">Extraction Accuracy</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">
-                    <CountUp from={0} to={80} duration={1} separator="," direction="up" className="count-up text" />
-                    %
-                  </div>
-                  <div className="text-muted-foreground">Time Saved</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-yellow mb-2">
-                    24/7
-                  </div>
-                  <div className="text-muted-foreground">Support</div>
-                </div>
-              </div>
-            </div> */}
           </div>
           </AnimatedContent>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section className="py-24 bg-secondary">
+      <section className="py-12 bg-secondary m-6 md:m-12 rounded-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimatedContent
             distance={100}
@@ -639,7 +612,7 @@ export default function Home() {
       </section> */}
 
       {/* FAQ Section */}
-      <section className="py-24 bg-secondary">
+      <section className="py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
  
         <div className="text-center mb-16">
@@ -734,12 +707,12 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gray-900">
+      <section className="py-24 bg-gray-900 m-6 md:m-12 rounded-xl">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h3 className="text-3xl lg:text-5xl font-bold font-serif text-white mb-6">
             Ready to Transform Your Legal Workflow?
           </h3>
-          <p className="text-lg text-gray-300 mb-10">
+          <p className="text-sm md:text-lg text-gray-300 mb-10">
             Join hundreds of legal professionals who've already streamlined
             their document analysis process.
           </p>
@@ -876,7 +849,7 @@ export default function Home() {
           </div>
         </div>
       )}
-      {showButtonToTop && (
+      {!onTop && (
         <div className="fixed bottom-4 right-4">
           <button className="px-4 py-2 bg-blue-600 text-white rounded-full cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <ArrowUp className="w-6 h-6" />

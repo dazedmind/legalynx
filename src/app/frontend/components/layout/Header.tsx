@@ -35,7 +35,7 @@ function Header() {
 
         {/* Desktop Navigation */}
         <div className="flex items-center space-x-2">
-          <div className="hidden md:flex items-center space-x-8 text-sm text-muted-foreground">
+          <div className="hidden md:flex items-center space-x-6 text-sm text-muted-foreground">
             <Link href="/frontend/pricing">
               <div className="hover:text-foreground transition-colors cursor-pointer">
                 Pricing
@@ -48,15 +48,13 @@ function Header() {
               </div>
             </Link>
 
-            <span className="flex items-center gap-4">
-              <Link href="/frontend/login">
-                <Button
-                  variant="outline"
-                  className="cursor-pointer hover:brightness-110 transition-all duration-300 border-none text-foreground font-bold px-4 py-3 rounded-full"
-                >
-                  Sign In
-                </Button>
-              </Link>
+            <Link href="/frontend/login">
+              <div className="hover:text-foreground font-bold transition-colors cursor-pointer">
+                Sign In
+              </div>
+            </Link>
+
+            <span className="flex items-center">
               <Link href="/frontend/register">
                 <Button
                   variant="default"

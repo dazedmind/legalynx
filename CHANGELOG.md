@@ -5,11 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] - 2025-10-23
+## [0.4.0] - 2025-10-25
 
 ## 🚀 What's New
 - **File Type Validation:** Implemented intelligent file upload validation to distinguish between legal and non-legal documents, ensuring only relevant files are processed.
-- **Enhanced Landing Page:** Introduced a new landing page with richer information, visuals, and detailed descriptions about Legalynx’s features and plans.
+- **Enhanced Landing Page:** Introduced a new landing page with richer information, visuals, and smoother user-experience.
+- **Sidebar Panel Enhancement:** Recent chats are now available from the sidebar for quick access.
+- **Settings Consolidation:** Appearance and subscription management have been moved into unified settings for a more streamlined user experience.
 
 ## 🛠️ Fixes
 - **DOCX Conversion:** Fixed DOCX conversion not working when uploading .docx file.
@@ -38,7 +40,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Billing History:** Users can now view complete billing history and invoices directly on the Subscription page
 - **Invoice Delivery:** PDF invoices are now automatically sent to registered email addresses
 - **Message Branching:** Added support for conversation branching when regenerating or editing responses
-
 
 ### 🛠️ Fixes
 - **File Storage Display:** Adjusted file size display to automatically adapt between KB/MB/GB units for better readability

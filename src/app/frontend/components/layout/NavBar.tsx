@@ -1,5 +1,5 @@
 "use client";
-import { LogOut, Settings, Star } from "lucide-react";
+import { LogOut, Moon, Settings, Star, Sun } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import {
   DropdownMenu,
@@ -21,7 +21,7 @@ export default function NavBar() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     if (user) {
@@ -137,7 +137,12 @@ export default function NavBar() {
           width={size}
           height={size}
           className="rounded-full cursor-pointer border border-gray-300 object-cover"
-          style={{ width: `${size}px`, height: `${size}px`, minWidth: `${size}px`, minHeight: `${size}px` }}
+          style={{
+            width: `${size}px`,
+            height: `${size}px`,
+            minWidth: `${size}px`,
+            minHeight: `${size}px`,
+          }}
           unoptimized={false} // Let Next.js optimize since it's now a valid external URL
           onError={(e) => {
             // On error, hide the image element and show fallback
@@ -167,9 +172,7 @@ export default function NavBar() {
   };
 
   return (
-    <div
-      className="px-0 md:px-8 py-2 bg-primary"
-    >
+    <div className="px-0 md:px-8 py-2 bg-primary">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-1">
           <Image src={logo} alt="LegalynX" width={60} height={60} />
@@ -235,7 +238,13 @@ export default function NavBar() {
                   Manage Subscription
                 </DropdownMenuItem>
               </Link>
-
+              <DropdownMenuItem
+                className="cursor-pointer p-2 px-3"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}

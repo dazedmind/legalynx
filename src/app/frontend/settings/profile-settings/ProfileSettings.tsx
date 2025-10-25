@@ -410,7 +410,7 @@ function ProfileSettings() {
               <div className="flex flex-col items-center gap-4">
                 {/* Profile Picture Display */}
                 <div className="relative group">
-                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-4 border-border bg-muted shadow-lg">
+                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-4 border-border bg-muted">
                     {uploading ? (
                       <div className="w-full h-full bg-muted flex items-center justify-center">
                         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -469,10 +469,10 @@ function ProfileSettings() {
 
                 {/* Upload Info */}
                 <div className="text-center">
-                  <p className="text-sm font-medium text-primary">
+                  <p className="text-sm font-medium text-foreground">
                     Change profile picture
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground">
                     JPEG, PNG, GIF, or WebP · Max 5MB
                   </p>
                   {imageError && profilePicture && (

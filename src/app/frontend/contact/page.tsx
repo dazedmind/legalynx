@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Header from "../components/layout/Header";
 import { Mail, Phone, MapPin, Send } from "lucide-react";
+import BlurText from "../components/reactbits/BlurText";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -34,18 +35,24 @@ export default function Contact() {
         <Header />
       </header>
 
+
       {/* Main Content */}
-      <div className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+      <div className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative">
+      <div className="bg-gradient-to-b from-blue/30 to-transparent w-full h-1/3 rounded-3xl rounded-tr-none rounded-tl-none absolute top-0 left-0">
+      </div>
         <div className="max-w-6xl mx-auto">
           {/* Page Title */}
-          <div className="text-center mb-16">
-            <h1 className="text-4xl lg:text-5xl font-bold font-serif text-foreground mb-4">
-              Get In Touch
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
-            </p>
-          </div>
+          <span className='flex flex-col items-center justify-center'>
+                <BlurText
+                    text="Get In Touch"
+                    className="text-4xl lg:text-6xl font-bold font-serif text-foreground mb-6"
+                />
+                
+                <p className="text-lg text-muted-foreground mb-12 max-w-3xl mx-auto">
+                Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+
+                </p>
+            </span>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Contact Info Cards */}

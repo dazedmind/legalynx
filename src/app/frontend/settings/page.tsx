@@ -1,17 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { CircleUser, Shield, FileCog, CreditCard, LogOut, Lock, FolderCog, Menu, X, ChevronLeft, Star } from 'lucide-react';
+import { CircleUser, Shield, FileCog, CreditCard, LogOut, Lock, FolderCog, Menu, X, ChevronLeft, Star, Palette } from 'lucide-react';
 import { SystemStatus } from '../../../lib/api';
 import NavBar from '../components/layout/NavBar';
 import FileSettings from './file-settings/FileSettings'
 import ProfileSettings from './profile-settings/ProfileSettings'
-import SubscriptionPage from '../home/subscription/SubscriptionPage'
+import SubscriptionPage from './subscription/SubscriptionPage'
 import SecuritySettings from './privacy-security/SecurityLogSettings'
 import PrivacySecuritySettings from './privacy-security/PrivacySecuritySettings'
 import { useSearchParams, useRouter } from 'next/navigation';
+import Appearance from './appearance/Appearance';
 
-type ActiveTab = 'profile' | 'file_settings' | 'security_log' | 'security_settings' | 'subscription';
+type ActiveTab = 'profile' | 'file_settings' | 'security_log' | 'security_settings' | 'subscription' | 'appearance';
 
 function SettingsContent() {
   const searchParams = useSearchParams();
@@ -68,6 +69,7 @@ function SettingsContent() {
     { id: 'file_settings', label: 'File Settings', icon: FolderCog },
     { id: 'security_settings', label: 'Privacy & Security', icon: Lock },
     { id: 'subscription', label: 'Subscription', icon: Star },
+    { id: 'appearance', label: 'Appearance', icon: Palette },
   ];
 
   return (
@@ -167,6 +169,7 @@ function SettingsContent() {
             {activeTab === 'security_log' && <SecuritySettings />}
             {activeTab === 'security_settings' && <PrivacySecuritySettings />}
             {activeTab === 'subscription' && <SubscriptionPage />}
+            {activeTab === 'appearance' && <Appearance />}
           </div>
         </section>
       </main>

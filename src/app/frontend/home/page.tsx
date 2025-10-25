@@ -5,8 +5,6 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import ChatViewer from "./chat-viewer/ChatViewer";
 import FileManager from "./file-manager/FileManager";
 import ChatHistory from "./chat-viewer/ChatHistory";
-import Appearance from "./appearance/Appearance";
-import SubscriptionPage from "./subscription/SubscriptionPage";
 import {
   apiService,  profileService,
   SystemStatus,
@@ -14,8 +12,6 @@ import {
 } from "../../../lib/api";
 import { authUtils } from '@/lib/auth';
 import {
-  GoFileDirectory,
-  GoComment,
   GoStarFill
 } from "react-icons/go";
 import ProtectedRoute from "../components/layout/ProtectedRoute";
@@ -32,8 +28,6 @@ type ActiveTab =
   | "chat_history"
   | "upload"
   | "voice_chat"
-  | "appearance"
-  | "subscription";
 
 interface StorageInfo {
   used: number;
@@ -72,6 +66,14 @@ export default function Home() {
   const [subscriptionStatus, setSubscriptionStatus] = useState("");
   
   const [lastUploadedDocumentId, setLastUploadedDocumentId] = useState<string | null>(null);
+  
+  // NEW: Recent chat sessions state
+  const [recentSessions, setRecentSessions] = useState<Array<{
+    id: string;
+    title: string;
+    documentName: string;
+    createdAt: string;
+  }>>([]);
 
   const chatViewerRef = useRef<any>(null);
 
@@ -159,6 +161,117 @@ export default function Home() {
     }
   };
 
+  // NEW: Load recent chat sessions
+  const loadRecentSessions = async () => {
+    if (!user) {
+      console.warn('No user available for loading recent sessions');
+      setRecentSessions([]);
+      return;
+    }
+    
+    try {
+      console.log(`📚 Loading recent sessions for user: ${user.id}`);
+      const response = await fetch('/backend/api/chat-sessions/recent?limit=4', {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        const sessions = await response.json();
+        console.log(`✅ Loaded ${sessions.length} recent sessions from API for user ${user.id}`);
+        
+        // ✅ FIXED: Additional client-side filtering to ensure only current user's sessions
+        const userSessions = sessions.filter((session: any) => {
+          // If userId is present in the response, verify it matches current user
+          if (session.userId) {
+            const matches = session.userId === user.id;
+            if (!matches) {
+              console.warn(`⚠️ Filtering out session ${session.id} - belongs to user ${session.userId}, current user is ${user.id}`);
+            }
+            return matches;
+          }
+          // If no userId in response, assume it's correct (backend should have filtered)
+          return true;
+        });
+        
+        console.log(`✅ After client-side filtering: ${userSessions.length} sessions for user ${user.id}`);
+        setRecentSessions(userSessions.slice(0, 4)); // Ensure we only get top 4
+      } else {
+        console.warn('Failed to fetch recent sessions:', response.status);
+        // Fallback to localStorage if API fails
+        loadRecentSessionsFromLocalStorage();
+      }
+    } catch (error) {
+      console.error('Failed to load recent sessions:', error);
+      // Fallback to localStorage if API fails
+      loadRecentSessionsFromLocalStorage();
+    }
+  };
+
+  // Fallback: Load recent sessions from localStorage
+  const loadRecentSessionsFromLocalStorage = () => {
+    try {
+      // ✅ FIXED: Ensure proper user isolation with more specific key
+      if (!user?.id) {
+        console.warn('No user ID available for localStorage key');
+        setRecentSessions([]);
+        return;
+      }
+      
+      const storageKey = `chat_history_${user.id}`;
+      const storedSessions = localStorage.getItem(storageKey);
+      
+      if (storedSessions) {
+        const sessions = JSON.parse(storedSessions);
+        
+        // ✅ FIXED: Additional user validation to prevent cross-contamination
+        const userSessions = sessions.filter((session: any) => {
+          // Only include sessions that belong to the current user
+          return session.userId === user.id || session.user_id === user.id || !session.userId;
+        });
+        
+        // Sort by updatedAt and take top 4
+        const recentSessions = userSessions
+          .sort((a: any, b: any) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())
+          .slice(0, 4)
+          .map((session: any) => ({
+            id: session.id,
+            title: session.title || 'Untitled Chat',
+            documentName: session.fileName || session.filename || 'Unknown', // Use LLM-renamed fileName first
+            createdAt: session.createdAt || new Date().toISOString()
+          }));
+        
+        setRecentSessions(recentSessions);
+        console.log(`✅ Loaded ${recentSessions.length} recent sessions from localStorage for user ${user.id}`);
+      } else {
+        console.log(`No stored sessions found for user ${user.id}`);
+        setRecentSessions([]);
+      }
+    } catch (error) {
+      console.error('Failed to load sessions from localStorage:', error);
+      setRecentSessions([]);
+    }
+  };
+
+  // Helper function to truncate session title
+  const truncateTitle = (title: string, maxLength: number = 30): string => {
+    if (title.length <= maxLength) return title;
+    return title.substring(0, maxLength) + '...';
+  };
+
+  // Helper function to format date for recent sessions
+  const formatSessionDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInHours < 48) return 'Yesterday';
+    if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
   // Helper function to format bytes
   const formatBytes = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -212,12 +325,52 @@ export default function Home() {
     getSubscriptionStatus();
   }, []);
 
-  // NEW: Load storage info when component mounts and user changes
+  // NEW: Load storage info and recent sessions when component mounts and user changes
   useEffect(() => {
     if (user) {
+      // ✅ FIXED: Clear recent sessions first to prevent showing old data
+      setRecentSessions([]);
+      
+      // ✅ FIXED: Clear any potential cross-contamination from localStorage
+      clearCrossUserData();
       loadStorageInfo();
+      loadRecentSessions();
+    } else {
+      // Clear sessions when user logs out
+      setRecentSessions([]);
     }
-  }, [user]);
+  }, [user?.id]); // ✅ FIXED: Depend on user.id specifically to trigger on user change
+
+  // ✅ FIXED: Clear localStorage data that might belong to other users
+  const clearCrossUserData = () => {
+    if (!user?.id) return;
+    
+    try {
+      // Clear any localStorage keys that don't match the current user
+      const keysToCheck = [
+        'chat_history',
+        'uploaded_documents',
+        'chat_sessions'
+      ];
+      
+      keysToCheck.forEach(baseKey => {
+        const userKey = `${baseKey}_${user.id}`;
+        const globalKey = baseKey;
+        
+        // Keep only the current user's data
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith(baseKey) && key !== userKey && key !== globalKey) {
+            console.log(`🧹 Clearing cross-user data: ${key}`);
+            localStorage.removeItem(key);
+          }
+        });
+      });
+      
+      console.log(`✅ Cleared cross-user data for user ${user.id}`);
+    } catch (error) {
+      console.error('Failed to clear cross-user data:', error);
+    }
+  };
 
   // Clear uploaded files and reset system on page load
   useEffect(() => {
@@ -348,6 +501,11 @@ export default function Home() {
     setActiveTab('chat');
     setIsMobileSidebarOpen(false);
     
+    // ✅ FIXED: Refresh recent sessions after new upload (delayed to allow session creation)
+    setTimeout(() => {
+      loadRecentSessions();
+    }, 1000); // Give time for session to be created
+    
     console.log('🔄 Switched to chat tab with document ID:', response.documentId);
   };
   
@@ -445,6 +603,12 @@ export default function Home() {
     setTimeout(() => clearDocumentTracking(), 0);
   };
 
+  // NEW: Handle recent session click from sidebar
+  const handleRecentSessionClick = (sessionId: string) => {
+    console.log('📋 Recent session clicked:', sessionId);
+    handleSessionSelect(sessionId);
+  };
+
   const handleSignOut = () => {
     openConfirmationModal(
       {
@@ -455,15 +619,13 @@ export default function Home() {
         type: ModalType.DANGER,
       },
       () => {
+        // ✅ FIXED: Clear recent sessions and user data before logout
+        setRecentSessions([]);
+        clearDocumentTracking();
+        clearLastUploadedDocument();
         logout();
       }
     );
-
-    // 🔥 FIXED: Defer clearing to avoid setState during render
-    setTimeout(() => {
-      clearDocumentTracking();
-      clearLastUploadedDocument();
-    }, 0);
   };
 
   const toggleMobileSidebar = () => {
@@ -473,8 +635,6 @@ export default function Home() {
   const menuItems = [
     { id: 'chat_history', label: 'Chat History', icon: MessageCircle },
     { id: 'documents', label: 'File Manager', icon: Folder },
-    { id: 'appearance', label: 'Appearance', icon: Palette },
-    { id: 'subscription', label: 'Subscription', icon: Star }
   ]
 
   const isSystemReady = systemStatus?.pdfLoaded && systemStatus?.indexReady;
@@ -535,7 +695,7 @@ export default function Home() {
             </button>
 
             {/* Navigation Buttons */}
-            <div className={`space-y-1 mb-8 flex flex-col ${!isDesktopSidebarCollapsed ? 'items-end' : 'items-center'}`}>
+            <div className={`space-y-1 mb-2 flex flex-col ${!isDesktopSidebarCollapsed ? 'items-end' : 'items-center'}`}>
               <div className="hidden mb-4 md:flex">
                 <button
                   onClick={toggleDesktopSidebar}
@@ -589,6 +749,41 @@ export default function Home() {
               })}
 
             </div>
+
+            {/* NEW: Recent Chat Sessions - Only show when sidebar is expanded */}
+            {!isDesktopSidebarCollapsed && user && recentSessions.length > 0 && (
+              <div className="flex-1 overflow-y-hidden mb-4">
+                <div className="px-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recent</span>
+                  </div>
+                  <div className="space-y-1">
+                    {recentSessions.map((session) => (
+                      <button
+                        key={session.id}
+                        onClick={() => handleRecentSessionClick(session.id)}
+                        className={`w-full text-left p-2 rounded-md transition-colors group hover:bg-accent ${
+                          currentSessionId === session.id ? 'bg-accent' : ''
+                        }`}
+                        title={session.title}
+                      >
+                        <div className="flex items-start gap-2">
+                          <MessageCircle className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" strokeWidth={2} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-foreground truncate">
+                              {truncateTitle(session.title)}
+                            </p>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                              <span className="truncate">{session.documentName}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="mt-auto space-y-3">
               {/* NEW: Storage Usage Bar */}
@@ -696,9 +891,12 @@ export default function Home() {
                     if (sessionId === currentSessionId) {
                       setCurrentSessionId(null);
                     }
+                    // ✅ FIXED: Refresh recent sessions when a session is deleted
+                    loadRecentSessions();
                   }}
                   onClearStateCallback={setClearChatViewerFn}
                   lastUploadedDocumentId={lastUploadedDocumentId || ''}
+                  onSessionCreated={loadRecentSessions} // ✅ FIXED: Refresh recent sessions when new session is created
                 />
               )}
 
@@ -716,15 +914,8 @@ export default function Home() {
                   onSessionSelect={handleSessionSelect}
                   currentDocumentId={currentDocumentId || ""}
                   handleNewChat={handleNewChat}
+                  onSessionsChanged={loadRecentSessions} // ✅ FIXED: Refresh recent sessions when sessions change
                 />
-              )}
-
-              {activeTab === "appearance" && (
-                <Appearance />
-              )}
-
-              {activeTab === "subscription" && (
-                <SubscriptionPage />
               )}
 
             </div>
