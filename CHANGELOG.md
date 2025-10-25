@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-10-25
+
+## 🚀 What's New
+- **File Validation on Upload:** Added document legal or non-legal document validation during file upload.
+- **Sidebar Panel Enhancement:** Recent chats are now available from the sidebar for quick access.
+
+## 🧩 UI Changes
+- **Landing Page:** Minor UI updates for improved aesthetics and usability.
+- **Settings Consolidation:** Appearance and subscription management have been moved into unified settings for a more streamlined user experience.
+
+## ⚙️ Technical Changes
+- **RAG Optimization:** Text extraction now runs a single time per process, improving resource efficiency.
+
 ## [0.3.9] - 2025-10-11 - Post-Consultation QA
 
 ## 🚀 What's New
@@ -25,7 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Billing History:** Users can now view complete billing history and invoices directly on the Subscription page
 - **Invoice Delivery:** PDF invoices are now automatically sent to registered email addresses
 - **Message Branching:** Added support for conversation branching when regenerating or editing responses
-
 
 ### 🛠️ Fixes
 - **File Storage Display:** Adjusted file size display to automatically adapt between KB/MB/GB units for better readability
