@@ -260,7 +260,7 @@ export default function Home() {
               <h3 className="text-3xl font-bold font-serif text-foreground mb-8">
                 Why Professionals Choose LegalynX?
               </h3>
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div className="flex items-start gap-4">
                   <div className=" p-2 rounded-lg">
                     <Clock className="w-6 h-6 text-yellow" />
@@ -340,7 +340,7 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-24 bg-secondary">
+      <section className="py-12 bg-secondary m-6 md:m-12 rounded-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimatedContent
             distance={100}
@@ -639,7 +639,7 @@ export default function Home() {
       </section> */}
 
       {/* FAQ Section */}
-      <section className="py-24 bg-secondary">
+      <section className="py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
  
         <div className="text-center mb-16">
@@ -734,12 +734,12 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gray-900">
+      <section className="py-24 bg-gray-900 m-6 md:m-12 rounded-xl">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h3 className="text-3xl lg:text-5xl font-bold font-serif text-white mb-6">
             Ready to Transform Your Legal Workflow?
           </h3>
-          <p className="text-lg text-gray-300 mb-10">
+          <p className="text-sm md:text-lg text-gray-300 mb-10">
             Join hundreds of legal professionals who've already streamlined
             their document analysis process.
           </p>

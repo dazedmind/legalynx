@@ -48,15 +48,14 @@ function Header() {
               </div>
             </Link>
 
+            <Link href="/frontend/login">
+              <div className="hover:text-foreground font-bold transition-colors cursor-pointer">
+                Sign In
+              </div>
+            </Link>
+
             <span className="flex items-center gap-4">
-              <Link href="/frontend/login">
-                <Button
-                  variant="outline"
-                  className="cursor-pointer hover:brightness-110 transition-all duration-300 border-none text-foreground font-bold px-4 py-3 rounded-full"
-                >
-                  Sign In
-                </Button>
-              </Link>
+        
               <Link href="/frontend/register">
                 <Button
                   variant="default"

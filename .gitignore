@@ -221,6 +221,7 @@ cython_debug/
 *.swp
 *.swo
 *~
+.claude/
 
 # ================================
 # PROJECT SPECIFIC
