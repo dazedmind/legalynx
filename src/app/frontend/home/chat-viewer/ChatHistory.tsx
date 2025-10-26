@@ -396,7 +396,7 @@ export default function SavedChatHistory({
   }
 
   return (
-    <div className="bg-primary p-6 w-full h-full flex flex-col">
+    <div className="bg-panel p-6 w-full h-full flex flex-col">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -457,10 +457,10 @@ export default function SavedChatHistory({
             {savedSessions.map((session) => (
               <div
                 key={session.id}
-                className={`p-4 border rounded-lg transition-all duration-200 cursor-pointer hover:border-blue-400 ${
+                className={`p-4 border rounded-md transition-all duration-200 cursor-pointer ${
                   currentSessionId === session.id
-                    ? 'border-blue-500 bg-blue/20 hover:bg-blue/10 shadow-sm'
-                    : 'border-tertiary hover:bg-accent'
+                    ? 'border-blue-500 bg-blue/20 hover:bg-blue/20 shadow-sm'
+                    : 'border-tertiary hover:bg-accent hover:border-tertiary-foreground'
                 }`}
                 // ✅ Fixed: Direct function call that properly loads the session
                 onClick={() => handleSessionClick(session)}

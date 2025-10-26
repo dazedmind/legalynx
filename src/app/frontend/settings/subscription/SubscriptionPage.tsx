@@ -18,9 +18,12 @@ import { Progress } from "@/app/frontend/components/ui/progress";
 import { paypalService } from "../../../../lib/api";
 import { toast, Toaster } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
-import ConfirmationModal, { ModalType } from "../../components/layout/ConfirmationModal";
+import ConfirmationModal, {
+  ModalType,
+} from "../../components/layout/ConfirmationModal";
 import { FaPaypal } from "react-icons/fa";
 import BillingHistory from "./BillingHistory";
+import { Separator } from "@/app/frontend/components/ui/separator";
 
 // Helper function to format MB to human readable format
 function formatStorage(mb: number): string {
@@ -169,7 +172,6 @@ function SubscriptionPage() {
     }
   };
 
-
   const tokenPercentage = (tokensUsed / tokenLimit) * 100;
   const isNearLimit = tokenPercentage >= 80;
   const daysUntilBilling = Math.ceil(
@@ -187,15 +189,20 @@ function SubscriptionPage() {
       const result = await paypalService.cancelSubscription(
         "User requested cancellation"
       );
-      
+
       if (result.status === "already_cancelled") {
-        toast.info("Subscription is already cancelled. Your account is on the Basic tier.");
+        toast.info(
+          "Subscription is already cancelled. Your account is on the Basic tier."
+        );
       } else if (result.expires_at) {
-        const expiryDate = new Date(result.expires_at).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
+        const expiryDate = new Date(result.expires_at).toLocaleDateString(
+          "en-US",
+          {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }
+        );
         toast.success(
           `Subscription cancelled successfully. Your ${result.plan} plan will remain active until ${expiryDate}.`
         );
@@ -204,23 +211,25 @@ function SubscriptionPage() {
           "Subscription cancelled successfully. Your account has been downgraded to Basic tier."
         );
       }
-      
+
       // Refresh the profile data to reflect the changes
       const profile = await profileService.getProfile();
-      setSubscription(profile.subscription?.plan_type?.toUpperCase() || 'BASIC');
+      setSubscription(
+        profile.subscription?.plan_type?.toUpperCase() || "BASIC"
+      );
       setTokensUsed(profile.subscription?.tokens_used || 0);
       setTokenLimit(profile.subscription?.token_limit || 1000);
-      setBillingDate(profile.subscription?.billing_date || '');
+      setBillingDate(profile.subscription?.billing_date || "");
       setSubscriptionDays(profile.subscription?.days_remaining || 0);
       setStorageUsed(profile.subscription?.storage_used || 0);
       setStorageLimit(profile.subscription?.storage || 100);
       // Only clear payment info if subscription is cancelled and expires_at is provided
       if (result.expires_at) {
-        setPaymentMethod('');
-        setLastFourDigits('');
+        setPaymentMethod("");
+        setLastFourDigits("");
       } else {
-        setPaymentMethod(profile.subscription?.payment_method || '');
-        setLastFourDigits(profile.subscription?.last_four_digits || '');
+        setPaymentMethod(profile.subscription?.payment_method || "");
+        setLastFourDigits(profile.subscription?.last_four_digits || "");
       }
     } catch (error: any) {
       console.error("Failed to cancel subscription:", error);
@@ -251,8 +260,8 @@ function SubscriptionPage() {
 
       <section className="space-y-4 mb-8">
         {/* Current Subscription Card */}
-        <div className="p-4 rounded-md border flex flex-col gap-2 border-tertiary mx-4">
-        <p className="text-sm text-muted-foreground">
+        <div className="p-4 bg-panel rounded-md border flex flex-col gap-2 border-tertiary mx-4">
+          <p className="text-sm text-muted-foreground">
             You are currently on the{" "}
             <span className="font-medium">{subscription}</span> plan
             {subscription === "BASIC" && (
@@ -293,12 +302,12 @@ function SubscriptionPage() {
         </div>
 
         {/* Token Usage Card */}
-        <div className="p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-yellow-500" />
-              <h1 className="text-lg font-bold">Token Usage</h1>
-            </div>
+        <div className="p-4 bg-panel rounded-md border flex flex-col gap-3 border-tertiary mx-4">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+              Token Usage
+            </h2>
           </div>
 
           <div className="flex items-center justify-between">
@@ -309,7 +318,10 @@ function SubscriptionPage() {
                   : "♾️"}
               </h1>
               <span className="text-xl text-muted-foreground">
-                /{" "} {subscription === "PREMIUM" ? "Unlimited" : tokenLimit.toLocaleString()}
+                /{" "}
+                {subscription === "PREMIUM"
+                  ? "Unlimited"
+                  : tokenLimit.toLocaleString()}
                 {/* {typeof tokenLimit === "number"
                   ? tokenLimit.toLocaleString()
                   : "--"} */}
@@ -322,30 +334,33 @@ function SubscriptionPage() {
             </div>
           </div>
           {subscription !== "PREMIUM" && (
-          <div className="space-y-2">
-            <Progress value={tokenPercentage} className="h-2" />
-            {isNearLimit && (
-              <div className="flex items-center gap-2 p-2 bg-yellow/10 border border-yellow rounded text-yellow-700 text-sm mt-4">
-                <AlertCircle className="w-4 h-4" />
-                {tokenPercentage === 100
-                  ? "You've reached your token limit! Consider upgrading your plan."
-                  : tokenPercentage >= 95
-                  ? "You're almost out of tokens! Consider upgrading your plan."
-                  : "You're running low on tokens. Consider upgrading soon."}
-              </div>
-            )}
-          </div>
+            <div className="space-y-2">
+              <Progress value={tokenPercentage} className="h-2" />
+              {isNearLimit && (
+                <div className="flex items-center gap-2 p-2 bg-yellow/10 border border-yellow rounded text-yellow-700 text-sm mt-4">
+                  <AlertCircle className="w-4 h-4" />
+                  {tokenPercentage === 100
+                    ? "You've reached your token limit! Consider upgrading your plan."
+                    : tokenPercentage >= 95
+                    ? "You're almost out of tokens! Consider upgrading your plan."
+                    : "You're running low on tokens. Consider upgrading soon."}
+                </div>
+              )}
+            </div>
           )}
-
         </div>
 
         {/* Billing Information */}
         {billingDate !== "" && (
-          <div className="p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-4">
-            <div className="flex items-center gap-2">
-              <FaPaypal className="w-5 h-5 text-blue-600" />
-              <h1 className="text-lg font-bold">Billing Information</h1>
+          <div className="p-4 bg-panel rounded-md border flex flex-col gap-3 border-tertiary mx-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+                Billing Information
+              </h2>
             </div>
+
+            <Separator />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -359,7 +374,9 @@ function SubscriptionPage() {
                         <FaPaypal />
                       </div>
                       <span className="text-sm">PayPal</span>
-                      <p className="text-xs text-blue p-1 bg-accent rounded">Account Linked</p>
+                      <p className="text-xs text-blue p-1 bg-accent rounded">
+                        Account Linked
+                      </p>
                     </>
                   ) : paymentMethod === "card" && lastFourDigits ? (
                     <>
@@ -391,38 +408,45 @@ function SubscriptionPage() {
               </div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-2 pt-2 border-t border-tertiary">
+            <div className="flex flex-col md:flex-row gap-2 pt-2 ">
               <button
                 onClick={() => setShowBillingHistory(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-tertiary rounded hover:bg-accent transition-colors cursor-pointer">
+                className="flex items-center gap-2 px-3 py-2 text-sm border border-tertiary rounded hover:bg-accent transition-colors cursor-pointer"
+              >
                 <ExternalLink className="w-4 h-4" />
                 View Billing History
               </button>
               {paymentMethod !== "" && (
-              <button
-                onClick={() => setConfirmationModal(true)}
-                disabled={isCancelling}
-                className={`flex items-center gap-2 px-3 py-2 text-sm border rounded transition-colors cursor-pointer ${
-                  isCancelling
-                    ? "border-tertiary text-muted-foreground cursor-not-allowed"
-                    : "hover:border-destructive hover:text-destructive hover:bg-destructive/10"
-                }`}
-              >
-                {isCancelling ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Ban className="w-4 h-4" />
-                )}
-                {isCancelling ? "Cancelling..." : "Cancel Subscription"}
-              </button>
+                <button
+                  onClick={() => setConfirmationModal(true)}
+                  disabled={isCancelling}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm border rounded transition-colors cursor-pointer ${
+                    isCancelling
+                      ? "border-tertiary text-muted-foreground cursor-not-allowed"
+                      : "hover:border-destructive hover:text-destructive hover:bg-destructive/10"
+                  }`}
+                >
+                  {isCancelling ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Ban className="w-4 h-4" />
+                  )}
+                  {isCancelling ? "Cancelling..." : "Cancel Subscription"}
+                </button>
               )}
             </div>
           </div>
         )}
 
         {/* Plan Comparison / Upgrade */}
-        <div className="p-4 rounded-md border flex flex-col gap-3 border-tertiary mx-4">
-          <h1 className="text-lg font-bold">Available Plans</h1>
+        <div className="p-4 bg-panel rounded-md border flex flex-col gap-3 border-tertiary mx-4">
+          <div className="flex items-center gap-3 mb-2">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+              Available Plans
+            </h2>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div
               className={`p-4 border rounded-lg ${
@@ -498,9 +522,11 @@ function SubscriptionPage() {
                   }}
                   className="flex items-center justify-center gap-2 w-full mt-3 px-3 py-2 bg-gray-800 text-white rounded-sm text-sm hover:bg-gray-900 transition-colors cursor-pointer"
                 >
-                  {subscription === "BASIC" ? "Upgrade to Standard" : "Downgrade to Basic"}
+                  {subscription === "BASIC"
+                    ? "Upgrade to Standard"
+                    : "Downgrade to Basic"}
                 </button>
-              )}    
+              )}
             </div>
 
             <div
@@ -564,11 +590,11 @@ function SubscriptionPage() {
           onClose={() => setConfirmationModal(false)}
           onSave={cancelSubscription}
           modal={{
-            header: 'Cancel Subscription?',
+            header: "Cancel Subscription?",
             message: `Your payment method will be removed and your subscription will remain active until the end of your billing period.`,
-            trueButton: 'Yes',
-            falseButton: 'No',
-            type: ModalType.DANGER
+            trueButton: "Yes",
+            falseButton: "No",
+            type: ModalType.DANGER,
           }}
         />
       )}

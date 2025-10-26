@@ -14,6 +14,7 @@ import { authUtils } from '@/lib/auth';
 import {
   GoStarFill
 } from "react-icons/go";
+import { HiOutlineChatBubbleLeft, HiOutlineChatBubbleLeftEllipsis } from "react-icons/hi2";
 import ProtectedRoute from "../components/layout/ProtectedRoute";
 import NavBar from "../components/layout/NavBar";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -21,6 +22,8 @@ import { LogOut, Menu, X, Lock, Palette, PanelRightClose, PanelRightOpen, HardDr
 import { useTheme } from "next-themes";
 import UploadPage from "./chat-viewer/UploadPage";
 import ConfirmationModal, { ModalType } from "../components/layout/ConfirmationModal";
+import SidebarFooter from "../components/layout/SidebarFooter";
+import { FaLandmark } from "react-icons/fa";
 
 type ActiveTab =
   | "chat"
@@ -592,6 +595,7 @@ export default function Home() {
     }
     setActiveTab(tab);
     setIsMobileSidebarOpen(false);
+    setCurrentSessionId(null);
   };
 
   const handleSessionSelect = (sessionId: string) => {
@@ -633,7 +637,7 @@ export default function Home() {
   };
 
   const menuItems = [
-    { id: 'chat_history', label: 'Chat History', icon: MessageCircle },
+    { id: 'chat_history', label: 'Chat History', icon: HiOutlineChatBubbleLeftEllipsis },
     { id: 'documents', label: 'File Manager', icon: Folder },
   ]
 
@@ -762,13 +766,13 @@ export default function Home() {
                       <button
                         key={session.id}
                         onClick={() => handleRecentSessionClick(session.id)}
-                        className={`w-full text-left p-2 rounded-md transition-colors group hover:bg-accent ${
+                        className={`w-full text-left p-2 rounded-md transition-colors group hover:bg-accent cursor-pointer ${
                           currentSessionId === session.id ? 'bg-accent' : ''
                         }`}
                         title={session.title}
                       >
                         <div className="flex items-start gap-2">
-                          <MessageCircle className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" strokeWidth={2} />
+                          <HiOutlineChatBubbleLeftEllipsis className="w-4 h-4 text-blue flex-shrink-0 mt-0.5" strokeWidth={2} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-foreground truncate">
                               {truncateTitle(session.title)}
@@ -858,17 +862,12 @@ export default function Home() {
             </div>
             
             {!isDesktopSidebarCollapsed && (
-              <div className="flex items-center text-xs gap-1 mt-4 border-t border-tertiary pt-2 text-muted-foreground">
-                <a href="/frontend/privacy-policy" target="_blank" rel="noopener noreferrer">
-                  Privacy Policy •
-                </a>
-                <p className="text-xs text-muted-foreground">v 0.4.0</p>
-              </div>
+              <SidebarFooter />
             )}
           </aside>
 
           {/* Main Content Area */}
-          <section className="flex-1 flex flex-col overflow-hidden">
+          <section className="flex-1  bg-panel flex flex-col overflow-hidden">
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto">
               {activeTab === "upload" && (

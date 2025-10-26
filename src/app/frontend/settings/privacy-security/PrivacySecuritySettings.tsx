@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Shield,
   Key,
@@ -8,17 +8,17 @@ import {
   Loader2,
   Activity,
   ChevronDown,
-  ChevronUp
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { useAuth } from '@/lib/context/AuthContext';
-import { authUtils } from '@/lib/auth';
-import LoaderComponent from '../../components/ui/LoaderComponent';
-import { Separator } from '@/app/frontend/components/ui/separator';
-import SecurityLogSettings from './SecurityLogSettings';
-import { FloatingSaveBar } from '../../components/layout/FloatingSaveBar';
-import { Button } from '@/app/frontend/components/ui/button';
-import { Input } from '../../components/ui/input';
+  ChevronUp,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@/lib/context/AuthContext";
+import { authUtils } from "@/lib/auth";
+import LoaderComponent from "../../components/ui/LoaderComponent";
+import { Separator } from "@/app/frontend/components/ui/separator";
+import SecurityLogSettings from "./SecurityLogSettings";
+import { FloatingSaveBar } from "../../components/layout/FloatingSaveBar";
+import { Button } from "@/app/frontend/components/ui/button";
+import { Input } from "../../components/ui/input";
 
 interface SecuritySettings {
   two_factor_enabled: boolean;
@@ -27,42 +27,39 @@ interface SecuritySettings {
   security_alerts: boolean;
 }
 
-interface PrivacySettings {
-  
-}
+interface PrivacySettings {}
 
 export default function PrivacySecuritySettings() {
   const { user, isAuthenticated } = useAuth();
-  
+
   // Settings state
   const [securitySettings, setSecuritySettings] = useState<SecuritySettings>({
     two_factor_enabled: false,
     login_notifications: true,
     security_alerts: true,
   });
-  
-  const [privacySettings, setPrivacySettings] = useState<PrivacySettings>({
-    
-  });
+
+  const [privacySettings, setPrivacySettings] = useState<PrivacySettings>({});
 
   // Store original settings for discard functionality
-  const [originalSecuritySettings, setOriginalSecuritySettings] = useState<SecuritySettings>({
-    two_factor_enabled: false,
-    login_notifications: true,
-    security_alerts: true,
-  });
+  const [originalSecuritySettings, setOriginalSecuritySettings] =
+    useState<SecuritySettings>({
+      two_factor_enabled: false,
+      login_notifications: true,
+      security_alerts: true,
+    });
 
   // 2FA Setup state
   const [is2FASetup, setIs2FASetup] = useState(false);
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
-  const [manualEntryKey, setManualEntryKey] = useState<string>('');
-  const [verificationCode, setVerificationCode] = useState<string>('');
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+  const [manualEntryKey, setManualEntryKey] = useState<string>("");
+  const [verificationCode, setVerificationCode] = useState<string>("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [isGenerating2FA, setIsGenerating2FA] = useState(false);
 
   // Account deletion state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // UI state
@@ -80,23 +77,23 @@ export default function PrivacySecuritySettings() {
   const getAuthHeaders = () => {
     const token = authUtils.getToken();
     return {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` })
+      "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
     };
   };
 
   const loadSettings = async () => {
     try {
       setIsLoading(true);
-      
-      const response = await fetch('/backend/api/user-settings', {
-        method: 'GET',
-        headers: getAuthHeaders()
+
+      const response = await fetch("/backend/api/user-settings", {
+        method: "GET",
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
         const data = await response.json();
-        
+
         const loadedSecuritySettings = {
           two_factor_enabled: data.two_factor_enabled || false,
           two_factor_secret: data.two_factor_secret,
@@ -104,36 +101,40 @@ export default function PrivacySecuritySettings() {
           security_alerts: data.security_alerts ?? true,
         };
 
-        const loadedPrivacySettings = {
-          
-        };
+        const loadedPrivacySettings = {};
 
         setSecuritySettings(loadedSecuritySettings);
         setPrivacySettings(loadedPrivacySettings);
-        
+
         // Store originals for discard functionality
         setOriginalSecuritySettings(loadedSecuritySettings);
       }
     } catch (error) {
-      console.error('Failed to load settings:', error);
-      toast.error('Failed to load your settings');
+      console.error("Failed to load settings:", error);
+      toast.error("Failed to load your settings");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSecuritySettingChange = (key: keyof SecuritySettings, value: any) => {
-    setSecuritySettings(prev => ({
+  const handleSecuritySettingChange = (
+    key: keyof SecuritySettings,
+    value: any
+  ) => {
+    setSecuritySettings((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
     setHasUnsavedChanges(true);
   };
 
-  const handlePrivacySettingChange = (key: keyof PrivacySettings, value: any) => {
-    setPrivacySettings(prev => ({
+  const handlePrivacySettingChange = (
+    key: keyof PrivacySettings,
+    value: any
+  ) => {
+    setPrivacySettings((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
     setHasUnsavedChanges(true);
   };
@@ -141,30 +142,30 @@ export default function PrivacySecuritySettings() {
   const saveSettings = async () => {
     try {
       setIsSaving(true);
-      
-      const response = await fetch('/backend/api/user-settings', {
-        method: 'POST',
+
+      const response = await fetch("/backend/api/user-settings", {
+        method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
           ...securitySettings,
-          ...privacySettings
-        })
+          ...privacySettings,
+        }),
       });
 
       if (response.ok) {
         setHasUnsavedChanges(false);
-        
+
         // Update originals to current values
         setOriginalSecuritySettings({ ...securitySettings });
-        
-        toast.success('Settings saved successfully');
+
+        toast.success("Settings saved successfully");
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save settings');
+        throw new Error(errorData.error || "Failed to save settings");
       }
     } catch (error) {
-      console.error('Failed to save settings:', error);
-      toast.error('Failed to save settings');
+      console.error("Failed to save settings:", error);
+      toast.error("Failed to save settings");
     } finally {
       setIsSaving(false);
     }
@@ -174,17 +175,17 @@ export default function PrivacySecuritySettings() {
     // Revert to original settings
     setSecuritySettings({ ...originalSecuritySettings });
     setHasUnsavedChanges(false);
-    toast.info('Changes discarded');
+    toast.info("Changes discarded");
   };
 
   // 2FA Setup Functions
   const generate2FASecret = async () => {
     try {
       setIsGenerating2FA(true);
-      
-      const response = await fetch('/backend/api/auth/2fa/setup', {
-        method: 'POST',
-        headers: getAuthHeaders()
+
+      const response = await fetch("/backend/api/auth/2fa/setup", {
+        method: "POST",
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
@@ -192,14 +193,17 @@ export default function PrivacySecuritySettings() {
         setQrCodeUrl(data.qrCodeUrl);
         setManualEntryKey(data.secret);
         setIs2FASetup(true);
-        setSecuritySettings(prev => ({ ...prev, two_factor_secret: data.secret }));
+        setSecuritySettings((prev) => ({
+          ...prev,
+          two_factor_secret: data.secret,
+        }));
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate 2FA secret');
+        throw new Error(errorData.error || "Failed to generate 2FA secret");
       }
     } catch (error) {
-      console.error('Failed to generate 2FA secret:', error);
-      toast.error('Failed to setup 2FA');
+      console.error("Failed to generate 2FA secret:", error);
+      toast.error("Failed to setup 2FA");
     } finally {
       setIsGenerating2FA(false);
     }
@@ -207,35 +211,35 @@ export default function PrivacySecuritySettings() {
 
   const verify2FA = async () => {
     if (!verificationCode || verificationCode.length !== 6) {
-      toast.error('Please enter a 6-digit verification code');
+      toast.error("Please enter a 6-digit verification code");
       return;
     }
 
     try {
       setIsVerifying(true);
-      
-      const response = await fetch('/backend/api/auth/2fa/verify', {
-        method: 'POST',
+
+      const response = await fetch("/backend/api/auth/2fa/verify", {
+        method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
           token: verificationCode,
-          secret: securitySettings.two_factor_secret
-        })
+          secret: securitySettings.two_factor_secret,
+        }),
       });
 
       if (response.ok) {
-        setSecuritySettings(prev => ({ ...prev, two_factor_enabled: true }));
+        setSecuritySettings((prev) => ({ ...prev, two_factor_enabled: true }));
         setIs2FASetup(false);
-        setVerificationCode('');
+        setVerificationCode("");
         setHasUnsavedChanges(true);
-        toast.success('2FA enabled successfully!');
+        toast.success("2FA enabled successfully!");
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Invalid verification code');
+        throw new Error(errorData.error || "Invalid verification code");
       }
     } catch (error) {
-      console.error('Failed to verify 2FA:', error);
-      toast.error('Invalid verification code');
+      console.error("Failed to verify 2FA:", error);
+      toast.error("Invalid verification code");
     } finally {
       setIsVerifying(false);
     }
@@ -243,139 +247,143 @@ export default function PrivacySecuritySettings() {
 
   const disable2FA = async () => {
     try {
-      const response = await fetch('/backend/api/auth/2fa/disable', {
-        method: 'POST',
-        headers: getAuthHeaders()
+      const response = await fetch("/backend/api/auth/2fa/disable", {
+        method: "POST",
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
-        setSecuritySettings(prev => ({ 
-          ...prev, 
+        setSecuritySettings((prev) => ({
+          ...prev,
           two_factor_enabled: false,
-          two_factor_secret: undefined 
+          two_factor_secret: undefined,
         }));
         setHasUnsavedChanges(true);
-        toast.success('2FA disabled successfully');
+        toast.success("2FA disabled successfully");
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to disable 2FA');
+        throw new Error(errorData.error || "Failed to disable 2FA");
       }
     } catch (error) {
-      console.error('Failed to disable 2FA:', error);
-      toast.error('Failed to disable 2FA');
+      console.error("Failed to disable 2FA:", error);
+      toast.error("Failed to disable 2FA");
     }
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard');
+    toast.success("Copied to clipboard");
   };
 
   // Account Deletion Functions
   const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'DELETE MY ACCOUNT') {
+    if (deleteConfirmText !== "DELETE MY ACCOUNT") {
       toast.error('Please type "DELETE MY ACCOUNT" to confirm');
       return;
     }
 
     try {
       setIsDeletingAccount(true);
-      
-      const response = await fetch('/backend/api/auth/delete-account', {
-        method: 'DELETE',
+
+      const response = await fetch("/backend/api/auth/delete-account", {
+        method: "DELETE",
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          confirmation: deleteConfirmText
-        })
+          confirmation: deleteConfirmText,
+        }),
       });
 
       if (response.ok) {
-        toast.success('Account deleted successfully');
+        toast.success("Account deleted successfully");
         // Redirect to home page and clear auth
         authUtils.logout();
-        window.location.href = '/';
+        window.location.href = "/";
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete account');
+        throw new Error(errorData.error || "Failed to delete account");
       }
     } catch (error) {
-      console.error('Failed to delete account:', error);
-      toast.error('Failed to delete account');
+      console.error("Failed to delete account:", error);
+      toast.error("Failed to delete account");
     } finally {
       setIsDeletingAccount(false);
     }
   };
 
   if (isLoading) {
-    return (
-      <LoaderComponent />
-    );
+    return <LoaderComponent />;
   }
 
   return (
-    <div className="space-y-4"> {/* Added padding bottom for floating bar */}
+    <div className="space-y-4">
+      {" "}
+      {/* Added padding bottom for floating bar */}
       {/* Header */}
       <div className="p-4 pb-2 px-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className='text-3xl font-bold font-serif'>Privacy & Security</h1>
-            <p className='text-sm text-muted-foreground'>Manage your privacy and security preferences.</p>
+            <h1 className="text-3xl font-bold font-serif">
+              Privacy & Security
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Manage your privacy and security preferences.
+            </p>
           </div>
         </div>
       </div>
-
       {/* Two-Factor Authentication */}
-      <section className="mx-4 p-6 rounded-lg border border-tertiary bg-primary">
+      <section className="mx-4 p-6 rounded-md border border-tertiary bg-panel">
         <div className="flex items-center gap-3 mb-4">
-          <Shield className="w-6 h-6 text-yellow-500" />
-          <div>
-            <h2 className="text-xl font-semibold">Two-Factor Authentication</h2>
-          </div>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+            Two-Factor Authentication
+          </h2>
         </div>
 
         {/* Divider */}
-        <Separator className="my-4"/>
+        <Separator className="my-4" />
 
         {!securitySettings.two_factor_enabled && !is2FASetup ? (
           <div className="space-y-4">
             <div className=" rounded-lg">
               <div className="flex flex-col md:flex-row justify-between items-start gap-3">
-                <div className='flex flex-col'>
-                    <h3 className="font-bold ">Set up 2FA</h3>
-                    <p className="text-sm text-muted-foreground ">
-                        Protect your account with two-factor authentication. You'll need your phone to sign in.
-                    </p>
+                <div className="flex flex-col">
+                  <h3 className="font-bold ">Set up 2FA</h3>
+                  <p className="text-sm text-muted-foreground ">
+                    Protect your account with two-factor authentication. You'll
+                    need your phone to sign in.
+                  </p>
                 </div>
-        
 
                 <Button
-                    onClick={generate2FASecret}
-                    disabled={isGenerating2FA}
-                    className="flex items-center gap-2 px-4 py-2 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                    >
-                    {isGenerating2FA ? (
-                        <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Setting up...
-                        </>
-                    ) : (
-                        <>
-                        <Key className="hidden md:block w-4 h-4" />
-                        Enable 2FA
-                        </>
-                    )}
+                  onClick={generate2FASecret}
+                  disabled={isGenerating2FA}
+                  className="flex items-center gap-2 px-4 py-2 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  {isGenerating2FA ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Setting up...
+                    </>
+                  ) : (
+                    <>
+                      <Key className="hidden md:block w-4 h-4" />
+                      Enable 2FA
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
-            
           </div>
         ) : securitySettings.two_factor_enabled ? (
           <div className="flex justify-between items-center align-middle gap-4">
             <div className="flex items-center gap-2 text-green-600">
               <Check className="w-5 h-5" />
-              <span className="font-medium">Two-factor authentication is enabled</span>
+              <span className="font-medium">
+                Two-factor authentication is enabled
+              </span>
             </div>
-            
+
             <button
               onClick={disable2FA}
               className="flex items-center gap-2 px-4 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-600/20 transition-colors cursor-pointer"
@@ -388,7 +396,8 @@ export default function PrivacySecuritySettings() {
             <div className=" rounded-lg">
               <h3 className="font-medium mb-2">Setup your authenticator app</h3>
               <p className="text-sm ">
-                Scan the QR code with your authenticator app or enter the key manually.
+                Scan the QR code with your authenticator app or enter the key
+                manually.
               </p>
             </div>
 
@@ -397,7 +406,11 @@ export default function PrivacySecuritySettings() {
               <div className="text-center">
                 <h4 className="font-medium mb-3">Scan QR Code</h4>
                 {qrCodeUrl ? (
-                  <img src={qrCodeUrl} alt="2FA QR Code" className="mx-auto border rounded-lg" />
+                  <img
+                    src={qrCodeUrl}
+                    alt="2FA QR Code"
+                    className="mx-auto border rounded-lg"
+                  />
                 ) : (
                   <div className="w-48 h-48 mx-auto bg-gray-100 border rounded-lg flex items-center justify-center">
                     <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
@@ -429,7 +442,7 @@ export default function PrivacySecuritySettings() {
                       </button>
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Verification Code
@@ -437,13 +450,17 @@ export default function PrivacySecuritySettings() {
                     <Input
                       type="text"
                       value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      onChange={(e) =>
+                        setVerificationCode(
+                          e.target.value.replace(/\D/g, "").slice(0, 6)
+                        )
+                      }
                       placeholder="Enter 6-digit code"
                       className="w-full px-3 py-2 border border-tertiary rounded-md "
                       maxLength={6}
                     />
                   </div>
-                  
+
                   <div className="flex gap-2">
                     <button
                       onClick={verify2FA}
@@ -462,7 +479,7 @@ export default function PrivacySecuritySettings() {
                         </>
                       )}
                     </button>
-                    
+
                     <button
                       onClick={() => setIs2FASetup(false)}
                       className="px-4 py-2 border border-tertiary rounded-md hover:bg-accent transition-colors cursor-pointer"
@@ -476,17 +493,18 @@ export default function PrivacySecuritySettings() {
           </div>
         )}
       </section>
-      
       {/* Security Settings */}
-      <section className="mx-4 p-6 rounded-lg border border-tertiary bg-primary">
+      <section className="mx-4 p-6 rounded-md border border-tertiary bg-panel">
         <button
           onClick={() => setIsSecurityLogsExpanded(!isSecurityLogsExpanded)}
           className="w-full flex items-center justify-between cursor-pointer group"
         >
           <div className="flex items-center gap-3">
-            <Activity className="w-6 h-6 text-yellow-500" />
             <div className="text-left">
-              <h2 className="text-xl font-semibold">Security Logs</h2>
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+                Security Logs
+              </h2>
             </div>
           </div>
           <div className="transition-transform duration-200">
@@ -499,21 +517,21 @@ export default function PrivacySecuritySettings() {
         </button>
 
         {/* Divider */}
-        <Separator className="my-4"/>
+        <Separator className="my-4" />
         <p className="text-sm text-muted-foreground">
-        Authentication and security changes in your account are logged here.
-        Logs are retained for 60 days.
+          Authentication and security changes in your account are logged here.
+          Logs are retained for 60 days.
         </p>
       </section>
-
       {isSecurityLogsExpanded && <SecurityLogSettings />}
-
       {/* Danger Zone */}
-      <section className="mx-4 p-6 mb-8 rounded-lg border border-tertiary bg-destructive/5">
+      <section className="mx-4 p-6 mb-8 rounded-md border border-tertiary bg-destructive/5">
         <div className="flex items-center gap-3 mb-4">
           <AlertTriangle className="w-6 h-6 text-red-600" />
           <div>
-            <h2 className="text-xl font-semibold text-foreground">Danger Zone</h2>
+            <h2 className="text-xl font-semibold text-foreground">
+              Danger Zone
+            </h2>
           </div>
         </div>
 
@@ -525,7 +543,8 @@ export default function PrivacySecuritySettings() {
               <div>
                 <h3 className="font-medium text-red-600">Delete Account</h3>
                 <p className="text-sm text-muted-foreground">
-                  Permanently delete your account and all associated data. This action cannot be undone.
+                  Permanently delete your account and all associated data. This
+                  action cannot be undone.
                 </p>
               </div>
               <Button
@@ -541,12 +560,13 @@ export default function PrivacySecuritySettings() {
                 <div>
                   <h3 className="font-medium">Are you absolutely sure?</h3>
                   <p className="text-sm mt-1">
-                    This will permanently delete your account, all documents, chat sessions, and associated data. 
-                    This action is irreversible.
+                    This will permanently delete your account, all documents,
+                    chat sessions, and associated data. This action is
+                    irreversible.
                   </p>
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-red-700 mb-2">
                   Type "DELETE MY ACCOUNT" to confirm:
@@ -559,11 +579,14 @@ export default function PrivacySecuritySettings() {
                   placeholder="DELETE MY ACCOUNT"
                 />
               </div>
-              
+
               <div className="flex gap-3">
                 <Button
                   onClick={handleDeleteAccount}
-                  disabled={isDeletingAccount || deleteConfirmText !== 'DELETE MY ACCOUNT'}
+                  disabled={
+                    isDeletingAccount ||
+                    deleteConfirmText !== "DELETE MY ACCOUNT"
+                  }
                   className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
                   {isDeletingAccount ? (
@@ -572,17 +595,15 @@ export default function PrivacySecuritySettings() {
                       Deleting...
                     </>
                   ) : (
-                    <>
-                      Confirm Delete
-                    </>
+                    <>Confirm Delete</>
                   )}
                 </Button>
-                
-                <Button 
+
+                <Button
                   variant="secondary"
                   onClick={() => {
                     setShowDeleteConfirm(false);
-                    setDeleteConfirmText('');
+                    setDeleteConfirmText("");
                   }}
                   className="px-4 py-2 border border-tertiary rounded-md hover:bg-accent transition-colors cursor-pointer"
                 >
@@ -593,7 +614,6 @@ export default function PrivacySecuritySettings() {
           )}
         </div>
       </section>
-
       {/* Floating Save Changes Bar */}
       <FloatingSaveBar
         isVisible={hasUnsavedChanges}

@@ -3,10 +3,7 @@ import {
   ChevronDown,
   HardDrive,
   AlertCircle,
-  Loader2,
-  Sparkle,
 } from "lucide-react";
-import { GoCloud } from "react-icons/go";
 import { Progress } from "@/app/frontend/components/ui/progress";
 import {
   DropdownMenu,
@@ -25,18 +22,18 @@ import { FloatingSaveBar } from "../../components/layout/FloatingSaveBar";
 
 // Helper function to format bytes to appropriate unit (KB, MB, GB)
 const formatStorageSize = (bytes: number): { value: number; unit: string } => {
-  if (bytes === 0) return { value: 0, unit: 'MB' };
+  if (bytes === 0) return { value: 0, unit: "MB" };
 
   const kb = bytes / 1024;
   const mb = kb / 1024;
   const gb = mb / 1024;
 
   if (gb >= 1) {
-    return { value: parseFloat(gb.toFixed(2)), unit: 'GB' };
+    return { value: parseFloat(gb.toFixed(2)), unit: "GB" };
   } else if (mb >= 1) {
-    return { value: parseFloat(mb.toFixed(2)), unit: 'MB' };
+    return { value: parseFloat(mb.toFixed(2)), unit: "MB" };
   } else {
-    return { value: parseFloat(kb.toFixed(2)), unit: 'KB' };
+    return { value: parseFloat(kb.toFixed(2)), unit: "KB" };
   }
 };
 
@@ -146,7 +143,7 @@ export default function FileSettings() {
           file_retention_days: data.file_retention_days,
           auto_delete_files: data.auto_delete_files || false,
         };
-        
+
         setSettings(loadedSettings);
         // Store originals for discard functionality
         setOriginalSettings(loadedSettings);
@@ -174,7 +171,7 @@ export default function FileSettings() {
 
   const loadStorageInfo = async () => {
     try {
-      console.log('🔄 Loading storage info...');
+      console.log("🔄 Loading storage info...");
 
       const response = await fetch("/backend/api/user-settings/storage", {
         method: "GET",
@@ -183,12 +180,18 @@ export default function FileSettings() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('📊 Storage response:', data);
+        console.log("📊 Storage response:", data);
 
         // API returns used, total, and available in bytes
         const usedBytes = data.used || 0;
-        const totalBytes = data.total || (subscription === "BASIC" ? 100 * 1024 * 1024 : subscription === "STANDARD" ? 1 * 1024 * 1024 * 1024 : 10 * 1024 * 1024 * 1024);
-        const availableBytes = data.available || (totalBytes - usedBytes);
+        const totalBytes =
+          data.total ||
+          (subscription === "BASIC"
+            ? 100 * 1024 * 1024
+            : subscription === "STANDARD"
+            ? 1 * 1024 * 1024 * 1024
+            : 10 * 1024 * 1024 * 1024);
+        const availableBytes = data.available || totalBytes - usedBytes;
 
         setStorageInfo({
           used: usedBytes,
@@ -196,19 +199,24 @@ export default function FileSettings() {
           available: availableBytes,
         });
 
-        console.log('💾 Storage info set:', {
+        console.log("💾 Storage info set:", {
           used: usedBytes,
           total: totalBytes,
           available: availableBytes,
-          formattedUsed: formatStorageSize(usedBytes)
+          formattedUsed: formatStorageSize(usedBytes),
         });
       } else {
-        console.error('❌ Storage API error:', response.status);
+        console.error("❌ Storage API error:", response.status);
       }
     } catch (error) {
       console.error("Failed to load storage info:", error);
       // Use default values on error (in bytes)
-      const totalBytes = subscription === "BASIC" ? 100 * 1024 * 1024 : subscription === "STANDARD" ? 1 * 1024 * 1024 * 1024 : 10 * 1024 * 1024 * 1024;
+      const totalBytes =
+        subscription === "BASIC"
+          ? 100 * 1024 * 1024
+          : subscription === "STANDARD"
+          ? 1 * 1024 * 1024 * 1024
+          : 10 * 1024 * 1024 * 1024;
       setStorageInfo({
         used: 0,
         total: totalBytes,
@@ -288,7 +296,8 @@ export default function FileSettings() {
       return { value: 50, unit: "MB" };
     } else if (subscription === "STANDARD") {
       return { value: 1, unit: "GB" };
-    } else { // PREMIUM
+    } else {
+      // PREMIUM
       return { value: 10, unit: "GB" };
     }
   };
@@ -298,9 +307,11 @@ export default function FileSettings() {
   const formattedAvailable = formatStorageSize(availableInBytes);
 
   return (
-    <div className="space-y-4 pb-6"> {/* Added padding bottom for floating bar */}
-      <span className='flex flex-col gap-1 p-4 pb-2 px-4'>
-            <div className="flex items-center justify-between">
+    <div className="space-y-4 pb-6">
+      {" "}
+      {/* Added padding bottom for floating bar */}
+      <span className="flex flex-col gap-1 p-4 pb-2 px-4">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold font-serif">File Settings</h1>
             <p className="text-sm text-muted-foreground">
@@ -309,18 +320,17 @@ export default function FileSettings() {
           </div>
         </div>
       </span>
-
       {/* File Settings Preference */}
-      <section className="mx-4 p-6 rounded-lg border border-tertiary bg-primary">
+      <section className="mx-4 p-6 rounded-md border border-tertiary bg-panel">
         <div className="flex items-center gap-3 mb-4">
-          <Sparkle className="w-6 h-6 text-yellow-500" />
-          <div>
-            <h2 className="text-xl font-semibold">File Preferences</h2>
-          </div>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+              <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+              File Preferences
+          </h2>
         </div>
 
         {/* Divider */}
-        <Separator className="my-4"/>
+        <Separator className="my-4" />
 
         <div className="space-y-6">
           {/* File Expiration */}
@@ -360,7 +370,7 @@ export default function FileSettings() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          
+
           {settings.file_retention_days && (
             <div className="flex items-center gap-2 mt-2 p-3 bg-blue/10 rounded-md text-blue-600 text-sm">
               <AlertCircle className="w-4 h-4" />
@@ -372,17 +382,19 @@ export default function FileSettings() {
           )}
           {/* Auto-rename files */}
           <div className="flex items-center justify-between">
-              <span>
-                <h3 className="font-bold">Auto-rename files</h3>
-                <p className="text-sm text-muted-foreground">Auto-format file names on upload</p>
-              </span>
-              <Switch
-                checked={settings.auto_rename_files}
-                onCheckedChange={(checked) =>
-                  handleSettingChange("auto_rename_files", checked)
-                }
-                className="cursor-pointer"
-              />
+            <span>
+              <h3 className="font-bold">Auto-rename files</h3>
+              <p className="text-sm text-muted-foreground">
+                Auto-format file names on upload
+              </p>
+            </span>
+            <Switch
+              checked={settings.auto_rename_files}
+              onCheckedChange={(checked) =>
+                handleSettingChange("auto_rename_files", checked)
+              }
+              className="cursor-pointer"
+            />
           </div>
           {/* File Renaming Format */}
           {settings.auto_rename_files && (
@@ -433,29 +445,28 @@ export default function FileSettings() {
           )}
         </div>
       </section>
-
       {/* Storage Usage */}
-      <section className="mx-4 p-6 mb-8 rounded-lg border border-tertiary bg-primary">
+      <section className="mx-4 p-6 mb-8 rounded-md border border-tertiary bg-panel">
         <div className="flex items-center gap-3 mb-4">
-          <GoCloud className="w-6 h-6 text-yellow-500" strokeWidth={1} />
-          <div className="flex justify-between items-center w-full">
-            <h2 className="text-xl font-semibold">Storage Usage</h2>
-            <p className="text-md font-bold text-foreground">
-              {tierStorage.value} {tierStorage.unit} limit
-            </p>
-          </div>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+            Storage Usage
+          </h2>
         </div>
 
         {/* Divider */}
-        <Separator className="my-4"/>
+        <Separator className="my-4" />
 
         <div className="mt-6 space-y-2">
           <span className="flex items-center gap-2">
-            <HardDrive className="w-8 h-8" />
+            <HardDrive className="w-6 h-6" />
             <h1 className="text-xl font-bold">
-              {formattedUsed.value} {formattedUsed.unit} / {tierStorage.value} {tierStorage.unit}
+              {formattedUsed.value} {formattedUsed.unit} / {tierStorage.value}{" "}
+              {tierStorage.unit}
             </h1>
-            <p className="text-sm text-muted-foreground">used ({storagePercentage.toFixed(1)}%)</p>
+            <p className="text-sm text-muted-foreground">
+              used ({storagePercentage.toFixed(1)}%)
+            </p>
           </span>
           <Progress value={storagePercentage} />
 
@@ -463,7 +474,8 @@ export default function FileSettings() {
           {storageInfo.used === 0 && (
             <div className="flex items-center gap-2 p-3 bg-blue-500/20  rounded text-blue-600 text-sm">
               <AlertCircle className="w-4 h-4" />
-              No documents uploaded yet. Upload a document to see your storage usage.
+              No documents uploaded yet. Upload a document to see your storage
+              usage.
             </div>
           )}
 
@@ -492,7 +504,6 @@ export default function FileSettings() {
           </div>
         </div>
       </section>
-
       {/* Floating Save Changes Bar */}
       <FloatingSaveBar
         isVisible={hasUnsavedChanges}

@@ -246,7 +246,7 @@ export default function Appearance() {
   }
 
   return (
-    <div className="h-full bg-primary overflow-y-auto">
+    <div className="h-full overflow-y-auto">
       <div className="p-6">
         {/* Header */}
         <div>
@@ -258,10 +258,10 @@ export default function Appearance() {
 
         <div className="space-y-6 mt-6">
           {/* Theme Selection */}
-          <section className="bg-primary border border-tertiary rounded-lg p-6">
-            <h2 className="text-xl font-semibold font-serif text-foreground mb-4 flex items-center gap-2">
-              <Palette className="w-6 h-6 text-yellow-500" />
-              Theme
+          <section className="bg-panel border border-tertiary rounded-md p-6">
+            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
+            <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+            Theme
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
               Choose a color scheme that works best for you.
@@ -314,10 +314,10 @@ export default function Appearance() {
           </section>
 
           {/* Font Size */}
-          <section className="bg-primary border border-tertiary rounded-lg p-6">
+          <section className="bg-panel border border-tertiary rounded-md p-6">
             <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-              {/* <CaseSensitive className='w-6 h-6 stroke-2' /> */}
-              <Type className='w-6 h-6 text-yellow-500' />
+            <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+
               Font Size
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
@@ -362,10 +362,8 @@ export default function Appearance() {
           </section>
 
           {/* Reset Section */}
-          <section className="bg-primary border border-tertiary rounded-lg p-6">
+          <section className="bg-panel border border-tertiary rounded-md p-6">
             <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-              {/* <CaseSensitive className='w-6 h-6 stroke-2' /> */}
-              <RefreshCw className='w-6 h-6 text-yellow-500' />
               Reset Settings
             </h2>
             <p className="text-sm text-muted-foreground mb-4">

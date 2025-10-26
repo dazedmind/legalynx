@@ -787,7 +787,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
   }
 
   return (
-    <div className="flex flex-col p-2 h-full bg-primary">
+    <div className="flex flex-col p-2 h-full bg-panel">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-tertiary">
         <div>

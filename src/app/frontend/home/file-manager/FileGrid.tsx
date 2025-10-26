@@ -224,7 +224,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
             {folders.map((folder) => (
               <div
                 key={folder.id}
-                className={`group bg-primary border border-tertiary rounded-lg p-4 transition-all duration-200 cursor-pointer
+                className={`group bg-panel border border-tertiary rounded-lg p-4 transition-all duration-200 cursor-pointer
                    ${selectedDocs.has(folder.id) ? "selected-item" : ""}
                    `}
                 onDoubleClick={() => onFolderNavigate(folder.id)}
@@ -311,7 +311,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
               <div
                 key={doc.id}
                 draggable
-                className={`group relative bg-primary border border-tertiary rounded-lg p-4 transition-all duration-200 cursor-pointer 
+                className={`group relative bg-panel border border-tertiary rounded-lg p-4 transition-all duration-200 cursor-pointer 
                  ${selectedDocs.has(doc.id) ? "selected-item" : ""} ${
                   dragState.isDragging &&
                   dragState.draggedItems.includes(doc.id)
@@ -406,7 +406,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
 
                   </div>
                   <h3
-                    className="font-medium text-foreground mb-1"
+                    className="font-medium text-foreground mb-1 text-nowrap"
                     title={doc.fileName}
                   >
                     {truncateString(doc.fileName, 23)}
@@ -457,7 +457,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
           {folders.map((folder) => (
             <div
               key={folder.id}
-              className={`group flex items-center justify-between p-3 bg-primary border border-tertiary rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer 
+              className={`group flex items-center justify-between p-3 bg-panel border border-tertiary rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer 
                 ${selectedDocs.has(folder.id) ? "selected-item" : ""}
                 ${
                   dragState.dragOverFolder === folder.id
@@ -552,7 +552,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
             <div
               key={doc.id}
               draggable
-              className={`group flex items-center justify-between p-3 bg-primary border border-tertiary rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer ${
+              className={`group flex items-center justify-between p-3 bg-panel border border-tertiary rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer ${
                 currentDocumentId === doc.id ? "ring-2 ring-blue-500" : ""
               } ${selectedDocs.has(doc.id) ? "selected-item" : ""} ${
                 dragState.isDragging && dragState.draggedItems.includes(doc.id)

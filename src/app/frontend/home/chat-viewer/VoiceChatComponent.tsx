@@ -1005,7 +1005,7 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
   }, [voiceEnabled]);
 
   return (
-    <div className="flex flex-col h-full bg-primary p-4">
+    <div className="flex flex-col h-full bg-panel p-4">
       {/* Header with Manual Chat Button */}
       <div className=" flex items-center justify-between">
         <div>

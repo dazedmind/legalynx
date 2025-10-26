@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Shield, Clock, Users, ArrowUp, Upload, Search, FileText, Sparkles, CheckCircle, Scale, Briefcase, GraduationCap, ChevronDown } from "lucide-react";
+import {  ArrowUp, Upload, Sparkles, CheckCircle, Plus, Minus } from "lucide-react";
 import Header from "./frontend/components/layout/Header";
 import BlurText from "./frontend/components/reactbits/BlurText";
 import Image from "next/image";
@@ -14,7 +14,8 @@ import SpotlightCard from "./frontend/components/reactbits/SpotlightCard";
 import { BsFillLightningFill, BsFillShieldLockFill, BsFolderFill } from "react-icons/bs";
 import AnimatedContent from "./frontend/components/reactbits/AnimatedContent";
 import TypingAnimation from "./frontend/components/layout/TypingAnimation";
-import { RiCodeSFill } from "react-icons/ri";
+import { HiOutlineChatBubbleBottomCenter } from "react-icons/hi2";
+import { GoBriefcase, GoLaw, GoMortarBoard} from "react-icons/go";
 
 export default function Home() {
   const { theme } = useTheme();
@@ -90,8 +91,9 @@ export default function Home() {
               />
         )}
 
-        <div className="bg-gradient-to-b from-blue/30 to-transparent w-full h-1/3 rounded-3xl rounded-tr-none rounded-tl-none absolute top-0 left-0">
-        </div>
+        {/* TOP BLUE GRADIENT */}
+        <div className="bg-gradient-to-b from-blue/30 to-transparent w-full h-1/3 rounded-3xl rounded-tr-none rounded-tl-none absolute top-0 left-0"></div>
+
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-30 pb-10 md:pb-32">
           <div className="flex flex-col items-center justify-center gap-10 md:gap-16 pt-40">
             <div className="flex flex-col gap-4 text-center items-center lg:text-left">
@@ -240,82 +242,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section className="py-24 bg-primary">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-4">
-        <AnimatedContent
-          distance={100}
-          direction="vertical"
-          reverse={false}
-          duration={1}
-          initialOpacity={0}
-          animateOpacity
-          scale={1}
-          threshold={0.2}
-          onComplete={() => {
-            console.log("Animation completed");
-          }}
-        >
-          <div className="flex flex-col gap-16 items-center mx-8 md:mx-0">
-            <div>
-              <h3 className="text-3xl font-bold font-serif text-foreground mb-8">
-                Why Professionals Choose LegalynX?
-              </h3>
-              <div className="space-y-8">
-                <div className="flex items-start gap-4">
-                  <div className=" p-2 rounded-lg">
-                    <Clock className="w-6 h-6 text-yellow" />
-                  </div>
-                  <div>
-                    <h4 className="text-xl font-semibold text-foreground mb-2">
-                      Time Reduction
-                    </h4>
-                    <p className="text-muted-foreground">
-                      Dramatically reduce document review time from hours to
-                      minutes
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="p-2 rounded-lg">
-                    <Shield className="w-6 h-6 text-yellow" />
-                  </div>
-                  <div>
-                    <h4 className="text-xl font-semibold text-foreground mb-2">
-                      Enterprise Security
-                    </h4>
-                    <p className="text-muted-foreground">
-                      Encryption with legal industry security
-                      standards.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="p-2 rounded-lg">
-                    <Users className="w-6 h-6 text-yellow" />
-                  </div>
-                  <div>
-                    <h4 className="text-xl font-semibold text-foreground mb-2">
-                      24/7 Support
-                    </h4>
-                    <p className="text-muted-foreground">
-                      Support for any technical issues you might face.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          </AnimatedContent>
-        </div>
-      </section>
-
       {/* How It Works Section */}
-      <section className="py-12 bg-secondary m-6 md:m-12 rounded-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedContent
+      <AnimatedContent
             distance={100}
             direction="vertical"
             reverse={false}
@@ -328,6 +256,8 @@ export default function Home() {
               console.log("Animation completed");
             }}
           >
+      <section className="py-12 m-6 md:m-12 rounded-xl bg-secondary">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h3 className="text-3xl lg:text-5xl font-bold font-serif text-foreground mb-6">
                 How It Works
@@ -350,7 +280,7 @@ export default function Home() {
 
               <div className="text-center">
                 <div className="bg-blue/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Search className="w-10 h-10 text-blue" />
+                  <HiOutlineChatBubbleBottomCenter className="w-10 h-10 text-blue" strokeWidth={2} />
                 </div>
                 <h4 className="text-xl font-bold text-foreground mb-3">2. Ask Questions</h4>
                 <p className="text-muted-foreground">
@@ -368,9 +298,9 @@ export default function Home() {
                 </p>
               </div>
             </div>
-          </AnimatedContent>
         </div>
       </section>
+      </AnimatedContent>
 
       {/* Use Cases Section */}
       <section className="py-24 bg-primary">
@@ -402,19 +332,19 @@ export default function Home() {
                 className="bg-tertiary border border-tertiary rounded-2xl p-8 hover:border-blue/50 transition-all duration-300"
                 spotlightColor="rgba(46, 46, 255, 0.15)"
               >
-                <Scale className="w-12 h-12 text-blue mb-4" />
+                <GoLaw className="w-12 h-12 text-yellow mb-4" />
                 <h4 className="text-xl font-bold text-foreground mb-3">Law Firms</h4>
                 <ul className="space-y-2 text-muted-foreground text-sm">
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-yellow mt-0.5 flex-shrink-0" />
                     <span>Contract review and analysis</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-yellow mt-0.5 flex-shrink-0" />
                     <span>Case law research</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-yellow mt-0.5 flex-shrink-0" />
                     <span>Due diligence automation</span>
                   </li>
                 </ul>
@@ -424,19 +354,19 @@ export default function Home() {
                 className="bg-tertiary border border-tertiary rounded-2xl p-8 hover:border-blue/50 transition-all duration-300"
                 spotlightColor="rgba(46, 46, 255, 0.15)"
               >
-                <Briefcase className="w-12 h-12 text-blue mb-4" />
+                <GoBriefcase className="w-12 h-12 text-yellow mb-4" />
                 <h4 className="text-xl font-bold text-foreground mb-3">Corporate Legal Teams</h4>
                 <ul className="space-y-2 text-muted-foreground text-sm">
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-yellow mt-0.5 flex-shrink-0" />
                     <span>Policy document analysis</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-yellow mt-0.5 flex-shrink-0" />
                     <span>Compliance monitoring</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-yellow mt-0.5 flex-shrink-0" />
                     <span>Risk assessment</span>
                   </li>
                 </ul>
@@ -446,19 +376,19 @@ export default function Home() {
                 className="bg-tertiary border border-tertiary rounded-2xl p-8 hover:border-blue/50 transition-all duration-300"
                 spotlightColor="rgba(46, 46, 255, 0.15)"
               >
-                <GraduationCap className="w-12 h-12 text-blue mb-4" />
+                <GoMortarBoard className="w-12 h-12 text-yellow mb-4" />
                 <h4 className="text-xl font-bold text-foreground mb-3">Legal Students</h4>
                 <ul className="space-y-2 text-muted-foreground text-sm">
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-yellow mt-0.5 flex-shrink-0" />
                     <span>Case study analysis</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-yellow mt-0.5 flex-shrink-0" />
                     <span>Legal research assistance</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-blue mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-yellow mt-0.5 flex-shrink-0" />
                     <span>Exam preparation</span>
                   </li>
                 </ul>
@@ -626,7 +556,7 @@ export default function Home() {
 
           <div className="space-y-4 mx-4 md:mx-0">
               {/* FAQ 1 */}
-              <div className="bg-primary border border-tertiary rounded-2xl overflow-hidden hover:border-blue/30 transition-all duration-300">
+              <div className="bg-primary border border-tertiary rounded-2xl overflow-hidden transition-all duration-300">
                 <button
                   onClick={() => setOpenFaqIndex(openFaqIndex === 0 ? null : 0)}
                   className="w-full px-6 py-5 flex items-center justify-between text-left cursor-pointer"
@@ -634,11 +564,8 @@ export default function Home() {
                   <h4 className="text-xl font-semibold text-foreground pr-4">
                     Is my data secure and private?
                   </h4>
-                  <ChevronDown
-                    className={`w-6 h-6 text-foreground flex-shrink-0 transition-transform duration-300 ${
-                      openFaqIndex === 0 ? 'rotate-180' : ''
-                    }`}
-                  />
+                  {openFaqIndex === 0 ? <Minus className="w-6 h-6 text-foreground flex-shrink-0" /> : <Plus className="w-6 h-6 text-foreground flex-shrink-0" />}
+
                 </button>
                 <div
                   className={`overflow-hidden transition-all duration-300 ease-in-out ${
@@ -652,7 +579,7 @@ export default function Home() {
               </div>
 
               {/* FAQ 2 */}
-              <div className="bg-primary border border-tertiary rounded-2xl overflow-hidden hover:border-blue/30 transition-all duration-300">
+              <div className="bg-primary border border-tertiary rounded-2xl overflow-hidden transition-all duration-300">
                 <button
                   onClick={() => setOpenFaqIndex(openFaqIndex === 1 ? null : 1)}
                   className="w-full px-6 py-5 flex items-center justify-between text-left cursor-pointer"
@@ -660,14 +587,10 @@ export default function Home() {
                   <h4 className="text-xl font-semibold text-foreground pr-4">
                     What file formats are supported?
                   </h4>
-                  <ChevronDown
-                    className={`w-6 h-6 text-foreground flex-shrink-0 ${
-                      openFaqIndex === 1 ? 'rotate-180' : ''
-                    }`}
-                  />
+                  {openFaqIndex === 1 ? <Minus className="w-6 h-6 text-foreground flex-shrink-0" /> : <Plus className="w-6 h-6 text-foreground flex-shrink-0" />}
                 </button>
                 <div
-                  className={`overflow-hidden ${
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
                     openFaqIndex === 1 ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                   }`}
                 >
@@ -678,7 +601,7 @@ export default function Home() {
               </div>
 
               {/* FAQ 3 */}
-              <div className="bg-primary border border-tertiary rounded-2xl overflow-hidden hover:border-blue/30 transition-all duration-300">
+              <div className="bg-primary border border-tertiary rounded-2xl overflow-hidden transition-all duration-300">
                 <button
                   onClick={() => setOpenFaqIndex(openFaqIndex === 2 ? null : 2)}
                   className="w-full px-6 py-5 flex items-center justify-between text-left cursor-pointer"
@@ -686,11 +609,7 @@ export default function Home() {
                   <h4 className="text-xl font-semibold text-foreground pr-4">
                     Can I cancel my subscription anytime?
                   </h4>
-                  <ChevronDown
-                    className={`w-6 h-6 text-foreground flex-shrink-0 transition-transform duration-300 ${
-                      openFaqIndex === 2 ? 'rotate-180' : ''
-                    }`}
-                  />
+                  {openFaqIndex === 2 ? <Minus className="w-6 h-6 text-foreground flex-shrink-0" /> : <Plus className="w-6 h-6 text-foreground flex-shrink-0" />}
                 </button>
                 <div
                   className={`overflow-hidden transition-all duration-300 ease-in-out ${

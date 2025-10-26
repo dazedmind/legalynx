@@ -37,7 +37,7 @@ export const FileManagerToolbar: React.FC<FileManagerToolbarProps> = ({
           placeholder="Search documents and folders..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-tertiary rounded-md bg-primary text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+          className="w-full pl-10 pr-4 py-2 border border-tertiary rounded-md bg-panel text-foreground placeholder-muted-foreground outline-none transition-colors"
         />
       </div>
 

@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { profileService, UserProfile } from "../../../../lib/api";
 import logo from "../../img/legalynxlogo.png";
 import { useTheme } from "next-themes";
+import { PiShootingStar } from "react-icons/pi";
 
 export default function NavBar() {
   const { logout, user } = useAuth();
@@ -234,7 +235,7 @@ export default function NavBar() {
                 className="cursor-pointer"
               >
                 <DropdownMenuItem className="cursor-pointer p-2 px-3">
-                  <Star className="w-4 h-4" />
+                  <PiShootingStar className="w-4 h-4" />
                   Manage Subscription
                 </DropdownMenuItem>
               </Link>

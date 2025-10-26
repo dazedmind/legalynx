@@ -11,6 +11,8 @@ import SecuritySettings from './privacy-security/SecurityLogSettings'
 import PrivacySecuritySettings from './privacy-security/PrivacySecuritySettings'
 import { useSearchParams, useRouter } from 'next/navigation';
 import Appearance from './appearance/Appearance';
+import SidebarFooter from '../components/layout/SidebarFooter';
+import { PiShootingStar } from 'react-icons/pi';
 
 type ActiveTab = 'profile' | 'file_settings' | 'security_log' | 'security_settings' | 'subscription' | 'appearance';
 
@@ -68,7 +70,7 @@ function SettingsContent() {
     { id: 'profile', label: 'Profile Settings', icon: CircleUser },
     { id: 'file_settings', label: 'File Settings', icon: FolderCog },
     { id: 'security_settings', label: 'Privacy & Security', icon: Lock },
-    { id: 'subscription', label: 'Subscription', icon: Star },
+    { id: 'subscription', label: 'Subscription', icon: PiShootingStar },
     { id: 'appearance', label: 'Appearance', icon: Palette },
   ];
 
@@ -152,17 +154,12 @@ function SettingsContent() {
               Sign out
             </button>
           </div>
-
-          <div className="flex items-center text-xs gap-1 mt-4 border-t border-tertiary pt-2 text-muted-foreground">
-            <a href="/frontend/privacy-policy" target="_blank" rel="noopener noreferrer">
-              Privacy Policy •
-            </a>
-            <p className="text-xs text-muted-foreground">v 0.3.8</p>
-          </div>
+          
+          <SidebarFooter />
         </aside>
         
         {/* Main Content Area */}
-        <section className="flex-1 flex flex-col overflow-hidden lg:ml-0">
+        <section className="flex-1 bg-panel flex flex-col overflow-hidden lg:ml-0">
           <div className="flex-1 overflow-y-auto p-2">
             {activeTab === 'profile' && <ProfileSettings />}
             {activeTab === 'file_settings' && <FileSettings />}

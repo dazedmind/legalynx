@@ -3864,7 +3864,7 @@ export default function ChatViewer({
         />
 
         {/* Input Area */}
-        <div className="flex-shrink-0 bg-primary p-6">
+        <div className="flex-shrink-0 bg-panel p-6">
           {documentExists && (
             <>
               {/* ✅ NEW: Token limit warning message */}

@@ -273,7 +273,7 @@ function SecuritySettings() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="rounded-md border border-tertiary mx-4 mb-5 flex-1 flex flex-col overflow-hidden">
+      <div className="rounded border border-tertiary mx-4 mb-5 flex-1 flex flex-col overflow-hidden">
         {/* Filters Section */}
         <div className="p-4 space-y-4 border-b border-tertiary">
           <div className="flex justify-between gap-4">

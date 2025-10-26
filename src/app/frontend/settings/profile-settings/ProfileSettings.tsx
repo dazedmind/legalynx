@@ -402,7 +402,7 @@ function ProfileSettings() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Picture Card */}
           <div className="lg:col-span-1">
-            <div className="bg-primary rounded-xl p-6 ">
+            <div className="rounded-xl p-6 ">
               <h2 className="text-lg text-center font-semibold mb-4 text-foreground">
                 Profile Picture
               </h2>
@@ -496,9 +496,10 @@ function ProfileSettings() {
           {/* Form Fields Card */}
           <div className="lg:col-span-2 space-y-6">
             {/* Personal Information */}
-            <div className="border border-tertiary rounded-xl p-6">
+            <div className="border border-tertiary rounded-md p-6">
               <h2 className="text-lg font-semibold mb-4 text-foreground flex items-center gap-2">
-                <User className="w-5 h-5 text-yellow-500" />
+                {/* <User className="w-5 h-5 text-yellow-500" /> */}
+                <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
                 Personal Information
               </h2>
 
@@ -563,9 +564,11 @@ function ProfileSettings() {
             </div>
 
             {/* Security Settings */}
-            <div className=" border border-tertiary rounded-xl p-6">
+            <div className=" border border-tertiary rounded-md p-6">
               <h2 className="text-lg font-semibold mb-4 text-foreground flex items-center gap-2">
-                <Lock className="w-5 h-5 text-yellow-500" />
+                {/* <Lock className="w-5 h-5 text-yellow-500" /> */}
+                <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+
                 Security Settings
               </h2>
 

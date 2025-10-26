@@ -217,11 +217,11 @@ export function ChatContainer({
             
             {/* Message Bubble */}
             <div
-              className={`relative px-4 py-3 rounded-2xl max-w-full transition-all duration-200 ${
+              className={`relative px-4 py-3 rounded-lg max-w-full transition-all duration-200 ${
                 isUser
-                  ? 'bg-blue-600 text-white rounded-br-xl'
-                  : 'bg-primary text-foreground border border-tertiary rounded-bl-md '
-                } ${isEditing ? 'bg-blue/10 text-gray-900  rounded-bl-md md:w-240' : ''}
+                  ? 'bg-blue-600 text-white rounded-br'
+                  : 'bg-panel text-foreground border border-tertiary rounded-bl '
+                } ${isEditing ? 'bg-blue/10 text-gray-900 rounded-bl-md md:w-240' : ''}
               } ${isRegeneratingThis ? 'opacity-50' : ''}`}
               style={{
                 animation: 'scaleIn 0.2s ease-out'
@@ -233,7 +233,7 @@ export function ChatContainer({
                   <textarea
                     value={editedContent}
                     onChange={(e) => setEditedContent(e.target.value)}
-                    className="w-full text-foreground rounded-lg px-3 py-2 resize-none"
+                    className="w-full text-foreground rounded-lg px-3 py-2 resize-none outline-none"
                     rows={Math.max(2, editedContent.split('\n').length)}
                     placeholder="Edit your message..."
                     autoFocus
@@ -372,7 +372,7 @@ export function ChatContainer({
   return (
     <div 
       ref={chatContainerRef}
-      className="flex-1 overflow-y-auto bg-primary chat-container"
+      className="flex-1 overflow-y-auto bg-panel chat-container"
     >
       <div className="mx-auto px-6 py-8 pb-0">
         
@@ -400,12 +400,6 @@ export function ChatContainer({
         {isQuerying && !streamingMessageId && (
           <div className="flex justify-start mb-6">
             <div className="flex items-start gap-3 max-w-[85%]">
-  
-              {/* Typing Animation */}
-              {/* <div className="bg-primary border border-tertiary rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
-                <p className="animate-pulse">Thinking... </p>
-    
-              </div> */}
             </div>
           </div>
         )}

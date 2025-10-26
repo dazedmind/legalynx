@@ -38,7 +38,8 @@ header[class*="fixed"] {
   --tertiary-foreground: #0a0a0a;
   --muted: #f5f5f5;               
   --muted-foreground: #525252;   
-  --accent: #f5f5f5;              
+  --accent: #f5f5f5;             
+  --panel: #fefefe;
   --accent-foreground: #0a0a0a;  
   --destructive: #dc2626;         
   --destructive-foreground: #ffffff; 
@@ -116,6 +117,7 @@ header[class*="fixed"] {
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-panel: var(--panel);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -168,6 +170,7 @@ header[class*="fixed"] {
   --accent-foreground: #fafafa;
   --destructive: #dc2626;
   --destructive-foreground: #fca5a5;
+  --panel: #1a1a1a;
   --border: #404040;
   --input: #404040;
   --ring: #737373;
@@ -201,6 +204,14 @@ header[class*="fixed"] {
   filter: brightness(1.2) contrast(1.1);
 }
 
+
+body {
+  background-color: #ffffff;
+}
+
+.dark body {
+  background-color: #121212;
+}
 
 @layer base {
   * {

@@ -230,14 +230,14 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       
       <div 
         ref={viewerRef}
-        className={`relative bg-primary border border-tertiary rounded-lg shadow-xl overflow-hidden ${
+        className={`relative bg-primary border border-tertiary rounded-md shadow-xl overflow-hidden ${
           isFullscreen 
             ? 'w-full h-full rounded-none' 
             : 'w-2xl h-fit'
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-tertiary rounded-t-lg">
+        <div className="flex items-center justify-between p-4 border-b bg-tertiary">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <FileText className="w-6 h-6 text-blue-600 flex-shrink-0" />
             <div className="min-w-0 flex-1">
