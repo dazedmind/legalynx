@@ -274,7 +274,7 @@ class LegalDocumentValidator:
         - Low-weight keywords: 0.5 points each
         - Pattern matches: 2 points each
         - Non-legal penalty: -2 points each
-        - Document type identified: +10 bonus points
+        - Document type identified: +20 bonus points (strong signal)
         
         Normalized by text length to account for document size.
         """
@@ -288,10 +288,11 @@ class LegalDocumentValidator:
         
         # Bonus for identified document type
         if scores["document_type"]:
-            raw_score += 10
+            raw_score += 20
         
-        # Normalize by text length (per 100 words)
-        normalized_score = raw_score / max(text_length / 100, 1)
+        # Normalize by text length with gentler scaling (per 300 words)
+        # Long legal documents shouldn't be unfairly penalized
+        normalized_score = raw_score / max(text_length / 300, 1)
         
         # Convert to 0-1 confidence scale (cap at 1.0)
         # A score of 5 or higher indicates strong legal content

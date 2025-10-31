@@ -527,7 +527,7 @@ class RuleBasedFileNamer:
                 
                 validation_result = validate_legal_document(
                     documents=documents,
-                    threshold=0.3,
+                    threshold=0.2,
                     verbose=True
                 )
                 

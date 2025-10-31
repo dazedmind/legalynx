@@ -894,7 +894,7 @@ export default function FileManager({ onDocumentSelect, currentDocumentId, onDoc
         />
       )}
 
-             {/* Enhanced Context Menu */}
+        {/* Enhanced Context Menu */}
        {contextMenu.isOpen && (
          <div
            className="fixed z-50 bg-primary border border-tertiary rounded-md shadow-lg py-2 min-w-[180px]"
