@@ -577,18 +577,19 @@ class RuleBasedFileNamer:
             # Create format-specific prompt for LLM
             if naming_option == "add_timestamp":
                 format_prompt = f"""Analyze this document and generate a filename in EXACT format:
-{current_date}_DOCUMENT-TYPE
+YYYYMMDD_DOCUMENT-TYPE
 
 Rules:
-- Use date: {current_date}
+- Use date from the file: YYYYMMDD
 - DOCUMENT-TYPE should be document type (Contract, Agreement, etc.) in UPPERCASE with spaces as hyphens
 - Remove ALL spaces, use hyphens between words
 - Only respond with filename, nothing else
 
 Examples:
-{current_date}_SERVICE-AGREEMENT
-{current_date}_POWER-OF-ATTORNEY  
-{current_date}_LEASE-CONTRACT
+YYYYMMDD_SERVICE-AGREEMENT
+YYYYMMDD_POWER-OF-ATTORNEY  
+YYYYMMDD_LEASE-CONTRACT
+YYYYMMDD_EN-BANC-DECISION
 
 Document text:
 {text_content}
@@ -597,19 +598,20 @@ Your response (filename only):"""
 
             elif naming_option == "add_client_name":
                 format_prompt = f"""Analyze this document and generate a filename in EXACT format:
-{current_date}_DOCUMENT-TYPE_SURNAME
+YYYYMMDD_DOCUMENT-TYPE_SURNAME
 
 Rules:
-- Use date: {current_date}
+- Use date from the file: YYYYMMDD
 - DOCUMENT-TYPE in UPPERCASE with hyphens (LEASE-AGREEMENT, SERVICE-CONTRACT, etc.)
 - SURNAME is LAST NAME ONLY of main person/client in UPPERCASE
 - Remove ALL spaces
 - Only respond with filename, nothing else
 
 Examples:
-{current_date}_SERVICE-CONTRACT_SMITH
-{current_date}_LEASE-AGREEMENT_JOHNSON
-{current_date}_POWER-OF-ATTORNEY_WILLIAMS
+YYYYMMDD_SERVICE-CONTRACT_SMITH
+YYYYMMDD_LEASE-AGREEMENT_JOHNSON
+YYYYMMDD_POWER-OF-ATTORNEY_WILLIAMS
+YYYYMMDD_EN-BANC-DECISION_CASTILLO
 
 Document text:
 {text_content}
@@ -770,6 +772,7 @@ Your response (filename only):"""
             'approval': 'Approval',
             'certificate': 'Certificate',
             'resignation': 'ResignationLetter',
+            'en banc': 'EnBancDecision',
         }
         
         for keyword, doc_type in type_map.items():

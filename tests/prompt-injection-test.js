@@ -22,7 +22,7 @@ const CONFIG = {
   SERVER_URL: 'http://localhost:3000',
   FASTAPI_URL: 'http://localhost:8000',
   SAMPLE_DOCS_DIR: path.join(__dirname, '..', 'src', 'app', 'backend', 'sample_docs'),
-  CSV_FILE: path.join(__dirname, 'prompt_injections.csv'),
+  CSV_FILE: path.join(__dirname, 'SOP 2.csv'),
   TEST_DELAY_MS: 3000, // Delay between tests
   RAG_INIT_WAIT_MS: 15000, // Wait time for RAG system initialization
   MAX_RETRIES: 3 // Maximum retries for failed requests

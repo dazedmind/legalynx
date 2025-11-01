@@ -175,7 +175,7 @@ function LoginContent() {
       <main className="flex flex-col md:flex-row-reverse w-full h-full">
         <div className="flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 md:py-10 md:px-6 justify-center gap-2 overflow-y-auto">
 
-          <div className="w-full mt-30 md:w-md flex flex-col md:border border-tertiary rounded-lg md:shadow-sm items-start gap-2 mx-0 md:mx-auto pt-0 md:pt-10 p-10 md:mt-10">
+          <div className="w-full mt-30 md:w-md flex flex-col rounded-lg items-start gap-2 mx-0 md:mx-auto pt-0 md:pt-10 p-10 md:mt-10">
             <span>
               <h1 className="text-4xl font-bold font-serif">Sign In</h1>
               <p className="text-muted-foreground mb-4">

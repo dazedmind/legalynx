@@ -522,7 +522,7 @@ export default function SavedChatHistory({
                   {/* Actions */}
                   {editingSessionId !== session.id && (
                     <div className="flex items-center ml-4">
-                      {session.hasSession && hoveredSessionId === session.id && (
+                      {session.hasSession && (
                         <button
                           onClick={(e) => handleStartRename(session.id, session.title, e)}
                           className="p-2 text-foreground hover:text-blue-600 hover:bg-blue/20 rounded-full transition-colors cursor-pointer"
