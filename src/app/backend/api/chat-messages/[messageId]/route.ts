@@ -31,7 +31,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getUserFromToken(request);
     const { messageId } = await params;
-    const { content, updatedAt, branches, currentBranch } = await request.json();
+    const { content, updatedAt } = await request.json();
 
     if (!content || !content.trim()) {
       return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
@@ -65,9 +65,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       data: {
         content: content.trim(),
         created_at: updatedAt ? new Date(updatedAt) : new Date(),
-        // Update branching fields if provided
-        ...(branches !== undefined && { branches: branches }),
-        ...(currentBranch !== undefined && { current_branch: currentBranch }),
       }
     });
 
@@ -83,8 +80,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       role: updatedMessage.role,
       createdAt: updatedMessage.created_at,
       updatedAt: new Date().toISOString(),
-      branches: updatedMessage.branches,
-      currentBranch: updatedMessage.current_branch,
+      // Pure relational model - no JSON fields
+      parentMessageId: updatedMessage.parent_message_id,
+      isEdited: updatedMessage.is_edited,
+      isActive: updatedMessage.is_active,
     });
 
   } catch (error) {
