@@ -23,7 +23,7 @@ const prisma = new PrismaClient();
 
 const CONFIG = {
   SERVER_URL: 'http://localhost:3000',
-  FASTAPI_URL: 'http://localhost:8000',
+  FASTAPI_URL: 'https://fastapi-production-cf30.up.railway.app/',
   SAMPLE_DOCS_DIR: path.join(__dirname, '..', 'src', 'app', 'backend', 'sample_files'),
   EXPECTED_FILENAMES_CSV: path.join(__dirname, 'SOP 3.csv'),
   TEST_DELAY_MS: 1000,
@@ -221,7 +221,11 @@ async function uploadDocumentWithTiming(userId, pdfFileName, token, namingOption
     formData.append('title', testTitle);
     formData.append('client_name', clientName);
     
-    const uploadResponse = await fetch(`${CONFIG.FASTAPI_URL}/upload-pdf-ultra-fast`, {
+    const uploadUrl = `${CONFIG.FASTAPI_URL}upload-pdf-ultra-fast`;
+    log(`   🌐 Uploading to: ${uploadUrl}`, 'cyan');
+    log(`   🔑 Using token: ${token.substring(0, 20)}...`, 'cyan');
+    
+    const uploadResponse = await fetch(uploadUrl, {
       method: 'POST',
       headers: { 
         'Authorization': `Bearer ${token}`, 
@@ -231,12 +235,18 @@ async function uploadDocumentWithTiming(userId, pdfFileName, token, namingOption
     });
     
     const uploadEndTime = Date.now();
+    
+    log(`   📡 Response status: ${uploadResponse.status}`, 'blue');
+    
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
+      log(`   ❌ Upload failed with status ${uploadResponse.status}`, 'red');
+      log(`   📄 Error response: ${errorText}`, 'red');
       throw new Error(`Upload failed: ${uploadResponse.status} - ${errorText}`);
     }
     
     const result = await uploadResponse.json();
+    log(`   ✓ Response received: ${JSON.stringify(result).substring(0, 200)}...`, 'blue');
     const overallSpeed = (Date.now() - startTime) / 1000;
     
     const originalFilename = pdfFileName;
@@ -285,6 +295,7 @@ async function testTimestampNaming(samplePDFs, user, token, expectedFilenames, n
     const clientName = `TestClient`;
 
     log(`\n📄 Processing ${i + 1}/${samplePDFs.length}: ${pdfFile}`, 'cyan');
+    log(`📤 Uploading document...`, 'yellow');
 
     try {
       const result = await uploadDocumentWithTiming(
@@ -298,7 +309,6 @@ async function testTimestampNaming(samplePDFs, user, token, expectedFilenames, n
       );
       tracker.addResult(result);
       
-      log(`📤 Uploading document...`, 'yellow');
       log(`✅ Upload completed in ${result.overallSpeed}s`, 'green');
       log(`   📋 Original: ${result.originalFilename}`, 'white');
       log(`   🎯 Expected: ${result.expectedFilename || 'N/A'}`, 'green');
@@ -361,6 +371,11 @@ async function cleanupTestUser(userId) {
 
 async function runRenamingSpeedTests() {
   log('🚀 Starting Document Renaming Speed Test Suite', 'cyan');
+  log('\n⚙️  Configuration Check:', 'blue');
+  log(`   FastAPI URL: ${CONFIG.FASTAPI_URL}`, 'white');
+  log(`   JWT Secret: ${process.env.JWT_SECRET ? '✓ Set from environment' : '⚠️  Using default test-secret-key'}`, process.env.JWT_SECRET ? 'green' : 'yellow');
+  log(`   Sample docs dir: ${CONFIG.SAMPLE_DOCS_DIR}`, 'white');
+  
   let testUser = null;
 
   try {
