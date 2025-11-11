@@ -23,7 +23,7 @@ const prisma = new PrismaClient();
 
 const CONFIG = {
   SERVER_URL: 'http://localhost:3000',
-  FASTAPI_URL: 'https://fastapi-production-cf30.up.railway.app/',
+  FASTAPI_URL: 'https://fastapi-production-d8c7.up.railway.app/',
   SAMPLE_DOCS_DIR: path.join(__dirname, '..', 'src', 'app', 'backend', 'sample_files'),
   EXPECTED_FILENAMES_CSV: path.join(__dirname, 'SOP 3.csv'),
   TEST_DELAY_MS: 1000,

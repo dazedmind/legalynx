@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2025-11-12
+
+## 🚀 What's New
+- **Better Regenerate Response / Edit Query:** Fixed most of the issues when regenerating response or editing a query.
+
+### ⚙️ Technical Changes
+- **Removed unused/deprecated files:** Optimized backend source code by removing unused/deprecated files that are not being actively used by the RAG
+- **Database Changes:** Adjusted database to support conversation branching
+
 ## [0.4.0] - 2025-10-25
 
 ## 🚀 What's New

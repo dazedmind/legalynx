@@ -46,10 +46,12 @@ export async function POST(request: Request) {
       // aliases for tokens used
       tokens_used,
       tokensUsed,
-      // branching support
-      branches,
-      currentBranch,
-      current_branch,
+      // pure relational model - no JSON blobs
+      parentMessageId,
+      isRegeneration,
+      isEdited,
+      isActive,
+      sequenceNumber,
     } = body || {};
 
     console.log('Creating message with data:', {
@@ -102,7 +104,6 @@ export async function POST(request: Request) {
 
     const effectiveCreatedAt = createdAt || timestamp;
     const effectiveTokens = typeof tokensUsed === 'number' ? tokensUsed : tokens_used;
-    const effectiveCurrentBranch = currentBranch ?? current_branch;
 
     const message = await prisma.chatMessage.create({
       data: {
@@ -113,9 +114,12 @@ export async function POST(request: Request) {
         content,
         created_at: effectiveCreatedAt ? new Date(effectiveCreatedAt) : new Date(),
         tokens_used: effectiveTokens ?? null,
-        // Branching support
-        branches: branches ?? null,
-        current_branch: effectiveCurrentBranch ?? null,
+        // Pure relational model - no JSON blobs
+        ...(parentMessageId && { parent_message_id: parentMessageId }),
+        is_regeneration: isRegeneration ?? false,
+        is_edited: isEdited ?? false,
+        is_active: isActive ?? true,
+        ...(sequenceNumber !== undefined && { sequence_number: sequenceNumber }),
       }
     });
 

@@ -19,7 +19,7 @@ const prisma = new PrismaClient();
 
 // Configuration
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
-const FASTAPI_URL = process.env.FASTAPI_URL || 'http://localhost:8000';
+const FASTAPI_URL = 'https://fastapi-production-d8c7.up.railway.app';
 const SAMPLE_FILES_DIR = path.join(__dirname, '..', 'src', 'app', 'backend', 'sample_files');
 
 // ANSI color codes for terminal output

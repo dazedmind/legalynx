@@ -22,6 +22,19 @@ import json
 # Load environment variables
 load_dotenv()
 
+# ================================
+# NLTK INITIALIZATION (Required for BM25Retriever)
+# ================================
+try:
+    import nltk
+    # Download required NLTK data silently at startup
+    nltk.download('punkt', quiet=True)
+    nltk.download('stopwords', quiet=True)
+    nltk.download('punkt_tab', quiet=True)
+    print("✅ NLTK data initialized at startup")
+except Exception as e:
+    print(f"⚠️ NLTK initialization warning: {e}")
+
 # Add backend directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 

@@ -11,7 +11,7 @@ function SidebarFooter() {
         Privacy Policy •
       </a>
       {/* VERSION NUMBER */}
-      <p className="text-xs text-muted-foreground">v 0.4.0</p>
+      <p className="text-xs text-muted-foreground">v 0.4.1</p>
     </div>
   );
 }

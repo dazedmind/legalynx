@@ -177,13 +177,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
       messages: session.messages.map(msg => ({
         id: msg.id,
-        role: msg.role.toLowerCase(),        // Convert enum to lowercase for frontend
+        role: msg.role.toLowerCase(),
         content: msg.content,
-        sourceNodes: msg.source_nodes,       // ✅ Correct field name
-        tokensUsed: msg.tokens_used,         // ✅ Correct field name
-        createdAt: msg.created_at,           // ✅ Correct field name
-        branches: msg.branches,              // ✅ Include branching data
-        current_branch: msg.current_branch   // ✅ Include current branch index
+        sourceNodes: msg.source_nodes,
+        tokensUsed: msg.tokens_used,
+        createdAt: msg.created_at,
+        // Pure relational model - only relational fields
+        parent_message_id: msg.parent_message_id,
+        is_regeneration: msg.is_regeneration,
+        is_edited: msg.is_edited,
+        is_active: msg.is_active,
+        sequence_number: msg.sequence_number
       }))
     });
 

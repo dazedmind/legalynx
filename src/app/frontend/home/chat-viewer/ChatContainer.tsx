@@ -11,12 +11,6 @@ import { TbCopy, TbEdit, TbRotateClockwise, TbTrash } from 'react-icons/tb';
 import { HiChatBubbleBottomCenterText } from 'react-icons/hi2';
 import { CitationRenderer } from './CitationRenderer';
 
-interface MessageBranch {
-  content: string; // The edited version of the user message
-  createdAt: Date;
-  subsequentMessages: ChatMessage[]; // All assistant messages that followed this version
-}
-
 interface ChatMessage {
   id: string;
   type: 'USER' | 'ASSISTANT';
@@ -26,12 +20,19 @@ interface ChatMessage {
   sourceCount?: number;
   isThinking?: boolean; // For pulse animation
   isStreaming?: boolean; // For streaming cursor animation
-  branches?: MessageBranch[]; // Array of alternative conversation paths (for USER messages)
-  currentBranch?: number; // Current branch index being displayed (0 = original, 1+ = edited versions)
-  belongsToBranch?: {
-    userMessageId: string;
-    branchIndex: number;
-  }; // For ASSISTANT messages that belong to a specific branch
+  // Pure relational model - no JSON blobs
+  parentMessageId?: string; // ID of the message this regenerates or follows
+  isRegeneration?: boolean; // True if this is a regenerated response
+  isEdited?: boolean; // True if this is an edited version
+  isActive?: boolean; // False if replaced by newer version
+  sequenceNumber?: number; // Order in conversation
+  // Frontend-only: grouped regenerations for display
+  regenerations?: ChatMessage[]; // Array of regenerated versions (computed from database)
+  selectedRegenerationIndex?: number; // Which regeneration is currently displayed (0 = original)
+  // Frontend-only: grouped edits for display
+  edits?: ChatMessage[]; // Array of edited versions (computed from database)
+  selectedEditIndex?: number; // Which edit is currently displayed (0 = original)
+  editResponses?: ChatMessage[]; // Direct ASSISTANT responses to each edit (same order as [original, ...edits])
 }
 
 interface ChatContainerProps {
@@ -42,7 +43,13 @@ interface ChatContainerProps {
   typingMessageId?: string | null;
   onTypingComplete?: () => void;
   streamingMessageId?: string | null;
-  onBranchChange?: (messageId: string, branchIndex: number) => void;
+  // Pure relational model - no branches
+  onRegenerationChange?: (messageId: string, regenerationIndex: number) => void;
+  onPreferRegeneration?: (messageId: string, preferredRegenerationIndex: number) => void;
+  onEditChange?: (messageId: string, editIndex: number) => void;
+  // For smooth scrolling and hiding old responses
+  messageBeingRegenerated?: string | null;
+  messageRefs?: React.MutableRefObject<{ [key: string]: HTMLDivElement | null }>;
 }
 
 export function ChatContainer({
@@ -53,7 +60,11 @@ export function ChatContainer({
   typingMessageId,
   onTypingComplete,
   streamingMessageId,
-  onBranchChange
+  onRegenerationChange,
+  onPreferRegeneration,
+  onEditChange,
+  messageBeingRegenerated,
+  messageRefs
 }: ChatContainerProps) {
 
   // Use ref for scroll container
@@ -175,13 +186,154 @@ export function ChatContainer({
     });
   };
 
+  // Helper to render USER messages with edits and their direct response
+  const renderUserMessageWithEdits = (message: ChatMessage, currentEditIndex: number, totalEdits: number) => {
+    // Get the content for the selected edit version
+    const allVersions = [message, ...(message.edits || [])];
+    const selectedVersion = allVersions[currentEditIndex];
+    
+    // Get the direct response for the selected edit
+    const directResponse = message.editResponses?.[currentEditIndex];
+    
+    return (
+      <div key={message.id}>
+        {/* USER message with edit selector */}
+        <div 
+          ref={(el) => {
+            if (messageRefs && messageRefs.current) {
+              messageRefs.current[message.id] = el;
+            }
+          }}
+          className="flex w-full mb-6 justify-end chat-message-user group"
+        >
+          <div className="flex items-start gap-3 max-w-[85%]">
+            <div className="flex flex-col items-end flex-1">
+              <div className="relative px-4 py-3 rounded-lg max-w-full transition-all duration-200 bg-blue-600 text-white rounded-br">
+                <div className="whitespace-pre-wrap break-words text-md leading-relaxed">
+                  {selectedVersion?.content || message.content}
+                </div>
+              </div>
+              
+              {/* Action buttons and edit selector */}
+              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-row-reverse opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                {/* Action Buttons */}
+                <div className="flex items-center gap-1">
+                  {/* Edit Button */}
+                  {documentExists && (
+                    <button
+                      onClick={() => handleStartEdit(selectedVersion)}
+                      disabled={isQuerying || isRegenerating !== null}
+                      className="p-1 hover:bg-accent rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Edit message"
+                    >
+                      <TbEdit className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  {/* Copy Button */}
+                  <button
+                    onClick={() => copyToClipboard(selectedVersion?.content || message.content, message.id)}
+                    disabled={isQuerying}
+                    className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
+                    title="Copy message"
+                  >
+                    <TbCopy className="w-4 h-4" />
+                  </button>
+
+                  {/* Delete Button */}
+                  <button
+                    onClick={() => deleteMessage(message.id)}
+                    disabled={isQuerying}
+                    className="p-1 hover:bg-accent rounded transition-colors cursor-pointer"
+                    title="Delete message"
+                  >
+                    <TbTrash className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Edit selector */}
+                {onEditChange && (
+                  <div className="flex items-center gap-2">
+                    <BranchSelector
+                      currentBranch={currentEditIndex}
+                      totalBranches={totalEdits}
+                      onBranchChange={(editIndex) => onEditChange(message.id, editIndex)}
+                      className=""
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Direct ASSISTANT response for this edit */}
+        {directResponse && (
+          <div className="flex w-full mb-6 justify-start chat-message-assistant">
+            <div className="flex flex-row items-start gap-3 max-w-[85%]">
+              <div className="flex flex-col items-start flex-1">
+                <div className="relative px-4 py-3 rounded-lg max-w-full transition-all duration-200 bg-panel text-foreground border border-tertiary rounded-bl">
+                  <div className="whitespace-pre-wrap break-words text-md leading-relaxed">
+                    <CitationRenderer content={directResponse.content} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderMessage = (message: ChatMessage, index: number) => {
     const isUser = message.type === 'USER';
     const isAssistant = message.type === 'ASSISTANT';
     const isEditing = editingMessageId === message.id;
     const isRegeneratingThis = isRegenerating === message.id;
+    
+    // ✅ Hide the old message while it's being regenerated
+    if (messageBeingRegenerated && message.id === messageBeingRegenerated) {
+      console.log(`👁️ Hiding message ${message.id.substring(0, 8)} during regeneration`);
+      return null;
+    }
 
-    // Check if this assistant message's user prompt has branches (for regeneration)
+    // Handle edited USER messages with their direct response only
+    if (isUser && message.edits && message.edits.length > 0 && message.editResponses) {
+      const totalEdits = message.edits.length + 1; // +1 for original
+      const currentEditIndex = message.selectedEditIndex || 0;
+      
+      console.log(`✏️ User message ${message.id.substring(0, 8)} has ${totalEdits} edits, showing #${currentEditIndex + 1}`);
+      
+      // Return early - render the USER message with edit selector and its direct response
+      return renderUserMessageWithEdits(message, currentEditIndex, totalEdits);
+    }
+
+    // Determine which content to display for messages with regenerations
+    let displayContent = message.content;
+    let hasRegenerations = false;
+    let totalRegenerations = 0;
+    let currentRegenerationIndex = 0;
+    
+    if (isAssistant && message.regenerations && message.regenerations.length > 0) {
+      hasRegenerations = true;
+      totalRegenerations = message.regenerations.length + 1; // +1 for original
+      currentRegenerationIndex = message.selectedRegenerationIndex || 0;
+      
+      if (currentRegenerationIndex === 0) {
+        // Show original
+        displayContent = message.content;
+      } else {
+        // Show selected regeneration
+        const regeneration = message.regenerations[currentRegenerationIndex - 1];
+        if (regeneration) {
+          displayContent = regeneration.content;
+        }
+      }
+      
+      console.log(`📊 Message ${message.id.substring(0, 8)} has ${totalRegenerations} versions, showing #${currentRegenerationIndex + 1}`);
+    }
+
+    // Check if this assistant message's user prompt has branches (for edit)
     let userMessageWithBranches: ChatMessage | null = null;
     let hasRegenerationBranches = false;
     
@@ -194,18 +346,18 @@ export function ChatContainer({
         }
       }
       
-      // Check if all branches have the same content (regeneration) vs different content (edit)
-      if (userMessageWithBranches?.branches && userMessageWithBranches.branches.length > 0) {
-        const allSameContent = userMessageWithBranches.branches.every(
-          branch => branch.content === userMessageWithBranches!.content
-        );
-        hasRegenerationBranches = allSameContent;
-      }
+      // Pure relational model - no branch checking needed
+      // Regeneration is tracked via parentMessageId/isRegeneration fields
     }
 
     return (
       <div
         key={message.id}
+        ref={(el) => {
+          if (messageRefs && messageRefs.current) {
+            messageRefs.current[message.id] = el;
+          }
+        }}
         className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'} ${
           isUser ? 'chat-message-user group' : 'chat-message-assistant'
         }`}
@@ -248,7 +400,7 @@ export function ChatContainer({
                     <button
                       onClick={() => handleSaveEdit(message.id)}
                       disabled={!editedContent.trim() || isRegeneratingThis}
-                      className="flex items-center gap-1 px-3 py-1 text-sm  text-white rounded-full bg-blue-600/60 hover:bg-blue-700 disabled:bg-tertiary disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-2 text-sm  text-white rounded-full bg-blue-600/60 hover:bg-blue-600 disabled:bg-tertiary disabled:cursor-not-allowed transition-colors cursor-pointer"
                     >
                       {isRegeneratingThis ? 'Updating...' : 'Send'}
                       <ArrowUp className="w-4 h-4" />
@@ -268,11 +420,11 @@ export function ChatContainer({
                       <div className="flex items-center gap-2">
                         <Loader size={16} className="text-blue-500" />
                         <span className="text-muted-foreground italic animate-pulse">
-                          {message.content}
+                          {displayContent}
                         </span>
                       </div>
                     ) : (
-                      <CitationRenderer content={message.content} />
+                      <CitationRenderer content={displayContent} />
                     )
                   )}
                 </div>
@@ -327,14 +479,7 @@ export function ChatContainer({
                   </button>
 
                   {/* Branch Navigation - For USER messages with edited prompts (different content) */}
-                  {isUser && message.branches && message.branches.length > 0 && onBranchChange && !message.branches.every(branch => branch.content === message.content) && (
-                    <BranchSelector
-                      currentBranch={message.currentBranch || 0}
-                      totalBranches={message.branches.length}
-                      onBranchChange={(branchIndex) => onBranchChange(message.id, branchIndex)}
-                      className="ml-2"
-                    />
-                  )}
+                  {/* Pure relational model - no branch selector for user messages */}
 
                   {/* Assistant-only action buttons */}
                   {isAssistant && (
@@ -349,15 +494,30 @@ export function ChatContainer({
                         <TbRotateClockwise  className="w-4 h-4" />
                       </button>
                       
-                      {/* Branch Navigation - For regenerated responses (same prompt, different response) */}
-                      {hasRegenerationBranches && userMessageWithBranches && onBranchChange && (
-                        <BranchSelector
-                          currentBranch={userMessageWithBranches.currentBranch || 0}
-                          totalBranches={userMessageWithBranches.branches!.length}
-                          onBranchChange={(branchIndex) => onBranchChange(userMessageWithBranches.id, branchIndex)}
-                          className="ml-2"
-                        />
+                      {/* Regeneration Navigation - Switch between different regenerated versions */}
+                      {hasRegenerations && onRegenerationChange && (
+                        <>
+                          <BranchSelector
+                            currentBranch={currentRegenerationIndex}
+                            totalBranches={totalRegenerations}
+                            onBranchChange={(regenerationIndex) => onRegenerationChange(message.id, regenerationIndex)}
+                            className="ml-2"
+                          />
+                          
+                          {/* Prefer this response button - only show if there are multiple versions */}
+                          <button
+                            onClick={() => onPreferRegeneration && onPreferRegeneration(message.id, currentRegenerationIndex)}
+                            disabled={isQuerying}
+                            className="flex items-center gap-1 ml-2 px-2 py-1 text-xs bg-green-100 hover:bg-green-200 text-green-700 rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                            title="Keep this version and delete others"
+                          >
+                            <Check className="w-3 h-3" />
+                            <span>Prefer this response</span>
+                          </button>
+                        </>
                       )}
+                      
+                      {/* Pure relational model - removed old branch navigation */}
                     </>
                   )}
                 </div>

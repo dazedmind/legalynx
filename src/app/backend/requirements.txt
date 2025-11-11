@@ -36,6 +36,7 @@ PyJWT
 pandas
 numpy
 faiss-cpu
+nltk
 
 # Async Support
 nest-asyncio

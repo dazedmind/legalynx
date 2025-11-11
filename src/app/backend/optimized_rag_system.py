@@ -18,6 +18,19 @@ if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # ================================
+# NLTK INITIALIZATION (Required for BM25Retriever)
+# ================================
+try:
+    import nltk
+    # Download required NLTK data silently
+    nltk.download('punkt', quiet=True)
+    nltk.download('stopwords', quiet=True)
+    nltk.download('punkt_tab', quiet=True)  # New requirement for recent NLTK versions
+    print("✅ NLTK data initialized")
+except Exception as e:
+    print(f"⚠️ NLTK initialization warning (BM25 may be affected): {e}")
+
+# ================================
 # GLOBAL SINGLETON MODEL MANAGER
 # ================================
 
@@ -581,9 +594,11 @@ YYYYMMDD_DOCUMENT-TYPE
 
 Rules:
 - Use date from the file: YYYYMMDD
+- The DATE must always be the **execution, filing, or promulgation date** — not incidental dates like birthdays, transaction dates, or citations.  
 - DOCUMENT-TYPE should be document type (Contract, Agreement, etc.) in UPPERCASE with spaces as hyphens
 - Remove ALL spaces, use hyphens between words
 - Only respond with filename, nothing else
+- Document type only max of 3-4 words
 
 Examples:
 YYYYMMDD_SERVICE-AGREEMENT
@@ -602,37 +617,33 @@ YYYYMMDD_DOCUMENT-TYPE_SURNAME
 
 Rules:
 - Use date from the file: YYYYMMDD
+- The DATE must always be the **execution, filing, or promulgation date** — not incidental dates like birthdays, transaction dates, or citations.  
 - DOCUMENT-TYPE in UPPERCASE with hyphens (LEASE-AGREEMENT, SERVICE-CONTRACT, etc.)
 - SURNAME is LAST NAME ONLY of main person/client in UPPERCASE
-- Remove ALL spaces
+- Remove ALL spaces, use hyphens between words
 - Only respond with filename, nothing else
+- Document type only max of 3-4 words
+
+Rules for CLIENT_NAME:
+- Extract SURNAMES ONLY (last names), NO first names
+- For SINGLE party: extract ONLY ONE surname (the client's surname)
+  * If "Juan DELA CRUZ y SANTOS", extract: "SANTOS" (surname after "y")
+  * If "Maria REYES", extract: "REYES"
+  * If "Juan DELA CRUZ", extract: "DELA CRUZ"
+  * DO NOT include notary public names, witnesses, or attorneys
+- For MULTIPLE parties (with "vs"): extract all surnames separated by "vs"
+  * If "GUTIERREZ vs. GOMEZ vs. SUPETRAN", extract: "GUTIERREZ vs GOMEZ vs SUPETRAN"
+- If document contains "y" (Spanish "and"), extract the surname AFTER "y"
+  * "TORRES y YAMBAO" → extract "YAMBAO"
+  * "CASTILLO y ASUNCION" → extract "ASUNCION"
+- If no clear client/party names, use NONE
+
 
 Examples:
 YYYYMMDD_SERVICE-CONTRACT_SMITH
 YYYYMMDD_LEASE-AGREEMENT_JOHNSON
 YYYYMMDD_POWER-OF-ATTORNEY_WILLIAMS
 YYYYMMDD_EN-BANC-DECISION_CASTILLO
-
-Document text:
-{text_content}
-
-Your response (filename only):"""
-
-            elif naming_option == "sequential_numbering":
-                seq_num = f"{counter:03d}" if counter else "001"
-                format_prompt = f"""Analyze this document and generate a filename in EXACT format:
-SURNAME_DOCUMENT-TYPE_{seq_num}
-
-Rules:
-- SURNAME is last name of main person (UPPERCASE)
-- DOCUMENT-TYPE in UPPERCASE with hyphens
-- Use sequence: {seq_num}
-- Remove ALL spaces
-- Only respond with filename, nothing else
-
-Examples:
-SMITH_SERVICE-CONTRACT_{seq_num}
-JOHNSON_LEASE-AGREEMENT_{seq_num}
 
 Document text:
 {text_content}
@@ -736,12 +747,6 @@ Your response (filename only):"""
             client_parts = client.split('-')
             surname = client_parts[-1] if client_parts else "CLIENT"
             return f"{current_date}_{title}_{surname}{file_ext}"
-        
-        elif naming_option == "sequential_numbering":
-            title = (user_title or "DOCUMENT").upper().replace(' ', '-')
-            client = (user_client_name or "CLIENT").upper().replace(' ', '-')
-            seq = f"{counter:03d}" if counter else "001"
-            return f"{client}_{title}_{seq}{file_ext}"
         
         return original_filename
 

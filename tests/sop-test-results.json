@@ -1,37 +1,38 @@
 [
   {
-    "file": "PETITION FOR BAIL",
-    "documentId": "doc_1761909720526_sop-test-user-46c3d89e",
-    "status": "SUCCESS",
-    "questions": [
-      {
-        "index": 1,
-        "question": "Who was furnished a copy?",
-        "answer": "The copy was furnished to the **OFFICE OF THE CITY PROSECUTOR Tayabas City**^[1].\n\nEvidence: The Notice on Page 2 of PETITION FOR BAIL.pdf shows the line \"Copy furnished: OFFICE OF THE CITY PROSECUTOR Tayabas City,\" indicating the recipient of the copy^[1].\n\nContext: The page is a Notice section accompanying the bail petition, listing the issuing party ( Juan Dela Cruz ) and identifying the recipient of the copy as the Office of the City Prosecutor in Tayabas City. This confirms who received the copy as part of the filing process on the stated page^[1].\n\nWould you like me to extract additional recipients listed in this filing or pull related details (e.g., the movant’s name, court branch, or filing date) from this document?",
-        "responseTime": 59054,
-        "status": "SUCCESS"
-      },
-      {
-        "index": 2,
-        "question": "What is the crim. case number?",
-        "answer": "**CRIM. CASE NO. 2015-0680**^[1].\n\nEvidence: The Petition for Bail (Page 1) explicitly identifies the criminal case number as “CRIM. CASE NO. 2015-0680” in the caption that lists THE PEOPLE OF THE PHILIPPINES as plaintiff and MICHELE ANDREA LAGUITO as accused. The document is labeled “PETITION FOR BAIL” and is shown as Page 1 of 2 in the record for this file. The header context confirms the case designation alongside the parties and the captioned title.^[1]\n\nNotes:\n- The case number appears directly in the header on the first page, establishing the formal docket reference for Crim. Case No. 2015-0680.^[1]\n- The document context (Petition for Bail) confirms this as the relevant case identifier for the proceedings described therein.^[1]\n\n## Sources\n^[1] Page 1",
-        "responseTime": 32236,
-        "status": "SUCCESS"
-      }
-    ]
+    "file": "A.M. No. RTJ-23-039 DECISION",
+    "status": "ERROR",
+    "error": "request to http://localhost:8000/upload-pdf-ultra-fast failed, reason: ",
+    "questions": []
   },
   {
     "file": "ackdebt",
-    "documentId": "doc_1761909813330_sop-test-user-46c3d89e",
-    "status": "SUCCESS",
-    "questions": [
-      {
-        "index": 1,
-        "question": "What was the given period of the loan repayment?",
-        "answer": "**Twelve (12) months from the execution hereof**.\n\nEvidence from the document ackdebt.pdf (page 1) shows the repayment period as stated: “That I shall pay the sum of FIVE HUNDRED THOUSAND PESOS (P500,000.00) unto the said Daniel S. Bautista within a period of twelve (12) months from the execution hereof, with interest at the rate of six percent (6%) per year.”^[1] The instrument is executed on August 16, 2025, in Marikina City, Philippines, which establishes the start of the 12-month period (the execution date is included in the acknowledgment).^[1] The debtor named is **Carlo V. Ramos** and the creditor named is **Daniel S. Bautista**.^[1]\n\nWould you like me to calculate the exact calendar end date of the 12-month period from the execution date for scheduling purposes, or extract related repayment milestones from the document?\n\n## Sources\n^[1] Page 1",
-        "responseTime": 60097,
-        "status": "SUCCESS"
-      }
-    ]
+    "status": "ERROR",
+    "error": "request to http://localhost:8000/upload-pdf-ultra-fast failed, reason: ",
+    "questions": []
+  },
+  {
+    "file": "Appellant_s Brief (1)",
+    "status": "ERROR",
+    "error": "request to http://localhost:8000/upload-pdf-ultra-fast failed, reason: ",
+    "questions": []
+  },
+  {
+    "file": "Attorney’s Roll No. 1233",
+    "status": "ERROR",
+    "error": "request to http://localhost:8000/upload-pdf-ultra-fast failed, reason: ",
+    "questions": []
+  },
+  {
+    "file": "COMMENT ON THE FORMAL OFFER OF EXHIBITS(bail hearing)",
+    "status": "ERROR",
+    "error": "request to http://localhost:8000/upload-pdf-ultra-fast failed, reason: ",
+    "questions": []
+  },
+  {
+    "file": "COMPLAINT with prayer for attachment",
+    "status": "ERROR",
+    "error": "request to http://localhost:8000/upload-pdf-ultra-fast failed, reason: ",
+    "questions": []
   }
 ]

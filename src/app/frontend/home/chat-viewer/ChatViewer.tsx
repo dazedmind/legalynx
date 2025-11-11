@@ -34,12 +34,6 @@ import { PDFViewer } from "../file-manager/PDFViewer";
 import { HiOutlinePaperClip } from "react-icons/hi2";
 import { Button } from "../../components/ui/button";
 
-interface MessageBranch {
-  content: string; // The edited version of the user message
-  createdAt: Date;
-  subsequentMessages: ChatMessage[]; // All assistant messages that followed this version
-}
-
 interface ChatMessage {
   id: string;
   type: "USER" | "ASSISTANT";
@@ -49,12 +43,19 @@ interface ChatMessage {
   sourceCount?: number;
   isThinking?: boolean; // For pulse animation
   isStreaming?: boolean; // For streaming cursor animation
-  branches?: MessageBranch[]; // Array of alternative conversation paths (for USER messages)
-  currentBranch?: number; // Current branch index being displayed (0 = original, 1+ = edited versions)
-  belongsToBranch?: {
-    userMessageId: string;
-    branchIndex: number;
-  }; // For ASSISTANT messages that belong to a specific branch
+  // Pure relational model - no JSON blobs
+  parentMessageId?: string; // ID of the message this regenerates or follows
+  isRegeneration?: boolean; // True if this is a regenerated response
+  isEdited?: boolean; // True if this is an edited version
+  isActive?: boolean; // False if replaced by newer version
+  sequenceNumber?: number; // Order in conversation
+  // Frontend-only: grouped regenerations for display
+  regenerations?: ChatMessage[]; // Array of regenerated versions (computed from database)
+  selectedRegenerationIndex?: number; // Which regeneration is currently displayed (0 = original)
+  // Frontend-only: grouped edits for display
+  edits?: ChatMessage[]; // Array of edited versions (computed from database)
+  selectedEditIndex?: number; // Which edit is currently displayed (0 = original)
+  editResponses?: ChatMessage[]; // Direct ASSISTANT responses to each edit (same order as [original, ...edits])
 }
 
 interface ChatSession {
@@ -95,62 +96,142 @@ type LoadingStage =
   | "loading_rag"
   | "preparing_chat";
 
-// Helper function to reconstruct chat history with branches properly displayed
-function reconstructChatHistoryWithBranches(messages: ChatMessage[]): ChatMessage[] {
+// Helper function to group edited USER messages with their direct responses only
+function groupEditedMessages(messages: ChatMessage[]): ChatMessage[] {
+  console.log(`📝 Grouping edited messages from ${messages.length} messages...`);
   const result: ChatMessage[] = [];
+  const processedIds = new Set<string>();
   
-  for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i];
+  for (const msg of messages) {
+    if (processedIds.has(msg.id)) continue;
     
-    // If this is a USER message with branches, show the current branch content
-    if (msg.type === "USER" && msg.branches && msg.branches.length > 0 && msg.currentBranch !== undefined) {
-      const currentBranch = msg.branches[msg.currentBranch];
-      if (currentBranch) {
-        // Add the user message with branch content
-        result.push({
-          ...msg,
-          content: currentBranch.content,
-        });
+    // Group USER messages with their edits
+    if (msg.type === "USER" && !msg.parentMessageId) {
+      // This is an original user message - find all edits
+      const edits = messages.filter(
+        m => m.type === "USER" && m.parentMessageId === msg.id && m.isEdited && !processedIds.has(m.id)
+      );
+      
+      if (edits.length > 0) {
+        console.log(`   ✏️ Found ${edits.length} edits for user message ${msg.id.substring(0, 8)}`);
         
-        // Add the subsequent messages from this branch
-        // These messages are stored in the branch and were deleted from the main chat_messages table
-        if (currentBranch.subsequentMessages && currentBranch.subsequentMessages.length > 0) {
-          result.push(...currentBranch.subsequentMessages);
-          
-          // Skip any messages in the database that are already in subsequentMessages
-          // to prevent duplicates (this can happen if messages were added to the branch later)
-          const subsequentMessageIds = new Set(
-            currentBranch.subsequentMessages.map((m: ChatMessage) => m.id)
-          );
-          
-          let skippedCount = 0;
-          while (i + 1 < messages.length) {
-            const nextMsg = messages[i + 1];
-            if (subsequentMessageIds.has(nextMsg.id)) {
-              i++; // Skip this message as it's already in the branch
-              skippedCount++;
-            } else {
-              // This is a new message not in the branch, stop skipping
-              break;
+        // Find the DIRECT response for each version (only the immediate ASSISTANT message)
+        const versions = [msg, ...edits];
+        const editResponses: ChatMessage[] = [];
+        
+        versions.forEach(version => {
+          // Find the FIRST ASSISTANT message after this version
+          const versionIndex = messages.indexOf(version);
+          for (let i = versionIndex + 1; i < messages.length; i++) {
+            const nextMsg = messages[i];
+            
+            // If we hit another USER message (edit or new), stop
+            if (nextMsg.type === "USER") break;
+            
+            // Found the direct response - add it and mark as processed
+            if (nextMsg.type === "ASSISTANT" && !processedIds.has(nextMsg.id)) {
+              editResponses.push(nextMsg);
+              processedIds.add(nextMsg.id);
+              break; // Only take the first ASSISTANT response
             }
           }
-          
-          if (skippedCount > 0) {
-            console.log(`🔀 Skipped ${skippedCount} duplicate messages already in branch ${msg.currentBranch}`);
-          }
-        }
+        });
+        
+        // Create grouped message with all edit versions and their responses
+        const groupedMessage: ChatMessage = {
+          ...msg,
+          edits: edits,
+          selectedEditIndex: 0, // Default to showing original
+          editResponses, // Direct responses to each version
+        };
+        
+        result.push(groupedMessage);
+        edits.forEach(e => processedIds.add(e.id));
+        console.log(`🔀 Grouped ${edits.length} edits (original + ${edits.length} edits = ${editResponses.length} responses) for message ${msg.id.substring(0, 8)}`);
       } else {
-        // Branch index is invalid, just show the message as-is
         result.push(msg);
       }
-    } else {
-      // Regular message without branches
+    } else if (msg.type === "USER" && msg.parentMessageId && msg.isEdited) {
+      // This is an edit - skip it (already grouped above)
+      console.log(`   ⏭️ Skipping edit (parent: ${msg.parentMessageId.substring(0, 8)})`);
+      processedIds.add(msg.id);
+      continue;
+    } else if (msg.type === "ASSISTANT" && !processedIds.has(msg.id)) {
+      // ASSISTANT message not already processed
       result.push(msg);
     }
+    
+    processedIds.add(msg.id);
   }
   
+  console.log(`✅ Edit grouping complete: ${messages.length} → ${result.length} messages`);
   return result;
 }
+
+// Helper function to group regenerated messages
+function groupRegeneratedMessages(messages: ChatMessage[]): ChatMessage[] {
+  console.log(`🔍 Grouping ${messages.length} messages...`);
+  const result: ChatMessage[] = [];
+  const processedIds = new Set<string>();
+  
+  for (const msg of messages) {
+    if (processedIds.has(msg.id)) {
+      console.log(`⏭️ Skipping already processed message ${msg.id.substring(0, 8)}`);
+      continue;
+    }
+    
+    console.log(`📋 Processing message ${msg.id.substring(0, 8)}: type=${msg.type}, parentId=${msg.parentMessageId?.substring(0, 8) || 'none'}`);
+    
+    // If this is an ASSISTANT message, check if it has regenerations
+    if (msg.type === "ASSISTANT" && !msg.parentMessageId) {
+      // Find all regenerations of this message
+      const regenerations = messages.filter(
+        m => m.type === "ASSISTANT" && m.parentMessageId === msg.id && !processedIds.has(m.id)
+      );
+      
+      console.log(`   Found ${regenerations.length} regenerations for this message`);
+      
+      if (regenerations.length > 0) {
+        // This message has regenerations - add them to the message object
+        const messageWithRegenerations: ChatMessage = {
+          ...msg,
+          regenerations: regenerations,
+          selectedRegenerationIndex: 0, // Default to showing original
+        };
+        result.push(messageWithRegenerations);
+        
+        // Mark all regenerations as processed so they don't appear as separate messages
+        regenerations.forEach(r => {
+          processedIds.add(r.id);
+          console.log(`   ✅ Marked regeneration ${r.id.substring(0, 8)} as processed`);
+        });
+        console.log(`🔀 Grouped ${regenerations.length} regenerations for message ${msg.id.substring(0, 8)}`);
+      } else {
+        // No regenerations, add as-is
+        result.push(msg);
+        console.log(`   No regenerations, added as-is`);
+      }
+    } else if (msg.type === "ASSISTANT" && msg.parentMessageId) {
+      // This is a regeneration - skip it (will be grouped with parent)
+      console.log(`   ⏭️ Skipping regeneration (parent: ${msg.parentMessageId.substring(0, 8)})`);
+      processedIds.add(msg.id);
+      continue;
+    } else {
+      // USER message or other types
+      result.push(msg);
+      console.log(`   Added USER or other message`);
+    }
+    
+    processedIds.add(msg.id);
+  }
+  
+  console.log(`✅ Grouping complete: ${messages.length} → ${result.length} messages`);
+  return result;
+}
+
+// Pure relational model - no branch reconstruction needed!
+// Messages are loaded from database with parent_message_id links
+// groupRegeneratedMessages handles the display grouping
 
 export default function ChatViewer({
   isSystemReady,
@@ -237,6 +318,12 @@ export default function ChatViewer({
 
   // ✅ NEW: Typing animation state
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
+
+  // ✅ NEW: Track message being regenerated/edited (to hide old response)
+  const [messageBeingRegenerated, setMessageBeingRegenerated] = useState<string | null>(null);
+  
+  // ✅ NEW: Ref to scroll to specific message position
+  const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   // ✅ NEW: AbortController for cancelling queries
   const [queryAbortController, setQueryAbortController] =
@@ -1264,17 +1351,19 @@ export default function ChatViewer({
             sourceCount: msg.tokens_used,
             isThinking: false,
             isStreaming: false,
-            // Load branches from database if they exist
-            ...(msg.branches && {
-              branches: msg.branches,
-              currentBranch: msg.current_branch ?? 0,
-            }),
+            // Pure relational model - load only relational fields
+            parentMessageId: msg.parent_message_id,
+            isRegeneration: msg.is_regeneration,
+            isEdited: msg.is_edited,
+            isActive: msg.is_active ?? true,
+            sequenceNumber: msg.sequence_number,
           })
         );
 
-        // Reconstruct chat history with branches properly displayed
-        const reconstructedMessages = reconstructChatHistoryWithBranches(formattedMessages);
-        setChatHistory(reconstructedMessages);
+        // Pure relational model - group edits first, then regenerations
+        const editGrouped = groupEditedMessages(formattedMessages);
+        const fullyGrouped = groupRegeneratedMessages(editGrouped);
+        setChatHistory(fullyGrouped);
 
         await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -1629,16 +1718,18 @@ export default function ChatViewer({
               sourceCount: msg.tokens_used,
               isThinking: false,
               isStreaming: false,
-              // Load branches from database if they exist
-              ...(msg.branches && {
-                branches: msg.branches,
-                currentBranch: msg.current_branch ?? 0,
-              }),
+              // Pure relational model - load only relational fields
+              parentMessageId: msg.parent_message_id,
+              isRegeneration: msg.is_regeneration,
+              isEdited: msg.is_edited,
+              isActive: msg.is_active ?? true,
+              sequenceNumber: msg.sequence_number,
             }));
             
-            // Reconstruct chat history with branches properly displayed
-            const reconstructedMessages = reconstructChatHistoryWithBranches(formattedMessages);
-            setChatHistory(reconstructedMessages);
+            // Pure relational model - group edits first, then regenerations
+            const editGrouped = groupEditedMessages(formattedMessages);
+            const fullyGrouped = groupRegeneratedMessages(editGrouped);
+            setChatHistory(fullyGrouped);
           }
         } else {
           setCurrentSessionId(null);
@@ -1690,10 +1781,12 @@ export default function ChatViewer({
       sessionIdToUse.trim() !== ""
     ) {
       try {
-        console.log(
-          "💾 Saving message to session immediately:",
-          sessionIdToUse
-        );
+        console.log("💾 Saving message to session immediately:");
+        console.log("   Session ID:", sessionIdToUse);
+        console.log("   Message ID:", newMessage.id);
+        console.log("   Message type:", newMessage.type);
+        console.log("   Content preview:", newMessage.content.substring(0, 50));
+        
         const response = await fetch("/backend/api/chat-messages", {
           method: "POST",
           headers: getAuthHeaders(),
@@ -1710,7 +1803,7 @@ export default function ChatViewer({
         if (response.ok) {
           const savedMessage = await response.json();
           console.log(
-            "✅ Message saved immediately:",
+            "✅ Message saved immediately to database:",
             savedMessage.messageId || savedMessage.id
           );
 
@@ -1723,17 +1816,17 @@ export default function ChatViewer({
           setDocumentExists(false);
           handleDocumentDeleted();
         } else {
-          const errorData = await response.json();
-          console.error("❌ Failed to save message:", errorData);
+          const errorText = await response.text();
+          console.error("❌ Failed to save message (status " + response.status + "):", errorText);
         }
       } catch (error) {
         console.error("❌ Failed to save message to database:", error);
       }
     } else {
-      console.warn(
-        "⚠️ Cannot save message - invalid or missing session ID:",
-        sessionIdToUse
-      );
+      console.warn("⚠️ Cannot save message - invalid or missing session ID:");
+      console.warn("   sessionIdOverride:", sessionIdOverride);
+      console.warn("   currentSessionId:", currentSessionId);
+      console.warn("   sessionIdToUse:", sessionIdToUse);
     }
 
     return newMessage;
@@ -1794,25 +1887,40 @@ export default function ChatViewer({
             const messagesData = await messagesResponse.json();
             const messages = messagesData.messages || [];
 
-            const formattedMessages = messages.map((msg: any) => ({
-              id: msg.id,
-              type: msg.role.toUpperCase(),
-              content: msg.content,
-              createdAt: new Date(msg.createdAt || msg.created_at),
-              sourceNodes: msg.sourceNodes || msg.source_nodes,
-              tokensUsed: msg.tokensUsed || msg.tokens_used,
-              // Load branches from database if they exist
-              ...(msg.branches && {
-                branches: msg.branches,
-                currentBranch: msg.current_branch ?? 0,
-              }),
-            }));
+            const formattedMessages = messages.map((msg: any) => {
+              // Debug: Log the raw message data to see field names
+              if (msg.parent_message_id || msg.parentMessageId) {
+                console.log('🔍 Raw message data:', {
+                  id: msg.id,
+                  parent_message_id: msg.parent_message_id,
+                  parentMessageId: msg.parentMessageId,
+                  is_regeneration: msg.is_regeneration,
+                  isRegeneration: msg.isRegeneration
+                });
+              }
+              
+              return {
+                id: msg.id,
+                type: msg.role.toUpperCase(),
+                content: msg.content,
+                createdAt: new Date(msg.createdAt || msg.created_at),
+                sourceNodes: msg.sourceNodes || msg.source_nodes,
+                tokensUsed: msg.tokensUsed || msg.tokens_used,
+                // Pure relational model - load only relational fields
+                parentMessageId: msg.parentMessageId || msg.parent_message_id || undefined,
+                isRegeneration: msg.isRegeneration ?? msg.is_regeneration ?? false,
+                isEdited: msg.is_edited ?? false,
+                isActive: msg.is_active ?? true,
+                sequenceNumber: msg.sequence_number,
+              };
+            });
 
-            // Reconstruct chat history with branches properly displayed
-            const reconstructedMessages = reconstructChatHistoryWithBranches(formattedMessages);
-            setChatHistory(reconstructedMessages);
+            // Pure relational model - group edits first, then regenerations
+            const editGrouped = groupEditedMessages(formattedMessages);
+            const fullyGrouped = groupRegeneratedMessages(editGrouped);
+            setChatHistory(fullyGrouped);
             console.log(
-              `📚 Loaded ${formattedMessages.length} existing messages (${reconstructedMessages.length} after branch reconstruction)`
+              `📚 Loaded ${formattedMessages.length} existing messages (${fullyGrouped.length} after grouping edits & regenerations)`
             );
           }
         } catch (messageError) {
@@ -2077,6 +2185,105 @@ export default function ChatViewer({
     }
   };
 
+  // Handle switching between regenerated versions
+  const handleRegenerationChange = (messageId: string, regenerationIndex: number) => {
+    console.log(`🔀 Switching to regeneration ${regenerationIndex} for message ${messageId.substring(0, 8)}`);
+    
+    setChatHistory((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId
+          ? { ...msg, selectedRegenerationIndex: regenerationIndex }
+          : msg
+      )
+    );
+  };
+
+  // Handle switching between edited versions
+  const handleEditChange = (messageId: string, editIndex: number) => {
+    console.log(`✏️ Switching to edit ${editIndex} for message ${messageId.substring(0, 8)}`);
+    
+    setChatHistory((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId
+          ? { ...msg, selectedEditIndex: editIndex }
+          : msg
+      )
+    );
+  };
+
+  // Handle "Prefer this response" - delete other versions and keep only the selected one
+  const handlePreferRegeneration = async (messageId: string, preferredIndex: number) => {
+    const message = chatHistory.find((msg) => msg.id === messageId);
+    if (!message || !message.regenerations || message.regenerations.length === 0) {
+      toast.error("No regenerations found");
+      return;
+    }
+
+    try {
+      console.log(`✅ Preferring regeneration ${preferredIndex} for message ${messageId.substring(0, 8)}`);
+      
+      // Determine which messages to delete
+      const messagesToDelete: string[] = [];
+      
+      if (preferredIndex === 0) {
+        // Keep original, delete all regenerations
+        messagesToDelete.push(...message.regenerations.map((r) => r.id));
+      } else {
+        // Keep one regeneration, delete original and other regenerations
+        messagesToDelete.push(messageId); // Delete original
+        message.regenerations.forEach((regen, idx) => {
+          if (idx !== preferredIndex - 1) {
+            messagesToDelete.push(regen.id);
+          }
+        });
+      }
+
+      console.log(`🗑️ Deleting ${messagesToDelete.length} alternative versions`);
+
+      // Delete from database
+      for (const idToDelete of messagesToDelete) {
+        try {
+          await fetch(`/backend/api/chat-messages/${idToDelete}`, {
+            method: "DELETE",
+            headers: getAuthHeaders(),
+          });
+          console.log(`✅ Deleted message ${idToDelete.substring(0, 8)}`);
+        } catch (err) {
+          console.error(`❌ Failed to delete message ${idToDelete}:`, err);
+        }
+      }
+
+      // Update local state - remove regenerations from the message
+      setChatHistory((prev) =>
+        prev.map((msg) => {
+          if (msg.id === messageId) {
+            if (preferredIndex === 0) {
+              // Keep original, remove regenerations
+              return { ...msg, regenerations: [], selectedRegenerationIndex: 0 };
+            } else {
+              // Replace original with preferred regeneration
+              const preferredRegen = msg.regenerations![preferredIndex - 1];
+              return {
+                ...msg,
+                id: preferredRegen.id,
+                content: preferredRegen.content,
+                createdAt: preferredRegen.createdAt,
+                parentMessageId: undefined,
+                isRegeneration: false,
+                regenerations: [],
+                selectedRegenerationIndex: 0,
+              };
+            }
+          }
+          return msg;
+        })
+      );
+    } catch (error) {
+      console.error("❌ Error handling preference:", error);
+      toast.error("Failed to save preference");
+    }
+  };
+
   const handleEditMessage = async (messageId: string, newContent: string) => {
     if (!newContent.trim()) {
       toast.error("Message cannot be empty");
@@ -2099,129 +2306,80 @@ export default function ChatViewer({
         return;
       }
 
-      // Get ALL subsequent messages (USER and ASSISTANT) - these will be stored in branches
-      const subsequentMessages = chatHistory.slice(messageIndex + 1);
+      console.log(`✏️ Pure relational edit: Creating new edited USER message and regenerating response`);
 
-      console.log(`🌿 Creating branch for edit. Subsequent messages to preserve: ${subsequentMessages.length}`);
-
-      // If this is the first edit, create a branch for the original content
-      let branches = messageToEdit.branches || [];
-      let currentBranch = messageToEdit.currentBranch ?? 0;
-
-      if (branches.length === 0) {
-        // First edit - save the original as branch 0
-        console.log("📝 First edit - saving original content as branch 0");
-        branches.push({
-          content: messageToEdit.content,
-          createdAt: messageToEdit.createdAt instanceof Date 
-            ? messageToEdit.createdAt 
-            : new Date(messageToEdit.createdAt),
-          subsequentMessages: subsequentMessages
-        });
-      }
-
-      // Create new branch with the edited content (empty subsequent messages for now)
-      const newBranch: MessageBranch = {
+      // Step 1: Create a new USER message with isEdited=true
+      const newUserMessageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const newUserMessage: ChatMessage = {
+        id: newUserMessageId,
+        type: "USER",
         content: newContent,
         createdAt: new Date(),
-        subsequentMessages: [] // Will be filled when we generate the response
-      };
-      branches.push(newBranch);
-      currentBranch = branches.length - 1; // Switch to the new branch
-
-      console.log(`🌿 Created branch ${currentBranch}. Total branches: ${branches.length}`);
-
-      // Update the message with branches
-      const updatedMessage = {
-        ...messageToEdit,
-        content: newContent, // Show the edited content
-        branches: branches,
-        currentBranch: currentBranch,
+        parentMessageId: messageId, // Link to original
+        isEdited: true,
       };
 
-      // CRITICAL: Save branches to database BEFORE deleting subsequent messages
-      // This ensures data isn't lost if something goes wrong
-      try {
-        console.log('💾 Saving branches to database BEFORE deleting subsequent messages');
-        const response = await fetch(`/backend/api/chat-messages/${messageId}`, {
-          method: "PATCH",
-          headers: {
-            ...getAuthHeaders(),
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            content: newContent,
-            branches: branches,
-            currentBranch: currentBranch,
-          }),
-        });
+      // Step 2: Save new USER message to database
+      if (currentSessionId && user && documentExists) {
+        try {
+          const response = await fetch(`/backend/api/chat-messages`, {
+            method: "POST",
+            headers: {
+              ...getAuthHeaders(),
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              id: newUserMessageId,
+              sessionId: currentSessionId,
+              role: "USER",
+              content: newContent,
+              createdAt: new Date().toISOString(),
+              parentMessageId: messageId,
+              isEdited: true,
+            }),
+          });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('⚠️ Failed to save branches to database:', errorText);
-          throw new Error('Failed to save branches before deletion');
-        }
-
-        console.log(`✅ Branches saved to database (${branches.length} branches, current: ${currentBranch})`);
-      } catch (err) {
-        console.error('❌ Error saving branches:', err);
-        toast.error('Failed to save branches - aborting edit');
-        throw err; // Abort the edit if we can't save branches
-      }
-
-      // Update chat history - keep only messages up to the edited one
-      // Remove subsequent messages (they're now stored in branches)
-      const messagesBeforeEdit = chatHistory.slice(0, messageIndex);
-      const subsequentMessagesToDelete = chatHistory.slice(messageIndex + 1);
-
-      // NOW it's safe to delete subsequent messages from database
-      // (they're already preserved in the branch's subsequentMessages and saved to DB)
-      if (subsequentMessagesToDelete.length > 0) {
-        console.log(`🗑️ Deleting ${subsequentMessagesToDelete.length} subsequent messages from database`);
-        for (const msgToDelete of subsequentMessagesToDelete) {
-          try {
-            const deleteResponse = await fetch(`/backend/api/chat-messages/${msgToDelete.id}`, {
-              method: 'DELETE',
-              headers: getAuthHeaders()
-            });
-
-            if (deleteResponse.ok) {
-              console.log(`✅ Deleted message ${msgToDelete.id} from database`);
-            } else {
-              console.warn(`⚠️ Failed to delete message ${msgToDelete.id} from database`);
-            }
-          } catch (deleteErr) {
-            console.error(`❌ Error deleting message ${msgToDelete.id}:`, deleteErr);
-            // Don't abort - the branch is already saved
+          if (!response.ok) {
+            throw new Error('Failed to save edited message');
           }
+          console.log('✅ Edited USER message saved to database');
+        } catch (err) {
+          console.error('❌ Error saving edited message:', err);
+          toast.error('Failed to save edit - aborting');
+          throw err;
         }
       }
 
-      setChatHistory([...messagesBeforeEdit, updatedMessage]);
-
-      // Generate new response based on the edited message using streaming
-      const newMessageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // Step 3: Generate new ASSISTANT response for the edited message
+      const newAssistantMessageId = `msg-${Date.now() + 1}-${Math.random().toString(36).substr(2, 9)}`;
       let streamedContent = "";
       let sourceCount = 0;
 
-      // Calculate timestamp for new assistant response (1ms after edited message to maintain order)
-      const editedMessageDate = messageToEdit.createdAt instanceof Date 
-        ? messageToEdit.createdAt 
-        : new Date(messageToEdit.createdAt);
-      const newAssistantTimestamp = new Date(editedMessageDate.getTime() + 1);
-
-      // Add a thinking message immediately
-      setChatHistory((prev) => [
-        ...prev,
-        {
-          id: newMessageId,
-          type: "ASSISTANT",
-          content: "Regenerating response...",
-          createdAt: newAssistantTimestamp,
+      // ✅ Update local state - add edited message AND thinking message together
+      setChatHistory((prev) => {
+        const beforeOriginal = prev.slice(0, messageIndex + 1);
+        const afterOriginal = prev.slice(messageIndex + 1);
+        
+        const thinkingMessage = {
+          id: newAssistantMessageId,
+          type: "ASSISTANT" as const,
+          content: "Generating response...",
+          createdAt: new Date(),
           isThinking: true,
           isStreaming: true,
-        },
-      ]);
+        };
+        
+        // Insert: original messages -> new edited user message -> thinking message -> rest
+        return [...beforeOriginal, newUserMessage, thinkingMessage, ...afterOriginal];
+      });
+      
+      // ✅ Scroll to the original message position (not to bottom)
+      setTimeout(() => {
+        const originalMessageElement = messageRefs.current[messageId];
+        if (originalMessageElement) {
+          originalMessageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
 
       const ragClient = new (await import('../../utils/api-client')).RAGApiClient();
 
@@ -2237,7 +2395,7 @@ export default function ChatViewer({
 
               setChatHistory((prev) =>
                 prev.map((msg) =>
-                  msg.id === newMessageId
+                  msg.id === newAssistantMessageId
                     ? {
                         ...msg,
                         content: streamedContent,
@@ -2254,7 +2412,7 @@ export default function ChatViewer({
             finalResponseContent = chunk.response || streamedContent;
             setChatHistory((prev) =>
               prev.map((msg) =>
-                msg.id === newMessageId
+                msg.id === newAssistantMessageId
                   ? {
                       ...msg,
                       content: finalResponseContent,
@@ -2270,130 +2428,46 @@ export default function ChatViewer({
         },
         (error) => {
           console.error("Streaming error:", error);
-          setChatHistory((prev) => prev.filter((msg) => msg.id !== newMessageId));
+          setChatHistory((prev) => prev.filter((msg) => msg.id !== newAssistantMessageId));
           setError(error.message);
-          toast.error("Failed to regenerate response: " + error.message);
+          toast.error("Failed to generate response: " + error.message);
         }
       );
 
-      // Store the new assistant response in the current branch and update state
-      // IMPORTANT: We need to save branches after capturing them
-      let branchesToSave: MessageBranch[] | undefined = undefined;
-      let currentBranchToSave: number | undefined = undefined;
-
-      // Build the updated messages and capture branches
-      await new Promise<void>((resolve) => {
-        setChatHistory((prev) => {
-          console.log(`🔍 Looking for message ${messageId} to update with assistant response`);
-          console.log(`   Chat history has ${prev.length} messages`);
-
-          const updatedMessages = prev.map((msg) => {
-            if (msg.id === messageId) {
-              console.log(`✓ Found user message ${messageId}`);
-              console.log(`   Has branches: ${!!msg.branches}`);
-              console.log(`   Branches length: ${msg.branches?.length || 0}`);
-              console.log(`   Current branch: ${msg.currentBranch}`);
-            }
-
-            if (msg.id === messageId && msg.branches && msg.currentBranch !== undefined) {
-              // Find the assistant message in chat history
-              const assistantMsg = prev.find(m => m.id === newMessageId);
-              console.log(`🔍 Looking for assistant message ${newMessageId}`);
-              console.log(`   Found: ${!!assistantMsg}`);
-
-              if (assistantMsg) {
-                console.log(`   Assistant content length: ${assistantMsg.content?.length || 0} chars`);
-                // Update the branch to include the new response
-                const updatedBranches = [...msg.branches];
-                if (updatedBranches[msg.currentBranch]) {
-                  updatedBranches[msg.currentBranch] = {
-                    ...updatedBranches[msg.currentBranch],
-                    subsequentMessages: [{
-                      ...assistantMsg,
-                      isStreaming: false,
-                      isThinking: false,
-                    }]
-                  };
-                }
-
-                // Store for database save
-                branchesToSave = updatedBranches;
-                currentBranchToSave = msg.currentBranch;
-                console.log(`✅ Captured branches for save: ${branchesToSave.length} branches`);
-
-                return {
-                  ...msg,
-                  branches: updatedBranches
-                };
-              } else {
-                console.error(`❌ Assistant message ${newMessageId} NOT FOUND in chat history!`);
-                console.log(`   Available message IDs:`, prev.map(m => `${m.id} (${m.type})`));
-              }
-            }
-
-            // Clear streaming state for the assistant message
-            if (msg.id === newMessageId) {
-              return {
-                ...msg,
-                isStreaming: false,
-                isThinking: false,
-              };
-            }
-
-            return msg;
-          });
-
-          // Reconstruct chat history to properly display branches
-          console.log('🔄 Reconstructing chat history after edit');
-          const result = reconstructChatHistoryWithBranches(updatedMessages);
-          
-          // Resolve promise after state update is complete
-          setTimeout(() => resolve(), 0);
-          
-          return result;
-        });
-      });
-
-      // Update database with the NEW assistant response added to the branch
-      console.log('💾 Checking if we can save branches after edit...');
-      console.log(`   currentSessionId: ${currentSessionId}`);
-      console.log(`   user: ${!!user}`);
-      console.log(`   documentExists: ${documentExists}`);
-      console.log(`   branchesToSave: ${!!branchesToSave}`);
-      if (branchesToSave && Array.isArray(branchesToSave)) {
-        console.log(`   currentBranchToSave: ${currentBranchToSave}`);
-      }
-
-      if (currentSessionId && user && documentExists && branchesToSave) {
-        console.log('💾 Updating branches with new assistant response after edit');
+      // Step 5: Save ASSISTANT response to database
+      if (currentSessionId && user && documentExists && finalResponseContent) {
         try {
-          const response = await fetch(`/backend/api/chat-messages/${messageId}`, {
-            method: "PATCH",
+          const response = await fetch(`/backend/api/chat-messages`, {
+            method: "POST",
             headers: {
               ...getAuthHeaders(),
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              content: newContent,
-              branches: branchesToSave,
-              currentBranch: currentBranchToSave,
+              id: newAssistantMessageId,
+              sessionId: currentSessionId,
+              role: "ASSISTANT",
+              content: finalResponseContent,
+              createdAt: new Date().toISOString(),
+              tokensUsed: sourceCount,
+              parentMessageId: newUserMessageId, // Link to edited user message
             }),
           });
 
           if (!response.ok) {
-            console.warn('⚠️ Failed to update branches with new response, but continuing');
+            console.warn('⚠️ Failed to save assistant message to database');
           } else {
-            console.log('✅ Branches updated with new assistant response');
+            console.log('✅ ASSISTANT response saved to database');
           }
         } catch (err) {
-          console.error('❌ Error updating branches with new response:', err);
+          console.error('❌ Error saving assistant message:', err);
         }
-      } else {
-        console.warn('⚠️ Cannot save branches - missing required data');
       }
 
-      console.log('✅ Branch updated with new response');
-      toast.success("Message edited - new branch created!");
+      // Reload chat history from database to show the complete conversation
+      await loadChatHistoryFromDatabase();
+      
+      toast.success("Message edited and response generated!");
     } catch (error) {
       console.error("Edit message error:", error);
       const errorMessage = handleApiError(error);
@@ -2438,165 +2512,66 @@ export default function ChatViewer({
 
     try {
       setIsQuerying(true);
+      
+      // ✅ Hide the old response while generating
+      setMessageBeingRegenerated(messageId);
 
-      // Find the root USER message that has (or should have) branches
-      // We need to search backwards to find a USER message, which might be before this assistant message
-      let rootUserMessage: ChatMessage | null = null;
-      let rootUserMessageIndex = -1;
+      // Find the USER message before this assistant message
+      let userMessage: ChatMessage | null = null;
       
       for (let i = messageIndex - 1; i >= 0; i--) {
         if (chatHistory[i].type === "USER") {
-          rootUserMessage = chatHistory[i];
-          rootUserMessageIndex = i;
+          userMessage = chatHistory[i];
           break;
         }
       }
 
-      if (!rootUserMessage) {
+      if (!userMessage) {
         toast.error("Could not find user message to regenerate from");
+        setMessageBeingRegenerated(null);
         return;
       }
 
-      console.log(`🔄 Regenerating response. Root user message: ${rootUserMessage.id}, Current branch: ${rootUserMessage.currentBranch}`);
-
-      // Get all subsequent messages after the assistant message (these will be discarded)
-      const subsequentMessages = chatHistory.slice(messageIndex + 1);
+      console.log(`🔄 Regenerating response for user message: ${userMessage.content.substring(0, 50)}`);
+      console.log(`   Original assistant message ID: ${messageId}`);
       
-      // Initialize or update branches
-      let userBranches = rootUserMessage.branches || [];
-      let currentBranchIndex = rootUserMessage.currentBranch ?? 0;
-
-      if (userBranches.length === 0) {
-        // First time branching - save the original as branch 0
-        console.log("📝 First regeneration - saving original as branch 0");
-        userBranches.push({
-          content: rootUserMessage.content,
-          createdAt: rootUserMessage.createdAt instanceof Date 
-            ? rootUserMessage.createdAt 
-            : new Date(rootUserMessage.createdAt),
-          subsequentMessages: [assistantMessage, ...subsequentMessages]
-        });
-      } else {
-        // Update the CURRENT branch with the old response (preserve it before creating new branch)
-        userBranches[currentBranchIndex] = {
-          ...userBranches[currentBranchIndex],
-          subsequentMessages: [assistantMessage, ...subsequentMessages]
-        };
-      }
-
-      // Create NEW branch for the regenerated response (always a sibling branch)
-      const newBranchIndex = userBranches.length;
-      userBranches.push({
-        content: rootUserMessage.content, // Same prompt, different response
-        createdAt: new Date(),
-        subsequentMessages: [] // Will be filled with the new response
-      });
-
-      console.log(`🌿 Created branch ${newBranchIndex} for regeneration. Total branches: ${userBranches.length}`);
-
-      // Update the root user message with all branches
-      const updatedUserMessage = {
-        ...rootUserMessage,
-        branches: userBranches,
-        currentBranch: newBranchIndex, // Switch to the new branch
-      };
-
-      // CRITICAL: Save branches with OLD response to database BEFORE deleting assistant messages
-      // This ensures the original response is preserved
-      // NOTE: The NEW regenerated response will be saved after streaming completes
-      try {
-        console.log('💾 Step 1: Saving branches with ORIGINAL response BEFORE deleting messages');
-        console.log(`   Saving ${userBranches.length} branches (branch ${currentBranchIndex} has original response)`);
-
-        // Verify the original response is in the current branch
-        if (userBranches[currentBranchIndex]?.subsequentMessages) {
-          console.log(`   Branch ${currentBranchIndex} has ${userBranches[currentBranchIndex].subsequentMessages.length} subsequent messages`);
+      // ✅ Scroll to the user message position (not to bottom)
+      setTimeout(() => {
+        const userMessageElement = messageRefs.current[userMessage.id];
+        if (userMessageElement) {
+          userMessageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-
-        const response = await fetch(`/backend/api/chat-messages/${rootUserMessage.id}`, {
-          method: "PATCH",
-          headers: {
-            ...getAuthHeaders(),
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            content: rootUserMessage.content,
-            branches: userBranches,
-            currentBranch: newBranchIndex, // Point to the NEW branch (which is empty for now)
-          }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('⚠️ Failed to save branches to database:', errorText);
-          throw new Error('Failed to save branches before deletion');
-        }
-
-        console.log(`✅ Step 1 Complete: Original response saved in branch ${currentBranchIndex}`);
-        console.log(`   Branch ${newBranchIndex} is empty and will be filled after streaming`);
-      } catch (err) {
-        console.error('❌ Error saving branches:', err);
-        toast.error('Failed to save branches - aborting regeneration');
-        throw err; // Abort the regeneration if we can't save branches
-      }
-
-      // NOW it's safe to delete the old assistant message from database
-      // (it's already preserved in the branch's subsequentMessages and saved to DB)
-      try {
-        await fetch(`/backend/api/chat-messages/${messageId}`, {
-          method: 'DELETE',
-          headers: getAuthHeaders()
-        });
-        console.log(`🗑️ Deleted old assistant message ${messageId} from database`);
-      } catch (deleteErr) {
-        console.error(`❌ Error deleting assistant message:`, deleteErr);
-        // Don't abort - the branch is already saved, so this is recoverable
-      }
-
-      if (subsequentMessages.length > 0) {
-        console.log(`🗑️ Deleting ${subsequentMessages.length} subsequent messages from database`);
-        for (const msgToDelete of subsequentMessages) {
-          try {
-            await fetch(`/backend/api/chat-messages/${msgToDelete.id}`, {
-              method: 'DELETE',
-              headers: getAuthHeaders()
-            });
-          } catch (deleteErr) {
-            console.error(`❌ Error deleting subsequent message:`, deleteErr);
-            // Don't abort - the branch is already saved
-          }
-        }
-      }
-
-      // Update chat history - keep only messages up to and including the updated user message
-      // Reconstruct to ensure branches are displayed properly
-      const messagesBeforeAssistant = chatHistory.slice(0, rootUserMessageIndex);
-      const initialUpdateMessages = [...messagesBeforeAssistant, updatedUserMessage];
-      setChatHistory(reconstructChatHistoryWithBranches(initialUpdateMessages));
+      }, 100);
 
       // Generate new response
       const newAssistantMessageId = crypto.randomUUID();
       let streamedContent = "";
       let sourceCount = 0;
 
-      // Add thinking message
-      setChatHistory((prev) => [
-        ...prev,
-        {
+      // ✅ Add thinking message RIGHT AFTER the message being regenerated (not at bottom)
+      setChatHistory((prev) => {
+        const newThinkingMessage = {
           id: newAssistantMessageId,
-          type: "ASSISTANT",
+          type: "ASSISTANT" as const,
           content: "Generating alternative response...",
           createdAt: new Date(),
           isThinking: true,
           isStreaming: true,
-        },
-      ]);
+        };
+        
+        // Insert right after the assistant message being regenerated
+        const newHistory = [...prev];
+        const insertIndex = messageIndex + 1;
+        newHistory.splice(insertIndex, 0, newThinkingMessage);
+        
+        return newHistory;
+      });
 
       const ragClient = new (await import('../../utils/api-client')).RAGApiClient();
 
       // Stream the alternative response
       await ragClient.streamQueryDocument(
-        rootUserMessage.content,
+        userMessage.content,
         (chunk) => {
           if (chunk.type === 'content_chunk') {
             if (chunk.partial_response !== undefined) {
@@ -2629,264 +2604,82 @@ export default function ChatViewer({
         }
       );
 
-      // Update the new branch with the regenerated response and save to database
-      let finalUpdatedBranches: MessageBranch[] = [];
-      let updatedUserMessageWithBranches: ChatMessage | null = null;
-
-      setChatHistory((prev) => {
-        // First, update messages with branch data
-        console.log(`🔍 Searching for assistant message with ID: ${newAssistantMessageId}`);
-        console.log(`   Current chat history has ${prev.length} messages`);
-
-        const updatedMessages = prev.map((msg) => {
-          if (msg.id === rootUserMessage!.id) {
-            const updatedBranches = [...userBranches]; // Use the userBranches we created above
-            const assistantMsg = prev.find(m => m.id === newAssistantMessageId);
-
-            console.log(`🔍 Found assistant message: ${!!assistantMsg}`);
-            if (assistantMsg) {
-              console.log(`   Assistant content length: ${assistantMsg.content?.length || 0}`);
-              console.log(`   Assistant content preview: "${assistantMsg.content?.substring(0, 100)}..."`);
-            } else {
-              console.error(`❌ Could not find assistant message with ID ${newAssistantMessageId}`);
-              console.log('   Available message IDs:', prev.map(m => m.id));
-            }
-
-            if (assistantMsg && updatedBranches[newBranchIndex]) {
-              // Add the new response to the new branch
-              updatedBranches[newBranchIndex] = {
-                ...updatedBranches[newBranchIndex],
-                subsequentMessages: [{
-                  ...assistantMsg,
-                  content: streamedContent,
-                  sourceCount: sourceCount,
-                  isStreaming: false,
-                  isThinking: false,
-                }]
-              };
-
-              console.log(`✅ Added assistant response to branch ${newBranchIndex}`);
-              console.log(`   Subsequent messages in branch: ${updatedBranches[newBranchIndex].subsequentMessages.length}`);
-
-              // Store for saving after state update
-              finalUpdatedBranches = updatedBranches;
-
-              const updatedMsg = {
-                ...msg,
-                branches: updatedBranches,
-                currentBranch: newBranchIndex, // Update to show the new branch
-              };
-
-              // Store the updated user message for database save
-              updatedUserMessageWithBranches = updatedMsg;
-
-              return updatedMsg;
-            } else if (!assistantMsg) {
-              console.error(`❌ Cannot add to branch - assistant message not found`);
-            } else if (!updatedBranches[newBranchIndex]) {
-              console.error(`❌ Cannot add to branch - branch ${newBranchIndex} does not exist`);
-            }
-          }
-
-          // Clear streaming state for the new assistant message
-          if (msg.id === newAssistantMessageId) {
-            return {
-              ...msg,
-              content: streamedContent,
-              sourceCount: sourceCount,
-              isStreaming: false,
-              isThinking: false,
-            };
-          }
-
-          return msg;
-        });
-
-        // IMPORTANT: Don't filter out the assistant message yet - let reconstructChatHistoryWithBranches handle it
-        // The reconstruction will show the message from the branch's subsequentMessages
-        console.log('🔄 Reconstructing chat history after regeneration');
-        console.log(`📊 Final branches before reconstruction: ${finalUpdatedBranches.length} branches`);
-        if (finalUpdatedBranches.length > 0) {
-          console.log(`   Branch ${newBranchIndex} has ${finalUpdatedBranches[newBranchIndex]?.subsequentMessages?.length || 0} subsequent messages`);
-        }
-
-        // Filter out the new assistant message since it's now in branches
-        const messagesWithoutDuplicate = updatedMessages.filter(m => m.id !== newAssistantMessageId);
-        console.log(`   Filtered out duplicate assistant message. Messages count: ${updatedMessages.length} -> ${messagesWithoutDuplicate.length}`);
-
-        return reconstructChatHistoryWithBranches(messagesWithoutDuplicate);
-      });
-
-      // Step 2: Update the database with the NEW regenerated response
-      console.log('\n💾 Step 2: Preparing to save REGENERATED response to database');
-      console.log(`   finalUpdatedBranches.length: ${finalUpdatedBranches.length}`);
-      console.log(`   newBranchIndex: ${newBranchIndex}`);
-      console.log(`   rootUserMessage.id: ${rootUserMessage.id}`);
-
-      if (finalUpdatedBranches.length > 0 && finalUpdatedBranches[newBranchIndex]) {
-        const branchToSave = finalUpdatedBranches[newBranchIndex];
-        console.log(`   Branch ${newBranchIndex} subsequentMessages: ${branchToSave.subsequentMessages?.length || 0}`);
-
-        if (branchToSave.subsequentMessages && branchToSave.subsequentMessages.length > 0) {
-          const msg = branchToSave.subsequentMessages[0];
-          console.log(`   Assistant message ID: ${msg.id}`);
-          console.log(`   Assistant message content length: ${msg.content?.length || 0} chars`);
-          console.log(`   Assistant message preview: "${msg.content?.substring(0, 100)}..."`);
-        } else {
-          console.error(`   ❌ ERROR: Branch ${newBranchIndex} has NO subsequent messages!`);
-        }
-
+      // ====================================================================
+      // SAVE: Create a new assistant message in database with parent_message_id
+      // This is much simpler than JSON branches and fully persistent
+      // ====================================================================
+      console.log('\n💾 Saving regenerated response as new database entry');
+      console.log(`   Content length: ${streamedContent.length}`);
+      console.log(`   Source count: ${sourceCount}`);
+      console.log(`   Parent message ID: ${messageId}`);
+      
+      if (currentSessionId && user && documentExists && streamedContent) {
         try {
-          console.log('💾 Step 2: Sending PATCH request to update branches with REGENERATED response');
-          const response = await fetch(`/backend/api/chat-messages/${rootUserMessage.id}`, {
-            method: "PATCH",
+          const response = await fetch(`/backend/api/chat-messages`, {
+            method: "POST",
             headers: {
-              ...getAuthHeaders(),
-              'Content-Type': 'application/json'
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${authUtils.getToken()}`,
             },
             body: JSON.stringify({
-              content: rootUserMessage.content,
-              branches: finalUpdatedBranches,
-              currentBranch: newBranchIndex,
+              id: newAssistantMessageId,
+              sessionId: currentSessionId,
+              role: "ASSISTANT",
+              content: streamedContent,
+              createdAt: new Date().toISOString(),
+              tokensUsed: sourceCount,
+              parentMessageId: messageId, // Link to original message
+              isRegeneration: true, // Mark as regenerated
             }),
           });
 
           if (response.ok) {
-            console.log(`✅ Step 2 Complete: Regenerated response saved!`);
-            console.log(`   Total branches: ${finalUpdatedBranches.length}`);
-            console.log(`   Current branch: ${newBranchIndex}`);
-
-            // Verify by reading back from database
-            try {
-              console.log('\n🔍 Verifying saved data in database...');
-              const verifyResponse = await fetch(`/backend/api/chat-messages/${rootUserMessage.id}`, {
-                headers: getAuthHeaders()
-              });
-              if (verifyResponse.ok) {
-                const savedMessage = await verifyResponse.json();
-                console.log(`✅ Verification Success: Message has ${savedMessage.branches?.length || 0} branches in database`);
-
-                // Check each branch
-                if (savedMessage.branches) {
-                  savedMessage.branches.forEach((branch: any, idx: number) => {
-                    const msgCount = branch.subsequentMessages?.length || 0;
-                    const hasContent = msgCount > 0;
-                    console.log(`   Branch ${idx}: ${msgCount} messages, ${hasContent ? '✅ HAS CONTENT' : '❌ EMPTY'}`);
-                    if (hasContent && branch.subsequentMessages[0]) {
-                      const contentPreview = branch.subsequentMessages[0].content?.substring(0, 50) || '';
-                      console.log(`      Preview: "${contentPreview}..."`);
-                    }
-                  });
-                }
-              }
-            } catch (verifyErr) {
-              console.warn('Could not verify saved branches:', verifyErr);
-            }
+            const savedMessage = await response.json();
+            console.log("✅ Regenerated response saved to database:", savedMessage.id || savedMessage.messageId);
+            
+            // Refresh chat history to show the new message
+            await loadChatHistoryFromDatabase();
           } else {
             const errorText = await response.text();
-            console.error('⚠️ Failed to update branches with new response:', errorText);
-            toast.error('Failed to save regenerated response to database');
+            console.warn("⚠️ Failed to save regenerated response:", errorText);
+            toast.warning("Response generated but not saved to database");
           }
-        } catch (err) {
-          console.error('❌ Error updating branches with new response:', err);
-          toast.error('Error saving regenerated response');
+        } catch (saveError) {
+          console.error("❌ Failed to save regenerated response:", saveError);
+          toast.warning("Response generated but not saved to database");
         }
       } else {
-        console.error('❌ CRITICAL: No finalUpdatedBranches to save or branch is empty!');
-        console.error(`   This means the assistant response was not captured properly`);
-        console.error(`   streamedContent length: ${streamedContent.length}`);
-        toast.error('Failed to save regenerated response - data not captured');
+        console.warn("⚠️ Cannot save regenerated response - missing requirements");
+        toast.warning("Response generated but not saved (no active session)");
       }
 
-      toast.success(`Response regenerated! Now on Branch ${newBranchIndex + 1}`);
+      // Update UI state to show the regenerated response
+      setChatHistory((prev) =>
+        prev.map((msg) =>
+          msg.id === newAssistantMessageId
+            ? {
+                ...msg,
+                content: streamedContent,
+                sourceCount: sourceCount,
+                isStreaming: false,
+                isThinking: false,
+              }
+            : msg
+        )
+      );
     } catch (error) {
       const errorMessage = handleApiError(error);
       setError(errorMessage);
       toast.error("Failed to regenerate response");
     } finally {
       setIsQuerying(false);
+      // ✅ Clear the hidden message state
+      setMessageBeingRegenerated(null);
     }
   };
 
-  // Handle branch navigation
-  const handleBranchChange = async (messageId: string, newBranchIndex: number) => {
-    console.log('🔀 Branch change requested:', { messageId, newBranchIndex });
-
-    setChatHistory((prev) => {
-      const msgIndex = prev.findIndex((msg) => msg.id === messageId);
-
-      if (msgIndex === -1) {
-        console.warn('⚠️ Message not found');
-        return prev;
-      }
-
-      const currentMsg = prev[msgIndex];
-
-      if (!currentMsg.branches || currentMsg.branches.length === 0) {
-        console.warn('⚠️ No branches available');
-        return prev;
-      }
-
-      if (newBranchIndex < 0 || newBranchIndex >= currentMsg.branches.length) {
-        console.warn('⚠️ Invalid branch index:', newBranchIndex);
-        return prev;
-      }
-
-      const selectedBranch = currentMsg.branches[newBranchIndex];
-      console.log(`🌿 Switching to branch ${newBranchIndex}:`, {
-        content: selectedBranch.content.substring(0, 50),
-        subsequentMessages: selectedBranch.subsequentMessages.length
-      });
-
-      // Get all messages before the edited one
-      const messagesBeforeEdit = prev.slice(0, msgIndex);
-
-      // Update the edited message with the selected branch content
-      const updatedMessage = {
-        ...currentMsg,
-        content: selectedBranch.content,
-        currentBranch: newBranchIndex,
-      };
-
-      // Combine: messages before + edited message + branch's subsequent messages
-      const newHistory = [
-        ...messagesBeforeEdit,
-        updatedMessage,
-        ...selectedBranch.subsequentMessages
-      ];
-
-      console.log(`✅ Switched to branch ${newBranchIndex}. Total messages: ${newHistory.length}`);
-      return newHistory;
-    });
-
-    // Save the current branch selection to database
-    if (currentSessionId && user && documentExists) {
-      console.log('💾 Saving branch selection to database');
-      try {
-        const response = await fetch(`/backend/api/chat-messages/${messageId}`, {
-          method: "PATCH",
-          headers: {
-            ...getAuthHeaders(),
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            content: chatHistory.find(m => m.id === messageId)?.content || '',
-            currentBranch: newBranchIndex,
-          }),
-        });
-
-        if (!response.ok) {
-          console.warn('⚠️ Failed to save branch selection to database');
-        } else {
-          console.log('✅ Branch selection saved to database');
-        }
-      } catch (err) {
-        console.error('❌ Error saving branch selection:', err);
-      }
-    }
-
-    toast.success(`Switched to conversation path ${newBranchIndex + 1}`);
-  };
+  // Pure relational model - branch navigation removed
+  // Messages are all in database rows, navigation handled through parent_message_id
 
   const handleDeleteMessage = async (messageId: string) => {
     try {
@@ -2953,94 +2746,8 @@ export default function ChatViewer({
     }
   };
 
-  // Helper function to update branch subsequentMessages when new messages are added
-  const updateBranchesWithNewMessages = async (history: ChatMessage[], newAssistantMessageId: string) => {
-    // Find the most recent USER message with branches
-    let lastBranchedUserMessage: ChatMessage | null = null;
-    let lastBranchedUserMessageIndex = -1;
-    
-    for (let i = history.length - 1; i >= 0; i--) {
-      if (history[i].type === "USER" && history[i].branches && history[i].branches!.length > 0) {
-        lastBranchedUserMessage = history[i];
-        lastBranchedUserMessageIndex = i;
-        break;
-      }
-    }
-    
-    if (!lastBranchedUserMessage || lastBranchedUserMessageIndex === -1) {
-      // No branched messages, nothing to update
-      return;
-    }
-    
-    // Get all messages after the branched user message
-    const messagesAfterBranch = history.slice(lastBranchedUserMessageIndex + 1);
-    
-    if (messagesAfterBranch.length === 0) {
-      return;
-    }
-    
-    // Update the current branch's subsequentMessages
-    const updatedBranches = [...lastBranchedUserMessage.branches!];
-    const currentBranchIndex = lastBranchedUserMessage.currentBranch ?? 0;
-    
-    if (updatedBranches[currentBranchIndex]) {
-      updatedBranches[currentBranchIndex] = {
-        ...updatedBranches[currentBranchIndex],
-        subsequentMessages: messagesAfterBranch
-      };
-      
-      console.log(`🌿 Updating branch ${currentBranchIndex} with ${messagesAfterBranch.length} subsequent messages`);
-      
-      // Save updated branches to database
-      try {
-        const response = await fetch(`/backend/api/chat-messages/${lastBranchedUserMessage.id}`, {
-          method: "PATCH",
-          headers: {
-            ...getAuthHeaders(),
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            content: lastBranchedUserMessage.content,
-            branches: updatedBranches,
-            currentBranch: currentBranchIndex,
-          }),
-        });
-        
-        if (response.ok) {
-          console.log('✅ Branch subsequentMessages updated in database');
-          
-          // Delete the subsequent messages from the database since they're now stored in the branch
-          for (const msgToDelete of messagesAfterBranch) {
-            try {
-              const deleteResponse = await fetch(`/backend/api/chat-messages/${msgToDelete.id}`, {
-                method: 'DELETE',
-                headers: getAuthHeaders()
-              });
-              
-              if (deleteResponse.ok) {
-                console.log(`🗑️ Deleted message ${msgToDelete.id} from database (now in branch)`);
-              } else {
-                console.warn(`⚠️ Failed to delete message ${msgToDelete.id} from database`);
-              }
-            } catch (deleteErr) {
-              console.error(`❌ Error deleting message ${msgToDelete.id}:`, deleteErr);
-            }
-          }
-          
-          // Update local state
-          setChatHistory(prev => prev.map(msg => 
-            msg.id === lastBranchedUserMessage!.id 
-              ? { ...msg, branches: updatedBranches }
-              : msg
-          ));
-        } else {
-          console.warn('⚠️ Failed to update branch in database');
-        }
-      } catch (err) {
-        console.error('❌ Error updating branch:', err);
-      }
-    }
-  };
+  // Pure relational model - branch updates removed
+  // Messages are all in database rows with parent_message_id links
 
   const handleQuery = async (queryText?: string) => {
     console.log("🚀 handleQuery called!", {
@@ -3324,47 +3031,52 @@ export default function ChatViewer({
         document.title = originalTitle;
       }
 
-      // Save to database WITHOUT adding another message to chat history
+      // ✅ CRITICAL: Save assistant message to database IMMEDIATELY (not in setTimeout)
+      // This ensures the message exists in DB before any regeneration attempts
       if (sessionId && user && documentExists && streamedContent) {
         try {
-          // Save to database in background (don't block UI)
-          setTimeout(async () => {
-            try {
-              // Use direct API call instead of addMessage to avoid creating duplicate
-              const response = await fetch(`/backend/api/chat-messages`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${authUtils.getToken()}`,
-                },
-                body: JSON.stringify({
-                  id: assistantMessageId, // IMPORTANT: Use the same ID as the frontend message
-                  sessionId: sessionId,
-                  role: "assistant",
-                  content: streamedContent,
-                  tokens_used: sourceCount,
-                }),
-              });
+          console.log("💾 Saving assistant message to database (synchronously)...");
+          console.log("   Session ID:", sessionId);
+          console.log("   Assistant ID:", assistantMessageId);
+          console.log("   Content length:", streamedContent.length);
+          
+          // Use direct API call instead of addMessage to avoid creating duplicate
+          const response = await fetch(`/backend/api/chat-messages`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${authUtils.getToken()}`,
+            },
+            body: JSON.stringify({
+              id: assistantMessageId, // IMPORTANT: Use the same ID as the frontend message
+              sessionId: sessionId,
+              role: "ASSISTANT", // Use uppercase to match DB enum
+              content: streamedContent,
+              createdAt: new Date().toISOString(),
+              tokensUsed: sourceCount,
+            }),
+          });
 
-              if (response.ok) {
-                console.log("💾 Streamed message saved to database");
-                
-                // Check if we need to update branch's subsequentMessages
-                // Get the latest chat history state
-                setChatHistory(currentHistory => {
-                  updateBranchesWithNewMessages(currentHistory, assistantMessageId);
-                  return currentHistory; // Don't modify here, updateBranchesWithNewMessages will handle it
-                });
-              } else {
-                console.warn("Failed to save streamed message to database");
-              }
-            } catch (saveError) {
-              console.warn("Failed to save streamed message to database:", saveError);
-            }
-          }, 0);
+          if (response.ok) {
+            const savedMessage = await response.json();
+            console.log("✅ Assistant message saved to database:", savedMessage.id || savedMessage.messageId);
+            // Pure relational model - messages are already in database with parent_message_id
+          } else {
+            const errorText = await response.text();
+            console.warn("⚠️ Failed to save assistant message to database:", errorText);
+            console.warn("   Status:", response.status);
+            console.warn("   This message will only exist in memory and regeneration may not persist");
+          }
         } catch (saveError) {
-          console.warn("Failed to save streamed message to database:", saveError);
+          console.error("❌ Failed to save assistant message to database:", saveError);
+          console.warn("   This message will only exist in memory and regeneration may not persist");
         }
+      } else {
+        console.warn("⚠️ SKIPPING assistant message save - missing requirements:");
+        console.warn("   sessionId:", sessionId);
+        console.warn("   user:", !!user);
+        console.warn("   documentExists:", documentExists);
+        console.warn("   streamedContent:", streamedContent?.length || 0);
       }
     } catch (error) {
       // Handle streaming errors
@@ -3854,13 +3566,28 @@ export default function ChatViewer({
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Chat Messages Container */}
         <ChatContainer
-          chatHistory={chatHistory}
+          chatHistory={(() => {
+            // Debug: Log what we're passing to ChatContainer
+            const messagesWithRegen = chatHistory.filter(m => m.regenerations && m.regenerations.length > 0);
+            if (messagesWithRegen.length > 0) {
+              console.log(`📤 Passing ${chatHistory.length} messages to ChatContainer`);
+              console.log(`   ${messagesWithRegen.length} messages have regenerations:`);
+              messagesWithRegen.forEach(m => {
+                console.log(`   - ${m.id.substring(0, 8)}: ${m.regenerations!.length} regenerations`);
+              });
+            }
+            return chatHistory;
+          })()}
           isQuerying={isQuerying}
           documentExists={documentExists}
           onMessageAction={handleMessageAction}
           typingMessageId={typingMessageId}
           onTypingComplete={() => setTypingMessageId(null)}
-          onBranchChange={handleBranchChange}
+          onRegenerationChange={handleRegenerationChange}
+          onPreferRegeneration={handlePreferRegeneration}
+          onEditChange={handleEditChange}
+          messageBeingRegenerated={messageBeingRegenerated}
+          messageRefs={messageRefs}
         />
 
         {/* Input Area */}
