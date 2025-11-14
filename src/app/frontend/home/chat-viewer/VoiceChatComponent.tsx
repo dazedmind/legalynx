@@ -1,12 +1,20 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, MicOff, Volume2, VolumeX, MessageSquare, AudioLines, FileText} from 'lucide-react';
-import { apiService } from '../../../../lib/api';
-import { SimpleVisualizer } from '../../components/visualizer/SimpleVisualizer';
-import PuffLoader from 'react-spinners/PuffLoader';
-import { FaRegDotCircle } from 'react-icons/fa';
-import { RiSquareFill } from 'react-icons/ri';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import {
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  MessageSquare,
+  AudioLines,
+  FileText,
+} from "lucide-react";
+import { apiService } from "../../../../lib/api";
+import { SimpleVisualizer } from "../../components/visualizer/SimpleVisualizer";
+import PuffLoader from "react-spinners/PuffLoader";
+import { FaRegDotCircle } from "react-icons/fa";
+import { RiSquareFill } from "react-icons/ri";
 
 interface VoiceChatComponentProps {
   isSystemReady: boolean;
@@ -30,7 +38,7 @@ interface MessageBranch {
 interface ChatMessage {
   id: string;
   content: string;
-  type: 'USER' | 'ASSISTANT';
+  type: "USER" | "ASSISTANT";
   createdAt: Date;
   isTranscribed?: boolean;
   branches?: MessageBranch[];
@@ -64,16 +72,18 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
   handleDocumentDeleted,
   onSessionCreated,
   toast,
-  handleManualInput
+  handleManualInput,
 }) => {
   // State management
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(selectedSessionId || null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(
+    selectedSessionId || null
+  );
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [finalTranscript, setFinalTranscript] = useState('');
+  const [transcript, setTranscript] = useState("");
+  const [finalTranscript, setFinalTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [supportsSpeech, setSupportsSpeech] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
@@ -91,21 +101,30 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
 
   // Transcript feature states
   const [showTranscript, setShowTranscript] = useState(false);
-  const [currentTranscriptWords, setCurrentTranscriptWords] = useState<string[]>([]);
+  const [currentTranscriptWords, setCurrentTranscriptWords] = useState<
+    string[]
+  >([]);
   const [displayedWordCount, setDisplayedWordCount] = useState(0);
   const [currentWordIndex, setCurrentWordIndex] = useState(0); // Currently highlighted word
   const wordAnimationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const wordTimingsRef = useRef<number[]>([]); // Store word timing data
 
   // Helper function to reconstruct chat history with branches properly displayed
-  const reconstructChatHistoryWithBranches = (messages: ChatMessage[]): ChatMessage[] => {
+  const reconstructChatHistoryWithBranches = (
+    messages: ChatMessage[]
+  ): ChatMessage[] => {
     const result: ChatMessage[] = [];
-    
+
     for (let i = 0; i < messages.length; i++) {
       const msg = messages[i];
-      
+
       // If this is a USER message with branches, show the current branch content
-      if (msg.type === "USER" && msg.branches && msg.branches.length > 0 && msg.currentBranch !== undefined) {
+      if (
+        msg.type === "USER" &&
+        msg.branches &&
+        msg.branches.length > 0 &&
+        msg.currentBranch !== undefined
+      ) {
         const currentBranch = msg.branches[msg.currentBranch];
         if (currentBranch) {
           // Add the user message with branch content
@@ -113,18 +132,21 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
             ...msg,
             content: currentBranch.content,
           });
-          
+
           // Add the subsequent messages from this branch
           // These messages are stored in the branch and were deleted from the main chat_messages table
-          if (currentBranch.subsequentMessages && currentBranch.subsequentMessages.length > 0) {
+          if (
+            currentBranch.subsequentMessages &&
+            currentBranch.subsequentMessages.length > 0
+          ) {
             result.push(...currentBranch.subsequentMessages);
-            
+
             // Skip any messages in the database that are already in subsequentMessages
             // to prevent duplicates (this can happen if messages were added to the branch later)
             const subsequentMessageIds = new Set(
               currentBranch.subsequentMessages.map((m: ChatMessage) => m.id)
             );
-            
+
             let skippedCount = 0;
             while (i + 1 < messages.length) {
               const nextMsg = messages[i + 1];
@@ -136,9 +158,8 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
                 break;
               }
             }
-            
+
             if (skippedCount > 0) {
-              console.log(`🔀 Skipped ${skippedCount} duplicate messages already in branch ${msg.currentBranch}`);
             }
           }
         } else {
@@ -150,46 +171,47 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
         result.push(msg);
       }
     }
-    
+
     return result;
   };
 
   // Load messages from database for a session
   const loadMessagesFromDatabase = async (sessionId: string) => {
     try {
-      console.log('📚 Loading messages for session:', sessionId);
-      const response = await fetch(`/backend/api/chat-messages?sessionId=${sessionId}`, {
-        headers: getAuthHeaders()
-      });
+      const response = await fetch(
+        `/backend/api/chat-messages?sessionId=${sessionId}`,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
 
       if (response.ok) {
         const dbMessages = await response.json();
-        console.log('✅ Loaded', dbMessages.length, 'messages from database');
-        
+
         // Transform database messages to our ChatMessage format
         const formattedMessages: ChatMessage[] = dbMessages.map((msg: any) => ({
           id: msg.id || msg.messageId || Date.now().toString(),
           content: msg.content,
-          type: msg.role as 'USER' | 'ASSISTANT',
+          type: msg.role as "USER" | "ASSISTANT",
           createdAt: new Date(msg.createdAt || msg.created_at),
-          isTranscribed: msg.role === 'USER', // Mark user messages as potentially transcribed
+          isTranscribed: msg.role === "USER", // Mark user messages as potentially transcribed
           // Load branches from database if they exist
           ...(msg.branches && {
             branches: msg.branches,
             currentBranch: msg.current_branch ?? 0,
           }),
         }));
-        
+
         // Reconstruct chat history with branches properly displayed
-        const reconstructedMessages = reconstructChatHistoryWithBranches(formattedMessages);
+        const reconstructedMessages =
+          reconstructChatHistoryWithBranches(formattedMessages);
         setMessages(reconstructedMessages);
-        console.log(`📚 Showing ${reconstructedMessages.length} messages after branch reconstruction`);
       } else {
-        console.warn('⚠️ Failed to load messages:', response.status);
+        console.warn("⚠️ Failed to load messages:", response.status);
         setMessages([]);
       }
     } catch (error) {
-      console.error('❌ Error loading messages:', error);
+      console.error("❌ Error loading messages:", error);
       setMessages([]);
     }
   };
@@ -213,10 +235,9 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
       if (!currentDocument?.id || !user) return;
 
       try {
-        console.log('🔍 Checking for existing chat sessions for document:', currentDocument.id);
-        const response = await fetch('/backend/api/chat', {
-          method: 'GET',
-          headers: getAuthHeaders()
+        const response = await fetch("/backend/api/chat", {
+          method: "GET",
+          headers: getAuthHeaders(),
         });
 
         if (response.ok) {
@@ -231,10 +252,9 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
           if (documentSessions.length > 0 && !selectedSessionId) {
             // Load the most recent session
             const mostRecentSession = documentSessions[0];
-            console.log('📖 Found existing session:', mostRecentSession.id);
             setCurrentSessionId(mostRecentSession.id);
             await loadMessagesFromDatabase(mostRecentSession.id);
-            
+
             // Notify parent if callback exists
             if (onSessionCreated) {
               onSessionCreated(mostRecentSession.id);
@@ -242,7 +262,7 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
           }
         }
       } catch (error) {
-        console.error('❌ Error loading initial chat history:', error);
+        console.error("❌ Error loading initial chat history:", error);
       }
     };
 
@@ -253,37 +273,35 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
   const setupMicrophoneStream = async (): Promise<MediaStream | null> => {
     try {
       if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
-        } 
+          autoGainControl: true,
+        },
       });
-      
+
       mediaStreamRef.current = stream;
-      
+
       if (visualizerRef.current) {
         visualizerRef.current.connectMediaStream(stream);
-        console.log('🎤 Microphone connected to visualizer');
       }
-      
+
       return stream;
     } catch (error) {
-      console.error('Failed to get microphone access:', error);
-      setError('Failed to access microphone');
+      console.error("Failed to get microphone access:", error);
+      setError("Failed to access microphone");
       return null;
     }
   };
 
   const stopMicrophoneStream = (): void => {
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => {
+      mediaStreamRef.current.getTracks().forEach((track) => {
         track.stop();
-        console.log('🎤 Microphone track stopped');
       });
       mediaStreamRef.current = null;
     }
@@ -295,55 +313,53 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
   };
 
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     const speechSynthesis = window.speechSynthesis;
-    
+
     if (SpeechRecognition && speechSynthesis) {
       setSupportsSpeech(true);
       synthRef.current = speechSynthesis;
-      
+
       // Load voices (they may not be available immediately)
       const loadVoices = () => {
         const voices = speechSynthesis.getVoices();
         if (voices.length > 0) {
-          console.log('🎤 Loaded', voices.length, 'voices');
-          const femaleVoices = voices.filter(v => 
-            v.name.toLowerCase().includes('female') || 
-            v.name.toLowerCase().includes('samantha') ||
-            v.name.toLowerCase().includes('zira')
+          const femaleVoices = voices.filter(
+            (v) =>
+              v.name.toLowerCase().includes("female") ||
+              v.name.toLowerCase().includes("samantha") ||
+              v.name.toLowerCase().includes("zira")
           );
-          console.log('🎤 Available female voices:', femaleVoices.map(v => v.name));
         }
       };
-      
+
       // Try to load voices immediately
       loadVoices();
-      
+
       // Also listen for the voiceschanged event (for Chrome/Edge)
       if (speechSynthesis.onvoiceschanged !== undefined) {
         speechSynthesis.onvoiceschanged = loadVoices;
       }
-      
+
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = true;
-      recognition.lang = 'en-US';
-      
+      recognition.lang = "en-US";
+
       recognition.onstart = () => {
-        console.log('🎤 Voice recognition started');
         setIsListening(true);
         setError(null);
       };
-      
+
       recognition.onend = () => {
-        console.log('🎤 Voice recognition ended');
         setIsListening(false);
       };
-      
+
       recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let interimTranscript = '';
-        let finalTranscriptLocal = '';
-        
+        let interimTranscript = "";
+        let finalTranscriptLocal = "";
+
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcriptPart = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
@@ -352,39 +368,41 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
             interimTranscript += transcriptPart;
           }
         }
-        
+
         setTranscript(interimTranscript);
         if (finalTranscriptLocal) {
-          console.log('📝 Final transcript:', finalTranscriptLocal);
+          console.log("📝 Final transcript:", finalTranscriptLocal);
           setFinalTranscript(finalTranscriptLocal);
         }
       };
-      
+
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('❌ Speech recognition error:', event.error);
+        console.error("❌ Speech recognition error:", event.error);
         setError(`Speech recognition error: ${event.error}`);
         setIsListening(false);
       };
-      
+
       recognitionRef.current = recognition;
     } else {
-      console.warn('⚠️ Speech recognition not supported');
-      setError('Speech recognition is not supported in this browser');
+      console.warn("⚠️ Speech recognition not supported");
+      setError("Speech recognition is not supported in this browser");
     }
 
     if (visualizerContainerRef.current) {
       try {
-        visualizerRef.current = new SimpleVisualizer(visualizerContainerRef.current, {
-          width: visualizerContainerRef.current.clientWidth,
-          height: 400,
-          colors: { red: 1.0, green: 0.8, blue: 0.2 }
-        });
-        
+        visualizerRef.current = new SimpleVisualizer(
+          visualizerContainerRef.current,
+          {
+            width: visualizerContainerRef.current.clientWidth,
+            height: 400,
+            colors: { red: 1.0, green: 0.8, blue: 0.2 },
+          }
+        );
+
         visualizerRef.current.start();
         setVisualizerReady(true);
-        console.log('🎨 Simple visualizer initialized');
       } catch (error) {
-        console.error('Failed to initialize visualizer:', error);
+        console.error("Failed to initialize visualizer:", error);
         setVisualizerReady(false);
       }
     }
@@ -425,10 +443,9 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
 
   useEffect(() => {
     if (finalTranscript.trim() && !isProcessing) {
-      console.log('✅ Auto-submitting transcript:', finalTranscript);
       handleSubmitTranscript(finalTranscript.trim());
-      setFinalTranscript('');
-      setTranscript('');
+      setFinalTranscript("");
+      setTranscript("");
     }
   }, [finalTranscript]);
 
@@ -446,32 +463,30 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
 
   const startListening = useCallback(async () => {
     if (!recognitionRef.current || !supportsSpeech) {
-      console.error('Cannot start listening - recognition not available');
-      setError('Speech recognition not available');
+      console.error("Cannot start listening - recognition not available");
+      setError("Speech recognition not available");
       return;
     }
-    
+
     try {
       if (synthRef.current && isSpeaking) {
         synthRef.current.cancel();
         setIsSpeaking(false);
       }
-      
+
       await setupMicrophoneStream();
-      
-      setTranscript('');
-      setFinalTranscript('');
-      
-      console.log('🎤 Starting speech recognition...');
+
+      setTranscript("");
+      setFinalTranscript("");
+
       recognitionRef.current.start();
-      
+
       if (visualizerRef.current) {
         visualizerRef.current.setColors(0.2, 0.4, 1.0);
       }
-      
     } catch (error) {
-      console.error('Failed to start recognition:', error);
-      setError('Failed to start voice recognition');
+      console.error("Failed to start recognition:", error);
+      setError("Failed to start voice recognition");
     }
   }, [supportsSpeech, isSpeaking]);
 
@@ -493,8 +508,6 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
       visualizerRef.current.setColors(1.0, 0.8, 0.2);
     }
 
-    console.log('🛑 Response interrupted by user');
-    
     if (!isListening) {
       startListening();
     }
@@ -502,298 +515,322 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
 
   const stopListening = useCallback(() => {
     if (!recognitionRef.current) return;
-    
+
     try {
       recognitionRef.current.stop();
       stopMicrophoneStream();
-      
+
       if (visualizerRef.current) {
         visualizerRef.current.setColors(1.0, 0.8, 0.2);
       }
     } catch (error) {
-      console.error('Failed to stop recognition:', error);
+      console.error("Failed to stop recognition:", error);
     }
   }, []);
 
   const createNewSession = async (): Promise<string | null> => {
     if (!currentDocument?.id) {
-      setError('No document selected');
+      setError("No document selected");
       return null;
     }
 
     try {
-      const response = await fetch('/backend/api/chat-sessions', {
-        method: 'POST',
+      const response = await fetch("/backend/api/chat-sessions", {
+        method: "POST",
         headers: {
           ...getAuthHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           documentId: currentDocument.id,
-          userId: user?.id
-        })
+          userId: user?.id,
+        }),
       });
 
       if (response.ok) {
         const session = await response.json();
         setCurrentSessionId(session.id);
-        console.log('✅ New session created:', session.id);
-        
+
         // Notify parent component about session creation
         if (onSessionCreated) {
           onSessionCreated(session.id);
         }
-        
+
         return session.id;
       }
     } catch (error) {
-      console.error('Failed to create session:', error);
+      console.error("Failed to create session:", error);
     }
-    
+
     return null;
   };
 
-  const addMessage = async (message: Omit<ChatMessage, 'id' | 'createdAt'>): Promise<void> => {
+  const addMessage = async (
+    message: Omit<ChatMessage, "id" | "createdAt">
+  ): Promise<void> => {
     const newMessage: ChatMessage = {
       ...message,
       id: Date.now().toString(),
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
 
-    if (currentSessionId && currentSessionId.trim() !== '') {
+    if (currentSessionId && currentSessionId.trim() !== "") {
       try {
-        const response = await fetch('/backend/api/chat-messages', {
-          method: 'POST',
+        const response = await fetch("/backend/api/chat-messages", {
+          method: "POST",
           headers: {
             ...getAuthHeaders(),
-            'Content-Type': 'application/json'
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            sessionId: currentSessionId,  // Backend will handle conversion
-            role: newMessage.type,         // 'USER' or 'ASSISTANT'
+            sessionId: currentSessionId, // Backend will handle conversion
+            role: newMessage.type, // 'USER' or 'ASSISTANT'
             content: newMessage.content,
             createdAt: newMessage.createdAt.toISOString(),
-            tokensUsed: 0
-          })
+            tokensUsed: 0,
+          }),
         });
-        
 
         if (response.ok) {
           const savedMessage = await response.json();
-          console.log('✅ Message saved:', savedMessage.id || savedMessage.messageId);
         } else {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          console.error('❌ Failed to save message:', response.status, errorData);
+          const errorData = await response
+            .json()
+            .catch(() => ({ error: "Unknown error" }));
+          console.error(
+            "❌ Failed to save message:",
+            response.status,
+            errorData
+          );
         }
       } catch (error) {
-        console.error('❌ Error saving message:', error);
+        console.error("❌ Error saving message:", error);
       }
     } else {
-      console.warn('⚠️ No valid session ID, message not saved to database');
+      console.warn("⚠️ No valid session ID, message not saved to database");
     }
   };
 
   const handleSubmitTranscript = async (text: string): Promise<void> => {
     if (!text.trim()) {
-      console.log('❌ Cannot submit - text empty');
+      console.log("❌ Cannot submit - text empty");
       return;
     }
 
-    console.log('📤 Submitting transcript:', text);
-    console.log('📊 System status:', { isSystemReady, currentDocument, currentSessionId });
-
     if (!currentDocument) {
-      setError('No document selected. Please select a document first.');
+      setError("No document selected. Please select a document first.");
       return;
     }
 
     const documentId = currentDocument.databaseId || currentDocument.id;
     if (!documentId) {
-      setError('Invalid document. Please select another document.');
+      setError("Invalid document. Please select another document.");
       return;
     }
-
-    console.log('📄 Using document ID:', documentId);
 
     let sessionId = currentSessionId;
     if (!sessionId) {
       sessionId = await createNewSession();
       if (!sessionId) {
-        setError('Failed to create chat session');
+        setError("Failed to create chat session");
         return;
       }
     }
 
     await addMessage({
       content: text,
-      type: 'USER',
-      isTranscribed: true
+      type: "USER",
+      isTranscribed: true,
     });
 
     setIsProcessing(true);
 
     try {
-      let streamedContent = '';
-      let assistantMessageId = '';
+      let streamedContent = "";
+      let assistantMessageId = "";
       let assistantMessageSaved = false; // ADD THIS FLAG
-      
+
       // Add empty assistant message for UI
       const tempAssistantMessage: ChatMessage = {
         id: Date.now().toString(),
-        content: '',
-        type: 'ASSISTANT',
-        createdAt: new Date()
+        content: "",
+        type: "ASSISTANT",
+        createdAt: new Date(),
       };
       assistantMessageId = tempAssistantMessage.id;
-      setMessages(prev => [...prev, tempAssistantMessage]);
+      setMessages((prev) => [...prev, tempAssistantMessage]);
 
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const sessionIdForRag = typeof window !== 'undefined' ? 
-        (localStorage.getItem('rag_session_id') || sessionId) : sessionId;
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const sessionIdForRag =
+        typeof window !== "undefined"
+          ? localStorage.getItem("rag_session_id") || sessionId
+          : sessionId;
 
-      const ragApiUrl = process.env.NODE_ENV === 'development'
-        ? 'http://localhost:8000'
-        : (process.env.NEXT_PUBLIC_RAG_API_URL || 'http://localhost:8000');
+      const ragApiUrl =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:8000"
+          : process.env.NEXT_PUBLIC_RAG_API_URL || "http://localhost:8000";
 
-      console.log('🔄 Activating document in RAG system:', documentId);
       try {
-        const activateResponse = await fetch(`${ragApiUrl}/activate-document/${documentId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-            'X-Session-Id': sessionIdForRag || 'default'
+        const activateResponse = await fetch(
+          `${ragApiUrl}/activate-document/${documentId}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              "X-Session-Id": sessionIdForRag || "default",
+            },
           }
-        });
+        );
 
         if (activateResponse.ok) {
           const activateResult = await activateResponse.json();
-          console.log('✅ Document activated:', activateResult);
         } else {
-          console.warn('⚠️ Document activation returned:', activateResponse.status);
+          console.warn(
+            "⚠️ Document activation returned:",
+            activateResponse.status
+          );
         }
       } catch (activateError) {
-        console.warn('⚠️ Could not activate document, will try query anyway:', activateError);
+        console.warn(
+          "⚠️ Could not activate document, will try query anyway:",
+          activateError
+        );
       }
 
-      console.log('🔍 Querying RAG system...');
-      
       const abortController = new AbortController();
       streamAbortControllerRef.current = abortController;
       setIsStreaming(true);
 
       const response = await fetch(`${ragApiUrl}/query?stream=true`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          'X-Session-Id': sessionIdForRag || 'default'
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "X-Session-Id": sessionIdForRag || "default",
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           query: text,
-          voice_mode: true // Voice mode should give concise responses
+          voice_mode: true, // Voice mode should give concise responses
         }),
-        signal: abortController.signal
+        signal: abortController.signal,
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Query failed:', response.status, errorText);
-        throw new Error(`Stream query failed: ${response.status} - ${errorText}`);
+        console.error("❌ Query failed:", response.status, errorText);
+        throw new Error(
+          `Stream query failed: ${response.status} - ${errorText}`
+        );
       }
 
       const reader = response.body?.getReader();
       if (!reader) {
-        throw new Error('No response body reader available');
+        throw new Error("No response body reader available");
       }
 
       const decoder = new TextDecoder();
-      let buffer = '';
+      let buffer = "";
 
       try {
         while (true) {
           const { done, value } = await reader.read();
-          
+
           if (done) break;
-          
+
           buffer += decoder.decode(value, { stream: true });
-          
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-          
+
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
           for (const line of lines) {
-            if (line.startsWith('data: ')) {
+            if (line.startsWith("data: ")) {
               try {
                 const data = JSON.parse(line.slice(6));
-                
-                if (data.type === 'content_chunk' || data.type === 'chunk') {
-                  streamedContent = data.partial_response || streamedContent + (data.chunk || data.content || '');
-                  
-                  setMessages(prev => {
+
+                if (data.type === "content_chunk" || data.type === "chunk") {
+                  streamedContent =
+                    data.partial_response ||
+                    streamedContent + (data.chunk || data.content || "");
+
+                  setMessages((prev) => {
                     const newMessages = [...prev];
                     const lastMessage = newMessages[newMessages.length - 1];
-                    if (lastMessage && lastMessage.type === 'ASSISTANT') {
+                    if (lastMessage && lastMessage.type === "ASSISTANT") {
                       lastMessage.content = streamedContent;
                     }
                     return newMessages;
                   });
-                } else if (data.type === 'complete' || data.type === 'end') {
-                  streamedContent = data.final_response || data.response || streamedContent;
-                  
-                  setMessages(prev => {
+                } else if (data.type === "complete" || data.type === "end") {
+                  streamedContent =
+                    data.final_response || data.response || streamedContent;
+
+                  setMessages((prev) => {
                     const newMessages = [...prev];
                     const lastMessage = newMessages[newMessages.length - 1];
-                    if (lastMessage && lastMessage.type === 'ASSISTANT') {
+                    if (lastMessage && lastMessage.type === "ASSISTANT") {
                       lastMessage.content = streamedContent;
                     }
                     return newMessages;
                   });
-                  
+
                   // ONLY save once - check flag first
-                  if (currentSessionId && streamedContent && streamedContent.trim() && !assistantMessageSaved) {
+                  if (
+                    currentSessionId &&
+                    streamedContent &&
+                    streamedContent.trim() &&
+                    !assistantMessageSaved
+                  ) {
                     assistantMessageSaved = true; // SET FLAG
-                    console.log('💾 Saving complete assistant message...');
-                    fetch('/backend/api/chat-messages', {
-                      method: 'POST',
+                    fetch("/backend/api/chat-messages", {
+                      method: "POST",
                       headers: {
                         ...getAuthHeaders(),
-                        'Content-Type': 'application/json'
+                        "Content-Type": "application/json",
                       },
                       body: JSON.stringify({
                         sessionId: currentSessionId,
-                        role: 'ASSISTANT',
+                        role: "ASSISTANT",
                         content: streamedContent,
                         createdAt: new Date().toISOString(),
-                        tokensUsed: 0
+                        tokensUsed: 0,
+                      }),
+                    })
+                      .then((response) => {
+                        if (response.ok) {
+                        } else {
+                          response.json().then((err) => {
+                            console.error(
+                              "❌ Failed to save assistant message:",
+                              err
+                            );
+                          });
+                        }
                       })
-                    }).then(response => {
-                      if (response.ok) {
-                        console.log('✅ Assistant message saved to database');
-                      } else {
-                        response.json().then(err => {
-                          console.error('❌ Failed to save assistant message:', err);
-                        });
-                      }
-                    }).catch(err => {
-                      console.error('❌ Failed to save assistant message:', err);
-                    });
+                      .catch((err) => {
+                        console.error(
+                          "❌ Failed to save assistant message:",
+                          err
+                        );
+                      });
                   }
-                  
+
                   if (voiceEnabled && streamedContent) {
                     speakText(streamedContent);
                   }
                 }
               } catch (parseError) {
-                console.warn('Failed to parse chunk:', parseError);
+                console.warn("Failed to parse chunk:", parseError);
               }
             }
           }
         }
       } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          console.log('🛑 Stream aborted by user');
+        if (error instanceof Error && error.name === "AbortError") {
           return;
         }
         throw error;
@@ -802,19 +839,17 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
         setIsStreaming(false);
         streamAbortControllerRef.current = null;
       }
-
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.log('🛑 Request aborted by user');
+      if (error instanceof Error && error.name === "AbortError") {
         return;
       }
-      
-      console.error('❌ Chat API error:', error);
+
+      console.error("❌ Chat API error:", error);
       await addMessage({
-        content: 'Sorry, I encountered an error processing your request.',
-        type: 'ASSISTANT'
+        content: "Sorry, I encountered an error processing your request.",
+        type: "ASSISTANT",
       });
-      setError('Failed to get response from assistant');
+      setError("Failed to get response from assistant");
     } finally {
       setIsProcessing(false);
       setIsStreaming(false);
@@ -827,182 +862,178 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
     if (!synthRef.current) return;
 
     const utterance = new SpeechSynthesisUtterance(text);
-    
+
     // Set female voice
     const voices = synthRef.current.getVoices();
-    const femaleVoice = voices.find(voice => 
-      (voice.name.toLowerCase().includes('female') || 
-       voice.name.toLowerCase().includes('samantha') ||
-       voice.name.toLowerCase().includes('zira')) &&
-      voice.lang.startsWith('en')
-    ) || voices.find(voice => 
-      voice.name.toLowerCase().includes('female') || 
-      voice.name.toLowerCase().includes('samantha')
-    );
-    
+    const femaleVoice =
+      voices.find(
+        (voice) =>
+          (voice.name.toLowerCase().includes("female") ||
+            voice.name.toLowerCase().includes("samantha") ||
+            voice.name.toLowerCase().includes("zira")) &&
+          voice.lang.startsWith("en")
+      ) ||
+      voices.find(
+        (voice) =>
+          voice.name.toLowerCase().includes("female") ||
+          voice.name.toLowerCase().includes("samantha")
+      );
+
     if (femaleVoice) {
       utterance.voice = femaleVoice;
     }
-    
+
     utterance.rate = 1.2;
     utterance.pitch = 1;
     utterance.volume = 0.8;
 
     utterance.onstart = () => {
       setIsSpeaking(true);
-      console.log('🔊 Started speaking (browser TTS)');
     };
 
     utterance.onend = () => {
       setIsSpeaking(false);
-      console.log('🔇 Finished speaking (browser TTS)');
     };
 
     utterance.onerror = (event) => {
-      console.error('Speech synthesis error:', event);
+      console.error("Speech synthesis error:", event);
       setIsSpeaking(false);
     };
 
     synthRef.current.speak(utterance);
   }, []);
 
-  const speakText = useCallback(async (text: string) => {
-    if (!voiceEnabled) return;
+  const speakText = useCallback(
+    async (text: string) => {
+      if (!voiceEnabled) return;
 
-    // Prevent duplicate/overlapping calls
-    if (isSpeakingInProgress.current) {
-      console.log('⏭️ Skipping speakText - already in progress');
-      return;
-    }
-
-    isSpeakingInProgress.current = true;
-    console.log('🔊 speakText called with text:', text.substring(0, 50) + '...');
-
-    // IMPORTANT: Stop and cleanup ANY ongoing audio
-    if (currentAudioRef.current) {
-      console.log('🛑 Stopping previous OpenAI TTS audio');
-      currentAudioRef.current.pause();
-      currentAudioRef.current.currentTime = 0;
-      currentAudioRef.current = null;
-    }
-
-    if (synthRef.current) {
-      synthRef.current.cancel();
-      console.log('🛑 Cancelled browser TTS');
-    }
-
-    try {
-      setIsSpeaking(true);
-      console.log('🔊 Converting text to speech with OpenAI TTS...');
-      
-      if (visualizerRef.current) {
-        visualizerRef.current.setColors(1.0, 0.8, 0.2);
+      // Prevent duplicate/overlapping calls
+      if (isSpeakingInProgress.current) {
+        return;
       }
 
-      // Call OpenAI TTS API through our backend
-      const response = await fetch('/backend/api/tts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text }),
-      });
+      isSpeakingInProgress.current = true;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ TTS API failed:', errorText);
-        throw new Error(`TTS API request failed: ${response.status}`);
-      }
-
-      // Get the audio blob
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-
-      // Create and play audio
-      const audio = new Audio(audioUrl);
-      currentAudioRef.current = audio; // Store reference
-      
-      // Split text into words for synchronized display
-      const words = text.split(' ').filter(w => w.trim());
-      setCurrentTranscriptWords(words);
-      setDisplayedWordCount(0);
-      setCurrentWordIndex(0);
-      
-      // Calculate word timings based on audio duration
-      audio.addEventListener('loadedmetadata', () => {
-        const totalDuration = audio.duration;
-        const avgTimePerWord = totalDuration / words.length;
-        
-        // Create timing array for each word
-        const timings = words.map((_, index) => index * avgTimePerWord);
-        wordTimingsRef.current = timings;
-        
-        console.log(`📊 Audio duration: ${totalDuration.toFixed(2)}s, ${words.length} words, ~${(avgTimePerWord * 1000).toFixed(0)}ms per word`);
-      });
-      
-      // Sync words with audio playback
-      audio.addEventListener('timeupdate', () => {
-        const currentTime = audio.currentTime;
-        const timings = wordTimingsRef.current;
-        
-        if (timings.length === 0) return;
-        
-        // Find the current word based on playback time
-        let newWordIndex = 0;
-        for (let i = 0; i < timings.length; i++) {
-          if (currentTime >= timings[i]) {
-            newWordIndex = i;
-          } else {
-            break;
-          }
-        }
-        
-        if (newWordIndex !== currentWordIndex) {
-          setCurrentWordIndex(newWordIndex);
-          setDisplayedWordCount(newWordIndex + 1);
-        }
-      });
-      
-      audio.onended = () => {
-        setIsSpeaking(false);
-        console.log('🔇 Finished speaking (OpenAI TTS)');
-        URL.revokeObjectURL(audioUrl); // Clean up
+      // IMPORTANT: Stop and cleanup ANY ongoing audio
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
         currentAudioRef.current = null;
-        isSpeakingInProgress.current = false;
-        
-        // Show all words when done
-        setDisplayedWordCount(words.length);
-        setCurrentWordIndex(words.length - 1);
-        
+      }
+
+      if (synthRef.current) {
+        synthRef.current.cancel();
+      }
+
+      try {
+        setIsSpeaking(true);
+
         if (visualizerRef.current) {
           visualizerRef.current.setColors(1.0, 0.8, 0.2);
         }
-      };
 
-      audio.onerror = (event) => {
-        console.error('❌ Audio playback error:', event);
+        // Call OpenAI TTS API through our backend
+        const response = await fetch("/backend/api/tts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("❌ TTS API failed:", errorText);
+          throw new Error(`TTS API request failed: ${response.status}`);
+        }
+
+        // Get the audio blob
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        // Create and play audio
+        const audio = new Audio(audioUrl);
+        currentAudioRef.current = audio; // Store reference
+
+        // Split text into words for synchronized display
+        const words = text.split(" ").filter((w) => w.trim());
+        setCurrentTranscriptWords(words);
+        setDisplayedWordCount(0);
+        setCurrentWordIndex(0);
+
+        // Calculate word timings based on audio duration
+        audio.addEventListener("loadedmetadata", () => {
+          const totalDuration = audio.duration;
+          const avgTimePerWord = totalDuration / words.length;
+
+          // Create timing array for each word
+          const timings = words.map((_, index) => index * avgTimePerWord);
+          wordTimingsRef.current = timings;
+        });
+
+        // Sync words with audio playback
+        audio.addEventListener("timeupdate", () => {
+          const currentTime = audio.currentTime;
+          const timings = wordTimingsRef.current;
+
+          if (timings.length === 0) return;
+
+          // Find the current word based on playback time
+          let newWordIndex = 0;
+          for (let i = 0; i < timings.length; i++) {
+            if (currentTime >= timings[i]) {
+              newWordIndex = i;
+            } else {
+              break;
+            }
+          }
+
+          if (newWordIndex !== currentWordIndex) {
+            setCurrentWordIndex(newWordIndex);
+            setDisplayedWordCount(newWordIndex + 1);
+          }
+        });
+
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl); // Clean up
+          currentAudioRef.current = null;
+          isSpeakingInProgress.current = false;
+
+          // Show all words when done
+          setDisplayedWordCount(words.length);
+          setCurrentWordIndex(words.length - 1);
+
+          if (visualizerRef.current) {
+            visualizerRef.current.setColors(1.0, 0.8, 0.2);
+          }
+        };
+
+        audio.onerror = (event) => {
+          console.error("❌ Audio playback error:", event);
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+          currentAudioRef.current = null;
+          isSpeakingInProgress.current = false;
+
+          // DON'T fallback - just log the error
+          console.error("⚠️ OpenAI TTS audio playback failed (no fallback)");
+        };
+
+        await audio.play();
+        console.log("🎵 Playing OpenAI TTS audio");
+      } catch (error) {
+        console.error("❌ TTS error:", error);
         setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
         currentAudioRef.current = null;
         isSpeakingInProgress.current = false;
-        
-        // DON'T fallback - just log the error
-        console.error('⚠️ OpenAI TTS audio playback failed (no fallback)');
-      };
 
-      await audio.play();
-      console.log('🎵 Playing OpenAI TTS audio');
-      
-    } catch (error) {
-      console.error('❌ TTS error:', error);
-      setIsSpeaking(false);
-      currentAudioRef.current = null;
-      isSpeakingInProgress.current = false;
-      
-      // DON'T fallback to browser TTS - user wants OpenAI only
-      console.error('⚠️ OpenAI TTS failed (no fallback to browser TTS)');
-    }
-  }, [voiceEnabled]);
+        // DON'T fallback to browser TTS - user wants OpenAI only
+        console.error("⚠️ OpenAI TTS failed (no fallback to browser TTS)");
+      }
+    },
+    [voiceEnabled]
+  );
 
   return (
     <div className="flex flex-col h-full bg-panel p-4">
@@ -1019,143 +1050,149 @@ const VoiceChatComponent: React.FC<VoiceChatComponentProps> = ({
       <section className="flex flex-col-reverse">
         {/* Controls */}
         <div className="my-4">
-            <div className="flex items-center justify-center gap-4">
-              {/* Combined Mic/Stop Button */}
-              <button
-                onClick={(isProcessing || isSpeaking || isStreaming) ? interruptResponse : (isListening ? stopListening : startListening)}
-                disabled={!supportsSpeech || !currentDocument}
-                className={`p-5 rounded-full transition-all cursor-pointer ${
-                  (isSpeaking)
-                    ? 'bg-yellow hover:bg-yellow-600/80 animate-pulse'
-                    : isProcessing
-                    ? 'bg-green-500 hover:bg-green-600/80 animate-pulse'
-                    : isListening 
-                    ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-                    : 'bg-blue-500 hover:bg-blue-600'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                title={
-                  (isProcessing || isSpeaking || isStreaming)
-                    ? 'Stop and interrupt'
-                    : !currentDocument 
-                    ? 'Please select a document first' 
-                    : isListening
-                    ? 'Stop listening'
-                    : 'Start voice input'
-                }
-              >
-                {isSpeaking ? (
-                  <RiSquareFill className="w-8 h-8 text-white" />
-                ) : isProcessing ? (
-                  <FaRegDotCircle className="w-8 h-8 text-white" />
-                ) : isListening ? (
-                  <Mic className="w-8 h-8 text-white" />
-                ) : (
-                  <Mic className="w-8 h-8 text-white" />
-                )}
-                
-              </button>
-              
-              <button
-                onClick={() => {
-                  console.log('🔄 Switching to manual chat mode');
-                  handleManualInput();
-                }}
-                className="flex items-center gap-2 p-3 bg-blue/20 hover:bg-blue/30 text-blue-600 rounded-full transition-all cursor-pointer"
-                title="Switch to manual typing mode"
-              >
-                <MessageSquare className="w-5 h-5" />
-              </button>
-            </div>
+          <div className="flex items-center justify-center gap-4">
+            {/* Combined Mic/Stop Button */}
+            <button
+              onClick={
+                isProcessing || isSpeaking || isStreaming
+                  ? interruptResponse
+                  : isListening
+                  ? stopListening
+                  : startListening
+              }
+              disabled={!supportsSpeech || !currentDocument}
+              className={`p-5 rounded-full transition-all cursor-pointer ${
+                isSpeaking
+                  ? "bg-yellow hover:bg-yellow-600/80 animate-pulse"
+                  : isProcessing
+                  ? "bg-green-500 hover:bg-green-600/80 animate-pulse"
+                  : isListening
+                  ? "bg-red-500 hover:bg-red-600 animate-pulse"
+                  : "bg-blue-500 hover:bg-blue-600"
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              title={
+                isProcessing || isSpeaking || isStreaming
+                  ? "Stop and interrupt"
+                  : !currentDocument
+                  ? "Please select a document first"
+                  : isListening
+                  ? "Stop listening"
+                  : "Start voice input"
+              }
+            >
+              {isSpeaking ? (
+                <RiSquareFill className="w-8 h-8 text-white" />
+              ) : isProcessing ? (
+                <FaRegDotCircle className="w-8 h-8 text-white" />
+              ) : isListening ? (
+                <Mic className="w-8 h-8 text-white" />
+              ) : (
+                <Mic className="w-8 h-8 text-white" />
+              )}
+            </button>
 
-            {/* System Status */}
-            {!currentDocument && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-sm">
-                ⚠️ Please select or upload a document to start voice chat
+            <button
+              onClick={() => {
+                handleManualInput();
+              }}
+              className="flex items-center gap-2 p-3 bg-blue/20 hover:bg-blue/30 text-blue-600 rounded-full transition-all cursor-pointer"
+              title="Switch to manual typing mode"
+            >
+              <MessageSquare className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* System Status */}
+          {!currentDocument && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-sm">
+              ⚠️ Please select or upload a document to start voice chat
+            </div>
+          )}
+        </div>
+
+        {/* Audio Visualizer */}
+        <div className="mt-4 border rounded-lg overflow-hidden bg-primary relative">
+          <div
+            ref={visualizerContainerRef}
+            className="w-full h-full relative"
+            style={{ minHeight: "400px" }}
+          >
+            {!visualizerReady && (
+              <div className="absolute inset-0 flex items-center justify-center text-white z-10">
+                <div className="text-center">
+                  <PuffLoader color="#3B82F6" size={60} />
+                  <p className="text-sm mt-2">Loading visualizer...</p>
+                </div>
               </div>
             )}
           </div>
 
-          {/* Audio Visualizer */}
-          <div className="mt-4 border rounded-lg overflow-hidden bg-primary relative">
-            <div 
-              ref={visualizerContainerRef}
-              className="w-full h-full relative"
-              style={{ minHeight: '400px' }}
+          {/* Status Indicator */}
+          {visualizerReady && (
+            <div className="absolute top-2 left-2 text-white text-xs bg-black/50 px-2 py-1 rounded">
+              {isListening && "🔵 Listening"}
+              {isSpeaking && "🟡 Speaking"}
+              {isProcessing && "🧠 Processing"}
+              {!isListening && !isSpeaking && !isProcessing && "⚪ Ready"}
+            </div>
+          )}
+
+          {/* Transcript Toggle Button */}
+          <div className="absolute top-2 right-2">
+            <button
+              onClick={() => setShowTranscript(!showTranscript)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                showTranscript
+                  ? "bg-blue-500 text-white hover:bg-blue-600"
+                  : "bg-black/50 text-white hover:bg-black/70"
+              }`}
+              title={showTranscript ? "Hide transcript" : "Show transcript"}
             >
-              {!visualizerReady && (
-                <div className="absolute inset-0 flex items-center justify-center text-white z-10">
-                  <div className="text-center">
-                    <PuffLoader color="#3B82F6" size={60} />
-                    <p className="text-sm mt-2">Loading visualizer...</p>
-                  </div>
-                </div>
-              )}
-            </div>
+              <FileText className="w-3.5 h-3.5" />
+              {showTranscript ? "Hide" : "Show"} Transcript
+            </button>
+          </div>
 
-            {/* Status Indicator */}
-            {visualizerReady && (
-              <div className="absolute top-2 left-2 text-white text-xs bg-black/50 px-2 py-1 rounded">
-                {isListening && '🔵 Listening'}
-                {isSpeaking && '🟡 Speaking'}
-                {isProcessing && '🧠 Processing'}
-                {!isListening && !isSpeaking && !isProcessing && '⚪ Ready'}
-              </div>
-            )}
-
-            {/* Transcript Toggle Button */}
-            <div className="absolute top-2 right-2">
-              <button
-                onClick={() => setShowTranscript(!showTranscript)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  showTranscript
-                    ? 'bg-blue-500 text-white hover:bg-blue-600'
-                    : 'bg-black/50 text-white hover:bg-black/70'
-                }`}
-                title={showTranscript ? 'Hide transcript' : 'Show transcript'}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                {showTranscript ? 'Hide' : 'Show'} Transcript
-              </button>
-            </div>
-
-            {/* Transcript Display - Synced with Audio */}
-            {showTranscript && currentTranscriptWords.length > 0 && (
-              <div className="absolute bottom-4 left-4 right-4 backdrop-blur-sm rounded-xl p-5 border border-white/10 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-transparent">
-                <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/20">
-                  {isSpeaking && (
-                    <span className="text-yellow-400 text-xs flex items-center gap-1.5 font-medium">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-400"></span>
-                      </span>
-                      Speaking
+          {/* Transcript Display - Synced with Audio */}
+          {showTranscript && currentTranscriptWords.length > 0 && (
+            <div className="absolute bottom-4 left-4 right-4 backdrop-blur-sm rounded-xl p-5 border border-white/10 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-transparent">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/20">
+                {isSpeaking && (
+                  <span className="text-yellow-400 text-xs flex items-center gap-1.5 font-medium">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-400"></span>
                     </span>
-                  )}
-                </div>
-                <div className="text-white text-base leading-relaxed font-medium">
-                  {currentTranscriptWords.slice(0, displayedWordCount).map((word, index) => {
+                    Speaking
+                  </span>
+                )}
+              </div>
+              <div className="text-white text-base leading-relaxed font-medium">
+                {currentTranscriptWords
+                  .slice(0, displayedWordCount)
+                  .map((word, index) => {
                     const isNewWord = index === displayedWordCount - 1;
-                    
+
                     return (
                       <React.Fragment key={index}>
                         <span
                           className="inline-block text-foreground"
                           style={{
-                            animation: isNewWord ? 'fadeIn 0.3s ease-out' : 'none'
+                            animation: isNewWord
+                              ? "fadeIn 0.3s ease-out"
+                              : "none",
                           }}
                         >
                           {word}
-                        </span>
-                        {' '}
+                        </span>{" "}
                       </React.Fragment>
                     );
                   })}
-                </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
       </section>
-    
 
       {/* Error Display */}
       {error && (

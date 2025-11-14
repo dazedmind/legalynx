@@ -39,13 +39,6 @@ export default function NavBar() {
 
       const userProfile = await profileService.getProfile();
 
-      console.log("✅ NavBar: Profile loaded successfully:", {
-        id: userProfile.id,
-        email: userProfile.email,
-        name: userProfile.name,
-        hasProfilePicture: !!userProfile.profile_picture,
-      });
-
       setProfile(userProfile as UserProfile);
       setError("");
     } catch (error) {

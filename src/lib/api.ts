@@ -21,8 +21,6 @@ if (isDevelopment) {
   console.log(`   RAG API: ${RAG_API_BASE_URL}`);
 } else {
   console.log('🚀 Production Mode - API Configuration:');
-  console.log(`   Main API: ${MAIN_API_BASE_URL}`);
-  console.log(`   RAG API: ${RAG_API_BASE_URL}`);
 }
 
 // Main API instance (for database operations)

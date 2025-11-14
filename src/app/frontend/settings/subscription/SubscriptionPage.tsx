@@ -79,19 +79,6 @@ function SubscriptionPage() {
     const token = search.get("token"); // PayPal returns token parameter
     const plan = (search.get("plan") || "").toUpperCase();
     const billing = search.get("billing");
-
-    // Debug: Log all URL parameters
-    console.log("🔍 PayPal return URL parameters:", {
-      paypal,
-      subscriptionId,
-      token,
-      plan,
-      billing,
-      allParams: Object.fromEntries(search.entries()),
-      currentURL: window.location.href,
-      searchString: window.location.search,
-    });
-
     // Handle success with either subscription_id or token from PayPal
     const paypalSubId = subscriptionId || token;
 
@@ -101,9 +88,6 @@ function SubscriptionPage() {
       (plan === "BASIC" || plan === "STANDARD" || plan === "PREMIUM") &&
       (billing === "monthly" || billing === "yearly")
     ) {
-      console.log(
-        `🚀 Attempting to capture subscription: ${paypalSubId} for ${plan}/${billing}`
-      );
       (async () => {
         try {
           const res = await paypalService.captureSubscription(
@@ -111,14 +95,9 @@ function SubscriptionPage() {
             plan as "BASIC" | "STANDARD" | "PREMIUM",
             billing as "monthly" | "yearly"
           );
-          console.log("✅ Capture subscription response:", res);
           toast.success("Subscription activated");
           // Refresh profile to reflect new plan
           const profile = await profileService.getProfile();
-          console.log(
-            "📊 Updated profile after capture:",
-            profile.subscription
-          );
           setSubscription(profile.subscription?.plan_type?.toUpperCase() || "");
           setTokensUsed(profile.subscription?.tokens_used || 0);
           setTokenLimit(profile.subscription?.token_limit || 0);
@@ -138,13 +117,6 @@ function SubscriptionPage() {
         }
       })();
     } else if (paypal === "success") {
-      console.log("⚠️ PayPal success but missing required parameters:", {
-        paypalSubId,
-        plan,
-        billing,
-        hasValidPlan: ["BASIC", "STANDARD", "PREMIUM"].includes(plan),
-        hasValidBilling: ["monthly", "yearly"].includes(billing || ""),
-      });
     }
   }, [search, router]);
 

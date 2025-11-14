@@ -1,5 +1,5 @@
 // Fixed version of the UploadComponent with proper state management
-import { Upload, FileText, MessageSquareDashed, X, Paperclip, LucideCircleDashed, LucideMessageCircleDashed, LucideCircleDotDashed } from "lucide-react";
+import { Upload, X, Paperclip, LucideCircleDotDashed } from "lucide-react";
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { UploadResponse } from "../../../../lib/api";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -8,8 +8,6 @@ import { authUtils } from "@/lib/auth";
 import BlurText from "../../components/reactbits/BlurText";
 import { getSecurityErrorMessage, isSecurityError } from "../../../../lib/api";
 import { GoSquareFill } from "react-icons/go";
-import { TbCircleDashedLetterT } from "react-icons/tb";
-import { PiTriangleDashedFill } from "react-icons/pi";
 
 interface UploadPageProps {
   onUploadSuccess: (response: UploadResponse) => void;
@@ -274,7 +272,6 @@ function UploadComponent({
             title: settings.fileNamingTitle || undefined,
             client_name: settings.fileClientName || undefined,
           });
-          console.log("✅ Loaded user settings:", settings);
         } else {
           setUserSettings({
             file_naming_format: "ORIGINAL",
@@ -370,8 +367,6 @@ function UploadComponent({
     }
 
     try {
-      console.log("💾 Saving to database with RAG filename:", ragFilename);
-
       const formData = new FormData();
       formData.append("file", file);
       formData.append("intelligent_filename", ragFilename);
@@ -535,13 +530,9 @@ function UploadComponent({
     signal?: AbortSignal
   ): Promise<any> => {
     try {
-      console.log(
-        `🚀 Uploading to RAG system with database ID: ${documentId}...`
-      );
 
       // [Unverified] Move the session clearing to be asynchronous to prevent setState during render
       if (onClearPreviousSession) {
-        console.log("🧹 Clearing previous frontend session state");
         // Use setTimeout to prevent setState during render
         setTimeout(() => onClearPreviousSession(), 0);
       }
@@ -551,8 +542,6 @@ function UploadComponent({
       const RAG_BASE_URL = isDevelopment
         ? "http://localhost:8000" // Updated to match Railway backend port
         : process.env.NEXT_PUBLIC_RAG_API_URL;
-
-      console.log("🔗 Using RAG URL:", RAG_BASE_URL);
 
       // Convert enum to string format expected by backend
       const getNamingOption = (format: string) => {
@@ -636,7 +625,6 @@ function UploadComponent({
       }
 
       const result = await response.json();
-      console.log("✅ RAG system upload successful:", result);
       return result;
     } catch (error) {
       console.error("❌ RAG system upload error:", error);
@@ -653,7 +641,6 @@ function UploadComponent({
 
       // [Unverified] Move the session clearing to be asynchronous to prevent setState during render
       if (onClearPreviousSession) {
-        console.log("🧹 Clearing previous frontend session state");
         // Use setTimeout to prevent setState during render
         setTimeout(() => onClearPreviousSession(), 0);
       }
@@ -663,8 +650,6 @@ function UploadComponent({
       const RAG_BASE_URL = isDevelopment
         ? "http://localhost:8000" // Updated to match Railway backend port
         : process.env.NEXT_PUBLIC_RAG_API_URL;
-
-      console.log("🔗 Using RAG URL:", RAG_BASE_URL);
 
       // Convert enum to string format expected by backend
       const getNamingOption = (format: string) => {
@@ -733,12 +718,6 @@ function UploadComponent({
       }
 
       const ragResponse = await response.json();
-      console.log("✅ RAG upload successful:", ragResponse);
-      console.log(`🆔 NEW Document ID: ${ragResponse.document_id}`);
-      console.log(
-        `⚡ Processing time: ${ragResponse.processing_time?.toFixed(2)}s`
-      );
-
       await verifyDocumentIsActive(ragResponse.document_id);
 
       return ragResponse;
@@ -841,7 +820,6 @@ function UploadComponent({
       });
 
       if (response.ok) {
-        console.log("✅ RAG session reset successfully");
         // Generate new session ID for fresh start
         localStorage.removeItem("rag_session_id");
         return true;
@@ -859,8 +837,6 @@ function UploadComponent({
   useEffect(() => {
     // Cleanup function when component unmounts
     return () => {
-      // Optional: Clean up session if needed
-      console.log("🧹 UploadComponent unmounting");
     };
   }, []);
 
@@ -1032,9 +1008,6 @@ function UploadComponent({
       let ragResponse: any = null;
 
       if (isAuthenticated && user) {
-        console.log(
-          "👤 Authenticated user - RAG-first workflow with ultra-fast processing"
-        );
 
         try {
           // Step 1: Save to database FIRST to get cuid ID
@@ -1162,9 +1135,6 @@ function UploadComponent({
           // ✅ CRITICAL FIX: Delete the document from database if it was saved but RAG processing failed
           if (documentInfo?.documentId || documentInfo?.id) {
             const docIdToDelete = documentInfo.documentId || documentInfo.id;
-            console.log(
-              `🗑️ Deleting failed document ${docIdToDelete} from database...`
-            );
 
             try {
               await fetch(`/backend/api/documents/${docIdToDelete}`, {
@@ -1402,10 +1372,8 @@ function UploadComponent({
 
       // Check if the error is due to abort (user cancelled)
       if (error instanceof Error && error.name === "AbortError") {
-        console.log("🛑 Upload was cancelled by user");
         setUploadStatus("idle");
         setStatusMessage("Upload cancelled");
-        toast.info("Upload cancelled");
         return; // Don't show error for user cancellation
       }
 

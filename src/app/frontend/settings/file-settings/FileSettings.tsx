@@ -171,7 +171,6 @@ export default function FileSettings() {
 
   const loadStorageInfo = async () => {
     try {
-      console.log("🔄 Loading storage info...");
 
       const response = await fetch("/backend/api/user-settings/storage", {
         method: "GET",
@@ -180,8 +179,6 @@ export default function FileSettings() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("📊 Storage response:", data);
-
         // API returns used, total, and available in bytes
         const usedBytes = data.used || 0;
         const totalBytes =
@@ -197,13 +194,6 @@ export default function FileSettings() {
           used: usedBytes,
           total: totalBytes,
           available: availableBytes,
-        });
-
-        console.log("💾 Storage info set:", {
-          used: usedBytes,
-          total: totalBytes,
-          available: availableBytes,
-          formattedUsed: formatStorageSize(usedBytes),
         });
       } else {
         console.error("❌ Storage API error:", response.status);

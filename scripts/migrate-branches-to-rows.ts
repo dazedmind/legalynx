@@ -18,8 +18,6 @@ interface MessageBranch {
 }
 
 async function migrateBranchesToRows() {
-  console.log('🔄 Starting migration: Converting JSON branches to database rows...\n');
-
   try {
     // Find all messages with branches
     const messagesWithBranches = await prisma.$queryRaw<Array<{
@@ -35,8 +33,6 @@ async function migrateBranchesToRows() {
       FROM chat_messages
       WHERE branches IS NOT NULL AND branches != 'null'::jsonb
     `;
-
-    console.log(`📊 Found ${messagesWithBranches.length} messages with branches to migrate`);
 
     for (const userMessage of messagesWithBranches) {
       console.log(`\n🔧 Processing message ${userMessage.id.substring(0, 8)}...`);

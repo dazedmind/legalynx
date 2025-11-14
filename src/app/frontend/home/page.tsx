@@ -1,6 +1,4 @@
-// FIXED: Updated Home page with storage usage bar and proper document switching
 "use client";
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import ChatViewer from "./chat-viewer/ChatViewer";
 import FileManager from "./file-manager/FileManager";
@@ -14,16 +12,15 @@ import { authUtils } from '@/lib/auth';
 import {
   GoStarFill
 } from "react-icons/go";
-import { HiOutlineChatBubbleLeft, HiOutlineChatBubbleLeftEllipsis } from "react-icons/hi2";
+import { HiOutlineChatBubbleLeftEllipsis } from "react-icons/hi2";
 import ProtectedRoute from "../components/layout/ProtectedRoute";
 import NavBar from "../components/layout/NavBar";
 import { useAuth } from "@/lib/context/AuthContext";
-import { LogOut, Menu, X, Lock, Palette, PanelRightClose, PanelRightOpen, HardDrive, DiamondPlus, MessageCircle, Folder, Star, ChevronLeft, Gift, CreditCard } from "lucide-react";
+import { LogOut, Menu, PanelRightClose, PanelRightOpen, HardDrive, DiamondPlus, Folder, Star, ChevronLeft } from "lucide-react";
 import { useTheme } from "next-themes";
 import UploadPage from "./chat-viewer/UploadPage";
 import ConfirmationModal, { ModalType } from "../components/layout/ConfirmationModal";
 import SidebarFooter from "../components/layout/SidebarFooter";
-import { FaLandmark } from "react-icons/fa";
 
 type ActiveTab =
   | "chat"
@@ -85,7 +82,7 @@ export default function Home() {
     header: string;
     message: string;
     trueButton: string;
-    falseButton: string;
+    falseButton?: string;
     type: string;
     onConfirm: () => void;
     paywall?: {
@@ -98,7 +95,6 @@ export default function Home() {
   } | null>(null);
 
   const clearLastUploadedDocument = () => {
-    console.log('🧹 Clearing last uploaded document tracking');
     setLastUploadedDocumentId(null);
   };
 
@@ -173,7 +169,6 @@ export default function Home() {
     }
     
     try {
-      console.log(`📚 Loading recent sessions for user: ${user.id}`);
       const response = await fetch('/backend/api/chat-sessions/recent?limit=4', {
         method: 'GET',
         headers: getAuthHeaders(),
@@ -181,7 +176,6 @@ export default function Home() {
 
       if (response.ok) {
         const sessions = await response.json();
-        console.log(`✅ Loaded ${sessions.length} recent sessions from API for user ${user.id}`);
         
         // ✅ FIXED: Additional client-side filtering to ensure only current user's sessions
         const userSessions = sessions.filter((session: any) => {
@@ -197,7 +191,6 @@ export default function Home() {
           return true;
         });
         
-        console.log(`✅ After client-side filtering: ${userSessions.length} sessions for user ${user.id}`);
         setRecentSessions(userSessions.slice(0, 4)); // Ensure we only get top 4
       } else {
         console.warn('Failed to fetch recent sessions:', response.status);
@@ -245,9 +238,7 @@ export default function Home() {
           }));
         
         setRecentSessions(recentSessions);
-        console.log(`✅ Loaded ${recentSessions.length} recent sessions from localStorage for user ${user.id}`);
       } else {
-        console.log(`No stored sessions found for user ${user.id}`);
         setRecentSessions([]);
       }
     } catch (error) {
@@ -297,7 +288,7 @@ export default function Home() {
       header: string;
       message: string;
       trueButton: string;
-      falseButton: string;
+      falseButton?: string;
       type: string;
     },
     onConfirm: () => void
@@ -327,6 +318,30 @@ export default function Home() {
     };
     getSubscriptionStatus();
   }, []);
+
+  // NEW: Show welcome popup on first login
+  useEffect(() => {
+    if (user?.id) {
+      const welcomeShownKey = `welcome_shown_${user.id}`;
+      const hasSeenWelcome = localStorage.getItem(welcomeShownKey);
+      
+      if (!hasSeenWelcome) {
+        // Show welcome modal after a short delay to ensure page is loaded
+        setTimeout(() => {
+          setConfirmationModalConfig({
+            header: "Welcome to LegalynX",
+            message: "Help us improve! As a beta tester, your feedback is essential. After trying the platform, please answer the survey <a href='https://forms.gle/7aQ8PD4DxuY1h1Br6' target='_blank'>here</a>",
+            trueButton: "Get Started",
+            type: ModalType.WELCOME,
+            onConfirm: () => {
+              localStorage.setItem(welcomeShownKey, 'true');
+              setConfirmationModalConfig(null);
+            },
+          });
+        }, 500);
+      }
+    }
+  }, [user?.id]);
 
   // NEW: Load storage info and recent sessions when component mounts and user changes
   useEffect(() => {
@@ -363,13 +378,11 @@ export default function Home() {
         // Keep only the current user's data
         Object.keys(localStorage).forEach(key => {
           if (key.startsWith(baseKey) && key !== userKey && key !== globalKey) {
-            console.log(`🧹 Clearing cross-user data: ${key}`);
             localStorage.removeItem(key);
           }
         });
       });
       
-      console.log(`✅ Cleared cross-user data for user ${user.id}`);
     } catch (error) {
       console.error('Failed to clear cross-user data:', error);
     }
@@ -380,7 +393,6 @@ export default function Home() {
     const clearUploadedFiles = async () => {
       try {
         await loadSystemStatus();
-        console.log("✅ Page loaded, checking system status");
       } catch (error) {
         console.error("Failed to load system status:", error);
       }
@@ -432,24 +444,19 @@ export default function Home() {
   };
   
   const handleDocumentSelect = async (docId: string) => {
-    console.log('🏠 handleDocumentSelect called with docId:', docId);
     
     // ✅ FIXED: Clear both tracking states to ensure document loads fresh
     setLastUploadedDocumentId(null);
     setLastProcessedDocumentId(null);
     setCurrentDocumentId(docId);
     
-    console.log('🏠 Set currentDocumentId to:', docId);
-    
     // Always switch to chat tab when selecting a document
-    console.log('🏠 Switching to chat tab');
     setActiveTab('chat');
     setIsMobileSidebarOpen(false);
   };
 
   // FIXED: Enhanced upload success handler with proper document switching
   const handleUploadSuccess = (response: UploadResponse) => {
-    console.log('🎉 MAIN COMPONENT - Upload success:', response);
     
     // ✅ FIXED: Add debug logging to see what we receive
     console.log('📄 Response fields:', {
@@ -493,9 +500,7 @@ export default function Home() {
     
     filteredDocs.unshift(documentForStorage);
     localStorage.setItem(storageKey, JSON.stringify(filteredDocs));
-    
-    console.log('📄 Document stored in localStorage:', documentForStorage);
-    
+        
     // 🔥 FIXED: Set the last uploaded document ID to ensure ChatViewer loads the correct document
     setLastUploadedDocumentId(response.documentId || '');
     
@@ -508,12 +513,9 @@ export default function Home() {
     setTimeout(() => {
       loadRecentSessions();
     }, 1000); // Give time for session to be created
-    
-    console.log('🔄 Switched to chat tab with document ID:', response.documentId);
   };
   
   const clearDocumentTracking = () => {
-    console.log('🧹 Clearing document tracking');
     setCurrentDocumentId(null);
     setLastUploadedDocumentId(null);
   };
@@ -527,7 +529,6 @@ export default function Home() {
     // 🔥 FIXED: Defer document tracking clear to avoid setState during render
     setTimeout(() => {
       clearDocumentTracking();
-      console.log('🔄 Started new chat, cleared all tracking');
     }, 0);
   };
 
@@ -539,7 +540,6 @@ export default function Home() {
   const clearChatViewerState = () => {
     // Defer clearing ChatViewer until after this render commit
     // to avoid setState during parent render warnings.
-    console.log('🧹 Scheduling ChatViewer state clear');
     // Double defer: schedule flag in next tick to avoid firing during render
     setTimeout(() => setPendingClearChatViewer(true), 0);
   };
@@ -548,7 +548,6 @@ export default function Home() {
   useEffect(() => {
     if (pendingClearChatViewer && clearChatViewerFn) {
       const timeoutId = setTimeout(() => {
-        console.log('🧹 Executing deferred ChatViewer state clear');
         try {
           clearChatViewerFn();
         } finally {
@@ -561,7 +560,6 @@ export default function Home() {
 
   // FIXED: Add callback for upload component to clear previous session
   const handleClearPreviousSession = () => {
-    console.log('🧹 Clearing previous session before new upload');
     setCurrentDocumentId(null);
     setCurrentSessionId(null);
     clearChatViewerState();
@@ -609,7 +607,6 @@ export default function Home() {
 
   // NEW: Handle recent session click from sidebar
   const handleRecentSessionClick = (sessionId: string) => {
-    console.log('📋 Recent session clicked:', sessionId);
     handleSessionSelect(sessionId);
   };
 

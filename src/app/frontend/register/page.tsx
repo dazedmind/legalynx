@@ -4,7 +4,6 @@ import React, { useState, Suspense } from "react";
 import Header from "../components/layout/Header";
 import { Button } from "@/app/frontend/components/ui/button";
 import { Input } from "@/app/frontend/components/ui/input";
-import { Progress } from "@/app/frontend/components/ui/progress";
 import Link from "next/link";
 import { Checkbox } from "@/app/frontend/components/ui/checkbox";
 import { toast, Toaster } from "sonner";
@@ -12,7 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import logo from "../img/legalynxlogo.png";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
-import { GoEye, GoEyeClosed } from "react-icons/go";
+import { GoArrowLeft, GoEye, GoEyeClosed } from "react-icons/go";
 import { AlertCircle } from "lucide-react";
 import {
   validateEmail as validateEmailDomain,
@@ -177,14 +176,12 @@ function RegisterContent() {
 
   return (
     <div className="h-screen overflow-hidden">
-      {/* Header */}
-      <header className="bg-primary/10 backdrop-blur-md shadow-md fixed top-0 w-full z-60">
-        <Header />
-      </header>
-
       <main className="flex flex-col md:flex-row-reverse w-full h-full">
-        <div className="flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 md:py-10 md:px-6 justify-center gap-2 overflow-y-auto">
+        <div className="flex flex-col items-center md:items-start mx-0 w-full md:w-1/2 md:py-10 md:px-6 justify-center gap-2 overflow-y-hidden">
           <div className="w-full mt-30 md:w-md flex flex-col rounded-lg items-start gap-2 mx-0 md:mx-auto pt-0 md:pt-10 p-10 md:mt-20">
+            <div className="">
+              <button className="flex items-center gap-1 text-sm text-blue cursor-pointer font-bold" onClick={() => router.push("/")}> <GoArrowLeft /> Back to Home</button>
+            </div>
             <span>
               <h1 className="text-4xl font-bold font-serif">Sign Up</h1>
               <p className="text-muted-foreground mb-4">
@@ -388,7 +385,7 @@ function RegisterContent() {
               <span className="text-sm text-muted-foreground">
                 <Link
                   href="/frontend/login"
-                  className="cursor-pointer hover:text-blue-600"
+                  className="cursor-pointer hover:text-blue-600 font-bold underline"
                 >
                   I already have an account
                 </Link>

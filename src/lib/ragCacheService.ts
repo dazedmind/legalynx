@@ -98,13 +98,11 @@ class RAGCacheService {
   async reactivateDocument(documentId: string, filename: string): Promise<void> {
     // Check if already loaded
     if (this.isDocumentLoaded(documentId)) {
-      console.log(`✅ Document ${filename} already loaded in RAG system (cached)`);
       return;
     }
 
     // Check if currently loading
     if (this.isDocumentLoading(documentId)) {
-      console.log(`⏳ Document ${filename} is already being loaded, waiting...`);
       const existingPromise = this.loadingPromises.get(documentId);
       if (existingPromise) {
         return existingPromise;
@@ -132,13 +130,11 @@ class RAGCacheService {
   ): Promise<void> {
     // Check if already loaded
     if (this.isDocumentLoaded(documentId)) {
-      console.log(`✅ Document ${filename} already loaded in RAG system (cached)`);
       return;
     }
 
     // Check if currently loading
     if (this.isDocumentLoading(documentId)) {
-      console.log(`⏳ Document ${filename} is already being loaded, waiting...`);
       const existingPromise = this.loadingPromises.get(documentId);
       if (existingPromise) {
         return existingPromise;
@@ -163,7 +159,6 @@ class RAGCacheService {
     documentId: string,
     filename: string
   ): Promise<void> {
-    console.log(`⚡ Fast reactivation: ${filename}...`);
     
     // Mark as loading
     this.cache.set(documentId, {
@@ -181,7 +176,6 @@ class RAGCacheService {
         throw new Error('RAG system is not available. Please ensure the FastAPI backend is running.');
       }
 
-      console.log(`🔄 Calling reactivate-document endpoint for ${documentId}...`);
       const reactivateResponse = await fetch(`${this.RAG_BASE_URL}/reactivate-document/${documentId}`, {
         method: 'POST',
         headers: this.getRagHeaders(true)
@@ -201,9 +195,6 @@ class RAGCacheService {
       }
 
       const result = await reactivateResponse.json();
-      console.log(`✅ Fast reactivation result:`, result);
-      console.log(`⚡ Processing time: ${result.processing_time}s`);
-      console.log(`📊 Status: ${result.status}`);
 
       // Mark as successfully loaded
       this.markAsLoaded(documentId, filename, documentId);
@@ -264,7 +255,6 @@ class RAGCacheService {
     filename: string,
     getFileBlob: () => Promise<Blob>
   ): Promise<void> {
-    console.log(`🔄 Loading document ${filename} into RAG system...`);
     
     // Mark as loading
     this.cache.set(documentId, {
@@ -283,7 +273,6 @@ class RAGCacheService {
       }
 
       // 🔥 SIMPLIFIED: Use database cuid ID directly for RAG system calls
-      console.log(`🔍 Checking if document ${documentId} already exists in RAG system...`);
       const checkResponse = await fetch(`${this.RAG_BASE_URL}/check-document/${documentId}`, {
         headers: this.getRagHeaders()
       });
@@ -291,7 +280,6 @@ class RAGCacheService {
       if (checkResponse.ok) {
         const checkData = await checkResponse.json();
         if (checkData.exists) {
-          console.log(`✅ Document ${filename} already exists in RAG system`);
           this.markAsLoaded(documentId, filename, documentId);
           // Activate this document for current session/user without re-upload
           try {
@@ -302,31 +290,25 @@ class RAGCacheService {
             
             if (activateResponse.ok) {
               const activateResult = await activateResponse.json();
-              console.log(`✅ Document activation result:`, activateResult);
               
               if (activateResult.status === 'activated_existing') {
-                console.log(`✅ Activated existing document ${documentId} for current session`);
                 return; // Successfully activated existing document
               } else if (activateResult.status === 're_uploaded_and_activated') {
-                console.log(`✅ Document ${documentId} was re-uploaded and activated (processing time: ${activateResult.processing_time}s)`);
                 // Mark as loaded since it was successfully re-uploaded
                 this.markAsLoaded(documentId, filename, documentId);
                 return; // Successfully re-uploaded and activated
               } else {
-                console.log(`✅ Document ${documentId} activated with status: ${activateResult.status}`);
                 return; // Successfully activated with unknown status
               }
             } else {
               const errorText = await activateResponse.text();
               console.warn(`⚠️ Failed to activate document (${activateResponse.status}):`, errorText);
               // Continue with upload as fallback
-              console.log('🔄 Continuing with document upload due to activation failure');
               this.clearDocument(documentId);
             }
           } catch (e) {
             console.warn('⚠️ Failed to activate existing document for session:', e);
             // If activation fails, continue with upload to ensure document is available
-            console.log('🔄 Continuing with document upload due to activation failure');
             // Clear the cache entry since it's outdated
             this.clearDocument(documentId);
           }
@@ -384,7 +366,6 @@ class RAGCacheService {
       }
 
       const ragResult = await ragResponse.json();
-      console.log(`✅ Document ${filename} loaded into RAG system:`, ragResult);
 
       // Mark as successfully loaded
       this.markAsLoaded(documentId, filename, ragResult.id || ragResult.document_id);
@@ -460,7 +441,6 @@ class RAGCacheService {
       ragSystemId
     });
     this.saveCacheToStorage();
-    console.log(`✅ Marked document ${filename} as loaded in cache`);
   }
 
   /**
@@ -499,7 +479,6 @@ class RAGCacheService {
     this.cache.delete(documentId);
     this.loadingPromises.delete(documentId);
     this.saveCacheToStorage();
-    console.log(`🗑️ Cleared cache for document ${documentId}`);
   }
 
   /**
@@ -509,14 +488,12 @@ class RAGCacheService {
     this.cache.clear();
     this.loadingPromises.clear();
     this.saveCacheToStorage();
-    console.log(`🗑️ Cleared all RAG cache`);
   }
 
   /**
    * Clear all cache and force fresh start - useful during ID system transitions
    */
   clearAllAndReset(): void {
-    console.log('🔄 Clearing all RAG cache and resetting for ID system transition');
     this.cache.clear();
     this.loadingPromises.clear();
     this.saveCacheToStorage();
@@ -525,7 +502,6 @@ class RAGCacheService {
     if (typeof window !== 'undefined') {
       const oldSessionId = localStorage.getItem('rag_session_id');
       if (oldSessionId) {
-        console.log(`🔄 Clearing old RAG session: ${oldSessionId}`);
         localStorage.removeItem('rag_session_id');
       }
     }
@@ -577,7 +553,6 @@ class RAGCacheService {
     }
     
     if (cleanedCount > 0) {
-      console.log(`🧹 Cleaned ${cleanedCount} expired cache entries`);
       this.saveCacheToStorage();
     }
   }
@@ -617,7 +592,6 @@ class RAGCacheService {
               lastLoaded: new Date(doc.lastLoaded)
             });
           }
-          console.log(`📦 Loaded ${this.cache.size} documents from cache`);
         }
       }
     } catch (error) {

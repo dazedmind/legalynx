@@ -90,21 +90,17 @@ function extractS3KeyFromUrl(url: string): string | null {
 // Helper function to delete old profile picture from S3
 async function deleteOldProfilePictureFromS3(profilePictureUrl: string) {
   if (!profilePictureUrl) {
-    console.log('⏭️ No profile picture URL to delete');
     return;
   }
   
   if (profilePictureUrl.startsWith('http://') && !profilePictureUrl.includes('s3')) {
-    console.log('⏭️ Skipping S3 deletion for external URL:', profilePictureUrl);
     return; // Don't delete external URLs that aren't S3
   }
 
   try {
     const s3Key = extractS3KeyFromUrl(profilePictureUrl);
     if (s3Key) {
-      console.log('🗑️ Deleting old profile picture from S3:', s3Key);
       await S3Service.deleteFile(s3Key);
-      console.log('✅ Old profile picture deleted from S3 successfully');
     } else {
       console.warn('⚠️ Could not extract S3 key from URL:', profilePictureUrl);
     }
@@ -116,38 +112,23 @@ async function deleteOldProfilePictureFromS3(profilePictureUrl: string) {
 
 // POST /backend/api/profile/upload-picture - Upload profile picture to S3
 export async function POST(request: NextRequest) {
-  console.log('🚀 Profile picture upload started');
-  
   try {
-    console.log('🔐 Getting user from token...');
     const user = await getUserFromToken(request);
-    console.log('✅ User authenticated:', user.id);
     
     // Parse form data
-    console.log('📋 Parsing form data...');
     const formData = await request.formData();
     const file = formData.get('file') as File;
     
     if (!file) {
-      console.log('❌ No file provided');
       return NextResponse.json(
         { error: 'No file provided' },
         { status: 400 }
       );
     }
 
-    console.log('📤 Uploading profile picture for user:', user.id);
-    console.log('📄 File details:', {
-      name: file.name,
-      type: file.type,
-      size: `${(file.size / 1024 / 1024).toFixed(2)}MB`
-    });
-
     // Validate file
-    console.log('✅ Validating file...');
     const validation = validateImageFile(file);
     if (!validation.valid) {
-      console.log('❌ File validation failed:', validation.error);
       return NextResponse.json(
         { error: validation.error },
         { status: 400 }
@@ -156,17 +137,13 @@ export async function POST(request: NextRequest) {
 
     // Delete old profile picture from S3 if exists
     if (user.profile_picture) {
-      console.log('🗑️ Deleting old profile picture...');
       await deleteOldProfilePictureFromS3(user.profile_picture);
     }
 
     // Convert file to buffer
-    console.log('🔄 Converting file to buffer...');
     const fileBuffer = Buffer.from(await file.arrayBuffer());
-    console.log('📦 Buffer created, size:', fileBuffer.length, 'bytes');
 
     // Upload to S3 using the updated S3Service
-    console.log('☁️ Starting S3 upload...');
     const s3Result = await S3Service.uploadFile(
       fileBuffer, 
       file.name, 
@@ -174,10 +151,8 @@ export async function POST(request: NextRequest) {
       user.id, 
       'profile-pictures'
     );
-    console.log('✅ Uploaded to S3:', s3Result);
 
     // Update user in database with S3 URL
-    console.log('💾 Updating database...');
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -185,7 +160,6 @@ export async function POST(request: NextRequest) {
         updated_at: new Date()
       }
     });
-    console.log('✅ Database updated successfully');
 
     // Log the update for security tracking
     await prisma.securityLog.create({
@@ -199,8 +173,6 @@ export async function POST(request: NextRequest) {
         user_agent: request.headers.get('user-agent') || 'unknown'
       }
     });
-
-    console.log('✅ Profile picture upload completed successfully');
 
     return NextResponse.json({
       message: 'Profile picture updated successfully',
@@ -224,7 +196,6 @@ export async function POST(request: NextRequest) {
     
     if (error instanceof Error) {
       if (error.message.includes('No token provided') || error.message.includes('User not found')) {
-        console.log('🔐 Authentication error');
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }
       if (error.message.includes('Failed to upload file to S3')) {

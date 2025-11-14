@@ -98,36 +98,37 @@ type LoadingStage =
 
 // Helper function to group edited USER messages with their direct responses only
 function groupEditedMessages(messages: ChatMessage[]): ChatMessage[] {
-  console.log(`📝 Grouping edited messages from ${messages.length} messages...`);
   const result: ChatMessage[] = [];
   const processedIds = new Set<string>();
-  
+
   for (const msg of messages) {
     if (processedIds.has(msg.id)) continue;
-    
+
     // Group USER messages with their edits
     if (msg.type === "USER" && !msg.parentMessageId) {
       // This is an original user message - find all edits
       const edits = messages.filter(
-        m => m.type === "USER" && m.parentMessageId === msg.id && m.isEdited && !processedIds.has(m.id)
+        (m) =>
+          m.type === "USER" &&
+          m.parentMessageId === msg.id &&
+          m.isEdited &&
+          !processedIds.has(m.id)
       );
-      
+
       if (edits.length > 0) {
-        console.log(`   ✏️ Found ${edits.length} edits for user message ${msg.id.substring(0, 8)}`);
-        
         // Find the DIRECT response for each version (only the immediate ASSISTANT message)
         const versions = [msg, ...edits];
         const editResponses: ChatMessage[] = [];
-        
-        versions.forEach(version => {
+
+        versions.forEach((version) => {
           // Find the FIRST ASSISTANT message after this version
           const versionIndex = messages.indexOf(version);
           for (let i = versionIndex + 1; i < messages.length; i++) {
             const nextMsg = messages[i];
-            
+
             // If we hit another USER message (edit or new), stop
             if (nextMsg.type === "USER") break;
-            
+
             // Found the direct response - add it and mark as processed
             if (nextMsg.type === "ASSISTANT" && !processedIds.has(nextMsg.id)) {
               editResponses.push(nextMsg);
@@ -136,96 +137,84 @@ function groupEditedMessages(messages: ChatMessage[]): ChatMessage[] {
             }
           }
         });
-        
+
         // Create grouped message with all edit versions and their responses
         const groupedMessage: ChatMessage = {
           ...msg,
           edits: edits,
-          selectedEditIndex: 0, // Default to showing original
+          selectedEditIndex: edits.length, // ✅ Default to showing newest edit
           editResponses, // Direct responses to each version
         };
-        
+
         result.push(groupedMessage);
-        edits.forEach(e => processedIds.add(e.id));
-        console.log(`🔀 Grouped ${edits.length} edits (original + ${edits.length} edits = ${editResponses.length} responses) for message ${msg.id.substring(0, 8)}`);
+        edits.forEach((e) => processedIds.add(e.id));
       } else {
         result.push(msg);
       }
     } else if (msg.type === "USER" && msg.parentMessageId && msg.isEdited) {
       // This is an edit - skip it (already grouped above)
-      console.log(`   ⏭️ Skipping edit (parent: ${msg.parentMessageId.substring(0, 8)})`);
       processedIds.add(msg.id);
       continue;
     } else if (msg.type === "ASSISTANT" && !processedIds.has(msg.id)) {
       // ASSISTANT message not already processed
       result.push(msg);
     }
-    
+
     processedIds.add(msg.id);
   }
-  
-  console.log(`✅ Edit grouping complete: ${messages.length} → ${result.length} messages`);
+
   return result;
 }
 
 // Helper function to group regenerated messages
 function groupRegeneratedMessages(messages: ChatMessage[]): ChatMessage[] {
-  console.log(`🔍 Grouping ${messages.length} messages...`);
   const result: ChatMessage[] = [];
   const processedIds = new Set<string>();
-  
+
   for (const msg of messages) {
     if (processedIds.has(msg.id)) {
-      console.log(`⏭️ Skipping already processed message ${msg.id.substring(0, 8)}`);
       continue;
     }
-    
-    console.log(`📋 Processing message ${msg.id.substring(0, 8)}: type=${msg.type}, parentId=${msg.parentMessageId?.substring(0, 8) || 'none'}`);
-    
+
     // If this is an ASSISTANT message, check if it has regenerations
     if (msg.type === "ASSISTANT" && !msg.parentMessageId) {
       // Find all regenerations of this message
       const regenerations = messages.filter(
-        m => m.type === "ASSISTANT" && m.parentMessageId === msg.id && !processedIds.has(m.id)
+        (m) =>
+          m.type === "ASSISTANT" &&
+          m.parentMessageId === msg.id &&
+          !processedIds.has(m.id)
       );
-      
-      console.log(`   Found ${regenerations.length} regenerations for this message`);
-      
+
       if (regenerations.length > 0) {
         // This message has regenerations - add them to the message object
         const messageWithRegenerations: ChatMessage = {
           ...msg,
           regenerations: regenerations,
-          selectedRegenerationIndex: 0, // Default to showing original
+          selectedRegenerationIndex: regenerations.length, // ✅ Default to showing newest regeneration
         };
         result.push(messageWithRegenerations);
-        
+
         // Mark all regenerations as processed so they don't appear as separate messages
-        regenerations.forEach(r => {
+        regenerations.forEach((r) => {
           processedIds.add(r.id);
-          console.log(`   ✅ Marked regeneration ${r.id.substring(0, 8)} as processed`);
         });
-        console.log(`🔀 Grouped ${regenerations.length} regenerations for message ${msg.id.substring(0, 8)}`);
       } else {
         // No regenerations, add as-is
         result.push(msg);
-        console.log(`   No regenerations, added as-is`);
       }
     } else if (msg.type === "ASSISTANT" && msg.parentMessageId) {
       // This is a regeneration - skip it (will be grouped with parent)
-      console.log(`   ⏭️ Skipping regeneration (parent: ${msg.parentMessageId.substring(0, 8)})`);
       processedIds.add(msg.id);
       continue;
     } else {
       // USER message or other types
       result.push(msg);
-      console.log(`   Added USER or other message`);
     }
-    
+
     processedIds.add(msg.id);
   }
-  
-  console.log(`✅ Grouping complete: ${messages.length} → ${result.length} messages`);
+
   return result;
 }
 
@@ -320,8 +309,10 @@ export default function ChatViewer({
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
 
   // ✅ NEW: Track message being regenerated/edited (to hide old response)
-  const [messageBeingRegenerated, setMessageBeingRegenerated] = useState<string | null>(null);
-  
+  const [messageBeingRegenerated, setMessageBeingRegenerated] = useState<
+    string | null
+  >(null);
+
   // ✅ NEW: Ref to scroll to specific message position
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
@@ -367,7 +358,6 @@ export default function ChatViewer({
   }>({ isOpen: false, document: null });
 
   const clearAllSessionState = () => {
-    console.log("🧹 Clearing all session state for new upload");
     setCurrentSessionId(null);
     setChatHistory([]);
     setCurrentDocument(null);
@@ -512,17 +502,6 @@ export default function ChatViewer({
 
   // Effects
   useEffect(() => {
-    console.log("🔍 Document loading effect:", {
-      isSystemReady,
-      currentDocument: currentDocument !== null,
-      isResetting,
-      user: !!user,
-      uploadCompleted,
-      isProcessingNewUpload,
-      currentDocumentId, // 🔥 NEW: Added for tracking
-      lastUploadedDocumentId, // 🔥 NEW: Added for tracking
-    });
-
     // 🔥 FIXED: Only load if we don't have a current document and not resetting
     if (
       (currentDocument === null && !isResetting && !isProcessingNewUpload) ||
@@ -530,7 +509,6 @@ export default function ChatViewer({
       (currentDocumentId && currentDocument?.id !== currentDocumentId) ||
       (lastUploadedDocumentId && currentDocument?.id !== lastUploadedDocumentId)
     ) {
-      console.log("📄 Loading current document...");
       loadCurrentDocument();
 
       // 🔥 FIXED: Defer state update to avoid setState during render
@@ -551,22 +529,12 @@ export default function ChatViewer({
   ]);
 
   useEffect(() => {
-    console.log("🔍 Upload tracking effect:", {
-      isSystemReady,
-      isProcessingNewUpload,
-      currentDocumentId,
-      lastProcessedDocumentId,
-      lastUploadedDocumentId,
-    });
-
     // 🔥 FIXED: Defer state updates to avoid setState during render
     if (
       currentDocumentId &&
       currentDocumentId !== lastProcessedDocumentId &&
       !isProcessingNewUpload
     ) {
-      console.log("📄 New document uploaded:", currentDocumentId);
-
       // Defer state updates to next tick to avoid setState during render
       setTimeout(() => {
         setIsProcessingNewUpload(true);
@@ -588,8 +556,6 @@ export default function ChatViewer({
       lastUploadedDocumentId !== lastProcessedDocumentId &&
       !isProcessingNewUpload
     ) {
-      console.log("📄 Last uploaded document changed:", lastUploadedDocumentId);
-
       // Defer state updates to next tick to avoid setState during render
       setTimeout(() => {
         setIsProcessingNewUpload(true);
@@ -622,20 +588,12 @@ export default function ChatViewer({
   }, [onClearStateCallback]);
 
   useEffect(() => {
-    console.log("🔍 Upload success effect:", {
-      isSystemReady,
-      isProcessingNewUpload,
-      currentDocumentId,
-      lastProcessedDocumentId,
-    });
-
     // If we have a new document ID that differs from last processed, handle the upload
     if (
       currentDocumentId &&
       currentDocumentId !== lastProcessedDocumentId &&
       !isProcessingNewUpload
     ) {
-      console.log("📄 New document uploaded:", currentDocumentId);
       setIsProcessingNewUpload(true);
       setLastProcessedDocumentId(currentDocumentId);
 
@@ -656,10 +614,7 @@ export default function ChatViewer({
   }, [currentDocumentId, lastProcessedDocumentId, isProcessingNewUpload]);
 
   useEffect(() => {
-    console.log("🔍 Upload success effect triggered");
-
     if (isSystemReady && !isResetting) {
-      console.log("📄 Triggering loadCurrentDocument after upload success");
       loadCurrentDocument();
     }
   }, []);
@@ -691,7 +646,6 @@ export default function ChatViewer({
       !isResetting &&
       !isProcessingNewUpload
     ) {
-      console.log("📝 Document loaded, creating/loading session...");
       loadOrCreateSession();
     }
   }, [
@@ -754,7 +708,7 @@ export default function ChatViewer({
 
   useEffect(() => {
     // Clear any existing timeout
-    if (saveTimeoutRef.current) { 
+    if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
     }
@@ -766,10 +720,7 @@ export default function ChatViewer({
       documentExists &&
       hasUnsavedChanges
     ) {
-      console.log("⏱️ Scheduling save in 2 seconds...");
-
       saveTimeoutRef.current = setTimeout(() => {
-        console.log("⏰ Auto-save timeout triggered");
         saveSessionToDatabase();
       }, 2000); // Increased to 2 seconds for better stability
     }
@@ -838,16 +789,10 @@ export default function ChatViewer({
         );
 
         if (doc && doc.databaseId) {
-          console.log(
-            `🔄 Resolved temp ID ${documentId} to database ID ${doc.databaseId}`
-          );
           return doc.databaseId;
         }
       }
 
-      console.warn(
-        `⚠️ Could not resolve temporary ID ${documentId} to database ID`
-      );
       return null;
     } catch (error) {
       console.error("❌ Error resolving document ID:", error);
@@ -856,17 +801,7 @@ export default function ChatViewer({
   };
 
   const loadCurrentDocument = async () => {
-    console.log("🔍 LOAD DOCUMENT STARTING:", {
-      isResetting,
-      hasCurrentDocument: currentDocument !== null,
-      isAuthenticated,
-      userId: user?.id,
-      isProcessingNewUpload,
-      lastUploadedDocumentId,
-    });
-
     if (isResetting && !isProcessingNewUpload) {
-      console.log("🚫 Skipping document load - currently resetting");
       return;
     }
 
@@ -877,10 +812,6 @@ export default function ChatViewer({
     // 🔥 STANDARDIZE: Always resolve to database ID before loading
     const resolvedDocumentId = await resolveToDatabaseID(currentDocumentId);
     if (resolvedDocumentId) {
-      console.log(
-        "🎯 Loading specific document by resolved ID:",
-        resolvedDocumentId
-      );
       await loadSpecificDocument(resolvedDocumentId);
       documentFound = true; // loadSpecificDocument will set state appropriately
       // ✅ FIXED: Clear loading state before early return
@@ -893,10 +824,6 @@ export default function ChatViewer({
       lastUploadedDocumentId
     );
     if (resolvedLastUploadedId) {
-      console.log(
-        "🎯 Loading last uploaded document by resolved ID:",
-        resolvedLastUploadedId
-      );
       await loadSpecificDocument(resolvedLastUploadedId);
       documentFound = true;
       // ✅ FIXED: Clear loading state before early return
@@ -906,21 +833,17 @@ export default function ChatViewer({
 
     try {
       if (isAuthenticated && user) {
-        console.log("👤 Checking API for documents...");
         const response = await fetch("/backend/api/documents", {
           headers: getAuthHeaders(),
         });
 
         if (response.ok) {
           const data = await response.json();
-          console.log("📄 API documents response:", data);
 
           if (data.documents && data.documents.length > 0) {
             const mostRecent = data.documents[0];
-            console.log("📄 Most recent from API:", mostRecent);
 
             const exists = await checkDocumentExists(mostRecent.id);
-            console.log("📄 Document exists check:", exists);
 
             if (exists && !isResetting) {
               const documentInfo = {
@@ -934,29 +857,17 @@ export default function ChatViewer({
                 databaseId: mostRecent.id,
               };
 
-              console.log(
-                "✅ Loading document from API:",
-                documentInfo.originalFileName
-              );
               setCurrentDocument(documentInfo);
               setDocumentExists(true);
 
               // 🚀 FAST REACTIVATION: Use faster method for existing documents
               try {
-                console.log(
-                  "⚡ Fast reactivation for document:",
-                  documentInfo.fileName
-                );
                 await ragCache.reactivateDocument(
                   documentInfo.id,
                   documentInfo.fileName // Use fileName (already renamed) not originalFileName
                 );
-                console.log("✅ Document reactivated successfully");
               } catch (ragError) {
-                console.error(
-                  "❌ Failed to reactivate document:",
-                  ragError
-                );
+                console.error("❌ Failed to reactivate document:", ragError);
                 // Don't fail the whole operation, just log the error
               }
 
@@ -969,27 +880,21 @@ export default function ChatViewer({
               // Do not set documentExists=false yet to avoid UI flicker; try localStorage next
             }
           } else {
-            console.log("📄 No documents found in API");
           }
         } else {
-          console.log("❌ API request failed:", response.status);
         }
       }
 
       // Check localStorage for both authenticated and non-authenticated users
-      console.log("💿 Checking localStorage...");
       const storageKey =
         isAuthenticated && user?.id
           ? `uploaded_documents_${user.id}`
           : "uploaded_documents";
-      console.log("💿 Storage key:", storageKey);
 
       const savedDocs = localStorage.getItem(storageKey);
-      console.log("💿 Raw localStorage data:", savedDocs);
 
       if (savedDocs) {
         const docs = JSON.parse(savedDocs);
-        console.log("💿 Parsed docs:", docs);
 
         if (docs.length > 0 && !isResetting) {
           const sortedDocs = docs.sort((a: any, b: any) => {
@@ -1003,7 +908,6 @@ export default function ChatViewer({
           });
 
           const mostRecentDoc = sortedDocs[0];
-          console.log("💿 Most recent from localStorage:", mostRecentDoc);
 
           const documentInfo = {
             id: mostRecentDoc.id || mostRecentDoc.documentId,
@@ -1023,30 +927,17 @@ export default function ChatViewer({
             status: mostRecentDoc.status || "TEMPORARY",
             databaseId: mostRecentDoc.databaseId || mostRecentDoc.id,
           };
-
-          console.log(
-            "✅ Final document info from localStorage:",
-            documentInfo
-          );
           setCurrentDocument(documentInfo);
           setDocumentExists(true);
 
           // 🚀 FAST REACTIVATION: Use faster method for existing documents
           try {
-            console.log(
-              "⚡ Fast reactivation for document:",
-              documentInfo.fileName
-            );
             await ragCache.reactivateDocument(
               documentInfo.id,
               documentInfo.fileName // Use fileName (already renamed) not originalFileName
             );
-            console.log("✅ Document reactivated successfully");
           } catch (ragError) {
-            console.error(
-              "❌ Failed to reactivate document:",
-              ragError
-            );
+            console.error("❌ Failed to reactivate document:", ragError);
             // 🔥 GRACEFUL FALLBACK: If RAG loading fails, continue but warn user
             if (
               ragError instanceof Error &&
@@ -1066,10 +957,8 @@ export default function ChatViewer({
 
           documentFound = true;
         } else {
-          console.log("💿 No documents in localStorage or resetting");
         }
       } else {
-        console.log("💿 No localStorage data found");
       }
     } catch (error) {
       console.error("❌ Failed to load current document:", error);
@@ -1089,8 +978,6 @@ export default function ChatViewer({
 
   // 🔥 NEW: Load a specific document by ID
   const loadSpecificDocument = async (documentId: string) => {
-    console.log("🎯 Loading specific document:", documentId);
-
     try {
       // First check localStorage
       const storageKey =
@@ -1106,11 +993,6 @@ export default function ChatViewer({
         );
 
         if (specificDoc) {
-          console.log(
-            "✅ Found specific document in localStorage:",
-            specificDoc
-          );
-
           const documentInfo = {
             id: specificDoc.id || specificDoc.documentId,
             fileName: specificDoc.fileName || specificDoc.filename,
@@ -1132,20 +1014,12 @@ export default function ChatViewer({
 
           // 🚀 FAST REACTIVATION: Use faster method for existing documents
           try {
-            console.log(
-              "⚡ Fast reactivation for document:",
-              documentInfo.fileName
-            );
             await ragCache.reactivateDocument(
               documentInfo.id,
               documentInfo.fileName // Use fileName (already renamed) not originalFileName
             );
-            console.log("✅ Document reactivated successfully");
           } catch (ragError) {
-            console.error(
-              "❌ Failed to reactivate document:",
-              ragError
-            );
+            console.error("❌ Failed to reactivate document:", ragError);
             // Don't fail the whole operation, just log the error
           }
 
@@ -1155,14 +1029,12 @@ export default function ChatViewer({
 
       // If not found in localStorage and user is authenticated, check API
       if (isAuthenticated && user) {
-        console.log("🔍 Checking API for specific document:", documentId);
         const response = await fetch(`/backend/api/documents/${documentId}`, {
           headers: getAuthHeaders(),
         });
 
         if (response.ok) {
           const documentData = await response.json();
-          console.log("✅ Found specific document in API:", documentData);
 
           const documentInfo = {
             id: documentData.id,
@@ -1180,20 +1052,12 @@ export default function ChatViewer({
 
           // 🚀 FAST REACTIVATION: Use faster method for existing documents
           try {
-            console.log(
-              "⚡ Fast reactivation for document:",
-              documentInfo.fileName
-            );
             await ragCache.reactivateDocument(
               documentInfo.id,
               documentInfo.fileName // Use fileName (already renamed) not originalFileName
             );
-            console.log("✅ Document reactivated successfully");
           } catch (ragError) {
-            console.error(
-              "❌ Failed to reactivate document:",
-              ragError
-            );
+            console.error("❌ Failed to reactivate document:", ragError);
             // Don't fail the whole operation, just log the error
           }
 
@@ -1201,7 +1065,6 @@ export default function ChatViewer({
         }
       }
 
-      console.log("❌ Specific document not found:", documentId);
       setDocumentExists(false);
       setCurrentDocument(null);
     } catch (error) {
@@ -1213,22 +1076,12 @@ export default function ChatViewer({
 
   const loadSpecificSession = async (sessionId: string) => {
     if (!user || isLoadingSession || loadingSessionId === sessionId) {
-      console.log(
-        "🚫 Skipping session load - already loading or same session:",
-        {
-          user: !!user,
-          isLoadingSession,
-          loadingSessionId,
-          requestedSessionId: sessionId,
-        }
-      );
       return;
     }
 
     setIsLoadingSession(true);
     setLoadingSessionId(sessionId);
     setLoadingStage("loading_session");
-    console.log("🔄 Loading specific session:", sessionId);
 
     try {
       setLoadingStage("loading_session");
@@ -1239,7 +1092,6 @@ export default function ChatViewer({
 
       if (response.ok) {
         const sessionData = await response.json();
-        console.log("📄 Session data loaded:", sessionData);
 
         setLoadingSessionInfo({
           title:
@@ -1264,15 +1116,8 @@ export default function ChatViewer({
           currentDocument && currentDocument.id !== newDocumentId;
 
         if (isDocumentSwitch) {
-          console.log("🔄 Document switch detected:", {
-            from: currentDocument.id,
-            to: newDocumentId,
-          });
-
           // 🔥 FIX: Clear RAG cache for previous document to force reload
           ragCache.clearDocument(currentDocument.id);
-
-          console.log("🧹 Cleared RAG cache for document switch");
         }
 
         setCurrentSessionId(sessionData.sessionId);
@@ -1289,18 +1134,10 @@ export default function ChatViewer({
           databaseId: sessionData.document.id,
         };
 
-        console.log("📁 Document info:", documentInfo);
-
         setLoadingStage("loading_rag");
         try {
-          console.log("📤 Loading document into RAG system (fast reactivation)...");
-
           // Prevent duplicate loads for same document during fast refresh/double effects
           if (ragLoadingDocIdRef.current === sessionData.document.id) {
-            console.log(
-              "⏳ Skipping duplicate RAG load for document",
-              sessionData.document.id
-            );
           } else {
             ragLoadingDocIdRef.current = sessionData.document.id;
 
@@ -1336,7 +1173,6 @@ export default function ChatViewer({
           }
 
           // Don't return here - continue to load the session even if RAG loading fails
-          console.log("⚠️ Continuing with session load despite RAG error");
         }
 
         setLoadingStage("preparing_chat");
@@ -1433,8 +1269,6 @@ export default function ChatViewer({
 
       if (response.ok) {
         const currentDoc = await response.json();
-        console.log("📄 RAG system current document:", currentDoc);
-        console.log("📄 Expected document:", documentId);
 
         if (currentDoc.document_id && currentDoc.document_id !== documentId) {
           console.warn(
@@ -1442,10 +1276,6 @@ export default function ChatViewer({
           );
 
           if (maxRetries > 0) {
-            console.log(
-              `🔄 Attempting to reload correct document (${maxRetries} retries left)`
-            );
-
             // Clear cache and try to reload the correct document
             ragCache.clearDocument(documentId);
 
@@ -1455,7 +1285,6 @@ export default function ChatViewer({
                 method: "DELETE",
                 headers: { "X-Session-Id": sessionId },
               });
-              console.log("🧹 Reset RAG system for clean reload");
             } catch (resetError) {
               console.warn("⚠️ Failed to reset RAG system:", resetError);
             }
@@ -1469,9 +1298,6 @@ export default function ChatViewer({
             );
           }
         } else {
-          console.log(
-            `✅ Document ${documentId} verified as active on backend`
-          );
         }
       } else {
         console.warn(
@@ -1509,10 +1335,6 @@ export default function ChatViewer({
       // 🔥 STANDARDIZE: Always resolve to database ID for file operations
       const resolvedDocumentId = await resolveToDatabaseID(documentId);
       if (!resolvedDocumentId) {
-        console.log(
-          "🔍 Could not resolve document ID, checking if temporary RAG document"
-        );
-
         // For temporary documents, we need to get them from the RAG system or localStorage
         // This is a placeholder - you might need to implement a different approach
         // for temporary documents that aren't in your database
@@ -1564,10 +1386,6 @@ export default function ChatViewer({
     try {
       // If force reload is requested, clear the cache first
       if (forceReload) {
-        console.log(
-          "🔄 Force reload requested, clearing cache for:",
-          documentId
-        );
         ragCache.clearDocument(documentId);
       }
 
@@ -1577,11 +1395,8 @@ export default function ChatViewer({
         typeof documentId === "string" &&
         documentId.startsWith("doc_")
       ) {
-        console.log("📝 Temporary document - checking RAG system directly");
-
         try {
           await verifyDocumentIsActive(documentId, 0); // No retries for temp docs
-          console.log("✅ Temporary document verified in RAG system");
           return;
         } catch (verifyError) {
           console.warn("⚠️ Temporary document not in RAG system:", verifyError);
@@ -1610,9 +1425,6 @@ export default function ChatViewer({
           ) {
             retryCount--;
             if (retryCount > 0) {
-              console.log(
-                `🔄 Retrying document load (${retryCount} attempts left)`
-              );
               // Clear cache and retry
               ragCache.clearDocument(documentId);
               await ragCache.loadDocument(documentId, filename, getFileBlob);
@@ -1695,7 +1507,6 @@ export default function ChatViewer({
 
           const exists = await checkDocumentExists(currentDocument.id);
           if (!exists) {
-            console.log("Document for session no longer exists");
             setDocumentExists(false);
             handleDocumentDeleted();
             return;
@@ -1725,7 +1536,7 @@ export default function ChatViewer({
               isActive: msg.is_active ?? true,
               sequenceNumber: msg.sequence_number,
             }));
-            
+
             // Pure relational model - group edits first, then regenerations
             const editGrouped = groupEditedMessages(formattedMessages);
             const fullyGrouped = groupRegeneratedMessages(editGrouped);
@@ -1745,9 +1556,7 @@ export default function ChatViewer({
   // ✅ NEW: Function to update streaming message content
   const updateStreamingMessage = (messageId: string, content: string) => {
     setChatHistory((prev) =>
-      prev.map((msg) =>
-        msg.id === messageId ? { ...msg, content } : msg
-      )
+      prev.map((msg) => (msg.id === messageId ? { ...msg, content } : msg))
     );
   };
 
@@ -1781,12 +1590,6 @@ export default function ChatViewer({
       sessionIdToUse.trim() !== ""
     ) {
       try {
-        console.log("💾 Saving message to session immediately:");
-        console.log("   Session ID:", sessionIdToUse);
-        console.log("   Message ID:", newMessage.id);
-        console.log("   Message type:", newMessage.type);
-        console.log("   Content preview:", newMessage.content.substring(0, 50));
-        
         const response = await fetch("/backend/api/chat-messages", {
           method: "POST",
           headers: getAuthHeaders(),
@@ -1802,10 +1605,7 @@ export default function ChatViewer({
 
         if (response.ok) {
           const savedMessage = await response.json();
-          console.log(
-            "✅ Message saved immediately to database:",
-            savedMessage.messageId || savedMessage.id
-          );
+          console.log(savedMessage.messageId || savedMessage.id);
 
           // ✅ FIXED: Update session metadata immediately after message save
           setTimeout(() => {
@@ -1817,7 +1617,10 @@ export default function ChatViewer({
           handleDocumentDeleted();
         } else {
           const errorText = await response.text();
-          console.error("❌ Failed to save message (status " + response.status + "):", errorText);
+          console.error(
+            "❌ Failed to save message (status " + response.status + "):",
+            errorText
+          );
         }
       } catch (error) {
         console.error("❌ Failed to save message to database:", error);
@@ -1857,8 +1660,6 @@ export default function ChatViewer({
         return;
       }
 
-      console.log("🔍 Looking for existing session for document:", documentId);
-
       const exists = await checkDocumentExists(documentId);
       if (!exists) {
         console.log("❌ Document no longer exists");
@@ -1874,7 +1675,6 @@ export default function ChatViewer({
 
       if (response.ok) {
         const session = await response.json();
-        console.log("✅ Found existing session:", session.id);
         setCurrentSessionId(session.id);
 
         try {
@@ -1888,17 +1688,6 @@ export default function ChatViewer({
             const messages = messagesData.messages || [];
 
             const formattedMessages = messages.map((msg: any) => {
-              // Debug: Log the raw message data to see field names
-              if (msg.parent_message_id || msg.parentMessageId) {
-                console.log('🔍 Raw message data:', {
-                  id: msg.id,
-                  parent_message_id: msg.parent_message_id,
-                  parentMessageId: msg.parentMessageId,
-                  is_regeneration: msg.is_regeneration,
-                  isRegeneration: msg.isRegeneration
-                });
-              }
-              
               return {
                 id: msg.id,
                 type: msg.role.toUpperCase(),
@@ -1907,8 +1696,10 @@ export default function ChatViewer({
                 sourceNodes: msg.sourceNodes || msg.source_nodes,
                 tokensUsed: msg.tokensUsed || msg.tokens_used,
                 // Pure relational model - load only relational fields
-                parentMessageId: msg.parentMessageId || msg.parent_message_id || undefined,
-                isRegeneration: msg.isRegeneration ?? msg.is_regeneration ?? false,
+                parentMessageId:
+                  msg.parentMessageId || msg.parent_message_id || undefined,
+                isRegeneration:
+                  msg.isRegeneration ?? msg.is_regeneration ?? false,
                 isEdited: msg.is_edited ?? false,
                 isActive: msg.is_active ?? true,
                 sequenceNumber: msg.sequence_number,
@@ -1919,9 +1710,6 @@ export default function ChatViewer({
             const editGrouped = groupEditedMessages(formattedMessages);
             const fullyGrouped = groupRegeneratedMessages(editGrouped);
             setChatHistory(fullyGrouped);
-            console.log(
-              `📚 Loaded ${formattedMessages.length} existing messages (${fullyGrouped.length} after grouping edits & regenerations)`
-            );
           }
         } catch (messageError) {
           console.error("Failed to load messages:", messageError);
@@ -1929,9 +1717,6 @@ export default function ChatViewer({
       } else if (response.status === 404) {
         // FIXED: For new uploads, immediately create session
         if (isProcessingNewUpload || lastProcessedDocumentId === documentId) {
-          console.log(
-            "📝 New upload detected - creating fresh session immediately"
-          );
           const newSessionId = await createNewSession(documentId);
 
           if (!newSessionId) {
@@ -1939,16 +1724,9 @@ export default function ChatViewer({
             setDocumentExists(false);
             handleDocumentDeleted();
           } else {
-            console.log(
-              "✅ Created fresh session for new upload:",
-              newSessionId
-            );
             setChatHistory([]);
           }
         } else {
-          console.log(
-            "📝 No existing session found for existing document - this is normal for documents without chat history"
-          );
           // Don't create a session automatically for existing documents
           // Let the user start chatting to create one
           setCurrentSessionId(null);
@@ -2006,8 +1784,6 @@ export default function ChatViewer({
         return null;
       }
 
-      console.log("🆕 Creating new session for document:", useDocumentId);
-
       const exists = await checkDocumentExists(useDocumentId);
       if (!exists) {
         setDocumentExists(false);
@@ -2032,13 +1808,12 @@ export default function ChatViewer({
 
         setCurrentSessionId(newSessionId);
         setChatHistory([]);
-        console.log("✅ New chat session created:", newSessionId);
-        
+
         // ✅ FIXED: Trigger callback to refresh recent sessions in sidebar
         if (onSessionCreated) {
           onSessionCreated();
         }
-        
+
         return newSessionId;
       } else if (response.status === 404) {
         setDocumentExists(false);
@@ -2102,13 +1877,6 @@ export default function ChatViewer({
           }`
         : `Chat with ${currentDocument?.fileName || "Document"}`;
 
-      console.log("💾 Saving session:", {
-        sessionId: currentSessionId,
-        title,
-        messageCount: chatHistory.length,
-        force,
-      });
-
       const response = await fetch(
         `/backend/api/chat-sessions/${currentSessionId}`,
         {
@@ -2136,7 +1904,6 @@ export default function ChatViewer({
       }
 
       const result = await response.json();
-      console.log("✅ Session saved successfully:", result);
 
       setHasUnsavedChanges(false);
       setLastSaveTimestamp(Date.now());
@@ -2160,24 +1927,13 @@ export default function ChatViewer({
       case "copy":
         toast.success("Message copied to clipboard");
         break;
-      case "thumbsUp":
-        console.log("Thumbs up for message:", messageId);
-        toast.success("Thanks for the feedback!");
-        break;
-      case "thumbsDown":
-        console.log("Thumbs down for message:", messageId);
-        toast.info("Thanks for the feedback. We'll work to improve.");
-        break;
       case "regenerate":
-        console.log("Regenerating message:", messageId);
         handleRegenerateResponse(messageId);
         break;
       case "edit":
-        console.log("Editing message:", messageId);
         await handleEditMessage(messageId, content || "");
         break;
       case "delete":
-        console.log("Deleting message:", messageId);
         await handleDeleteMessage(messageId);
         break;
       default:
@@ -2186,9 +1942,10 @@ export default function ChatViewer({
   };
 
   // Handle switching between regenerated versions
-  const handleRegenerationChange = (messageId: string, regenerationIndex: number) => {
-    console.log(`🔀 Switching to regeneration ${regenerationIndex} for message ${messageId.substring(0, 8)}`);
-    
+  const handleRegenerationChange = (
+    messageId: string,
+    regenerationIndex: number
+  ) => {
     setChatHistory((prev) =>
       prev.map((msg) =>
         msg.id === messageId
@@ -2200,31 +1957,32 @@ export default function ChatViewer({
 
   // Handle switching between edited versions
   const handleEditChange = (messageId: string, editIndex: number) => {
-    console.log(`✏️ Switching to edit ${editIndex} for message ${messageId.substring(0, 8)}`);
-    
     setChatHistory((prev) =>
       prev.map((msg) =>
-        msg.id === messageId
-          ? { ...msg, selectedEditIndex: editIndex }
-          : msg
+        msg.id === messageId ? { ...msg, selectedEditIndex: editIndex } : msg
       )
     );
   };
 
   // Handle "Prefer this response" - delete other versions and keep only the selected one
-  const handlePreferRegeneration = async (messageId: string, preferredIndex: number) => {
+  const handlePreferRegeneration = async (
+    messageId: string,
+    preferredIndex: number
+  ) => {
     const message = chatHistory.find((msg) => msg.id === messageId);
-    if (!message || !message.regenerations || message.regenerations.length === 0) {
+    if (
+      !message ||
+      !message.regenerations ||
+      message.regenerations.length === 0
+    ) {
       toast.error("No regenerations found");
       return;
     }
 
     try {
-      console.log(`✅ Preferring regeneration ${preferredIndex} for message ${messageId.substring(0, 8)}`);
-      
       // Determine which messages to delete
       const messagesToDelete: string[] = [];
-      
+
       if (preferredIndex === 0) {
         // Keep original, delete all regenerations
         messagesToDelete.push(...message.regenerations.map((r) => r.id));
@@ -2237,8 +1995,6 @@ export default function ChatViewer({
           }
         });
       }
-
-      console.log(`🗑️ Deleting ${messagesToDelete.length} alternative versions`);
 
       // Delete from database
       for (const idToDelete of messagesToDelete) {
@@ -2259,7 +2015,11 @@ export default function ChatViewer({
           if (msg.id === messageId) {
             if (preferredIndex === 0) {
               // Keep original, remove regenerations
-              return { ...msg, regenerations: [], selectedRegenerationIndex: 0 };
+              return {
+                ...msg,
+                regenerations: [],
+                selectedRegenerationIndex: 0,
+              };
             } else {
               // Replace original with preferred regeneration
               const preferredRegen = msg.regenerations![preferredIndex - 1];
@@ -2306,10 +2066,29 @@ export default function ChatViewer({
         return;
       }
 
-      console.log(`✏️ Pure relational edit: Creating new edited USER message and regenerating response`);
+      console.log(
+        `✏️ Pure relational edit: Creating new edited USER message and regenerating response`
+      );
+
+      // ✅ Find and hide the old assistant response while regenerating
+      let oldAssistantMessageId: string | null = null;
+      for (let i = messageIndex + 1; i < chatHistory.length; i++) {
+        if (chatHistory[i].type === "ASSISTANT") {
+          oldAssistantMessageId = chatHistory[i].id;
+          break;
+        }
+        // Stop if we hit another USER message
+        if (chatHistory[i].type === "USER") break;
+      }
+
+      if (oldAssistantMessageId) {
+        setMessageBeingRegenerated(oldAssistantMessageId);
+      }
 
       // Step 1: Create a new USER message with isEdited=true
-      const newUserMessageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const newUserMessageId = `msg-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
       const newUserMessage: ChatMessage = {
         id: newUserMessageId,
         type: "USER",
@@ -2326,7 +2105,7 @@ export default function ChatViewer({
             method: "POST",
             headers: {
               ...getAuthHeaders(),
-              'Content-Type': 'application/json'
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               id: newUserMessageId,
@@ -2340,18 +2119,19 @@ export default function ChatViewer({
           });
 
           if (!response.ok) {
-            throw new Error('Failed to save edited message');
+            throw new Error("Failed to save edited message");
           }
-          console.log('✅ Edited USER message saved to database');
         } catch (err) {
-          console.error('❌ Error saving edited message:', err);
-          toast.error('Failed to save edit - aborting');
+          console.error("❌ Error saving edited message:", err);
+          toast.error("Failed to save edit - aborting");
           throw err;
         }
       }
 
       // Step 3: Generate new ASSISTANT response for the edited message
-      const newAssistantMessageId = `msg-${Date.now() + 1}-${Math.random().toString(36).substr(2, 9)}`;
+      const newAssistantMessageId = `msg-${Date.now() + 1}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
       let streamedContent = "";
       let sourceCount = 0;
 
@@ -2359,7 +2139,7 @@ export default function ChatViewer({
       setChatHistory((prev) => {
         const beforeOriginal = prev.slice(0, messageIndex + 1);
         const afterOriginal = prev.slice(messageIndex + 1);
-        
+
         const thinkingMessage = {
           id: newAssistantMessageId,
           type: "ASSISTANT" as const,
@@ -2368,27 +2148,37 @@ export default function ChatViewer({
           isThinking: true,
           isStreaming: true,
         };
-        
+
         // Insert: original messages -> new edited user message -> thinking message -> rest
-        return [...beforeOriginal, newUserMessage, thinkingMessage, ...afterOriginal];
+        return [
+          ...beforeOriginal,
+          newUserMessage,
+          thinkingMessage,
+          ...afterOriginal,
+        ];
       });
-      
+
       // ✅ Scroll to the original message position (not to bottom)
       setTimeout(() => {
         const originalMessageElement = messageRefs.current[messageId];
         if (originalMessageElement) {
-          originalMessageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          originalMessageElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
         }
       }, 100);
 
-      const ragClient = new (await import('../../utils/api-client')).RAGApiClient();
+      const ragClient = new (
+        await import("../../utils/api-client")
+      ).RAGApiClient();
 
-      let finalResponseContent = '';
+      let finalResponseContent = "";
 
       await ragClient.streamQueryDocument(
         newContent,
         (chunk) => {
-          if (chunk.type === 'content_chunk') {
+          if (chunk.type === "content_chunk") {
             if (chunk.partial_response !== undefined) {
               streamedContent = chunk.partial_response;
               finalResponseContent = streamedContent;
@@ -2406,9 +2196,9 @@ export default function ChatViewer({
                 )
               );
             }
-          } else if (chunk.type === 'sources') {
+          } else if (chunk.type === "sources") {
             sourceCount = chunk.source_count || 0;
-          } else if (chunk.type === 'complete' || chunk.type === 'end') {
+          } else if (chunk.type === "complete" || chunk.type === "end") {
             finalResponseContent = chunk.response || streamedContent;
             setChatHistory((prev) =>
               prev.map((msg) =>
@@ -2428,7 +2218,9 @@ export default function ChatViewer({
         },
         (error) => {
           console.error("Streaming error:", error);
-          setChatHistory((prev) => prev.filter((msg) => msg.id !== newAssistantMessageId));
+          setChatHistory((prev) =>
+            prev.filter((msg) => msg.id !== newAssistantMessageId)
+          );
           setError(error.message);
           toast.error("Failed to generate response: " + error.message);
         }
@@ -2441,7 +2233,7 @@ export default function ChatViewer({
             method: "POST",
             headers: {
               ...getAuthHeaders(),
-              'Content-Type': 'application/json'
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               id: newAssistantMessageId,
@@ -2455,18 +2247,18 @@ export default function ChatViewer({
           });
 
           if (!response.ok) {
-            console.warn('⚠️ Failed to save assistant message to database');
+            console.warn("⚠️ Failed to save assistant message to database");
           } else {
-            console.log('✅ ASSISTANT response saved to database');
+            console.log("✅ ASSISTANT response saved to database");
           }
         } catch (err) {
-          console.error('❌ Error saving assistant message:', err);
+          console.error("❌ Error saving assistant message:", err);
         }
       }
 
       // Reload chat history from database to show the complete conversation
       await loadChatHistoryFromDatabase();
-      
+
       toast.success("Message edited and response generated!");
     } catch (error) {
       console.error("Edit message error:", error);
@@ -2478,6 +2270,8 @@ export default function ChatViewer({
       // But for better UX, we'll keep the edited message and let user try again
     } finally {
       setIsQuerying(false);
+      // ✅ Clear the hidden message state
+      setMessageBeingRegenerated(null);
     }
   };
 
@@ -2512,13 +2306,13 @@ export default function ChatViewer({
 
     try {
       setIsQuerying(true);
-      
+
       // ✅ Hide the old response while generating
       setMessageBeingRegenerated(messageId);
 
       // Find the USER message before this assistant message
       let userMessage: ChatMessage | null = null;
-      
+
       for (let i = messageIndex - 1; i >= 0; i--) {
         if (chatHistory[i].type === "USER") {
           userMessage = chatHistory[i];
@@ -2532,14 +2326,22 @@ export default function ChatViewer({
         return;
       }
 
-      console.log(`🔄 Regenerating response for user message: ${userMessage.content.substring(0, 50)}`);
+      console.log(
+        `🔄 Regenerating response for user message: ${userMessage.content.substring(
+          0,
+          50
+        )}`
+      );
       console.log(`   Original assistant message ID: ${messageId}`);
-      
+
       // ✅ Scroll to the user message position (not to bottom)
       setTimeout(() => {
         const userMessageElement = messageRefs.current[userMessage.id];
         if (userMessageElement) {
-          userMessageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          userMessageElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
         }
       }, 100);
 
@@ -2558,22 +2360,24 @@ export default function ChatViewer({
           isThinking: true,
           isStreaming: true,
         };
-        
+
         // Insert right after the assistant message being regenerated
         const newHistory = [...prev];
         const insertIndex = messageIndex + 1;
         newHistory.splice(insertIndex, 0, newThinkingMessage);
-        
+
         return newHistory;
       });
 
-      const ragClient = new (await import('../../utils/api-client')).RAGApiClient();
+      const ragClient = new (
+        await import("../../utils/api-client")
+      ).RAGApiClient();
 
       // Stream the alternative response
       await ragClient.streamQueryDocument(
         userMessage.content,
         (chunk) => {
-          if (chunk.type === 'content_chunk') {
+          if (chunk.type === "content_chunk") {
             if (chunk.partial_response !== undefined) {
               streamedContent = chunk.partial_response;
 
@@ -2590,9 +2394,9 @@ export default function ChatViewer({
                 )
               );
             }
-          } else if (chunk.type === 'sources') {
+          } else if (chunk.type === "sources") {
             sourceCount = chunk.source_count || 0;
-          } else if (chunk.type === 'complete' || chunk.type === 'end') {
+          } else if (chunk.type === "complete" || chunk.type === "end") {
             streamedContent = chunk.response || streamedContent;
           }
         },
@@ -2600,7 +2404,9 @@ export default function ChatViewer({
           console.error("Streaming error:", error);
           setError(error.message);
           toast.error("Failed to regenerate response: " + error.message);
-          setChatHistory((prev) => prev.filter(msg => msg.id !== newAssistantMessageId));
+          setChatHistory((prev) =>
+            prev.filter((msg) => msg.id !== newAssistantMessageId)
+          );
         }
       );
 
@@ -2608,18 +2414,13 @@ export default function ChatViewer({
       // SAVE: Create a new assistant message in database with parent_message_id
       // This is much simpler than JSON branches and fully persistent
       // ====================================================================
-      console.log('\n💾 Saving regenerated response as new database entry');
-      console.log(`   Content length: ${streamedContent.length}`);
-      console.log(`   Source count: ${sourceCount}`);
-      console.log(`   Parent message ID: ${messageId}`);
-      
       if (currentSessionId && user && documentExists && streamedContent) {
         try {
           const response = await fetch(`/backend/api/chat-messages`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${authUtils.getToken()}`,
+              Authorization: `Bearer ${authUtils.getToken()}`,
             },
             body: JSON.stringify({
               id: newAssistantMessageId,
@@ -2635,8 +2436,11 @@ export default function ChatViewer({
 
           if (response.ok) {
             const savedMessage = await response.json();
-            console.log("✅ Regenerated response saved to database:", savedMessage.id || savedMessage.messageId);
-            
+            console.log(
+              "✅ Regenerated response saved to database:",
+              savedMessage.id || savedMessage.messageId
+            );
+
             // Refresh chat history to show the new message
             await loadChatHistoryFromDatabase();
           } else {
@@ -2649,7 +2453,9 @@ export default function ChatViewer({
           toast.warning("Response generated but not saved to database");
         }
       } else {
-        console.warn("⚠️ Cannot save regenerated response - missing requirements");
+        console.warn(
+          "⚠️ Cannot save regenerated response - missing requirements"
+        );
         toast.warning("Response generated but not saved (no active session)");
       }
 
@@ -2709,8 +2515,6 @@ export default function ChatViewer({
   };
 
   const handleDocumentDeleted = () => {
-    console.log("🗑️ Handling document deletion - resetting to upload state");
-
     setCurrentSessionId(null);
     setChatHistory([]);
     setCurrentDocument(null);
@@ -2737,7 +2541,6 @@ export default function ChatViewer({
   // ✅ NEW: Function to stop/abort the current query
   const handleStopQuery = () => {
     if (queryAbortController) {
-      console.log("🛑 Stopping query...");
       queryAbortController.abort();
       setQueryAbortController(null);
       setIsQuerying(false);
@@ -2750,19 +2553,7 @@ export default function ChatViewer({
   // Messages are all in database rows with parent_message_id links
 
   const handleQuery = async (queryText?: string) => {
-    console.log("🚀 handleQuery called!", {
-      isSubmittingRef: isSubmittingRef.current,
-      isQuerying,
-      queryText,
-      query,
-      documentExists,
-      currentDocument: !!currentDocument,
-      currentDocumentId: currentDocument?.id,
-      currentSessionId,
-    });
-
     if (isSubmittingRef.current || isQuerying) {
-      console.log("⏸️ Query blocked - already submitting or querying");
       return;
     }
 
@@ -2770,7 +2561,6 @@ export default function ChatViewer({
 
     // ✅ NEW: Check token limits before proceeding
     if (tokenLimitInfo.isLimitReached) {
-      console.log("❌ Query blocked - token limit reached");
       const limitMessage = `Message limit reached. It will refresh by ${tokenLimitInfo.resetTime}`;
       setError(limitMessage);
       toast.error(limitMessage);
@@ -2778,23 +2568,18 @@ export default function ChatViewer({
     }
 
     if (!documentExists) {
-      console.log("❌ Query blocked - document does not exist");
       setError("Document no longer exists. Cannot process queries.");
       return;
     }
 
     // FIXED: Verify we have current document loaded in RAG system
     if (!currentDocument) {
-      console.log("❌ Query blocked - no current document");
       setError("No document loaded. Please upload a document first.");
       return;
     }
 
-    console.log("✅ All checks passed, proceeding with query");
-
     // FIXED: Double-check that backend has the right document
     try {
-      console.log("🔍 Starting backend document verification...");
       const isDevelopment = process.env.NODE_ENV === "development";
       const RAG_BASE_URL = isDevelopment
         ? "http://localhost:8000"
@@ -2819,7 +2604,6 @@ export default function ChatViewer({
 
       if (statusResponse.ok) {
         const currentDoc = await statusResponse.json();
-        console.log("🔍 Backend verification response:", currentDoc);
         if (!currentDoc.has_document) {
           console.log("❌ Query blocked - no document in AI system");
           setError(
@@ -2827,18 +2611,11 @@ export default function ChatViewer({
           );
           return;
         }
-
-        // Log for debugging
-        console.log("🔍 Backend current document:", currentDoc.document_id);
-        console.log("🔍 Frontend current document:", currentDocument.id);
       }
-      console.log("✅ Backend document verification completed");
     } catch (error) {
       console.warn("Could not verify backend document status:", error);
       // Continue with query - don't fail for verification issues
     }
-
-    console.log("🔒 Locking UI and starting query...");
     // Immediately lock UI and clear input to prevent double-submit
     isSubmittingRef.current = true;
     setIsQuerying(true);
@@ -2850,11 +2627,6 @@ export default function ChatViewer({
     setQueryAbortController(abortController);
 
     let sessionId = currentSessionId;
-    console.log("🔍 Session check:", {
-      currentSessionId,
-      hasUser: !!user,
-      hasCurrentDocument: !!currentDocument,
-    });
 
     if (!sessionId && user && currentDocument) {
       if (isCreatingSession) {
@@ -2873,11 +2645,7 @@ export default function ChatViewer({
         isSubmittingRef.current = false;
         return;
       }
-
-      console.log("✅ Session created successfully:", sessionId);
     }
-
-    console.log("📝 Adding user message...");
 
     await addMessage(
       {
@@ -2889,9 +2657,6 @@ export default function ChatViewer({
     );
 
     try {
-      // Use streaming API for real-time responses
-      console.log("📡 Starting streaming query...");
-
       // Create a temporary assistant message that will be updated as we stream
       const assistantMessageId = crypto.randomUUID();
       let streamedContent = "";
@@ -2908,20 +2673,21 @@ export default function ChatViewer({
         isStreaming: true, // Mark as actively streaming
       };
 
-      setChatHistory(prev => [...prev, tempMessage]);
+      setChatHistory((prev) => [...prev, tempMessage]);
       // DO NOT set typing message ID - we only want the streaming content
 
       // Create RAG API client instance
-      const ragClient = new (await import('../../utils/api-client')).RAGApiClient();
+      const ragClient = new (
+        await import("../../utils/api-client")
+      ).RAGApiClient();
 
       // Prevent tab throttling during streaming
       let wakeLock: any = null;
-      if ('wakeLock' in navigator) {
+      if ("wakeLock" in navigator) {
         try {
-          wakeLock = await navigator.wakeLock.request('screen');
-          console.log('🔒 Screen wake lock acquired for streaming');
+          wakeLock = await navigator.wakeLock.request("screen");
         } catch (err) {
-          console.log('⚠️ Could not acquire wake lock:', err);
+          console.log("⚠️ Could not acquire wake lock:", err);
         }
       }
 
@@ -2931,102 +2697,110 @@ export default function ChatViewer({
       try {
         // Stream the response
         await ragClient.streamQueryDocument(
-        currentQuery,
-        (chunk) => {
-          // Handle different chunk types
-          if (chunk.type === 'content_chunk') {
-            // Update streamedContent even if partial_response is empty (for first chunk)
-            if (chunk.partial_response !== undefined) {
-              streamedContent = chunk.partial_response;
-              // Update the streaming message with the partial response
-              // Only remove thinking state when we have actual content
-              setChatHistory(prev =>
-                prev.map(msg =>
+          currentQuery,
+          (chunk) => {
+            // Handle different chunk types
+            if (chunk.type === "content_chunk") {
+              // Update streamedContent even if partial_response is empty (for first chunk)
+              if (chunk.partial_response !== undefined) {
+                streamedContent = chunk.partial_response;
+                // Update the streaming message with the partial response
+                // Only remove thinking state when we have actual content
+                setChatHistory((prev) =>
+                  prev.map((msg) =>
+                    msg.id === assistantMessageId
+                      ? {
+                          ...msg,
+                          content: streamedContent || "Generating response...",
+                          isThinking: !streamedContent, // Keep thinking animation if no content yet
+                          isStreaming: true,
+                        }
+                      : msg
+                  )
+                );
+              }
+            } else if (chunk.type === "end" || chunk.type === "complete") {
+              // Mark streaming as complete and update final content
+              const finalContent =
+                chunk.response || streamedContent || "No response generated";
+
+              setChatHistory((prev) =>
+                prev.map((msg) =>
                   msg.id === assistantMessageId
                     ? {
                         ...msg,
-                        content: streamedContent || "Generating response...",
-                        isThinking: !streamedContent, // Keep thinking animation if no content yet
-                        isStreaming: true
+                        content: finalContent,
+                        sourceCount: chunk.source_count || sourceCount,
+                        isStreaming: false,
+                        isThinking: false,
                       }
                     : msg
                 )
               );
+            } else if (chunk.type === "sources") {
+              sourceCount = chunk.source_count || 0;
+            } else if (
+              chunk.type === "start" ||
+              chunk.type === "retrieval" ||
+              chunk.type === "llm_start" ||
+              chunk.type === "streaming_start"
+            ) {
+              // Keep thinking animation during these stages
             }
-          } else if (chunk.type === 'end' || chunk.type === 'complete') {
-            // Mark streaming as complete and update final content
-            const finalContent = chunk.response || streamedContent || "No response generated";
+          },
+          (error) => {
+            console.error("Streaming error:", error);
 
-            setChatHistory(prev =>
-              prev.map(msg =>
+            // Check if this is an abort error (user clicked stop)
+            if (error.name === "AbortError") {
+              // Remove the incomplete assistant message
+              setChatHistory((prev) =>
+                prev.filter((msg) => msg.id !== assistantMessageId)
+              );
+              toast.info("Response generation stopped");
+              return;
+            }
+
+            // Update message with error and remove streaming state
+            setChatHistory((prev) =>
+              prev.map((msg) =>
                 msg.id === assistantMessageId
                   ? {
                       ...msg,
-                      content: finalContent,
-                      sourceCount: chunk.source_count || sourceCount,
+                      content: `❌ Sorry, I encountered an error: ${error.message}`,
                       isStreaming: false,
-                      isThinking: false
+                      isThinking: false,
                     }
                   : msg
               )
             );
-          } else if (chunk.type === 'sources') {
-            sourceCount = chunk.source_count || 0;
-            console.log(`📚 FRONTEND: Sources received - ${sourceCount} sources`);
-          } else if (chunk.type === 'start' || chunk.type === 'retrieval' || chunk.type === 'llm_start' || chunk.type === 'streaming_start') {
-            // Keep thinking animation during these stages
-            console.log(`💬 FRONTEND: ${chunk.type} event received`);
-          }
-        },
-        (error) => {
-          console.error('Streaming error:', error);
-
-          // Check if this is an abort error (user clicked stop)
-          if (error.name === 'AbortError') {
-            console.log('🛑 User stopped the response generation');
-            // Remove the incomplete assistant message
-            setChatHistory(prev => prev.filter(msg => msg.id !== assistantMessageId));
-            toast.info('Response generation stopped');
-            return;
-          }
-
-          // Update message with error and remove streaming state
-          setChatHistory(prev =>
-            prev.map(msg =>
-              msg.id === assistantMessageId
-                ? { ...msg, content: `❌ Sorry, I encountered an error: ${error.message}`, isStreaming: false, isThinking: false }
-                : msg
-            )
-          );
-        },
-        () => {
-          console.log('🏁 FRONTEND: Streaming completed callback called');
-          console.log(`Final streamedContent: "${streamedContent}" (${streamedContent.length} chars)`);
-
-          // Ensure streaming state is cleared and content is saved
-          setChatHistory(prev =>
-            prev.map(msg =>
-              msg.id === assistantMessageId
-                ? {
-                    ...msg,
-                    content: streamedContent || msg.content || "No response generated",
-                    isStreaming: false,
-                    isThinking: false
-                  }
-                : msg
-            )
-          );
-        },
-        undefined, // documentId
-        abortController.signal, // Pass abort signal to enable stopping
-        isVoiceChat // Pass voice mode flag to adjust response style
-      );
-
+          },
+          () => {
+            // Ensure streaming state is cleared and content is saved
+            setChatHistory((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantMessageId
+                  ? {
+                      ...msg,
+                      content:
+                        streamedContent ||
+                        msg.content ||
+                        "No response generated",
+                      isStreaming: false,
+                      isThinking: false,
+                    }
+                  : msg
+              )
+            );
+          },
+          undefined, // documentId
+          abortController.signal, // Pass abort signal to enable stopping
+          isVoiceChat // Pass voice mode flag to adjust response style
+        );
       } finally {
         // Cleanup: Release wake lock and remove event listener
         if (wakeLock) {
           wakeLock.release();
-          console.log('🔓 Screen wake lock released');
         }
         document.title = originalTitle;
       }
@@ -3035,17 +2809,12 @@ export default function ChatViewer({
       // This ensures the message exists in DB before any regeneration attempts
       if (sessionId && user && documentExists && streamedContent) {
         try {
-          console.log("💾 Saving assistant message to database (synchronously)...");
-          console.log("   Session ID:", sessionId);
-          console.log("   Assistant ID:", assistantMessageId);
-          console.log("   Content length:", streamedContent.length);
-          
           // Use direct API call instead of addMessage to avoid creating duplicate
           const response = await fetch(`/backend/api/chat-messages`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${authUtils.getToken()}`,
+              Authorization: `Bearer ${authUtils.getToken()}`,
             },
             body: JSON.stringify({
               id: assistantMessageId, // IMPORTANT: Use the same ID as the frontend message
@@ -3059,20 +2828,31 @@ export default function ChatViewer({
 
           if (response.ok) {
             const savedMessage = await response.json();
-            console.log("✅ Assistant message saved to database:", savedMessage.id || savedMessage.messageId);
             // Pure relational model - messages are already in database with parent_message_id
           } else {
             const errorText = await response.text();
-            console.warn("⚠️ Failed to save assistant message to database:", errorText);
+            console.warn(
+              "⚠️ Failed to save assistant message to database:",
+              errorText
+            );
             console.warn("   Status:", response.status);
-            console.warn("   This message will only exist in memory and regeneration may not persist");
+            console.warn(
+              "   This message will only exist in memory and regeneration may not persist"
+            );
           }
         } catch (saveError) {
-          console.error("❌ Failed to save assistant message to database:", saveError);
-          console.warn("   This message will only exist in memory and regeneration may not persist");
+          console.error(
+            "❌ Failed to save assistant message to database:",
+            saveError
+          );
+          console.warn(
+            "   This message will only exist in memory and regeneration may not persist"
+          );
         }
       } else {
-        console.warn("⚠️ SKIPPING assistant message save - missing requirements:");
+        console.warn(
+          "⚠️ SKIPPING assistant message save - missing requirements:"
+        );
         console.warn("   sessionId:", sessionId);
         console.warn("   user:", !!user);
         console.warn("   documentExists:", documentExists);
@@ -3086,7 +2866,6 @@ export default function ChatViewer({
         error instanceof Error &&
         (error.name === "AbortError" || error.message?.includes("aborted"))
       ) {
-        console.log("🛑 Query was aborted by user");
         return; // Don't show error toast for user-initiated cancellation
       }
 
@@ -3356,17 +3135,13 @@ export default function ChatViewer({
 
   const handleDiscardAllAndStartNew = async () => {
     try {
-      console.log("🗑️ Starting discard all process...");
-
       // 1. Delete the session if it exists
       if (currentSessionId) {
-        console.log("🗑️ Deleting session:", currentSessionId);
         await handleDeleteSession(currentSessionId);
       }
 
       // 2. Delete the document if it exists and is temporary
       if (currentDocument && currentDocument.status === "TEMPORARY") {
-        console.log("🗑️ Deleting temporary document:", currentDocument.id);
         try {
           const response = await fetch(
             `/backend/api/documents/${currentDocument.id}`,
@@ -3377,7 +3152,6 @@ export default function ChatViewer({
           );
 
           if (response.ok) {
-            console.log("✅ Document deleted successfully");
             toast.success("Document and session deleted");
           } else if (response.status === 404) {
             console.log("⚠️ Document already deleted or not found");
@@ -3391,7 +3165,6 @@ export default function ChatViewer({
       }
 
       // 3. Clear all local state and storage
-      console.log("🧹 Clearing all state...");
       clearAllSessionState();
 
       // 4. Clear localStorage for current user
@@ -3407,7 +3180,6 @@ export default function ChatViewer({
 
       // 6. Start new chat flow
       if (handleNewChat) {
-        console.log("🆕 Starting new chat...");
         handleNewChat();
       }
 
@@ -3478,9 +3250,8 @@ export default function ChatViewer({
                     documentExists ? "text-muted-foreground" : "text-red-600"
                   }`}
                 >
-                  {!documentExists && (
-                    "Document no longer available. Please upload a new document."
-                  )}
+                  {!documentExists &&
+                    "Document no longer available. Please upload a new document."}
                 </p>
               </div>
             </div>
@@ -3567,15 +3338,6 @@ export default function ChatViewer({
         {/* Chat Messages Container */}
         <ChatContainer
           chatHistory={(() => {
-            // Debug: Log what we're passing to ChatContainer
-            const messagesWithRegen = chatHistory.filter(m => m.regenerations && m.regenerations.length > 0);
-            if (messagesWithRegen.length > 0) {
-              console.log(`📤 Passing ${chatHistory.length} messages to ChatContainer`);
-              console.log(`   ${messagesWithRegen.length} messages have regenerations:`);
-              messagesWithRegen.forEach(m => {
-                console.log(`   - ${m.id.substring(0, 8)}: ${m.regenerations!.length} regenerations`);
-              });
-            }
             return chatHistory;
           })()}
           isQuerying={isQuerying}
@@ -3621,9 +3383,15 @@ export default function ChatViewer({
                         : "Ask a question..."
                     }
                     rows={2}
-                    disabled={tokenLimitInfo.isLimitReached || isCreatingSession || !currentSessionId}
+                    disabled={
+                      tokenLimitInfo.isLimitReached ||
+                      isCreatingSession ||
+                      !currentSessionId
+                    }
                     className={`w-full px-3 py-2 h-24 rounded-xl focus:outline-none resize-none ${
-                      tokenLimitInfo.isLimitReached || isCreatingSession || !currentSessionId
+                      tokenLimitInfo.isLimitReached ||
+                      isCreatingSession ||
+                      !currentSessionId
                         ? "text-gray-500 cursor-not-allowed"
                         : ""
                     }`}

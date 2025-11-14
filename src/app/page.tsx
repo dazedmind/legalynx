@@ -266,7 +266,7 @@ export default function Home() {
                 Get started with LegalynX in three simple steps
               </p>
             </div>
-
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mx-4 md:mx-0">
               <div className="text-center">
                 <div className="bg-blue/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">

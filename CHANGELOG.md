@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1-beta] - 2025-11-14
+
+## 🚀 What's New
+- **Citation Formatter:** Fixed the citation rendered to properly handle multiple sources.
+
+### ⚙️ Technical Changes
+- **Removed logs on production:** Removed all debug logs on production.
+- **Preparation for Usability Testing:** Bug fixes and preparation for usability testing.
+
 ## [0.4.1] - 2025-11-12
 
 ## 🚀 What's New

@@ -33,9 +33,7 @@ export async function GET(request: NextRequest) {
     // Get limit from query params, default to 3
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '3', 10);
-    
-    console.log(`📚 Loading recent ${limit} chat sessions for user ID: ${user.id}, Email: ${user.email}`);
-    
+        
     const chatSessions = await prisma.chatSession.findMany({
       where: { 
         user_id: user.id // ✅ FIXED: Ensure strict user filtering

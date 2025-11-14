@@ -123,17 +123,13 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         },
       });
 
-      console.log('📊 PDF test response:', testResponse.status, testResponse.statusText);
-
       if (testResponse.ok) {
         // Use direct URL with token in URL for iframe compatibility
         const urlWithAuth = `${directUrl}?token=${encodeURIComponent(token)}`;
         setPdfUrl(urlWithAuth);
         setUseDirectUrl(true);
-        console.log('✅ Using direct URL for PDF');
       } else {
         // Fallback to blob URL method
-        console.log('⚠️ Direct URL failed, trying blob method');
         await loadPdfAsBlob();
       }
     } catch (error) {

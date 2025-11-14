@@ -592,10 +592,14 @@ class RuleBasedFileNamer:
                 format_prompt = f"""Analyze this document and generate a filename in EXACT format:
 YYYYMMDD_DOCUMENT-TYPE
 
+IMPORTANT: This is a filename generation task. You MUST always generate a filename, even if information is incomplete. Use best guesses or generic terms if specific details aren't found. NEVER respond with "Not specified in the provided document." - always provide a filename.
+
 Rules:
 - Use date from the file: YYYYMMDD
-- The DATE must always be the **execution, filing, or promulgation date** — not incidental dates like birthdays, transaction dates, or citations.  
+- The DATE must always be the **execution, filing, or promulgation date** — not incidental dates like birthdays, transaction dates, or citations.
+- If no clear date is found, use today's date: {datetime.now().strftime("%Y%m%d")}
 - DOCUMENT-TYPE should be document type (Contract, Agreement, etc.) in UPPERCASE with spaces as hyphens
+- If document type is unclear, use a generic term like "DOCUMENT" or "LEGAL-DOCUMENT"
 - Remove ALL spaces, use hyphens between words
 - Only respond with filename, nothing else
 - Document type only max of 3-4 words
@@ -615,10 +619,14 @@ Your response (filename only):"""
                 format_prompt = f"""Analyze this document and generate a filename in EXACT format:
 YYYYMMDD_DOCUMENT-TYPE_SURNAME
 
+IMPORTANT: This is a filename generation task. You MUST always generate a filename, even if information is incomplete. Use best guesses or generic terms if specific details aren't found. NEVER respond with "Not specified in the provided document." - always provide a filename.
+
 Rules:
 - Use date from the file: YYYYMMDD
-- The DATE must always be the **execution, filing, or promulgation date** — not incidental dates like birthdays, transaction dates, or citations.  
+- The DATE must always be the **execution, filing, or promulgation date** — not incidental dates like birthdays, transaction dates, or citations.
+- If no clear date is found, use today's date: {datetime.now().strftime("%Y%m%d")}
 - DOCUMENT-TYPE in UPPERCASE with hyphens (LEASE-AGREEMENT, SERVICE-CONTRACT, etc.)
+- If document type is unclear, use a generic term like "DOCUMENT" or "LEGAL-DOCUMENT"
 - SURNAME is LAST NAME ONLY of main person/client in UPPERCASE
 - Remove ALL spaces, use hyphens between words
 - Only respond with filename, nothing else
@@ -636,7 +644,7 @@ Rules for CLIENT_NAME:
 - If document contains "y" (Spanish "and"), extract the surname AFTER "y"
   * "TORRES y YAMBAO" → extract "YAMBAO"
   * "CASTILLO y ASUNCION" → extract "ASUNCION"
-- If no clear client/party names, use NONE
+- If no clear client/party names, use "UNKNOWN" instead of NONE
 
 
 Examples:

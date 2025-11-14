@@ -55,19 +55,15 @@ export class RAGApiClient {
       voiceMode?: boolean
     ): Promise<void> {
       const startTime = Date.now();
-      console.log(`🚀 FRONTEND: Starting stream query at ${startTime}`);
 
       try {
         // Use the correct RAG API endpoint for streaming with proper auth
         const token = localStorage.getItem('token');
         const sessionId = localStorage.getItem('rag_session_id');
 
-        console.log(`🔐 AUTH: Token: ${token ? 'present' : 'missing'}, Session: ${sessionId}`);
-
         // Use environment variable for RAG API URL, fallback to localhost for development
         const ragApiUrl = process.env.NEXT_PUBLIC_RAG_API_URL || 'http://localhost:8000';
         const streamUrl = `${ragApiUrl}/query?stream=true`;
-        console.log(`🌐 FRONTEND: Using RAG API URL: ${streamUrl}`);
 
         const response = await fetch(streamUrl, {
           method: 'POST',
@@ -83,7 +79,6 @@ export class RAGApiClient {
           signal: abortSignal
         });
 
-        console.log(`🌊 FRONTEND: Response received at ${Date.now() - startTime}ms`);
 
         if (!response.ok) {
           throw new Error(`Query failed: ${response.status}`);
@@ -103,13 +98,11 @@ export class RAGApiClient {
             const { done, value } = await reader.read();
 
             if (done) {
-              console.log(`✅ FRONTEND: Stream completed after ${chunkCount} chunks in ${Date.now() - startTime}ms`);
               break;
             }
 
             if (firstChunkTime === null) {
               firstChunkTime = Date.now();
-              console.log(`📦 FRONTEND: First chunk received at ${firstChunkTime - startTime}ms`);
             }
 
             const chunk = decoder.decode(value);
@@ -125,7 +118,6 @@ export class RAGApiClient {
 
                   // Check if this is the final chunk
                   if (data.type === 'stream_end' || data.type === 'end' || data.type === 'error') {
-                    console.log(`🏁 FRONTEND: Final chunk received at ${Date.now() - startTime}ms`);
                     if (onComplete) onComplete();
                     return;
                   }
@@ -142,7 +134,6 @@ export class RAGApiClient {
       } catch (error) {
         // Check if this is an abort error (user clicked stop button)
         if (error instanceof Error && error.name === 'AbortError') {
-          console.log('🛑 FRONTEND: Streaming query aborted by user');
           if (onError) {
             onError(error);
           }

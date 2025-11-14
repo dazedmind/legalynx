@@ -2,6 +2,44 @@
 import { Save, Loader2, DownloadCloud, Lock, Crown, Zap, Gift, X, Check } from 'lucide-react'
 import React, { useState, useEffect } from 'react'
 import { GoQuestion, GoAlert, GoCheck, GoInfo, GoStarFill, GoTrash} from 'react-icons/go';
+import { TbConfetti } from 'react-icons/tb';
+
+// Helper function to parse message and convert anchor tags to clickable links
+const parseMessageWithLinks = (message: string): React.ReactNode => {
+  const linkRegex = /<a\s+href=['"]([^'"]+)['"]\s+target=['"]([^'"]+)['"]>([^<]+)<\/a>/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = linkRegex.exec(message)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(message.substring(lastIndex, match.index));
+    }
+    
+    // Add the link as a React element
+    parts.push(
+      <a
+        key={match.index}
+        href={match[1]}
+        target={match[2]}
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:text-blue-700 underline"
+      >
+        {match[3]}
+      </a>
+    );
+    
+    lastIndex = linkRegex.lastIndex;
+  }
+  
+  // Add remaining text after the last link
+  if (lastIndex < message.length) {
+    parts.push(message.substring(lastIndex));
+  }
+  
+  return parts.length > 0 ? parts : message;
+};
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -13,7 +51,7 @@ interface ConfirmationModalProps {
     header: string;
     message: string;
     trueButton: string;
-    falseButton: string;
+    falseButton?: string;
     type: string;
   }
   // New paywall props
@@ -65,12 +103,15 @@ const getIcon = (type: string) => {
       return <GoStarFill className="w-6 h-6" />;
     case ModalType.DELETE:
       return <GoTrash className="w-6 h-6" />; 
+    case ModalType.WELCOME:
+      return <TbConfetti className="w-6 h-6" />;
     default:
       return <GoInfo className="w-6 h-6" />;
   }
 }
 
 export const ModalType = {
+  WELCOME: 'welcome',
   DELETE: 'delete',
   DANGER: 'danger',
   WARNING: 'warning',
@@ -395,35 +436,60 @@ function ConfirmationModal({
               <p className="text-sm text-muted-foreground mb-3 font-medium">"{documentName}"</p>
             )}
             <p className="text-muted-foreground text-sm">
-              {modal.message}
+              {parseMessageWithLinks(modal.message)}
             </p>
           </div>
 
           <div className="flex flex-row-reverse gap-2">
-            <button
-              onClick={() => onSave(true)}
-              disabled={isSaving}
-              className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${getColor(modal.type)}`}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {modal.trueButton}
-                </>
-              ) : (
-                <>
-                  {modal.trueButton}
-                </>
+            {modal.type !== ModalType.WELCOME ? (
+              <>
+              <button
+                onClick={() => onSave(true)}
+                disabled={isSaving}
+                className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${getColor(modal.type)}`}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {modal.trueButton}
+                  </>
+                ) : (
+                  <>
+                    {modal.trueButton}
+                  </>
+                )}
+              </button>
+              
+              {modal.falseButton && (
+                <button
+                  onClick={onClose}
+                  disabled={isSaving}
+                  className="w-full px-4 py-2 text-foreground bg-tertiary hover:bg-accent rounded-md transition-all duration-200 disabled:opacity-50 cursor-pointer"
+                >
+                  {isSaving ? 'Please wait...' : modal.falseButton}
+                </button>
               )}
-            </button>
-            
-            <button
-              onClick={onClose}
-              disabled={isSaving}
-              className="w-full px-4 py-2 text-foreground bg-tertiary hover:bg-accent rounded-md transition-all duration-200 disabled:opacity-50 cursor-pointer"
-            >
-              {isSaving ? 'Please wait...' : modal.falseButton}
-            </button>
+              </>
+            ) : (
+              <>
+                <button
+                onClick={() => onSave(true)}
+                disabled={isSaving}
+                className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${getColor(modal.type)}`}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {modal.trueButton}
+                  </>
+                ) : (
+                  <>
+                    {modal.trueButton}
+                  </>
+                )}
+              </button>
+              </>
+            )}
           </div>
         </div>
       </div>

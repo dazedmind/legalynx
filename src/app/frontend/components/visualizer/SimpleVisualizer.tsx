@@ -66,7 +66,6 @@ interface VisualizerOptions {
         this.bufferLength = this.analyser.frequencyBinCount;
         this.dataArray = new Uint8Array(this.bufferLength as number);
         
-        console.log('✅ Media stream connected to visualizer');
         return true;
       } catch (error) {
         console.error('Failed to connect media stream:', error);
@@ -84,7 +83,6 @@ interface VisualizerOptions {
       this.analyser = null;
       this.dataArray = null;
       this.bufferLength = 0;
-      console.log('🔇 Audio disconnected from visualizer');
     }
 
     setColors(red: number, green: number, blue: number): void {

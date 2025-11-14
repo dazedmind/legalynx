@@ -293,7 +293,6 @@ export function ChatContainer({
     
     // ✅ Hide the old message while it's being regenerated
     if (messageBeingRegenerated && message.id === messageBeingRegenerated) {
-      console.log(`👁️ Hiding message ${message.id.substring(0, 8)} during regeneration`);
       return null;
     }
 
@@ -301,9 +300,7 @@ export function ChatContainer({
     if (isUser && message.edits && message.edits.length > 0 && message.editResponses) {
       const totalEdits = message.edits.length + 1; // +1 for original
       const currentEditIndex = message.selectedEditIndex || 0;
-      
-      console.log(`✏️ User message ${message.id.substring(0, 8)} has ${totalEdits} edits, showing #${currentEditIndex + 1}`);
-      
+            
       // Return early - render the USER message with edit selector and its direct response
       return renderUserMessageWithEdits(message, currentEditIndex, totalEdits);
     }
@@ -329,8 +326,6 @@ export function ChatContainer({
           displayContent = regeneration.content;
         }
       }
-      
-      console.log(`📊 Message ${message.id.substring(0, 8)} has ${totalRegenerations} versions, showing #${currentRegenerationIndex + 1}`);
     }
 
     // Check if this assistant message's user prompt has branches (for edit)

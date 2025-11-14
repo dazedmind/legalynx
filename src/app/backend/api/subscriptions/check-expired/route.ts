@@ -4,8 +4,6 @@ import { getPlanLimits } from "../../paypal/_utils";
 
 export async function POST(request: NextRequest) {
     try {
-        console.log("🔍 Starting subscription expiration check...");
-
         const now = new Date();
 
         // Find subscriptions that have expired
